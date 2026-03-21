@@ -83,7 +83,8 @@
       "Read(//home/rpeters1428/Cinefin/.worktrees/m3-expressive-fixes/$BASE/app/src/main/java/com/rpeters/jellyfin/ui/components/immersive/**)",
       "Read(//home/rpeters1428/Cinefin/.worktrees/m3-expressive-fixes/$BASE/app/src/main/java/com/rpeters/jellyfin/ui/image/**)",
       "Read(//home/rpeters1428/Cinefin/.worktrees/m3-expressive-fixes/$BASE/app/src/main/java/com/rpeters/jellyfin/ui/player/**)",
-      "Read(//home/rpeters1428/Cinefin/.worktrees/m3-expressive-fixes/$BASE/app/src/main/java/com/rpeters/jellyfin/ui/screens/**)"
+      "Read(//home/rpeters1428/Cinefin/.worktrees/m3-expressive-fixes/$BASE/app/src/main/java/com/rpeters/jellyfin/ui/screens/**)",
+      "Bash(wc:*)"
     ],
     "deny": [],
     "ask": [],

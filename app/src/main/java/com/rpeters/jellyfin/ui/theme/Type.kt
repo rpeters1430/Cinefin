@@ -1,6 +1,7 @@
 package com.rpeters.jellyfin.ui.theme
 
 import androidx.compose.material3.Typography
+import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -61,6 +62,7 @@ val Typography = Typography(
         fontSize = 22.sp,
         lineHeight = 28.sp,
         letterSpacing = 0.sp,
+        platformStyle = PlatformTextStyle(includeFontPadding = false)
     ),
     titleMedium = TextStyle(
         fontFamily = FontFamily.Default,
@@ -68,6 +70,7 @@ val Typography = Typography(
         fontSize = 16.sp,
         lineHeight = 24.sp,
         letterSpacing = 0.15.sp,
+        platformStyle = PlatformTextStyle(includeFontPadding = false)
     ),
     titleSmall = TextStyle(
         fontFamily = FontFamily.Default,
@@ -75,6 +78,7 @@ val Typography = Typography(
         fontSize = 14.sp,
         lineHeight = 20.sp,
         letterSpacing = 0.1.sp,
+        platformStyle = PlatformTextStyle(includeFontPadding = false)
     ),
 
     // Body styles - for main content with expressive readability
@@ -107,6 +111,7 @@ val Typography = Typography(
         fontSize = 14.sp,
         lineHeight = 20.sp,
         letterSpacing = 0.1.sp,
+        platformStyle = PlatformTextStyle(includeFontPadding = false)
     ),
     labelMedium = TextStyle(
         fontFamily = FontFamily.Default,
@@ -114,6 +119,7 @@ val Typography = Typography(
         fontSize = 12.sp,
         lineHeight = 16.sp,
         letterSpacing = 0.5.sp,
+        platformStyle = PlatformTextStyle(includeFontPadding = false)
     ),
     labelSmall = TextStyle(
         fontFamily = FontFamily.Default,
@@ -121,5 +127,6 @@ val Typography = Typography(
         fontSize = 11.sp,
         lineHeight = 16.sp,
         letterSpacing = 0.5.sp,
+        platformStyle = PlatformTextStyle(includeFontPadding = false)
     ),
 )

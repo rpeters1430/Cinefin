@@ -64,7 +64,6 @@ import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
 import com.rpeters.jellyfin.ui.components.ExpressiveSimpleEmptyState
-import com.rpeters.jellyfin.ui.components.MiniPlayer
 import com.rpeters.jellyfin.ui.components.immersive.rememberImmersivePerformanceConfig
 import com.rpeters.jellyfin.ui.components.shimmer
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
@@ -284,14 +283,6 @@ fun ImmersiveLibraryScreen(
                     )
                 }
             }
-        }
-
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth(),
-        ) {
-            MiniPlayer(onExpandClick = onNowPlayingClick)
         }
     }
 }

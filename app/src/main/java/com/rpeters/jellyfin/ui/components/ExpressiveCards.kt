@@ -88,10 +88,21 @@ fun ExpressiveMediaCard(
         label = "card_scale",
     )
 
+    val glowColor = if (cardType == ExpressiveCardType.ELEVATED) {
+        MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+    } else {
+        Color.Black.copy(alpha = 0.2f)
+    }
+
     val cardModifier = modifier
         .width(200.dp)
         .height(320.dp)
         .scale(scale)
+        .primaryExpressiveGlow(
+            color = glowColor,
+            alpha = if (cardType == ExpressiveCardType.ELEVATED) 0.12f else 0.08f,
+            borderRadius = 24.dp // Matching large shape token
+        )
 
     when (cardType) {
         ExpressiveCardType.ELEVATED -> {
@@ -100,7 +111,11 @@ fun ExpressiveMediaCard(
                 colors = CardDefaults.elevatedCardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainer,
                 ),
-                elevation = CardDefaults.elevatedCardElevation(defaultElevation = 6.dp),
+                elevation = CardDefaults.elevatedCardElevation(
+                    defaultElevation = 8.dp,
+                    pressedElevation = 2.dp,
+                    hoveredElevation = 12.dp
+                ),
                 shape = MaterialTheme.shapes.large,
             ) {
                 MediaCardContent(
@@ -277,14 +292,17 @@ private fun MediaCardContent(
                         color = MaterialTheme.colorScheme.primary,
                     ) {
                         val countText = if (unwatchedEpisodeCount > 99) "99+" else unwatchedEpisodeCount.toString()
-                        Text(
-                            text = countText,
-                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier
-                                .defaultMinSize(minWidth = 28.dp, minHeight = 28.dp)
-                                .padding(horizontal = 8.dp, vertical = 5.dp),
-                        )
+                        Box(
+                            modifier = Modifier.defaultMinSize(minWidth = 28.dp, minHeight = 28.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                text = countText,
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.padding(horizontal = 8.dp),
+                            )
+                        }
                     }
                 } else if (isWatched) {
                     // Watched checkmark badge
@@ -316,17 +334,18 @@ private fun MediaCardContent(
 
             // Watch progress bar at bottom of image
             if (watchProgress > 0f && watchProgress < 1f) {
-                LinearProgressIndicator(
+                androidx.compose.material3.LinearWavyProgressIndicator(
                     progress = { watchProgress },
                     modifier = Modifier
                         .fillMaxWidth()
                         .align(Alignment.BottomCenter)
                         .padding(horizontal = 8.dp, vertical = 8.dp)
-                        .height(4.dp)
-                        .clip(RoundedCornerShape(2.dp)),
+                        .height(4.dp),
                     color = MaterialTheme.colorScheme.primary,
                     trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
-                    strokeCap = StrokeCap.Round,
+                    amplitude = { 0.12f },
+                    wavelength = 32.dp,
+                    waveSpeed = 0.dp, // Static for cards to save battery/performance
                 )
             }
         }

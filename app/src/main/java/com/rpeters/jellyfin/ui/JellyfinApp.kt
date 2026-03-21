@@ -1,8 +1,16 @@
 package com.rpeters.jellyfin.ui
 
 import android.app.Activity
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuOpen
@@ -22,8 +30,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination
@@ -32,6 +42,8 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.rpeters.jellyfin.network.ConnectivityChecker
+import com.rpeters.jellyfin.ui.components.ExpressiveFloatingNavBar
+import com.rpeters.jellyfin.ui.components.MiniPlayer
 import com.rpeters.jellyfin.ui.components.OfflineIndicatorBanner
 import com.rpeters.jellyfin.ui.navigation.BottomNavItem
 import com.rpeters.jellyfin.ui.navigation.JellyfinNavGraph
@@ -71,7 +83,7 @@ fun JellyfinApp(
     onShortcutConsumed: () -> Unit = {},
 ) {
     // Collect theme preferences
-    val themeViewModel: com.rpeters.jellyfin.ui.viewmodel.ThemePreferencesViewModel = hiltViewModel()
+    val themeViewModel: ThemePreferencesViewModel = hiltViewModel()
     val themePreferences by themeViewModel.themePreferences.collectAsStateWithLifecycle()
 
     // Main app ViewModel for global state and sync tasks
@@ -104,9 +116,6 @@ fun JellyfinApp(
         }
 
         // Determine start destination based on authentication state
-        // If user has saved credentials and remember login is enabled, start at Home
-        // and let auto-login happen in the background
-        // Otherwise, start at ServerConnection (login screen)
         val startDestination = if (
             connectionState.isConnected ||
             (
@@ -144,7 +153,6 @@ fun JellyfinApp(
         }
 
         // Navigation guard: redirect to login if auto-login fails
-        // This handles the case where auto-login fails with an error
         LaunchedEffect(connectionState.errorMessage, connectionState.isConnected) {
             val currentRoute = navController.currentBackStackEntry?.destination?.route
             val hasError = connectionState.errorMessage != null
@@ -152,7 +160,6 @@ fun JellyfinApp(
             val isNotOnLoginScreens = currentRoute != Screen.ServerConnection.route &&
                 currentRoute != Screen.QuickConnect.route
 
-            // If there's an error during auto-login and we're not on login screen, redirect
             if (hasError && isNotConnected && isNotOnLoginScreens) {
                 navController.navigate(Screen.ServerConnection.route) {
                     popUpTo(0) { inclusive = true }
@@ -170,13 +177,13 @@ fun JellyfinApp(
             mutableStateOf(windowSizeClass.widthSizeClass == WindowWidthSizeClass.Expanded)
         }
 
-        // Determine navigation type based on window width and user expansion toggle
+        // Determine navigation type based on window width
         val navigationType = when (windowSizeClass.widthSizeClass) {
-            WindowWidthSizeClass.Compact -> NavigationSuiteType.NavigationBar // Bottom bar for phones
+            WindowWidthSizeClass.Compact -> NavigationSuiteType.None // Use custom floating toolbar for phones
             else -> if (isNavExpanded) {
-                NavigationSuiteType.NavigationDrawer // Expanded drawer for tablets
+                NavigationSuiteType.NavigationDrawer
             } else {
-                NavigationSuiteType.NavigationRail // Collapsed rail for tablets
+                NavigationSuiteType.NavigationRail
             }
         }
         val showNavLabels = navigationType != NavigationSuiteType.NavigationRail
@@ -237,7 +244,107 @@ fun JellyfinApp(
                 layoutType = navigationType,
                 modifier = Modifier.fillMaxSize(),
             ) {
-                Column(modifier = Modifier.fillMaxSize()) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .then(
+                                if (isCompactWidth) {
+                                    // Add padding for floating toolbar, mini player, and system navigation bars
+                                    val navBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+                                    // Room for MiniPlayer (approx 72dp) + FloatingNavBar (approx 80dp) + extra spacing
+                                    Modifier.padding(bottom = 168.dp + navBarPadding)
+                                } else {
+                                    // Room for MiniPlayer on tablets
+                                    Modifier.padding(bottom = 80.dp)
+                                }
+                            )
+                    ) {
+                        // Show offline indicator when not connected
+                        OfflineIndicatorBanner(isVisible = !isOnline)
+
+                        // Main navigation content
+                        JellyfinNavGraph(
+                            navController = navController,
+                            startDestination = startDestination,
+                            modifier = Modifier.fillMaxSize(),
+                            onLogout = {
+                                DynamicShortcutManager.updateContinueWatchingShortcuts(
+                                    applicationContext,
+                                    emptyList(),
+                                )
+                                if (pendingShortcutDestination != null) {
+                                    pendingShortcutDestination = null
+                                    consumeShortcut()
+                                }
+                                onLogout()
+                            },
+                        )
+                    }
+
+                    // Floating UI stack at the bottom
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // Global Mini Player - only show if something is playing
+                        MiniPlayer(
+                            onExpandClick = { navController.navigate(Screen.NowPlaying.route) },
+                            modifier = Modifier.padding(horizontal = 12.dp)
+                        )
+
+                        // Expressive Floating Navigation Bar for phones
+                        if (isCompactWidth) {
+                            ExpressiveFloatingNavBar(
+                                items = BottomNavItem.bottomNavItems,
+                                currentDestination = currentDestination,
+                                onNavigate = { item ->
+                                    navController.navigate(item.route) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                },
+                                isVisible = true,
+                                modifier = Modifier.padding(bottom = 12.dp)
+                            )
+                        } else {
+                            // Extra padding for tablets to keep mini player above system bar
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+                    }
+                }
+            }
+        } else {
+            // No navigation for auth and detail screens
+            Scaffold(
+                modifier = Modifier.fillMaxSize(),
+                bottomBar = {
+                    // Still show mini player on detail screens if something is playing
+                    // Positioned at the very bottom
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding())
+                    ) {
+                        MiniPlayer(
+                            onExpandClick = { navController.navigate(Screen.NowPlaying.route) },
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
+                        )
+                    }
+                }
+            ) { innerPadding ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(bottom = innerPadding.calculateBottomPadding())
+                ) {
                     // Show offline indicator when not connected
                     OfflineIndicatorBanner(isVisible = !isOnline)
 
@@ -246,34 +353,6 @@ fun JellyfinApp(
                         navController = navController,
                         startDestination = startDestination,
                         modifier = Modifier.fillMaxSize(),
-                        onLogout = {
-                            DynamicShortcutManager.updateContinueWatchingShortcuts(
-                                applicationContext,
-                                emptyList(),
-                            )
-                            if (pendingShortcutDestination != null) {
-                                pendingShortcutDestination = null
-                                consumeShortcut()
-                            }
-                            onLogout()
-                        },
-                    )
-                }
-            }
-        } else {
-            // No navigation for auth and detail screens
-            Scaffold(
-                modifier = Modifier.fillMaxSize(),
-            ) { innerPadding ->
-                Column(modifier = Modifier.fillMaxSize()) {
-                    // Show offline indicator when not connected
-                    OfflineIndicatorBanner(isVisible = !isOnline)
-
-                    // Main navigation content
-                    JellyfinNavGraph(
-                        navController = navController,
-                        startDestination = startDestination,
-                        modifier = Modifier.padding(innerPadding),
                         onLogout = {
                             DynamicShortcutManager.updateContinueWatchingShortcuts(
                                 applicationContext,

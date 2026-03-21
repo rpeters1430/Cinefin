@@ -289,67 +289,99 @@ fun TvHomeScreen(
                         initialFocusRequester = if (featuredItems.isEmpty()) initialFocusRequester else null,
                     )
                 } else {
-                    TvCarouselHomeContent(
-                        layoutConfig = layoutConfig,
-                        sections = sections,
-                        focusManager = tvFocusManager,
-                        modifier = Modifier.fillMaxSize(),
-                        header = {
-                            Column {
-                                TvHomeHeader(
+                    if (featuredItems.isEmpty() && sections.isEmpty()) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(layoutConfig.contentPadding),
+                            verticalArrangement = Arrangement.spacedBy(tvLayout.sectionSpacing),
+                        ) {
+                            TvHomeHeader(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(layoutConfig.headerPadding),
+                            )
+
+                            if (appState.libraries.isNotEmpty()) {
+                                TvLibrariesSection(
+                                    libraries = appState.libraries,
+                                    onLibrarySelect = onLibrarySelect,
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(layoutConfig.headerPadding),
+                                        .padding(bottom = tvLayout.heroBottomSpacing),
+                                    isLoading = appState.isLoading,
                                 )
-                                TvHeroCarousel(
-                                    featuredItems = featuredItems,
-                                    onItemClick = { item -> onItemSelect(item.id.toString()) },
-                                    onPlayClick = { item ->
-                                        onPlay(item.id.toString(), item.name ?: "", 0L)
-                                    },
-                                    getHeroImageUrl = { item ->
-                                        viewModel.getBackdropUrl(item)
-                                            ?: viewModel.getLogoUrl(item)
-                                            ?: viewModel.getSeriesImageUrl(item)
-                                            ?: viewModel.getImageUrl(item)
-                                    },
-                                    modifier = Modifier
-                                        .padding(bottom = tvLayout.heroBottomSpacing)
-                                        .onPreviewKeyEvent { keyEvent ->
-                                            if (keyEvent.type == KeyEventType.KeyDown && keyEvent.key == Key.DirectionLeft) {
-                                                focusManager.moveFocus(FocusDirection.Left)
-                                                true
-                                            } else {
-                                                false
-                                            }
-                                        },
-                                    focusRequester = initialFocusRequester,
-                                )
-
-                                // Library Cards under Carousel
-                                if (appState.libraries.isNotEmpty()) {
-                                    TvLibrariesSection(
-                                        libraries = appState.libraries,
-                                        onLibrarySelect = onLibrarySelect,
-                                        modifier = Modifier.fillMaxWidth().padding(bottom = tvLayout.heroBottomSpacing),
-                                        isLoading = appState.isLoading,
-                                    )
-                                }
                             }
-                        },
-                        onItemFocus = { item ->
-                            focusedBackdrop = viewModel.getBackdropUrl(item)
-                        },
-                        onItemSelect = { item ->
-                            onItemSelect(item.id.toString())
-                        },
-                        focusBridgeManager = focusManager,
-                        libraries = emptyList(), // Moved to header
-                        onLibrarySelect = onLibrarySelect,
-                        isLoadingLibraries = appState.isLoading,
-                        initialFocusRequester = if (featuredItems.isEmpty()) initialFocusRequester else FocusRequester(),
-                        firstSectionId = firstSectionId,
-                    )
+
+                            TvText(
+                                text = "Your TV home is connected, but featured content is still catching up.",
+                                style = TvMaterialTheme.typography.bodyLarge,
+                                color = TvMaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
+                                modifier = Modifier.padding(horizontal = layoutConfig.headerPadding.calculateLeftPadding(androidx.compose.ui.unit.LayoutDirection.Ltr)),
+                            )
+                        }
+                    } else {
+                        TvCarouselHomeContent(
+                            layoutConfig = layoutConfig,
+                            sections = sections,
+                            focusManager = tvFocusManager,
+                            modifier = Modifier.fillMaxSize(),
+                            header = {
+                                Column {
+                                    TvHomeHeader(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(layoutConfig.headerPadding),
+                                    )
+                                    TvHeroCarousel(
+                                        featuredItems = featuredItems,
+                                        onItemClick = { item -> onItemSelect(item.id.toString()) },
+                                        onPlayClick = { item ->
+                                            onPlay(item.id.toString(), item.name ?: "", 0L)
+                                        },
+                                        getHeroImageUrl = { item ->
+                                            viewModel.getBackdropUrl(item)
+                                                ?: viewModel.getLogoUrl(item)
+                                                ?: viewModel.getSeriesImageUrl(item)
+                                                ?: viewModel.getImageUrl(item)
+                                        },
+                                        modifier = Modifier
+                                            .padding(bottom = tvLayout.heroBottomSpacing)
+                                            .onPreviewKeyEvent { keyEvent ->
+                                                if (keyEvent.type == KeyEventType.KeyDown && keyEvent.key == Key.DirectionLeft) {
+                                                    focusManager.moveFocus(FocusDirection.Left)
+                                                    true
+                                                } else {
+                                                    false
+                                                }
+                                            },
+                                        focusRequester = initialFocusRequester,
+                                    )
+
+                                    if (appState.libraries.isNotEmpty()) {
+                                        TvLibrariesSection(
+                                            libraries = appState.libraries,
+                                            onLibrarySelect = onLibrarySelect,
+                                            modifier = Modifier.fillMaxWidth().padding(bottom = tvLayout.heroBottomSpacing),
+                                            isLoading = appState.isLoading,
+                                        )
+                                    }
+                                }
+                            },
+                            onItemFocus = { item ->
+                                focusedBackdrop = viewModel.getBackdropUrl(item)
+                            },
+                            onItemSelect = { item ->
+                                onItemSelect(item.id.toString())
+                            },
+                            focusBridgeManager = focusManager,
+                            libraries = emptyList(),
+                            onLibrarySelect = onLibrarySelect,
+                            isLoadingLibraries = appState.isLoading,
+                            initialFocusRequester = if (featuredItems.isEmpty()) initialFocusRequester else FocusRequester(),
+                            firstSectionId = firstSectionId,
+                        )
+                    }
                 }
             }
         }

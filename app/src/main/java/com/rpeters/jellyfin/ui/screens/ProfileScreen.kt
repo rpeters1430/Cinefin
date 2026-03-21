@@ -57,7 +57,6 @@ import com.rpeters.jellyfin.ui.components.ExpressiveContentCard
 import com.rpeters.jellyfin.ui.components.ExpressiveFilledButton
 import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBar
 import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBarAction
-import com.rpeters.jellyfin.ui.components.MiniPlayer
 import com.rpeters.jellyfin.ui.image.AvatarImage
 import java.text.DateFormat
 import java.util.Date
@@ -95,9 +94,6 @@ fun ProfileScreen(
                     )
                 },
             )
-        },
-        bottomBar = {
-            MiniPlayer(onExpandClick = onNowPlayingClick)
         },
         modifier = modifier,
     ) { paddingValues ->

@@ -43,6 +43,7 @@ import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.ShimmerBox
 import com.rpeters.jellyfin.ui.accessibility.mediaCardSemantics
+import com.rpeters.jellyfin.ui.components.expressiveGlow
 import com.rpeters.jellyfin.ui.image.ImageQuality
 import com.rpeters.jellyfin.ui.image.ImageSize
 import com.rpeters.jellyfin.ui.image.OptimizedImage
@@ -71,6 +72,11 @@ fun MediaCard(
         modifier = modifier
             .width(cardWidth)
             .aspectRatio(cardAspectRatio)
+            .expressiveGlow(
+                color = contentTypeColor,
+                alpha = 0.15f,
+                borderRadius = 16.dp
+            )
             .mediaCardSemantics(item) { onClick(item) }
             .combinedClickable(
                 onClick = { onClick(item) },
@@ -79,9 +85,9 @@ fun MediaCard(
             .focusable(),
         shape = MaterialTheme.shapes.medium,
         elevation = CardDefaults.cardElevation(
-            defaultElevation = 6.dp,
+            defaultElevation = 8.dp,
             pressedElevation = 2.dp,
-            hoveredElevation = 8.dp,
+            hoveredElevation = 12.dp,
         ),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
@@ -307,6 +313,11 @@ fun PosterMediaCard(
                     Modifier.fillMaxWidth() // Fill grid cell or available width
                 },
             )
+            .expressiveGlow(
+                color = contentTypeColor,
+                alpha = 0.15f,
+                borderRadius = 16.dp
+            )
             .mediaCardSemantics(item) { onClick(item) }
             .combinedClickable(
                 onClick = { onClick(item) },
@@ -315,9 +326,9 @@ fun PosterMediaCard(
             .focusable(),
         shape = MaterialTheme.shapes.medium,
         elevation = CardDefaults.cardElevation(
-            defaultElevation = 6.dp,
+            defaultElevation = 8.dp,
             pressedElevation = 2.dp,
-            hoveredElevation = 8.dp,
+            hoveredElevation = 12.dp,
         ),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
@@ -509,6 +520,11 @@ fun RecentlyAddedCard(
     Card(
         modifier = modifier
             .width(140.dp)
+            .expressiveGlow(
+                color = contentTypeColor,
+                alpha = 0.12f,
+                borderRadius = 12.dp
+            )
             .mediaCardSemantics(item) { onClick(item) }
             .combinedClickable(
                 onClick = { onClick(item) },
@@ -517,9 +533,9 @@ fun RecentlyAddedCard(
             .focusable(),
         shape = MaterialTheme.shapes.medium,
         elevation = CardDefaults.cardElevation(
-            defaultElevation = 6.dp,
+            defaultElevation = 8.dp,
             pressedElevation = 2.dp,
-            hoveredElevation = 8.dp,
+            hoveredElevation = 12.dp,
         ),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow,

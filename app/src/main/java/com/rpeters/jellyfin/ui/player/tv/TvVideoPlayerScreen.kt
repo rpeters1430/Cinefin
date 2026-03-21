@@ -4,6 +4,7 @@ import android.app.Activity
 import android.app.PictureInPictureParams
 import android.os.Build
 import android.util.Rational
+import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.fadeIn
@@ -111,14 +112,13 @@ fun TvVideoPlayerRoute(
     val context = LocalContext.current
     val activity = remember(context) { context as? Activity }
     val supportsPip = remember(context) {
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
-            context.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_PICTURE_IN_PICTURE)
+        context.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_PICTURE_IN_PICTURE)
     }
 
     val playerState by viewModel.playerState.collectAsStateWithLifecycle()
     val subtitleAppearance by subtitlePreferencesViewModel.preferences.collectAsStateWithLifecycle()
     val pipState = rememberPictureInPictureState(supportsPip = supportsPip) {
-        if (supportsPip && activity != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        if (supportsPip && activity != null) {
             val params = PictureInPictureParams.Builder()
                 .setAspectRatio(Rational(16, 9))
                 .build()
@@ -583,7 +583,7 @@ fun TvVideoPlayerScreen(
         // Next Episode Overlay
         if (showNextEpisodeOverlay) {
             TvNextEpisodeOverlay(
-                nextItemName = state.nextEpisode?.name ?: "Next Episode",
+                nextItemName = state.nextEpisode.name ?: "Next Episode",
                 onPlayNext = onPlayNextEpisode,
                 onCancel = {
                     onDismissNextEpisodePrompt()
@@ -780,6 +780,7 @@ private fun PlaybackInfoChip(
     }
 }
 
+@OptIn(UnstableApi::class)
 @Composable
 fun TvQuickSettingsDrawer(
     state: VideoPlayerState,
@@ -1033,6 +1034,7 @@ private fun TvVideoPlayerScreen4KPreview() {
     TvVideoPlayerScreenPreview()
 }
 
+@OptIn(UnstableApi::class)
 @Composable
 private fun TvVideoPlayerScreenPreview() {
     val sampleState = VideoPlayerState(

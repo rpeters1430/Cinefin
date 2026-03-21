@@ -182,8 +182,8 @@ class VideoPlayerMetadataManager @Inject constructor(
 
         return mediaSource.mediaStreams
             ?.filter { stream -> stream.type == org.jellyfin.sdk.model.api.MediaStreamType.SUBTITLE }
-            ?.mapNotNull { stream ->
-                val streamIndex = stream.index ?: return@mapNotNull null
+            ?.map { stream ->
+                val streamIndex = stream.index
                 val language = stream.language ?: "und"
                 val displayTitle = stream.displayTitle ?: stream.title ?: language.uppercase()
                 val format = androidx.media3.common.Format.Builder()
@@ -199,7 +199,7 @@ class VideoPlayerMetadataManager @Inject constructor(
                     isSelected = if (selectedSubtitleIndex != null) {
                         selectedSubtitleIndex == streamIndex
                     } else {
-                        stream.isDefault == true
+                        stream.isDefault
                     },
                     displayName = displayTitle,
                 )

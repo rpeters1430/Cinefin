@@ -69,7 +69,6 @@ import com.rpeters.jellyfin.core.constants.Constants
 import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
 import com.rpeters.jellyfin.ui.adaptive.rememberAdaptiveLayoutConfig
 import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
-import com.rpeters.jellyfin.ui.components.MiniPlayer
 import com.rpeters.jellyfin.ui.components.immersive.ImmersiveCardSize
 import com.rpeters.jellyfin.ui.components.immersive.ImmersiveMediaCard
 import com.rpeters.jellyfin.ui.components.immersive.rememberImmersivePerformanceConfig
@@ -590,15 +589,6 @@ fun ImmersiveSearchScreen(
                     )
                 }
             }
-        }
-
-        // MiniPlayer at bottom
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth(),
-        ) {
-            MiniPlayer(onExpandClick = onNowPlayingClick)
         }
     }
 }

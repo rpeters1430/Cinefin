@@ -53,7 +53,6 @@ fun TvJellyfinApp(
         CinefinTvTheme(accentColor = themePreferences.accentColor) {
             TvSurface(modifier = modifier.fillMaxSize()) {
                 val navController = rememberNavController()
-                val focusManager = LocalFocusManager.current
                 val tvFocusManager = remember { TvFocusManager() }
                 val backStackEntry by navController.currentBackStackEntryAsState()
                 val currentDestination = backStackEntry?.destination
@@ -65,49 +64,15 @@ fun TvJellyfinApp(
                 } ?: false
 
                 CompositionLocalProvider(LocalTvFocusManager provides tvFocusManager) {
-                    if (showDrawer) {
-                        TvMainScreen(navController = navController)
-                    } else {
-                        TvNavGraph(
-                            navController = navController,
-                            modifier = Modifier.tvKeyboardHandler(
-                                navController = navController,
-                                focusManager = focusManager,
-                                onHome = {
-                                    navController.navigate("tv_home") {
-                                        popUpTo(navController.graph.findStartDestination().id) {
-                                            saveState = true
-                                        }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
-                                },
-                                onSearch = {
-                                    navController.navigate("tv_search") {
-                                        launchSingleTop = true
-                                    }
-                                },
-                                onQuickAccess = { key ->
-                                    val route = when (key) {
-                                        1 -> "tv_home"
-                                        2 -> "tv_movies"
-                                        3 -> "tv_shows"
-                                        4 -> "tv_music"
-                                        5 -> "tv_settings"
-                                        else -> null
-                                    } ?: return@tvKeyboardHandler
-
-                                    navController.navigate(route) {
-                                        popUpTo(navController.graph.findStartDestination().id) {
-                                            saveState = true
-                                        }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
-                                },
-                            ),
-                        )
-                    }
+                    // Always render TvMainScreen to keep TvNavGraph stable in the composition
+                    // tree. Toggling between TvMainScreen and a raw TvNavGraph would destroy and
+                    // recreate the NavHost, resetting the navigation graph on every showDrawer
+                    // change and producing a blank content area.
+                    TvMainScreen(
+                        navController = navController,
+                        showDrawer = showDrawer,
+                        modifier = Modifier.fillMaxSize(),
+                    )
                 }
             }
         }
@@ -117,9 +82,11 @@ fun TvJellyfinApp(
 @Composable
 fun TvMainScreen(
     navController: NavHostController,
+    showDrawer: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     val layout = CinefinTvTheme.layout
+    val focusManager = LocalFocusManager.current
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
@@ -130,52 +97,94 @@ fun TvMainScreen(
     }
 
     NavigationDrawer(
+        modifier = modifier.fillMaxSize(),
         drawerState = drawerState,
         drawerContent = { _ ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .fillMaxHeight()
-                    .padding(layout.drawerPadding),
-                verticalArrangement = Arrangement.spacedBy(layout.drawerItemSpacing),
-                horizontalAlignment = Alignment.Start,
-            ) {
-                // App Logo or Title in Drawer
-                TvText(
-                    text = "CINEFIN",
-                    style = TvMaterialTheme.typography.headlineSmall,
-                    color = TvMaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(vertical = layout.sectionSpacing),
-                )
+            // Only show nav items when on a primary screen; auth/connection screens get no rail.
+            if (showDrawer) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .fillMaxHeight()
+                        .padding(layout.drawerPadding),
+                    verticalArrangement = Arrangement.spacedBy(layout.drawerItemSpacing),
+                    horizontalAlignment = Alignment.Start,
+                ) {
+                    TvText(
+                        text = "CINEFIN",
+                        style = TvMaterialTheme.typography.headlineSmall,
+                        color = TvMaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(vertical = layout.sectionSpacing),
+                    )
 
-                TvNavigationItem.items.forEach { item ->
-                    val selected = selectedItem == item
-                    
-                    NavigationDrawerItem(
-                        selected = selected,
-                        onClick = {
-                            navController.navigate(item.route) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
+                    TvNavigationItem.items.forEach { item ->
+                        val selected = selectedItem == item
+
+                        NavigationDrawerItem(
+                            selected = selected,
+                            onClick = {
+                                navController.navigate(item.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
                                 }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        },
-                        leadingContent = {
-                            Icon(
-                                imageVector = item.icon,
-                                contentDescription = null,
-                            )
-                        },
-                    ) {
-                        TvText(text = item.title)
+                            },
+                            leadingContent = {
+                                Icon(
+                                    imageVector = item.icon,
+                                    contentDescription = null,
+                                )
+                            },
+                        ) {
+                            TvText(text = item.title)
+                        }
                     }
                 }
             }
         },
-        modifier = modifier,
     ) {
-        TvNavGraph(navController = navController)
+        // TvNavGraph is always at this fixed position in the composition tree so its NavHost
+        // is never destroyed/recreated when showDrawer changes.
+        TvNavGraph(
+            navController = navController,
+            modifier = Modifier.fillMaxSize().tvKeyboardHandler(
+                navController = navController,
+                focusManager = focusManager,
+                onHome = {
+                    navController.navigate("tv_home") {
+                        popUpTo(navController.graph.findStartDestination().id) {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                },
+                onSearch = {
+                    navController.navigate("tv_search") {
+                        launchSingleTop = true
+                    }
+                },
+                onQuickAccess = { key ->
+                    val route = when (key) {
+                        1 -> "tv_home"
+                        2 -> "tv_movies"
+                        3 -> "tv_shows"
+                        4 -> "tv_music"
+                        5 -> "tv_settings"
+                        else -> null
+                    } ?: return@tvKeyboardHandler
+
+                    navController.navigate(route) {
+                        popUpTo(navController.graph.findStartDestination().id) {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                },
+            ),
+        )
     }
 }

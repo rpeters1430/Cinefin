@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -95,12 +96,20 @@ fun UnwatchedEpisodeCountBadge(
                     contentColor = MaterialTheme.colorScheme.onPrimary,
                 ) {
                     Box(
-                        modifier = Modifier.padding(horizontal = if (isCompactCircle) 0.dp else 8.dp),
+                        modifier = Modifier
+                            .then(
+                                if (isCompactCircle) Modifier.fillMaxSize() 
+                                else Modifier.defaultMinSize(minWidth = 28.dp, minHeight = 28.dp)
+                            )
+                            .padding(horizontal = if (isCompactCircle) 0.dp else 8.dp),
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
                             text = text,
-                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                            style = MaterialTheme.typography.labelMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            ),
                         )
                     }
                 }
@@ -191,20 +200,19 @@ fun WatchProgressBar(
                     contentDescription = accessibilityLabel
                     role = Role.Image
                 }
-                .background(
-                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
-                    RoundedCornerShape(2.dp),
-                )
-                .padding(1.dp),
+                .height(6.dp), // Increased slightly for wavy visibility
+            contentAlignment = Alignment.BottomCenter
         ) {
-            Box(
+            androidx.compose.material3.LinearWavyProgressIndicator(
+                progress = { watchedPercentage.toFloat() / 100f },
                 modifier = Modifier
-                    .background(
-                        MaterialTheme.colorScheme.primary,
-                        RoundedCornerShape(1.dp),
-                    )
-                    .fillMaxWidth(watchedPercentage.toFloat() / 100f)
+                    .fillMaxWidth()
                     .height(4.dp),
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                amplitude = { 0.12f },
+                wavelength = 32.dp,
+                waveSpeed = 0.dp, // Static for cards to save battery/performance
             )
         }
     }
@@ -293,7 +301,11 @@ fun SeriesWatchStatusBadge(
                 } else {
                     "▶"
                 },
-                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                style = MaterialTheme.typography.labelMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                ),
+                modifier = Modifier.padding(1.dp) // Minimal padding for visual balance
             )
         }
     }

@@ -81,7 +81,7 @@ fun TvSearchScreen(
     val focusManager = LocalFocusManager.current
     val tvFocusManager = rememberTvFocusManager()
     val context = LocalContext.current
-    val windowSizeClass = calculateWindowSizeClass(context as android.app.Activity)
+    val windowSizeClass = calculateWindowSizeClass(context as androidx.activity.ComponentActivity)
     val windowLayoutInfo = rememberWindowLayoutInfo()
     val layoutConfig = rememberAdaptiveLayoutConfig(windowSizeClass, windowLayoutInfo)
     val tvLayout = CinefinTvTheme.layout

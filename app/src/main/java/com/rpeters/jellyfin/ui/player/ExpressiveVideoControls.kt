@@ -148,22 +148,6 @@ fun ExpressiveVideoControls(
                     overlayScrim = overlayScrim,
                 )
             }
-
-            // Wavy Status Bar at the very bottom (visible when controls are hidden)
-            if (!isVisible && playerState.duration > 0) {
-                androidx.compose.material3.LinearWavyProgressIndicator(
-                    progress = { playerState.currentPosition.toFloat() / playerState.duration.toFloat() },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .align(Alignment.BottomCenter)
-                        .height(2.dp),
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                    trackColor = Color.Transparent,
-                    amplitude = { 0.1f },
-                    wavelength = 40.dp,
-                    waveSpeed = 20.dp,
-                )
-            }
         }
     }
 }
@@ -660,7 +644,7 @@ private fun ExpressiveWavySlider(
                 .background(bufferedColor),
         )
 
-        // Wavy Progress Track
+        // Wavy Progress Track (using our shimmed version)
         androidx.compose.material3.LinearWavyProgressIndicator(
             progress = { progress },
             modifier = Modifier
@@ -673,7 +657,7 @@ private fun ExpressiveWavySlider(
             waveSpeed = 20.dp,
         )
 
-        // Invisible slider for interaction
+        // Standard slider for interaction (invisible track)
         Slider(
             value = progress,
             onValueChange = onValueChange,
@@ -681,8 +665,8 @@ private fun ExpressiveWavySlider(
             modifier = Modifier.fillMaxWidth(),
             colors = SliderDefaults.colors(
                 thumbColor = progressColor,
-                activeTrackColor = progressColor.copy(alpha = 0.28f),
-                inactiveTrackColor = trackColor,
+                activeTrackColor = Color.Transparent,
+                inactiveTrackColor = Color.Transparent,
             ),
         )
     }

@@ -54,7 +54,6 @@ import com.rpeters.jellyfin.ui.components.ExpressiveMediaListItem
 import com.rpeters.jellyfin.ui.components.ExpressiveSwitchListItem
 import com.rpeters.jellyfin.ui.components.ExpressiveTextButton
 import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBar
-import com.rpeters.jellyfin.ui.components.MiniPlayer
 import com.rpeters.jellyfin.ui.image.AvatarImage
 import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
 import com.rpeters.jellyfin.ui.theme.JellyfinExpressiveTheme
@@ -158,9 +157,6 @@ private fun SettingsScreenContent(
                     }
                 },
             )
-        },
-        bottomBar = {
-            MiniPlayer(onExpandClick = onNowPlayingClick)
         },
         modifier = modifier,
     ) { paddingValues ->

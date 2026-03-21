@@ -8,7 +8,6 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
@@ -21,14 +20,25 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+
 /**
- * Auto-hiding bottom navigation bar for immersive layouts.
+ * Auto-hiding expressive floating navigation bar for immersive layouts.
  * Hides on scroll down, shows on scroll up.
- *
- * @param visible Whether the nav bar should be visible
- * @param items List of navigation items to display
- * @param selectedItem Currently selected item index
- * @param onItemSelected Callback when an item is selected
  */
 @Composable
 fun AutoHideBottomNavBar(
@@ -46,32 +56,71 @@ fun AutoHideBottomNavBar(
                 stiffness = Spring.StiffnessLow,
             ),
             initialOffsetY = { it },
-        ),
+        ) + fadeIn(),
         exit = slideOutVertically(
             animationSpec = spring(
                 dampingRatio = Spring.DampingRatioNoBouncy,
                 stiffness = Spring.StiffnessMedium,
             ),
             targetOffsetY = { it },
-        ),
+        ) + fadeOut(),
+        modifier = modifier,
     ) {
-        NavigationBar(
-            modifier = modifier,
-            containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.95f),
-            windowInsets = WindowInsets.navigationBars,
+        Surface(
+            shape = MaterialTheme.shapes.extraLarge,
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+            tonalElevation = 6.dp,
+            modifier = Modifier.padding(16.dp),
         ) {
-            items.forEachIndexed { index, item ->
-                NavigationBarItem(
-                    icon = {
-                        Icon(
-                            imageVector = if (index == selectedItem) item.selectedIcon else item.icon,
-                            contentDescription = item.label,
+            Box(
+                modifier = Modifier
+                    .padding(horizontal = 8.dp, vertical = 8.dp)
+                    .animateContentSize(
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioLowBouncy,
+                            stiffness = Spring.StiffnessLow
                         )
-                    },
-                    label = { Text(item.label) },
-                    selected = index == selectedItem,
-                    onClick = { onItemSelected(index) },
-                )
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    items.forEachIndexed { index, item ->
+                        val isSelected = index == selectedItem
+                        
+                        Surface(
+                            onClick = { onItemSelected(index) },
+                            shape = MaterialTheme.shapes.extraLarge,
+                            color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                            modifier = Modifier.size(height = 48.dp, width = if (isSelected) 120.dp else 48.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    imageVector = if (isSelected) item.selectedIcon else item.icon,
+                                    contentDescription = item.label,
+                                    tint = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                if (isSelected) {
+                                    Text(
+                                        text = item.label,
+                                        style = MaterialTheme.typography.labelLarge,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(start = 8.dp),
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        maxLines = 1
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }

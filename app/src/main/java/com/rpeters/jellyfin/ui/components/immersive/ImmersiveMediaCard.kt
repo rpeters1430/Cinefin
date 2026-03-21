@@ -53,6 +53,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.rpeters.jellyfin.ui.components.expressiveGlow
+import com.rpeters.jellyfin.ui.components.primaryExpressiveGlow
 import com.rpeters.jellyfin.ui.image.ImageQuality
 import com.rpeters.jellyfin.ui.image.ImageSize
 import com.rpeters.jellyfin.ui.image.OptimizedImage
@@ -114,15 +116,15 @@ fun ImmersiveMediaCard(
         label = "immersive_card_scale",
     )
     val density = LocalDensity.current
-    val shadowElevationPx by animateFloatAsState(
-        targetValue = with(density) { if (isPressed) 8.dp.toPx() else 22.dp.toPx() },
-        animationSpec = tween(durationMillis = 220),
-        label = "immersive_card_shadow",
-    )
     val liftOffset by animateFloatAsState(
         targetValue = with(density) { if (isPressed) (-1).dp.toPx() else (-6).dp.toPx() },
         animationSpec = tween(durationMillis = 220),
         label = "immersive_card_lift",
+    )
+    val glowAlpha by animateFloatAsState(
+        targetValue = if (isPressed) 0.12f else 0.28f,
+        animationSpec = tween(durationMillis = 220),
+        label = "immersive_card_glow_alpha",
     )
 
     val (width, height) = when (cardSize) {
@@ -138,11 +140,15 @@ fun ImmersiveMediaCard(
             .height(height)
             .graphicsLayer {
                 translationY = liftOffset
-                shadowElevation = shadowElevationPx
-                shape = cardShape
-                clip = false
             }
             .scale(scale)
+            .expressiveGlow(
+                color = MaterialTheme.colorScheme.primary,
+                alpha = glowAlpha,
+                borderRadius = ImmersiveDimens.CornerRadiusCinematic,
+                blurRadius = 24.dp,
+                offsetY = 10.dp
+            )
             // Allow call sites to override default immersive size when needed (e.g. episode rows).
             .then(modifier),
         colors = CardDefaults.cardColors(
@@ -280,14 +286,17 @@ private fun ImmersiveCardContent(
                     color = MaterialTheme.colorScheme.primary,
                 ) {
                     val countText = if (unwatchedEpisodeCount > 99) "99+" else unwatchedEpisodeCount.toString()
-                    Text(
-                        text = countText,
-                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier
-                            .defaultMinSize(minWidth = 32.dp, minHeight = 32.dp)
-                            .padding(horizontal = 10.dp, vertical = 6.dp),
-                    )
+                    Box(
+                        modifier = Modifier.defaultMinSize(minWidth = 32.dp, minHeight = 32.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = countText,
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.padding(horizontal = 10.dp),
+                        )
+                    }
                 }
             } else if (isWatched) {
                 Surface(
@@ -309,17 +318,18 @@ private fun ImmersiveCardContent(
 
         // Watch progress bar
         if (watchProgress > 0f && watchProgress < 1f) {
-            LinearProgressIndicator(
+            androidx.compose.material3.LinearWavyProgressIndicator(
                 progress = { watchProgress },
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.BottomCenter)
                     .padding(horizontal = 12.dp, vertical = 60.dp)
-                    .height(4.dp)
-                    .clip(RoundedCornerShape(2.dp)),
+                    .height(4.dp),
                 color = MaterialTheme.colorScheme.primary,
                 trackColor = Color.White.copy(alpha = 0.3f),
-                strokeCap = StrokeCap.Round,
+                amplitude = { 0.12f },
+                wavelength = 32.dp,
+                waveSpeed = 0.dp, // Static for cards to save battery/performance
             )
         }
 

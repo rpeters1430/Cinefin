@@ -238,15 +238,6 @@ fun ImmersiveHomeScreen(
                     listState = listState,
                     modifier = Modifier.fillMaxSize(),
                 )
-
-                // Mini player at bottom (overlays content)
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth(),
-                ) {
-                    MiniPlayer(onExpandClick = onNowPlayingClick)
-                }
             }
         }
     }
