@@ -1,6 +1,5 @@
 package com.rpeters.jellyfin.ui.adaptive
 
-import android.app.UiModeManager
 import android.content.Context
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.PaddingValues
@@ -18,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.window.layout.FoldingFeature
 import androidx.window.layout.WindowInfoTracker
 import androidx.window.layout.WindowLayoutInfo
+import com.rpeters.jellyfin.utils.DeviceTypeUtils
 
 /**
  * Device form factor detection and adaptive layout management
@@ -337,8 +337,7 @@ private fun createAdaptiveLayoutConfig(
  * Detect if the device is a TV/Android TV
  */
 private fun detectTVDevice(context: Context): Boolean {
-    val uiModeManager = context.getSystemService(Context.UI_MODE_SERVICE) as UiModeManager
-    return uiModeManager.currentModeType == Configuration.UI_MODE_TYPE_TELEVISION
+    return DeviceTypeUtils.isTvDevice(context)
 }
 
 /**
@@ -491,8 +490,8 @@ private fun calculateGridColumns(
 ): Int {
     if (isTV) {
         return when (windowSizeClass.widthSizeClass) {
-            WindowWidthSizeClass.Expanded -> 6
-            else -> 4
+            WindowWidthSizeClass.Expanded -> 7
+            else -> 5
         }
     }
 
@@ -522,7 +521,7 @@ private fun calculateCarouselItemWidth(
     orientation: ScreenOrientation,
 ): Dp {
     return when {
-        isTV -> if (orientation == ScreenOrientation.TV_LANDSCAPE) 200.dp else 180.dp
+        isTV -> if (orientation == ScreenOrientation.TV_LANDSCAPE) 176.dp else 168.dp
         formFactor == DeviceFormFactor.TABLET || formFactor == DeviceFormFactor.FOLDABLE -> {
             if (orientation == ScreenOrientation.PORTRAIT) 200.dp else 220.dp
         }
@@ -540,7 +539,7 @@ private fun calculateCarouselItemHeight(
     orientation: ScreenOrientation,
 ): Dp {
     return when {
-        isTV -> if (orientation == ScreenOrientation.TV_LANDSCAPE) 300.dp else 270.dp
+        isTV -> if (orientation == ScreenOrientation.TV_LANDSCAPE) 264.dp else 252.dp
         formFactor == DeviceFormFactor.TABLET || formFactor == DeviceFormFactor.FOLDABLE -> {
             if (orientation == ScreenOrientation.PORTRAIT) 300.dp else 320.dp
         }

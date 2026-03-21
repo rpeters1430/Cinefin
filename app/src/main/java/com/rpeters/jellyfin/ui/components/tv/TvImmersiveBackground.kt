@@ -6,6 +6,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Brush
@@ -14,6 +19,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
 import com.rpeters.jellyfin.ui.image.rememberScreenWidthHeight
+import kotlinx.coroutines.delay
 
 /**
  * A background layer for TV screens that provides an immersive experience by
@@ -25,12 +31,26 @@ fun TvImmersiveBackground(
     modifier: Modifier = Modifier,
     blurRadius: Int = 20,
     dimAmount: Float = 0.6f,
+    transitionDelayMs: Long = 140L,
+    transitionDurationMs: Int = 900,
 ) {
+    var settledBackdropUrl by remember { mutableStateOf(backdropUrl) }
+
+    LaunchedEffect(backdropUrl) {
+        if (backdropUrl == null) {
+            settledBackdropUrl = null
+            return@LaunchedEffect
+        }
+
+        delay(transitionDelayMs)
+        settledBackdropUrl = backdropUrl
+    }
+
     Box(modifier = modifier.fillMaxSize().background(Color.Black)) {
         Crossfade(
-            targetState = backdropUrl,
-            animationSpec = tween(durationMillis = 1000),
-            label = "background_crossfade"
+            targetState = settledBackdropUrl,
+            animationSpec = tween(durationMillis = transitionDurationMs),
+            label = "background_crossfade",
         ) { url ->
             if (url != null) {
                 Box(modifier = Modifier.fillMaxSize()) {

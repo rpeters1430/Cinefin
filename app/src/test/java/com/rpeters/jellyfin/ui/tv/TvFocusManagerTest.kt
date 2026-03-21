@@ -14,12 +14,14 @@ class TvFocusManagerTest {
             carouselId = "home_continue_watching",
             focusedIndex = 4,
             scrollPosition = 2,
+            focusedItemKey = "item-4",
         )
 
         val restored = manager.getFocusState("home_continue_watching")
         assertEquals(4, restored?.focusedIndex)
         assertEquals(2, restored?.scrollPosition)
         assertEquals("home_continue_watching", restored?.carouselId)
+        assertEquals("item-4", restored?.focusedItemKey)
     }
 
     @Test

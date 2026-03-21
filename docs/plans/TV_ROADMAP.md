@@ -142,6 +142,10 @@ Each TV screen should define:
 - [ ] Audit `TvKeyboardHandler` against real remote behavior
 - [ ] Confirm handling for D-pad center, enter, back, search, media keys, and menu keys where applicable
 
+### Progress notes
+- 2026-03-21: route-level focus contracts exist in `docs/plans/TV_FOCUS_CONTRACTS.md`, and the TV keyboard handler no longer consumes media/info/guide/channel keys when no route-specific action is registered. Robolectric Compose coverage now exercises back, search, menu, play/pause, seek, info, guide, channel, and quick-access dispatch paths.
+- 2026-03-21: TV focus state now persists the focused item key as well as the index, allowing carousels and grids to restore the same content item after resorting, refiltering, repagination, or screen recreation instead of only restoring the previous numeric position.
+
 ### Suggested file targets
 - `app/src/main/java/com/rpeters/jellyfin/ui/tv/TvFocusManager.kt`
 - `app/src/main/java/com/rpeters/jellyfin/ui/tv/TvKeyboardHandler.kt`
@@ -181,6 +185,11 @@ Create a clearer TV-only presentation layer so TV stops inheriting mobile design
 - TV presentation is no longer accidentally driven by mobile assumptions
 - Theme and layout decisions for TV are explicit rather than incidental
 
+### Progress notes
+- 2026-03-21: adaptive TV layout detection now shares the same `DeviceTypeUtils` logic as `MainActivity`, preventing the TV shell from falling back to tablet/mobile adaptive behavior on leanback devices where `UiModeManager` alone was insufficient.
+- 2026-03-21: added a dedicated `CinefinTvTheme` token layer for drawer width, screen padding, section spacing, grid spacing, and form sizing, and applied it to the TV shell plus the home, library, search, and sign-in surfaces to reduce mobile-style layout drift.
+
+
 ---
 
 ## Milestone 3 — Home screen polish
@@ -203,6 +212,12 @@ Make Home the flagship TV surface and the visual standard for the rest of the TV
 - [ ] Improve loading, error, and empty states with TV-friendly placeholders and retry handling
 - [ ] Audit recomposition hotspots caused by focus and backdrop changes
 - [ ] Prefetch nearby hero and backdrop images to reduce jank
+
+### Progress notes
+- 2026-03-21: the TV home hero no longer defaults to `recentMovies.take(5)`. It now prioritizes Continue Watching, recent episodes as a Next Up proxy, recent movies, recent series, and recent home videos, de-duplicates them, and filters for items that can actually render with TV-appropriate hero art.
+- 2026-03-21: the TV hero image pipeline now uses a stronger fallback chain of backdrop -> logo -> series image -> primary image, reducing poster-like or blank hero presentation when backdrop art is missing.
+- 2026-03-21: immersive backdrops now use a small settle delay before crossfading to the next focused item, reducing rapid background thrash while navigating between hero items and content rows.
+- 2026-03-21: TV home row ordering is now more intentional: Continue Watching, Next Up, Recent Movies, Recent TV Shows, Favorites, and Recent Stuff. The home screen also loads favorites on entry so the row can participate in the main TV browsing surface instead of being isolated to its own route.
 
 ### Definition of done
 - Home feels cinematic and intentional
@@ -231,6 +246,13 @@ Turn Movies, TV Shows, Music, Stuff, and Favorites into purpose-built TV destina
 - [ ] Improve pagination UX with visible loading-more feedback
 - [ ] Prevent focus jumps while more items append
 - [ ] Preserve exact focus position after entering/exiting details
+
+### Progress notes
+- 2026-03-21: `TvLibraryScreen` now uses route-specific config for Movies, TV Shows, Music, Stuff, Favorites, and generic libraries. Each route gets its own title/subtitle copy, loading text, empty-state messaging, and card geometry instead of sharing one generic grid presentation.
+- 2026-03-21: library card sizing is now content-aware at the route level: poster-first for Movies/TV Shows/Favorites, square album-style cards for Music, and wider video-style cards for Stuff.
+- 2026-03-21: TV library routes now expose route-aware filter and sort chips with state persisted per route, covering `All`, `In Progress`, and `Unwatched` filters where relevant plus `Recent`, `A-Z`, `Z-A`, and `Year` sort modes depending on the content type.
+- 2026-03-21: pagination now has visible `Loading more...` feedback at the bottom of the grid so long libraries communicate append-state instead of silently changing under focus.
+- 2026-03-21: library focus restoration is now item-key based rather than index-only, so changing sort/filter state or appending more content preserves the user’s actual item context more reliably.
 
 ### Definition of done
 - Each library route feels intentional
@@ -262,6 +284,17 @@ The old modernization plan marked detail work as fully done, while the roadmap s
 - [ ] Preserve focus correctly between actions and nested rails
 - [ ] Improve transition flow from library/home → detail and between series → season → episode levels
 
+### Progress notes
+- 2026-03-21: the TV detail action row now follows a more streaming-style order. `Resume`/`Play` remains primary, `Play From Start` appears when resume state exists, `Next Episode` appears for series when a next playable episode is known, and favorite/watched actions remain available as secondary actions.
+- 2026-03-21: resume state is now more visible on TV details via an explicit watched/completed percentage label above the action row, making playback intent clearer before the user starts playback.
+- 2026-03-21: TV detail routes now request initial focus on the most useful action instead of relying on incidental focus placement, and lower rails use more content-specific titles such as season names, `More Series Like This`, `More Movies`, and `More Stuff` instead of generic placeholders.
+- 2026-03-21: the detail header now exposes content-type-aware identity for movies, series, seasons, episodes, albums, and home videos via explicit eyebrow labels and context lines such as series name plus `Sx Ey` codes for episodes, reducing the remaining “generic utility screen” feel across item variants.
+- 2026-03-21: related rails are now content-aware instead of falling back to one shared `Recently Added` strip. Series prefer similar-series results, movies pull from recent movies, episodes/seasons pull from recent episodes, and home videos pull from recent stuff.
+- 2026-03-21: TV details now expose a dedicated cast rail when actor or guest-star metadata is available, giving the lower half of the screen another purpose-built content lane beyond seasons/episodes/related titles.
+- 2026-03-21: detail routes now handle missing-item, loading, and failed-load states explicitly with TV-native loading/error/empty surfaces instead of dropping into a half-rendered `Unknown Title` fallback.
+- 2026-03-21: moving down from the action row into seasons, cast, or related rails now preserves the last focused action button for the return trip upward, instead of always snapping focus back to `Play`.
+- 2026-03-21: the detail action row now includes a TV-friendly `More` action that opens an extended details panel for metadata such as studio, tagline, ratings, runtime, and playback context, giving the screen a final secondary-actions escape hatch without pushing pre-playback track selection into the detail page.
+
 ### Definition of done
 - Details feel premium rather than utilitarian
 - Resume/play choices are obvious
@@ -280,6 +313,13 @@ Make all supporting flows feel designed specifically for TV rather than simply f
 - [ ] Restore query and result focus after returning from details
 - [ ] Add TV-friendly loading / empty / no-results states
 - [ ] Group result types where useful
+
+### Progress notes
+- 2026-03-21: the TV search screen now requests initial focus on the search field when opened cold, exposes explicit TV-native idle, loading, error, and no-results states, and restores search-result identity more safely by key instead of only by grid position.
+- 2026-03-21: search results now surface a TV-friendly result summary and type grouping context above the grid, so mixed-result searches read more intentionally instead of as one undifferentiated poster wall.
+- 2026-03-21: the TV settings route is now a categorized settings hub instead of a short utility list. It presents focusable TV cards for Account, Playback, Audio & Subtitles, Appearance, and Diagnostics, plus direct `Reset Theme` and `Sign Out` actions that are easy to browse from the couch.
+- 2026-03-21: the TV server-connection and quick-connect routes now use stronger 10-foot hierarchy with explicit sign-in/quick-connect grouping, couch-readable guidance copy, and visible step chips that make both connection paths easier to understand from across the room.
+- 2026-03-21: shared TV media-card sizing was reduced across the adaptive layout layer and TV library route configs so home, search, and library screens fit more content on screen at once instead of using oversized poster tiles that read more like a tablet UI stretched onto a TV.
 
 ### Settings tasks
 - [ ] Rework settings into a TV-friendly settings hub
@@ -316,6 +356,11 @@ The older modernization plan marked the player as done. Treat that as “dedicat
 - [ ] Ensure exiting playback restores focus to the launching item
 - [ ] Ensure autoplay-next integrates properly with TV details and home rows
 - [ ] Verify remote keys in playback on real devices
+
+### Progress notes
+- 2026-03-21: the TV video player overlay now surfaces a stronger top metadata/header band, clearer time context, and a broader remote-first control row with direct transport, subtitles, audio, picture-in-picture, and settings access instead of relying on a thin transport-only strip.
+- 2026-03-21: the TV quick-settings drawer was expanded from a narrow audio/subtitle picker into a fuller playback panel with playback-speed controls, aspect-ratio controls that now correctly apply to `PlayerView`, and better-structured audio/subtitle selection.
+- 2026-03-21: the TV player now uses the real `nextEpisode` / countdown state from `VideoPlayerState` for its Up Next overlay instead of a placeholder local shell, bringing the playback UI closer to the roadmap’s autoplay-next goals.
 
 ### Definition of done
 - Playback controls feel designed for TV rather than adapted from touch UI

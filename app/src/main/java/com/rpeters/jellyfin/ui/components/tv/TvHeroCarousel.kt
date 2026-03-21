@@ -50,7 +50,7 @@ fun TvHeroCarousel(
     featuredItems: List<BaseItemDto>,
     onItemClick: (BaseItemDto) -> Unit,
     onPlayClick: (BaseItemDto) -> Unit,
-    getBackdropUrl: (BaseItemDto) -> String?,
+    getHeroImageUrl: (BaseItemDto) -> String?,
     modifier: Modifier = Modifier,
     carouselState: CarouselState = rememberCarouselState(),
     focusRequester: FocusRequester = remember { FocusRequester() },
@@ -68,7 +68,7 @@ fun TvHeroCarousel(
         contentTransformEndToStart = fadeIn().togetherWith(fadeOut()),
     ) { index ->
         val item = featuredItems[index]
-        val backdropUrl = getBackdropUrl(item)
+        val heroImageUrl = getHeroImageUrl(item)
         val isPlayed = item.userData?.played == true
         val progressRatio = item.playbackProgressRatio()
         val isInProgress = progressRatio > 0f && !isPlayed
@@ -76,7 +76,7 @@ fun TvHeroCarousel(
         Box(modifier = Modifier.fillMaxSize()) {
             // Background Image
             JellyfinAsyncImage(
-                model = backdropUrl,
+                model = heroImageUrl,
                 contentDescription = item.name,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),

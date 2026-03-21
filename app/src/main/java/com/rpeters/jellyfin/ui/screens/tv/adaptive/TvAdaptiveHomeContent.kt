@@ -27,6 +27,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.adaptive.AdaptiveLayoutConfig
 import com.rpeters.jellyfin.ui.components.tv.TvContentCard
@@ -47,6 +48,8 @@ data class TvHomeMediaSection(
     val title: String,
     val items: List<BaseItemDto>,
     val isLoading: Boolean,
+    val cardWidth: Dp? = null,
+    val cardHeight: Dp? = null,
 )
 
 /**
@@ -138,6 +141,8 @@ private fun TvContentCardSection(
         isLoading = section.isLoading,
         focusRequester = initialFocusRequester,
         focusBridgeManager = focusBridgeManager,
+        posterWidth = section.cardWidth,
+        posterHeight = section.cardHeight,
     )
 }
 
@@ -289,8 +294,8 @@ private fun TabletMediaSection(
                             getSeriesImageUrl = getSeriesImageUrl,
                             focusRequester = itemFocusRequesters[index],
                             isFocused = focusedIndex == index || wrapperFocusedIndex == index,
-                            posterWidth = layoutConfig.carouselItemWidth,
-                            posterHeight = layoutConfig.carouselItemHeight,
+                            posterWidth = section.cardWidth ?: layoutConfig.carouselItemWidth,
+                            posterHeight = section.cardHeight ?: layoutConfig.carouselItemHeight,
                         )
                     }
                 }

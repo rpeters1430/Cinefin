@@ -73,6 +73,8 @@ fun TvContentCarousel(
     onExitDown: (() -> Boolean)? = null,
     onExitLeft: (() -> Boolean)? = null,
     onExitRight: (() -> Boolean)? = null,
+    posterWidth: Dp? = null,
+    posterHeight: Dp? = null,
 ) {
     // Show skeleton if loading or no items
     if (isLoading || items.isEmpty()) {
@@ -101,6 +103,7 @@ fun TvContentCarousel(
             focusManager = focusManager,
             lazyListState = lazyListState,
             itemCount = items.size,
+            itemKeys = items.map { it.id.toString() },
             focusRequester = focusRequester,
             onExitLeft = onExitLeft ?: focusBridgeManager?.let { manager ->
                 { manager.moveFocus(FocusDirection.Left) }
@@ -139,8 +142,8 @@ fun TvContentCarousel(
                         getSeriesImageUrl = viewModel::getSeriesImageUrl,
                         focusRequester = itemFocusRequesters[index],
                         isFocused = focusedIndex == index || wrapperFocusedIndex == index,
-                        posterWidth = layoutConfig.carouselItemWidth,
-                        posterHeight = layoutConfig.carouselItemHeight,
+                        posterWidth = posterWidth ?: layoutConfig.carouselItemWidth,
+                        posterHeight = posterHeight ?: layoutConfig.carouselItemHeight,
                     )
                 }
             }

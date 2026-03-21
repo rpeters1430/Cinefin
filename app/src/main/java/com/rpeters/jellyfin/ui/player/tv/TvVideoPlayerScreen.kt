@@ -28,13 +28,17 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ClosedCaption
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FastRewind
+import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PictureInPictureAlt
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -75,6 +79,8 @@ import androidx.tv.material3.SurfaceDefaults
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.preferences.SubtitleAppearancePreferences
 import com.rpeters.jellyfin.ui.player.TrackInfo
+import com.rpeters.jellyfin.ui.player.AspectRatioMode
+import com.rpeters.jellyfin.ui.player.VideoQuality
 import com.rpeters.jellyfin.ui.player.VideoPlayerState
 import com.rpeters.jellyfin.ui.player.VideoPlayerViewModel
 import com.rpeters.jellyfin.ui.player.applySubtitleAppearance
@@ -159,8 +165,13 @@ fun TvVideoPlayerRoute(
         onSeekForward = onSeekForward,
         onSeekBackward = onSeekBackward,
         onSeekTo = viewModel::seekTo,
+        onSetPlaybackSpeed = viewModel::setPlaybackSpeed,
+        onChangeAspectRatio = viewModel::changeAspectRatio,
         onShowAudio = viewModel::selectAudioTrack,
         onShowSubtitles = viewModel::selectSubtitleTrack,
+        onPlayNextEpisode = viewModel::playNextEpisode,
+        onDismissNextEpisodePrompt = viewModel::dismissNextEpisodePrompt,
+        onCancelNextEpisodeCountdown = viewModel::cancelNextEpisodeCountdown,
         onErrorDismiss = viewModel::clearError,
     )
 }
@@ -252,27 +263,24 @@ fun TvVideoPlayerScreen(
     onSeekForward: () -> Unit,
     onSeekBackward: () -> Unit,
     onSeekTo: (Long) -> Unit,
+    onSetPlaybackSpeed: (Float) -> Unit,
+    onChangeAspectRatio: (AspectRatioMode) -> Unit,
     onShowAudio: (TrackInfo) -> Unit,
     onShowSubtitles: (TrackInfo?) -> Unit,
+    onPlayNextEpisode: () -> Unit,
+    onDismissNextEpisodePrompt: () -> Unit,
+    onCancelNextEpisodeCountdown: () -> Unit,
     onErrorDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var controlsVisible by remember { mutableStateOf(true) }
     var showQuickSettings by remember { mutableStateOf(false) }
-    var showNextEpisodeOverlay by remember { mutableStateOf(false) }
 
     val playPauseRequester = remember { FocusRequester() }
     val quickSettingsCloseRequester = remember { FocusRequester() }
-
-    // Logic to show "Next Episode" overlay near end
-    LaunchedEffect(state.currentPosition, state.duration) {
-        val remainingMs = state.duration - state.currentPosition
-        // Show overlay if less than 30 seconds remains
-        if (state.duration > 60_000 && remainingMs in 1..30_000 && !showNextEpisodeOverlay) {
-            // Note: This would need real "next item" info from ViewModel
-            // showNextEpisodeOverlay = true 
-        }
-    }
+    val showNextEpisodeOverlay = state.showNextEpisodeCountdown &&
+        !state.isNextEpisodePromptDismissed &&
+        state.nextEpisode != null
 
     LaunchedEffect(Unit) {
         delay(300)
@@ -314,7 +322,8 @@ fun TvVideoPlayerScreen(
 
                 if (showNextEpisodeOverlay) {
                     if (keyEvent.key == Key.Back) {
-                        showNextEpisodeOverlay = false
+                        onDismissNextEpisodePrompt()
+                        onCancelNextEpisodeCountdown()
                         return@onKeyEvent true
                     }
                 }
@@ -382,6 +391,7 @@ fun TvVideoPlayerScreen(
             },
             update = { playerView ->
                 playerView.player = exoPlayer
+                playerView.resizeMode = state.selectedAspectRatio.resizeMode
                 applySubtitleAppearance(playerView, subtitleAppearance)
             },
         )
@@ -406,17 +416,61 @@ fun TvVideoPlayerScreen(
                     ),
             ) {
                 // Top Info
-                Column(
+                Row(
                     modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .padding(56.dp),
+                        .align(Alignment.TopCenter)
+                        .fillMaxWidth()
+                        .padding(horizontal = 56.dp, vertical = 40.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Top,
                 ) {
-                    TvText(
-                        text = state.itemName,
-                        style = TvMaterialTheme.typography.headlineLarge,
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                    )
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        TvText(
+                            text = state.itemName,
+                            style = TvMaterialTheme.typography.headlineLarge,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            PlaybackInfoChip(
+                                label = when {
+                                    state.isDirectPlaying -> "Direct Play"
+                                    state.isDirectStreaming -> "Direct Stream"
+                                    state.isTranscoding -> "Transcoding"
+                                    else -> state.playbackMethod
+                                },
+                            )
+                            if (state.playbackSpeed != 1.0f) {
+                                PlaybackInfoChip(label = "${state.playbackSpeed}x")
+                            }
+                            state.selectedAudioTrack?.displayName?.let { PlaybackInfoChip(label = it) }
+                            val subtitleLabel = state.selectedSubtitleTrack?.displayName ?: "Subtitles Off"
+                            PlaybackInfoChip(label = subtitleLabel)
+                        }
+                    }
+
+                    Column(
+                        horizontalAlignment = Alignment.End,
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        TvText(
+                            text = formatTime(state.currentPosition),
+                            style = TvMaterialTheme.typography.titleLarge,
+                            color = Color.White,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        TvText(
+                            text = if (state.duration > 0) "-${formatTime((state.duration - state.currentPosition).coerceAtLeast(0L))}" else "--:--",
+                            style = TvMaterialTheme.typography.titleMedium,
+                            color = Color.White.copy(alpha = 0.72f),
+                        )
+                    }
                 }
 
                 // Bottom Controls
@@ -463,6 +517,32 @@ fun TvVideoPlayerScreen(
                         Spacer(modifier = Modifier.width(32.dp))
 
                         TvPlayerButton(
+                            icon = Icons.Default.ClosedCaption,
+                            onClick = {
+                                controlsVisible = true
+                                showQuickSettings = true
+                            },
+                            label = "Subtitles",
+                        )
+
+                        TvPlayerButton(
+                            icon = Icons.Default.GraphicEq,
+                            onClick = {
+                                controlsVisible = true
+                                showQuickSettings = true
+                            },
+                            label = "Audio",
+                        )
+
+                        if (pipState.isSupported) {
+                            TvPlayerButton(
+                                icon = Icons.Default.PictureInPictureAlt,
+                                onClick = pipState::enterPictureInPicture,
+                                label = "PiP",
+                            )
+                        }
+
+                        TvPlayerButton(
                             icon = Icons.Default.Settings,
                             onClick = {
                                 controlsVisible = true
@@ -484,6 +564,9 @@ fun TvVideoPlayerScreen(
         ) {
             TvQuickSettingsDrawer(
                 state = state,
+                pipState = pipState,
+                onSetPlaybackSpeed = onSetPlaybackSpeed,
+                onChangeAspectRatio = onChangeAspectRatio,
                 onShowAudio = {
                     onShowAudio(it)
                     showQuickSettings = false
@@ -500,9 +583,13 @@ fun TvVideoPlayerScreen(
         // Next Episode Overlay
         if (showNextEpisodeOverlay) {
             TvNextEpisodeOverlay(
-                nextItemName = "Next Episode", // Placeholder
-                onPlayNext = { /* Logic to play next */ },
-                onCancel = { showNextEpisodeOverlay = false }
+                nextItemName = state.nextEpisode?.name ?: "Next Episode",
+                onPlayNext = onPlayNextEpisode,
+                onCancel = {
+                    onDismissNextEpisodePrompt()
+                    onCancelNextEpisodeCountdown()
+                },
+                autoPlayDelayMs = (state.nextEpisodeCountdown.coerceAtLeast(0) * 1000L).coerceAtLeast(1000L),
             )
         }
     }
@@ -671,19 +758,46 @@ fun TvPlayerButton(
 }
 
 @Composable
+private fun PlaybackInfoChip(
+    label: String,
+    modifier: Modifier = Modifier,
+) {
+    TvSurface(
+        modifier = modifier,
+        colors = SurfaceDefaults.colors(
+            containerColor = Color.White.copy(alpha = 0.12f),
+        ),
+        shape = TvMaterialTheme.shapes.medium,
+    ) {
+        TvText(
+            text = label,
+            style = TvMaterialTheme.typography.labelMedium,
+            color = Color.White,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
 fun TvQuickSettingsDrawer(
     state: VideoPlayerState,
+    pipState: TvPictureInPictureState,
+    onSetPlaybackSpeed: (Float) -> Unit,
+    onChangeAspectRatio: (AspectRatioMode) -> Unit,
     onShowAudio: (TrackInfo) -> Unit,
     onShowSubtitles: (TrackInfo?) -> Unit,
     onClose: () -> Unit,
     closeButtonFocusRequester: FocusRequester? = null,
 ) {
-    var selectedTab by remember { mutableStateOf(0) } // 0: Audio, 1: Subtitles
+    var selectedTab by remember { mutableStateOf(0) } // 0: Playback, 1: Audio, 2: Subtitles
+    val playbackSpeeds = remember { listOf(0.75f, 1.0f, 1.25f, 1.5f, 2.0f) }
 
     TvSurface(
         modifier = Modifier
             .fillMaxHeight()
-            .width(400.dp),
+            .width(460.dp),
         colors = SurfaceDefaults.colors(
             containerColor = Color(0xFF1A1A1A).copy(alpha = 0.95f),
         ),
@@ -701,8 +815,9 @@ fun TvQuickSettingsDrawer(
 
             // Tabs
             Row(modifier = Modifier.fillMaxWidth()) {
-                TvTabButton(text = "Audio", selected = selectedTab == 0, onClick = { selectedTab = 0 }, modifier = Modifier.weight(1f))
-                TvTabButton(text = "Subtitles", selected = selectedTab == 1, onClick = { selectedTab = 1 }, modifier = Modifier.weight(1f))
+                TvTabButton(text = "Playback", selected = selectedTab == 0, onClick = { selectedTab = 0 }, modifier = Modifier.weight(1f))
+                TvTabButton(text = "Audio", selected = selectedTab == 1, onClick = { selectedTab = 1 }, modifier = Modifier.weight(1f))
+                TvTabButton(text = "Subtitles", selected = selectedTab == 2, onClick = { selectedTab = 2 }, modifier = Modifier.weight(1f))
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -710,6 +825,45 @@ fun TvQuickSettingsDrawer(
             // Track List
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (selectedTab == 0) {
+                    item {
+                        DrawerSectionLabel("Playback Speed")
+                    }
+                    items(playbackSpeeds) { speed ->
+                        TvTrackItem(
+                            title = if (speed == 1.0f) "Normal (${speed}x)" else "${speed}x",
+                            isSelected = state.playbackSpeed == speed,
+                            onClick = { onSetPlaybackSpeed(speed) },
+                        )
+                    }
+
+                    item {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        DrawerSectionLabel("Aspect Ratio")
+                    }
+                    items(state.availableAspectRatios) { aspectRatio ->
+                        TvTrackItem(
+                            title = aspectRatio.label,
+                            supportingText = aspectRatio.description,
+                            isSelected = state.selectedAspectRatio == aspectRatio,
+                            onClick = { onChangeAspectRatio(aspectRatio) },
+                        )
+                    }
+
+                    if (pipState.isSupported) {
+                        item {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            DrawerSectionLabel("Window Mode")
+                            TvTrackItem(
+                                title = "Enter Picture-in-Picture",
+                                isSelected = false,
+                                onClick = {
+                                    pipState.enterPictureInPicture()
+                                    onClose()
+                                },
+                            )
+                        }
+                    }
+                } else if (selectedTab == 1) {
                     items(state.availableAudioTracks) { track ->
                         val isSelected = state.selectedAudioTrack?.displayName == track.displayName
                         TvTrackItem(
@@ -774,9 +928,19 @@ fun TvTabButton(text: String, selected: Boolean, onClick: () -> Unit, modifier: 
 
 @Composable
 fun TvTrackItem(title: String, isSelected: Boolean, onClick: () -> Unit) {
+    TvTrackItem(title = title, supportingText = null, isSelected = isSelected, onClick = onClick)
+}
+
+@Composable
+fun TvTrackItem(
+    title: String,
+    supportingText: String?,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+) {
     TvSurface(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth().height(56.dp),
+        modifier = Modifier.fillMaxWidth(),
         colors = ClickableSurfaceDefaults.colors(
             containerColor = if (isSelected) Color.White.copy(alpha = 0.15f) else Color.Transparent,
             focusedContainerColor = Color.White.copy(alpha = 0.25f),
@@ -784,16 +948,43 @@ fun TvTrackItem(title: String, isSelected: Boolean, onClick: () -> Unit) {
         shape = ClickableSurfaceDefaults.shape(TvMaterialTheme.shapes.small),
     ) {
         Row(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            TvText(text = title, style = TvMaterialTheme.typography.bodyLarge, color = Color.White)
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                TvText(text = title, style = TvMaterialTheme.typography.bodyLarge, color = Color.White)
+                supportingText?.let {
+                    TvText(
+                        text = it,
+                        style = TvMaterialTheme.typography.bodySmall,
+                        color = Color.White.copy(alpha = 0.62f),
+                    )
+                }
+            }
             if (isSelected) {
                 TvIcon(Icons.Default.Check, null, tint = TvMaterialTheme.colorScheme.primary)
             }
         }
     }
+}
+
+@Composable
+private fun DrawerSectionLabel(
+    text: String,
+    modifier: Modifier = Modifier,
+) {
+    TvText(
+        text = text,
+        style = TvMaterialTheme.typography.labelLarge,
+        color = Color.White.copy(alpha = 0.62f),
+        modifier = modifier.padding(vertical = 4.dp),
+    )
 }
 
 private fun formatTime(ms: Long): String {
@@ -872,8 +1063,13 @@ private fun TvVideoPlayerScreenPreview() {
         onSeekForward = {},
         onSeekBackward = {},
         onSeekTo = {},
+        onSetPlaybackSpeed = {},
+        onChangeAspectRatio = {},
         onShowAudio = {},
         onShowSubtitles = {},
+        onPlayNextEpisode = {},
+        onDismissNextEpisodePrompt = {},
+        onCancelNextEpisodeCountdown = {},
         onErrorDismiss = {},
     )
 }

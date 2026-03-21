@@ -2,7 +2,10 @@ package com.rpeters.jellyfin.ui.theme
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
@@ -32,6 +35,29 @@ object TvThemeTokens {
      * Standard glow/halo radius for focused elements.
      */
     val FocusedGlowRadius = 8.dp
+}
+
+@Immutable
+data class CinefinTvLayoutTokens(
+    val drawerWidth: Dp = 300.dp,
+    val drawerPadding: Dp = 24.dp,
+    val drawerItemSpacing: Dp = 14.dp,
+    val screenHorizontalPadding: Dp = 72.dp,
+    val screenTopPadding: Dp = 56.dp,
+    val sectionSpacing: Dp = 28.dp,
+    val cardSpacing: Dp = 24.dp,
+    val heroBottomSpacing: Dp = 32.dp,
+    val contentBottomPadding: Dp = 56.dp,
+    val formMaxWidthFraction: Float = 0.68f,
+    val formFieldHeight: Dp = 72.dp,
+)
+
+private val LocalCinefinTvLayoutTokens = staticCompositionLocalOf { CinefinTvLayoutTokens() }
+
+object CinefinTvTheme {
+    val layout: CinefinTvLayoutTokens
+        @Composable
+        get() = LocalCinefinTvLayoutTokens.current
 }
 
 /**
@@ -74,6 +100,19 @@ fun standardTvFocusBorder() = Border(
         color = TvMaterialTheme.colorScheme.primary
     )
 )
+
+@Composable
+fun CinefinTvTheme(
+    accentColor: com.rpeters.jellyfin.data.preferences.AccentColor = com.rpeters.jellyfin.data.preferences.AccentColor.JELLYFIN_PURPLE,
+    content: @Composable () -> Unit,
+) {
+    TvMaterialTheme(colorScheme = cinefinTvColorScheme(accentColor = accentColor)) {
+        CompositionLocalProvider(
+            LocalCinefinTvLayoutTokens provides CinefinTvLayoutTokens(),
+            content = content,
+        )
+    }
+}
 
 /**
  * Returns a TV Material 3 color scheme based on user preferences.

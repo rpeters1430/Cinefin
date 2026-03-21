@@ -98,8 +98,13 @@ fun VideoPlayerScreen(
             onSeekForward = { onSeek((playerState.currentPosition + 30_000).coerceAtMost(playerState.duration)) },
             onSeekBackward = { onSeek((playerState.currentPosition - 30_000).coerceAtLeast(0L)) },
             onSeekTo = onSeek,
+            onSetPlaybackSpeed = {},
+            onChangeAspectRatio = {},
             onShowAudio = onAudioTrackSelect,
             onShowSubtitles = onSubtitleTrackSelect,
+            onPlayNextEpisode = {},
+            onDismissNextEpisodePrompt = {},
+            onCancelNextEpisodeCountdown = {},
             onErrorDismiss = onErrorDismiss,
             modifier = modifier,
         )

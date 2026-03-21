@@ -30,9 +30,14 @@ object TvKeyboardHandler {
         onHome: (() -> Unit)? = null,
         onMenu: (() -> Unit)? = null,
         onPlayPause: (() -> Unit)? = null,
+        onStop: (() -> Unit)? = null,
         onSearch: (() -> Unit)? = null,
         onSeekForward: (() -> Unit)? = null,
         onSeekBackward: (() -> Unit)? = null,
+        onInfo: (() -> Unit)? = null,
+        onGuide: (() -> Unit)? = null,
+        onChannelUp: (() -> Unit)? = null,
+        onChannelDown: (() -> Unit)? = null,
         onQuickAccess: ((Int) -> Unit)? = null,
     ): Boolean {
         if (keyEvent.type != KeyEventType.KeyDown) return false
@@ -68,28 +73,52 @@ object TvKeyboardHandler {
 
             // Media control keys
             Key.MediaPlay, Key.MediaPause, Key.MediaPlayPause, Key.Spacebar -> {
-                onPlayPause?.invoke()
-                true
+                if (onPlayPause != null) {
+                    onPlayPause.invoke()
+                    true
+                } else {
+                    false
+                }
             }
             Key.MediaStop -> {
-                // Handle stop functionality
-                true
+                if (onStop != null) {
+                    onStop.invoke()
+                    true
+                } else {
+                    false
+                }
             }
             Key.MediaSkipForward, Key.MediaNext -> {
-                onSeekForward?.invoke()
-                true
+                if (onSeekForward != null) {
+                    onSeekForward.invoke()
+                    true
+                } else {
+                    false
+                }
             }
             Key.MediaSkipBackward, Key.MediaPrevious -> {
-                onSeekBackward?.invoke()
-                true
+                if (onSeekBackward != null) {
+                    onSeekBackward.invoke()
+                    true
+                } else {
+                    false
+                }
             }
             Key.MediaFastForward -> {
-                onSeekForward?.invoke()
-                true
+                if (onSeekForward != null) {
+                    onSeekForward.invoke()
+                    true
+                } else {
+                    false
+                }
             }
             Key.MediaRewind -> {
-                onSeekBackward?.invoke()
-                true
+                if (onSeekBackward != null) {
+                    onSeekBackward.invoke()
+                    true
+                } else {
+                    false
+                }
             }
 
             // Search key
@@ -104,24 +133,40 @@ object TvKeyboardHandler {
 
             // Info/Details key
             Key.Info, Key.I -> {
-                // Handle info/details functionality
-                true
+                if (onInfo != null) {
+                    onInfo.invoke()
+                    true
+                } else {
+                    false
+                }
             }
 
             // Guide key
             Key.Guide, Key.G -> {
-                // Handle guide functionality
-                true
+                if (onGuide != null) {
+                    onGuide.invoke()
+                    true
+                } else {
+                    false
+                }
             }
 
             // Channel up/down (for library navigation)
             Key.ChannelUp -> {
-                // Handle previous library/section
-                true
+                if (onChannelUp != null) {
+                    onChannelUp.invoke()
+                    true
+                } else {
+                    false
+                }
             }
             Key.ChannelDown -> {
-                // Handle next library/section
-                true
+                if (onChannelDown != null) {
+                    onChannelDown.invoke()
+                    true
+                } else {
+                    false
+                }
             }
 
             // Number keys for quick navigation
@@ -219,12 +264,17 @@ fun Modifier.tvKeyboardHandler(
     onHome: (() -> Unit)? = null,
     onMenu: (() -> Unit)? = null,
     onPlayPause: (() -> Unit)? = null,
+    onStop: (() -> Unit)? = null,
     onSearch: (() -> Unit)? = null,
     onFavorite: (() -> Unit)? = null,
     onWatched: (() -> Unit)? = null,
     onMore: (() -> Unit)? = null,
     onSeekForward: (() -> Unit)? = null,
     onSeekBackward: (() -> Unit)? = null,
+    onInfo: (() -> Unit)? = null,
+    onGuide: (() -> Unit)? = null,
+    onChannelUp: (() -> Unit)? = null,
+    onChannelDown: (() -> Unit)? = null,
     onQuickAccess: ((Int) -> Unit)? = null,
 ): Modifier {
     return this.onKeyEvent { keyEvent ->
@@ -237,9 +287,14 @@ fun Modifier.tvKeyboardHandler(
             onHome = onHome,
             onMenu = onMenu,
             onPlayPause = onPlayPause,
+            onStop = onStop,
             onSearch = onSearch,
             onSeekForward = onSeekForward,
             onSeekBackward = onSeekBackward,
+            onInfo = onInfo,
+            onGuide = onGuide,
+            onChannelUp = onChannelUp,
+            onChannelDown = onChannelDown,
             onQuickAccess = onQuickAccess,
         )
 

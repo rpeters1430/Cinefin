@@ -37,6 +37,7 @@ data class CarouselFocusState(
     val carouselId: String,
     val focusedIndex: Int = 0,
     val scrollPosition: Int = 0,
+    val focusedItemKey: String? = null,
 )
 
 /**
@@ -51,11 +52,17 @@ class TvFocusManager {
     /**
      * Save focus state for a specific carousel/row
      */
-    fun saveFocusState(carouselId: String, focusedIndex: Int, scrollPosition: Int = 0) {
+    fun saveFocusState(
+        carouselId: String,
+        focusedIndex: Int,
+        scrollPosition: Int = 0,
+        focusedItemKey: String? = null,
+    ) {
         focusStates[carouselId] = CarouselFocusState(
             carouselId = carouselId,
             focusedIndex = focusedIndex,
             scrollPosition = scrollPosition,
+            focusedItemKey = focusedItemKey,
         )
         currentCarouselId = carouselId
     }
@@ -137,6 +144,7 @@ fun TvFocusableCarousel(
     focusManager: TvFocusManager,
     lazyListState: LazyListState,
     itemCount: Int,
+    itemKeys: List<String>? = null,
     focusRequester: FocusRequester? = null,
     onExitLeft: (() -> Boolean)? = null,
     onExitRight: (() -> Boolean)? = null,
@@ -154,7 +162,12 @@ fun TvFocusableCarousel(
     LaunchedEffect(carouselId) {
         val savedState = focusManager.getFocusState(carouselId)
         savedState?.let {
-            focusedIndex = it.focusedIndex.coerceIn(0, itemCount - 1)
+            focusedIndex = restoreFocusedIndex(
+                savedIndex = it.focusedIndex,
+                savedItemKey = it.focusedItemKey,
+                itemKeys = itemKeys,
+                itemCount = itemCount,
+            )
             lazyListState.scrollToItem(it.scrollPosition)
         }
     }
@@ -163,7 +176,12 @@ fun TvFocusableCarousel(
     LaunchedEffect(focusedIndex, hasFocus, itemCount) {
         if (hasFocus && focusedIndex in 0 until itemCount) {
             lazyListState.animateScrollToItem(focusedIndex)
-            focusManager.saveFocusState(carouselId, focusedIndex, lazyListState.firstVisibleItemIndex)
+            focusManager.saveFocusState(
+                carouselId = carouselId,
+                focusedIndex = focusedIndex,
+                scrollPosition = lazyListState.firstVisibleItemIndex,
+                focusedItemKey = itemKeys?.getOrNull(focusedIndex),
+            )
             delay(50)
             try {
                 itemFocusRequesters[focusedIndex].requestFocus()
@@ -179,7 +197,12 @@ fun TvFocusableCarousel(
             hasFocus = focusState.hasFocus
             onFocusChanged(hasFocus, focusedIndex)
             if (hasFocus) {
-                focusManager.saveFocusState(carouselId, focusedIndex, lazyListState.firstVisibleItemIndex)
+                focusManager.saveFocusState(
+                    carouselId = carouselId,
+                    focusedIndex = focusedIndex,
+                    scrollPosition = lazyListState.firstVisibleItemIndex,
+                    focusedItemKey = itemKeys?.getOrNull(focusedIndex),
+                )
             }
         }
         .onKeyEvent { keyEvent ->
@@ -211,6 +234,7 @@ fun TvFocusableGrid(
     lazyGridState: LazyGridState,
     itemCount: Int,
     columnsCount: Int,
+    itemKeys: List<String>? = null,
     focusRequester: FocusRequester? = null,
     onExitLeft: (() -> Boolean)? = null,
     onExitRight: (() -> Boolean)? = null,
@@ -228,7 +252,12 @@ fun TvFocusableGrid(
     LaunchedEffect(gridId) {
         val savedState = focusManager.getFocusState(gridId)
         savedState?.let {
-            focusedIndex = it.focusedIndex.coerceIn(0, itemCount - 1)
+            focusedIndex = restoreFocusedIndex(
+                savedIndex = it.focusedIndex,
+                savedItemKey = it.focusedItemKey,
+                itemKeys = itemKeys,
+                itemCount = itemCount,
+            )
             lazyGridState.scrollToItem(it.scrollPosition)
         }
     }
@@ -237,7 +266,12 @@ fun TvFocusableGrid(
     LaunchedEffect(focusedIndex, hasFocus, itemCount) {
         if (hasFocus && focusedIndex in 0 until itemCount) {
             lazyGridState.animateScrollToItem(focusedIndex)
-            focusManager.saveFocusState(gridId, focusedIndex, lazyGridState.firstVisibleItemIndex)
+            focusManager.saveFocusState(
+                carouselId = gridId,
+                focusedIndex = focusedIndex,
+                scrollPosition = lazyGridState.firstVisibleItemIndex,
+                focusedItemKey = itemKeys?.getOrNull(focusedIndex),
+            )
             delay(50)
             try {
                 itemFocusRequesters[focusedIndex].requestFocus()
@@ -253,7 +287,12 @@ fun TvFocusableGrid(
             hasFocus = focusState.hasFocus
             onFocusChanged(hasFocus, focusedIndex)
             if (hasFocus) {
-                focusManager.saveFocusState(gridId, focusedIndex, lazyGridState.firstVisibleItemIndex)
+                focusManager.saveFocusState(
+                    carouselId = gridId,
+                    focusedIndex = focusedIndex,
+                    scrollPosition = lazyGridState.firstVisibleItemIndex,
+                    focusedItemKey = itemKeys?.getOrNull(focusedIndex),
+                )
             }
         }
         .onKeyEvent { keyEvent ->
@@ -274,6 +313,22 @@ fun TvFocusableGrid(
         }
 
     content(focusModifier, focusedIndex, itemFocusRequesters)
+}
+
+private fun restoreFocusedIndex(
+    savedIndex: Int,
+    savedItemKey: String?,
+    itemKeys: List<String>?,
+    itemCount: Int,
+): Int {
+    if (itemCount <= 0) return 0
+    if (savedItemKey != null && itemKeys != null) {
+        val keyIndex = itemKeys.indexOf(savedItemKey)
+        if (keyIndex >= 0) {
+            return keyIndex
+        }
+    }
+    return savedIndex.coerceIn(0, itemCount - 1)
 }
 
 /**

@@ -39,19 +39,23 @@ import com.rpeters.jellyfin.ui.components.tv.TvImmersiveBackground
 import com.rpeters.jellyfin.ui.screens.tv.adaptive.TabletHomeContent
 import com.rpeters.jellyfin.ui.screens.tv.adaptive.TvCarouselHomeContent
 import com.rpeters.jellyfin.ui.screens.tv.adaptive.TvHomeMediaSection
+import com.rpeters.jellyfin.ui.theme.CinefinTvTheme
 import com.rpeters.jellyfin.ui.tv.TvScreenFocusScope
 import com.rpeters.jellyfin.ui.tv.rememberTvFocusManager
 import com.rpeters.jellyfin.ui.tv.requestInitialFocus
 import com.rpeters.jellyfin.ui.tv.tvKeyboardHandler
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
+import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import androidx.tv.material3.MaterialTheme as TvMaterialTheme
 import androidx.tv.material3.Text as TvText
 
 private const val RECENT_MOVIES_ID = "recent_movies"
+private const val RECENT_TV_SHOWS_ID = "recent_tv_shows"
 private const val RECENT_TV_SHOW_EPISODES_ID = "recent_tv_show_episodes"
 private const val RECENT_STUFF_ID = "recent_stuff"
 private const val CONTINUE_WATCHING_ID = "continue_watching"
+private const val FAVORITES_ID = "favorites"
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @OptInAppExperimentalApis
@@ -72,6 +76,7 @@ fun TvHomeScreen(
     val windowSizeClass = calculateWindowSizeClass(context as androidx.activity.ComponentActivity)
     val windowLayoutInfo = rememberWindowLayoutInfo()
     val layoutConfig = rememberAdaptiveLayoutConfig(windowSizeClass, windowLayoutInfo)
+    val tvLayout = CinefinTvTheme.layout
 
     // State for the immersive background
     var focusedBackdrop by remember { mutableStateOf<String?>(null) }
@@ -80,6 +85,7 @@ fun TvHomeScreen(
     LaunchedEffect(Unit) {
         // loadInitialData has internal guards against concurrent runs
         viewModel.loadInitialData(forceRefresh = false)
+        viewModel.loadFavorites()
     }
 
     val continueWatching = appState.continueWatching
@@ -87,13 +93,30 @@ fun TvHomeScreen(
         .take(10)
 
     val recentMovies = appState.recentlyAddedByTypes[BaseItemKind.MOVIE.name]?.take(10) ?: emptyList()
+    val recentTvShows = appState.recentlyAddedByTypes[BaseItemKind.SERIES.name]?.take(10) ?: emptyList()
     val recentTvShowEpisodes = appState.recentlyAddedByTypes[BaseItemKind.EPISODE.name]?.take(10) ?: emptyList()
 
     // "Stuff" (Home Videos) - usually BaseItemKind.VIDEO in recentlyAddedByTypes
     val recentStuff = appState.recentlyAddedByTypes[BaseItemKind.VIDEO.name]?.take(10) ?: emptyList()
+    val favorites = appState.favorites.take(10)
 
-    // Featured Carousel: Last 5 movies added
-    val featuredItems = recentMovies.take(5)
+    val featuredItems = remember(
+        continueWatching,
+        recentTvShowEpisodes,
+        recentMovies,
+        recentTvShows,
+        recentStuff,
+        layoutConfig.featuredItemsLimit,
+    ) {
+        buildTvFeaturedItems(
+            continueWatching = continueWatching,
+            nextUpEpisodes = recentTvShowEpisodes,
+            recentMovies = recentMovies,
+            recentTvShows = recentTvShows,
+            recentStuff = recentStuff,
+            maxItems = layoutConfig.featuredItemsLimit.coerceAtMost(6),
+        )
+    }
 
     val sections = listOf(
         TvHomeMediaSection(
@@ -101,24 +124,48 @@ fun TvHomeScreen(
             title = "Continue Watching",
             items = continueWatching,
             isLoading = appState.isLoading,
+            cardWidth = 184.dp,
+            cardHeight = 276.dp,
         ),
         TvHomeMediaSection(
             id = RECENT_TV_SHOW_EPISODES_ID,
-            title = "Recently Added TV Episodes",
+            title = "Next Up",
             items = recentTvShowEpisodes,
             isLoading = appState.isLoading,
+            cardWidth = 168.dp,
+            cardHeight = 252.dp,
         ),
         TvHomeMediaSection(
             id = RECENT_MOVIES_ID,
-            title = "Recently Added Movies",
+            title = "Recent Movies",
             items = recentMovies,
             isLoading = appState.isLoading,
+            cardWidth = 168.dp,
+            cardHeight = 252.dp,
+        ),
+        TvHomeMediaSection(
+            id = RECENT_TV_SHOWS_ID,
+            title = "Recent TV Shows",
+            items = recentTvShows,
+            isLoading = appState.isLoading,
+            cardWidth = 168.dp,
+            cardHeight = 252.dp,
+        ),
+        TvHomeMediaSection(
+            id = FAVORITES_ID,
+            title = "Favorites",
+            items = favorites,
+            isLoading = appState.isLoading && favorites.isEmpty(),
+            cardWidth = 168.dp,
+            cardHeight = 252.dp,
         ),
         TvHomeMediaSection(
             id = RECENT_STUFF_ID,
-            title = "Recently Added Stuff",
+            title = "Recent Stuff",
             items = recentStuff,
             isLoading = appState.isLoading,
+            cardWidth = 228.dp,
+            cardHeight = 128.dp,
         ),
     ).filter { it.items.isNotEmpty() || it.isLoading }
 
@@ -197,9 +244,14 @@ fun TvHomeScreen(
                                     onPlayClick = { item ->
                                         onPlay(item.id.toString(), item.name ?: "", 0L)
                                     },
-                                    getBackdropUrl = viewModel::getBackdropUrl,
+                                    getHeroImageUrl = { item ->
+                                        viewModel.getBackdropUrl(item)
+                                            ?: viewModel.getLogoUrl(item)
+                                            ?: viewModel.getSeriesImageUrl(item)
+                                            ?: viewModel.getImageUrl(item)
+                                    },
                                     modifier = Modifier
-                                        .padding(bottom = 24.dp)
+                                        .padding(bottom = tvLayout.heroBottomSpacing)
                                         .onPreviewKeyEvent { keyEvent ->
                                             if (keyEvent.type == KeyEventType.KeyDown && keyEvent.key == Key.DirectionLeft) {
                                                 focusManager.moveFocus(FocusDirection.Left)
@@ -216,7 +268,7 @@ fun TvHomeScreen(
                                     TvLibrariesSection(
                                         libraries = appState.libraries,
                                         onLibrarySelect = onLibrarySelect,
-                                        modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
+                                        modifier = Modifier.fillMaxWidth().padding(bottom = tvLayout.heroBottomSpacing),
                                         isLoading = appState.isLoading,
                                     )
                                 }
@@ -255,9 +307,14 @@ fun TvHomeScreen(
                                     onPlayClick = { item ->
                                         onPlay(item.id.toString(), item.name ?: "", 0L)
                                     },
-                                    getBackdropUrl = viewModel::getBackdropUrl,
+                                    getHeroImageUrl = { item ->
+                                        viewModel.getBackdropUrl(item)
+                                            ?: viewModel.getLogoUrl(item)
+                                            ?: viewModel.getSeriesImageUrl(item)
+                                            ?: viewModel.getImageUrl(item)
+                                    },
                                     modifier = Modifier
-                                        .padding(bottom = 24.dp)
+                                        .padding(bottom = tvLayout.heroBottomSpacing)
                                         .onPreviewKeyEvent { keyEvent ->
                                             if (keyEvent.type == KeyEventType.KeyDown && keyEvent.key == Key.DirectionLeft) {
                                                 focusManager.moveFocus(FocusDirection.Left)
@@ -274,7 +331,7 @@ fun TvHomeScreen(
                                     TvLibrariesSection(
                                         libraries = appState.libraries,
                                         onLibrarySelect = onLibrarySelect,
-                                        modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
+                                        modifier = Modifier.fillMaxWidth().padding(bottom = tvLayout.heroBottomSpacing),
                                         isLoading = appState.isLoading,
                                     )
                                 }
@@ -316,6 +373,38 @@ private fun org.jellyfin.sdk.model.api.BaseItemDto.playbackProgressRatio(): Doub
     val runtimeTicks = runTimeTicks ?: return 0.0
     if (runtimeTicks <= 0L) return 0.0
     return (playbackTicks.toDouble() / runtimeTicks.toDouble()).coerceIn(0.0, 1.0)
+}
+
+private fun buildTvFeaturedItems(
+    continueWatching: List<BaseItemDto>,
+    nextUpEpisodes: List<BaseItemDto>,
+    recentMovies: List<BaseItemDto>,
+    recentTvShows: List<BaseItemDto>,
+    recentStuff: List<BaseItemDto>,
+    maxItems: Int,
+): List<BaseItemDto> {
+    val prioritizedCandidates = buildList {
+        addAll(continueWatching.sortedWith(tvInProgressComparator()))
+        addAll(nextUpEpisodes)
+        addAll(recentMovies)
+        addAll(recentTvShows)
+        addAll(recentStuff)
+    }
+
+    return prioritizedCandidates
+        .distinctBy { it.id }
+        .filter { item ->
+            !item.name.isNullOrBlank() && hasHeroVisuals(item)
+        }
+        .take(maxItems)
+}
+
+private fun hasHeroVisuals(item: BaseItemDto): Boolean {
+    return item.backdropImageTags?.isNotEmpty() == true ||
+        item.imageTags?.isNotEmpty() == true ||
+        item.parentBackdropItemId != null ||
+        item.parentLogoItemId != null ||
+        item.seriesId != null
 }
 
 @Composable

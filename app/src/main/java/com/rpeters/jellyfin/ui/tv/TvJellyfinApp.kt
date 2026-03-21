@@ -25,8 +25,8 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.NavigationDrawer
 import androidx.tv.material3.NavigationDrawerItem
 import androidx.tv.material3.rememberDrawerState
+import com.rpeters.jellyfin.ui.theme.CinefinTvTheme
 import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
-import com.rpeters.jellyfin.ui.theme.cinefinTvColorScheme
 import com.rpeters.jellyfin.ui.viewmodel.ThemePreferencesViewModel
 import androidx.tv.material3.MaterialTheme as TvMaterialTheme
 import androidx.tv.material3.Surface as TvSurface
@@ -50,7 +50,7 @@ fun TvJellyfinApp(
     // Hosts the navigation graph for all TV screens.
     // Apply both Material You theme and TV Material Theme
     JellyfinAndroidTheme(themePreferences = themePreferences) {
-        TvMaterialTheme(colorScheme = cinefinTvColorScheme(accentColor = themePreferences.accentColor)) {
+        CinefinTvTheme(accentColor = themePreferences.accentColor) {
             TvSurface(modifier = modifier.fillMaxSize()) {
                 val navController = rememberNavController()
                 val focusManager = LocalFocusManager.current
@@ -119,6 +119,7 @@ fun TvMainScreen(
     navController: NavHostController,
     modifier: Modifier = Modifier,
 ) {
+    val layout = CinefinTvTheme.layout
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
@@ -133,17 +134,18 @@ fun TvMainScreen(
         drawerContent = { _ ->
             Column(
                 modifier = Modifier
+                    .fillMaxSize()
                     .fillMaxHeight()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
+                    .padding(layout.drawerPadding),
+                verticalArrangement = Arrangement.spacedBy(layout.drawerItemSpacing),
+                horizontalAlignment = Alignment.Start,
             ) {
                 // App Logo or Title in Drawer
                 TvText(
                     text = "CINEFIN",
                     style = TvMaterialTheme.typography.headlineSmall,
                     color = TvMaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(vertical = 24.dp),
+                    modifier = Modifier.padding(vertical = layout.sectionSpacing),
                 )
 
                 TvNavigationItem.items.forEach { item ->

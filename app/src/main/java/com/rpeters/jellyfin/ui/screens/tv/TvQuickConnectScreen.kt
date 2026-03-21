@@ -35,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -44,11 +45,15 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.tv.material3.Card as TvCard
+import androidx.tv.material3.CardDefaults as TvCardDefaults
 import androidx.tv.material3.Button
 import androidx.tv.material3.Icon as TvIcon
 import androidx.tv.material3.Text as TvText
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
+import com.rpeters.jellyfin.ui.components.tv.TvImmersiveBackground
+import com.rpeters.jellyfin.ui.theme.CinefinTvTheme
 import androidx.tv.material3.MaterialTheme as TvMaterialTheme
 
 object TvQuickConnectTestTags {
@@ -77,6 +82,7 @@ fun TvQuickConnectScreen(
     onCancel: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val tvLayout = CinefinTvTheme.layout
     var localServerUrl by remember { mutableStateOf(serverUrl) }
 
     val serverUrlFocusRequester = remember { FocusRequester() }
@@ -98,85 +104,110 @@ fun TvQuickConnectScreen(
     }
 
     // TV-optimized centered layout
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = 48.dp, vertical = 32.dp),
-        contentAlignment = Alignment.Center,
-    ) {
+    Box(modifier = modifier.fillMaxSize()) {
+        TvImmersiveBackground(backdropUrl = null)
+
         Column(
             modifier = Modifier
-                .fillMaxWidth(0.85f)
+                .fillMaxWidth(tvLayout.formMaxWidthFraction)
                 .wrapContentHeight()
+                .align(Alignment.Center)
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(20.dp),
+            verticalArrangement = Arrangement.spacedBy(tvLayout.sectionSpacing),
         ) {
-            // Header
-            TvText(
-                text = "Quick Connect",
-                style = TvMaterialTheme.typography.displayLarge,
-                color = TvMaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold,
-            )
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                TvText(
+                    text = "Quick Connect",
+                    style = TvMaterialTheme.typography.displayLarge,
+                    color = TvMaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold,
+                )
 
-            TvText(
-                text = "Sign in without typing your password",
-                style = TvMaterialTheme.typography.titleMedium,
-                color = TvMaterialTheme.colorScheme.onSurface,
-                textAlign = TextAlign.Center,
-            )
+                TvText(
+                    text = "Sign in without typing your password",
+                    style = TvMaterialTheme.typography.headlineSmall,
+                    color = Color.White,
+                    textAlign = TextAlign.Center,
+                )
 
-            Spacer(modifier = Modifier.height(8.dp))
+                TvText(
+                    text = "Enter your server once, request a temporary code, then approve it from another device already signed in to Jellyfin.",
+                    style = TvMaterialTheme.typography.bodyLarge,
+                    color = TvMaterialTheme.colorScheme.onSurface.copy(alpha = 0.78f),
+                    textAlign = TextAlign.Center,
+                )
+            }
 
-            // Server URL input
-            OutlinedTextField(
-                value = localServerUrl,
-                onValueChange = {
-                    localServerUrl = it
-                    onServerUrlChange(it)
-                },
-                label = { TvText(stringResource(id = R.string.server_url_label), style = TvMaterialTheme.typography.bodyLarge) },
-                placeholder = {
-                    TvText(
-                        "https://jellyfin.example.com",
-                        style = TvMaterialTheme.typography.bodyLarge,
+            TvCard(
+                onClick = {},
+                colors = TvCardDefaults.colors(containerColor = Color.White.copy(alpha = 0.08f)),
+                scale = TvCardDefaults.scale(focusedScale = 1f),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 28.dp, vertical = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(18.dp),
+                ) {
+                    OutlinedTextField(
+                        value = localServerUrl,
+                        onValueChange = {
+                            localServerUrl = it
+                            onServerUrlChange(it)
+                        },
+                        label = { TvText(stringResource(id = R.string.server_url_label), style = TvMaterialTheme.typography.bodyLarge) },
+                        placeholder = {
+                            TvText(
+                                "https://jellyfin.example.com",
+                                style = TvMaterialTheme.typography.bodyLarge,
+                            )
+                        },
+                        textStyle = TvMaterialTheme.typography.bodyLarge,
+                        singleLine = true,
+                        maxLines = 1,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Uri,
+                            imeAction = ImeAction.Done,
+                        ),
+                        keyboardActions = KeyboardActions(
+                            onDone = {
+                                if (localServerUrl.isNotBlank() && !isPolling) {
+                                    getCodeButtonFocusRequester.requestFocus()
+                                }
+                            },
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(64.dp)
+                            .focusRequester(serverUrlFocusRequester)
+                            .testTag(TvQuickConnectTestTags.SERVER_INPUT),
+                        enabled = !isConnecting && !isPolling,
                     )
-                },
-                textStyle = TvMaterialTheme.typography.bodyLarge,
-                singleLine = true,
-                maxLines = 1,
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Uri,
-                    imeAction = ImeAction.Done,
-                ),
-                keyboardActions = KeyboardActions(
-                    onDone = {
-                        if (localServerUrl.isNotBlank() && !isPolling) {
-                            getCodeButtonFocusRequester.requestFocus()
-                        }
-                    },
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(64.dp)
-                    .focusRequester(serverUrlFocusRequester)
-                    .testTag(TvQuickConnectTestTags.SERVER_INPUT),
-                enabled = !isConnecting && !isPolling,
-            )
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        QuickConnectStepChip("1. Enter Server")
+                        QuickConnectStepChip("2. Get Code")
+                        QuickConnectStepChip("3. Approve Elsewhere")
+                    }
+                }
+            }
 
             // Quick Connect Code display - LARGE for TV viewing from 10 feet
             if (quickConnectCode.isNotBlank()) {
-                Spacer(modifier = Modifier.height(8.dp))
-
-                androidx.tv.material3.Card(
+                TvCard(
                     onClick = { /* No-op */ },
-                    colors = androidx.tv.material3.CardDefaults.colors(
+                    colors = TvCardDefaults.colors(
                         containerColor = TvMaterialTheme.colorScheme.primaryContainer,
                     ),
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag(TvQuickConnectTestTags.CODE_CARD),
+                    scale = TvCardDefaults.scale(focusedScale = 1f),
                 ) {
                     Column(
                         modifier = Modifier
@@ -220,9 +251,9 @@ fun TvQuickConnectScreen(
 
             // Status message with icon
             if (status.isNotBlank()) {
-                androidx.tv.material3.Card(
+                TvCard(
                     onClick = { /* No-op */ },
-                    colors = androidx.tv.material3.CardDefaults.colors(
+                    colors = TvCardDefaults.colors(
                         containerColor = if (isPolling) {
                             TvMaterialTheme.colorScheme.secondaryContainer
                         } else {
@@ -232,6 +263,7 @@ fun TvQuickConnectScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag(TvQuickConnectTestTags.STATUS_CARD),
+                    scale = TvCardDefaults.scale(focusedScale = 1f),
                 ) {
                     Row(
                         modifier = Modifier
@@ -280,12 +312,13 @@ fun TvQuickConnectScreen(
 
             // Error message
             if (errorMessage != null) {
-                androidx.tv.material3.Card(
+                TvCard(
                     onClick = { /* No-op */ },
-                    colors = androidx.tv.material3.CardDefaults.colors(
+                    colors = TvCardDefaults.colors(
                         containerColor = TvMaterialTheme.colorScheme.error.copy(alpha = 0.2f),
                     ),
                     modifier = Modifier.fillMaxWidth(),
+                    scale = TvCardDefaults.scale(focusedScale = 1f),
                 ) {
                     TvText(
                         text = errorMessage,
@@ -296,8 +329,6 @@ fun TvQuickConnectScreen(
                     )
                 }
             }
-
-            Spacer(modifier = Modifier.height(12.dp))
 
             // Action buttons
             Row(
@@ -380,5 +411,25 @@ fun TvQuickConnectScreen(
                 modifier = Modifier.padding(horizontal = 24.dp),
             )
         }
+    }
+}
+
+@Composable
+private fun QuickConnectStepChip(
+    text: String,
+    modifier: Modifier = Modifier,
+) {
+    TvCard(
+        onClick = {},
+        modifier = modifier,
+        colors = TvCardDefaults.colors(containerColor = Color.White.copy(alpha = 0.08f)),
+        scale = TvCardDefaults.scale(focusedScale = 1f),
+    ) {
+        TvText(
+            text = text,
+            style = TvMaterialTheme.typography.bodyMedium,
+            color = Color.White,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+        )
     }
 }
