@@ -16,12 +16,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -49,11 +51,11 @@ fun ExpressiveFloatingNavBar(
             shape = MaterialTheme.shapes.extraLarge,
             color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
             tonalElevation = 6.dp,
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(6.dp),
         ) {
             Row(
                 modifier = Modifier
-                    .padding(horizontal = 8.dp, vertical = 8.dp)
+                    .padding(horizontal = 4.dp, vertical = 4.dp)
                     .animateContentSize(
                         animationSpec = spring(
                             dampingRatio = Spring.DampingRatioLowBouncy,
@@ -93,10 +95,12 @@ private fun ExpressiveNavBarButton(
         onClick = onClick,
         shape = MaterialTheme.shapes.extraLarge,
         color = if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
-        modifier = Modifier.size(height = 48.dp, width = if (selected) 120.dp else 48.dp)
+        modifier = Modifier
+            .minimumInteractiveComponentSize()
+            .size(height = 36.dp, width = if (selected) 110.dp else 36.dp)
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 12.dp),
+            modifier = Modifier.padding(horizontal = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center
         ) {
@@ -109,11 +113,12 @@ private fun ExpressiveNavBarButton(
             if (selected) {
                 Text(
                     text = label,
-                    style = MaterialTheme.typography.labelLarge,
+                    style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(start = 8.dp),
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    maxLines = 1
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }
