@@ -1,0 +1,59 @@
+<h2>Home Screen UI Setups</h2>
+<p class="subtitle">Exploring different ways to organize your media using the latest Material Expressive components.</p>
+
+<div class="options">
+  <div class="option" data-choice="cinematic" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Cinematic (Current Plus)</h3>
+      <p>Features a massive hero carousel with expressive transitions, large media cards (280dp), and full-bleed imagery. Best for visual discovery.</p>
+      <div style="margin-top: 10px; background: #111; padding: 10px; border-radius: 12px; height: 120px; position: relative; overflow: hidden;">
+        <div style="height: 60px; background: linear-gradient(to bottom, #333, #111); border-radius: 8px; margin-bottom: 8px; display: flex; align-items: flex-end; padding: 8px;">
+           <div style="width: 60%; height: 10px; background: rgba(255,255,255,0.2); border-radius: 2px;"></div>
+        </div>
+        <div style="display: flex; gap: 8px;">
+           <div style="width: 80px; height: 45px; background: #222; border-radius: 4px;"></div>
+           <div style="width: 80px; height: 45px; background: #222; border-radius: 4px;"></div>
+           <div style="width: 80px; height: 45px; background: #222; border-radius: 4px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="expressive_grid" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Expressive Grid</h3>
+      <p>Uses Material Expressive's adaptive grid patterns. Variable card sizes (e.g., featured items are larger) create a more dynamic and curated feel.</p>
+      <div style="margin-top: 10px; background: #111; padding: 10px; border-radius: 12px; height: 120px; display: grid; grid-template-columns: 2fr 1fr; grid-template-rows: 1fr 1fr; gap: 6px;">
+        <div style="grid-row: span 2; background: #333; border-radius: 8px; display: flex; align-items: flex-end; padding: 8px;">
+           <div style="width: 80%; height: 6px; background: rgba(255,255,255,0.2); border-radius: 2px;"></div>
+        </div>
+        <div style="background: #222; border-radius: 8px;"></div>
+        <div style="background: #222; border-radius: 8px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="focused_library" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Focused Library</h3>
+      <p>A more utilitarian approach. Highlights "Continue Watching" and "Your Libraries" with quick access buttons, reducing visual clutter.</p>
+      <div style="margin-top: 10px; background: #111; padding: 10px; border-radius: 12px; height: 120px;">
+        <div style="height: 12px; width: 40%; background: #444; border-radius: 2px; margin-bottom: 8px;"></div>
+        <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+           <div style="width: 100px; height: 40px; background: #333; border-radius: 20px;"></div>
+           <div style="width: 100px; height: 40px; background: #333; border-radius: 20px;"></div>
+        </div>
+        <div style="height: 10px; width: 30%; background: #444; border-radius: 2px; margin-bottom: 6px;"></div>
+        <div style="display: flex; gap: 4px;">
+           <div style="width: 40px; height: 40px; background: #222; border-radius: 4px;"></div>
+           <div style="width: 40px; height: 40px; background: #222; border-radius: 4px;"></div>
+           <div style="width: 40px; height: 40px; background: #222; border-radius: 4px;"></div>
+           <div style="width: 40px; height: 40px; background: #222; border-radius: 4px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,63 @@
+<h2>Refining the Slim Floating Bar</h2>
+<p class="subtitle">Comparing the current dimensions with a more compact "Slim" approach.</p>
+
+<div class="split">
+  <div class="mockup">
+    <div class="mockup-header">Current (approx. 96dp + system)</div>
+    <div class="mockup-body" style="background: #111; height: 150px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 20px;">
+       <div style="background: rgba(255,255,255,0.1); border-radius: 28px; padding: 16px; margin-bottom: 12px;">
+          <div style="display: flex; gap: 8px; align-items: center; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 20px;">
+             <div style="background: #a8c7fa; color: #062e6f; padding: 12px 20px; border-radius: 24px; font-weight: bold; font-size: 14px; display: flex; align-items: center; gap: 8px;">
+               <span style="font-size: 18px;">🏠</span> Home
+             </div>
+             <div style="padding: 12px; font-size: 18px;">📚</div>
+             <div style="padding: 12px; font-size: 18px;">🔍</div>
+             <div style="padding: 12px; font-size: 18px;">❤️</div>
+          </div>
+       </div>
+    </div>
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-header">Slim (approx. 60dp + system)</div>
+    <div class="mockup-body" style="background: #111; height: 150px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 20px;">
+       <div style="background: rgba(255,255,255,0.1); border-radius: 20px; padding: 6px; margin-bottom: 4px;">
+          <div style="display: flex; gap: 4px; align-items: center; background: rgba(255,255,255,0.05); padding: 4px; border-radius: 16px;">
+             <div style="background: #a8c7fa; color: #062e6f; padding: 6px 12px; border-radius: 14px; font-weight: bold; font-size: 12px; display: flex; align-items: center; gap: 4px;">
+               <span style="font-size: 16px;">🏠</span> Home
+             </div>
+             <div style="padding: 6px; font-size: 16px;">📚</div>
+             <div style="padding: 6px; font-size: 16px;">🔍</div>
+             <div style="padding: 6px; font-size: 16px;">❤️</div>
+          </div>
+       </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Proposed Changes:</h3>
+  <ul>
+    <li><strong>Reduce Container Padding:</strong> Drop the outer surface padding from 16dp to 6dp.</li>
+    <li><strong>Reduce Button Height:</strong> Lower the button height from 48dp to 36dp.</li>
+    <li><strong>Slimmer Pill:</strong> Reduce internal button padding and label font size.</li>
+    <li><strong>Reduce Floating Offset:</strong> Lower the bottom margin from 12dp to 4dp.</li>
+  </ul>
+</div>
+
+<div class="options">
+  <div class="option" data-choice="approve" onclick="toggleSelect(this)">
+    <div class="letter">✓</div>
+    <div class="content">
+      <h3>Approve Slim Design</h3>
+      <p>This looks like the right balance of compactness and usability.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="too_small" onclick="toggleSelect(this)">
+    <div class="letter">!</div>
+    <div class="content">
+      <h3>A bit too small</h3>
+      <p>Let's find a middle ground (maybe 40dp height?).</p>
+    </div>
+  </div>
+</div>

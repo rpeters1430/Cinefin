@@ -600,7 +600,10 @@ private val POSTER_GRID_ROW_HEIGHT = 200.dp
 
 // Internal data structures and helper methods moved from HomeScreen.kt
 
-internal data class HomeContentLists(
+/**
+ * Container for various media lists displayed on the home screen.
+ */
+data class HomeContentLists(
     val continueWatching: List<BaseItemDto> = emptyList(),
     val recentMovies: List<BaseItemDto> = emptyList(),
     val recentTVShows: List<BaseItemDto> = emptyList(),

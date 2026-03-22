@@ -4,6 +4,8 @@ import android.app.Activity
 import androidx.annotation.OptIn
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
+import androidx.compose.foundation.lazy.grid.LazyGridState
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -121,10 +123,10 @@ fun ImmersiveHomeScreen(
     }
 
     // Track scroll state for auto-hiding navigation
-    val listState = rememberLazyListState()
+    val gridState = rememberLazyGridState()
     // Use hero height as threshold to avoid flickering within hero
     val topBarVisible = rememberAutoHideTopBarVisible(
-        listState = listState,
+        gridState = gridState,
         nearTopOffsetPx = with(LocalDensity.current) { ImmersiveDimens.HeroHeightPhone.toPx().toInt() },
     )
 
@@ -235,7 +237,8 @@ fun ImmersiveHomeScreen(
                     onItemLongPress = handleItemLongPress,
                     onLibraryClick = onLibraryClick,
                     onGenerateViewingMood = onGenerateViewingMood,
-                    listState = listState,
+                    gridState = gridState,
+                    contentPadding = paddingValues,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
@@ -309,7 +312,8 @@ private fun ImmersiveHomeContent(
     onItemLongPress: (BaseItemDto) -> Unit = {},
     onLibraryClick: (BaseItemDto) -> Unit = {},
     onGenerateViewingMood: () -> Unit = {},
-    listState: LazyListState,
+    gridState: LazyGridState,
+    contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
 ) {
     // Calculate window size class for adaptive layout
@@ -378,138 +382,16 @@ private fun ImmersiveHomeContent(
         modifier = modifier,
         indicatorSize = 48.dp, // Standard expressive size
     ) {
-        LazyColumn(
-            state = listState,
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(ImmersiveDimens.SpacingRowTight), // Tighter: 16dp vs 24dp
-            contentPadding = PaddingValues(
-                top = 0.dp, // No top padding - hero should be full-bleed behind translucent top bar
-                bottom = 120.dp, // Space for mini player/FAB
-            ),
-            userScrollEnabled = true,
-        ) {
-            // Full-screen hero carousel (480dp height, edge-to-edge)
-            if (contentLists.featuredItems.isNotEmpty()) {
-                item(key = "immersive_hero_carousel", contentType = "immersive_carousel") {
-                    val featured = remember(contentLists.featuredItems, unknownText) {
-                        contentLists.featuredItems.map {
-                            CarouselItem(
-                                id = it.id.toString(),
-                                title = it.name ?: unknownText,
-                                subtitle = itemSubtitle(it),
-                                imageUrl = getBackdropUrl(it) ?: getSeriesImageUrl(it)
-                                    ?: getImageUrl(it) ?: "",
-                            )
-                        }
-                    }
-
-                    val carouselOnItemClick = remember(stableOnItemClick, contentLists.featuredItems) {
-                        {
-                                selected: CarouselItem ->
-                            contentLists.featuredItems.firstOrNull { it.id.toString() == selected.id }
-                                ?.let { stableOnItemClick(it) }
-                            Unit
-                        }
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(ImmersiveDimens.HeroHeightPhone)
-                            .clipToBounds(),
-                    ) {
-                        ImmersiveHeroCarousel(
-                            items = featured,
-                            onItemClick = carouselOnItemClick,
-                            onPlayClick = carouselOnItemClick,
-                        )
-                    }
-                }
-            }
-
-            // Viewing Mood Widget (AI-powered mood analysis)
-            if (viewingMood != null) {
-                item(key = "viewing_mood", contentType = "ai_widget") {
-                    ViewingMoodWidget(
-                        viewingMood = viewingMood,
-                        onMoodClick = onGenerateViewingMood,
-                        modifier = Modifier
-                            .padding(horizontal = ImmersiveDimens.SpacingContentPadding)
-                            .padding(top = ImmersiveDimens.SpacingRowTight),
-                    )
-                }
-            }
-
-            // Continue Watching Section (large immersive cards)
-            if (contentLists.continueWatching.isNotEmpty()) {
-                item(key = "continue_watching", contentType = "immersive_row") {
-                    ImmersiveMediaRow(
-                        title = stringResource(id = R.string.shortcut_continue_watching),
-                        items = contentLists.continueWatching,
-                        getImageUrl = getImageUrl,
-                        onItemClick = stableOnItemClick,
-                        onItemLongPress = stableOnItemLongPress,
-                        size = ImmersiveCardSize.SMALL,
-                    )
-                }
-            }
-
-            // Next Up (recent episodes)
-            if (contentLists.recentEpisodes.isNotEmpty()) {
-                item(key = "next_up", contentType = "immersive_row") {
-                    ImmersiveMediaRow(
-                        title = stringResource(id = R.string.home_next_up),
-                        items = contentLists.recentEpisodes,
-                        getImageUrl = { getSeriesImageUrl(it) ?: getImageUrl(it) },
-                        onItemClick = stableOnItemClick,
-                        onItemLongPress = stableOnItemLongPress,
-                        size = ImmersiveCardSize.SMALL,
-                    )
-                }
-            }
-
-            // Recently Added Movies
-            if (contentLists.recentMovies.isNotEmpty()) {
-                item(key = "recent_movies", contentType = "immersive_row") {
-                    ImmersiveMediaRow(
-                        title = stringResource(id = R.string.home_recently_added_movies),
-                        items = contentLists.recentMovies,
-                        getImageUrl = getImageUrl,
-                        onItemClick = stableOnItemClick,
-                        onItemLongPress = stableOnItemLongPress,
-                        size = ImmersiveCardSize.SMALL,
-                    )
-                }
-            }
-
-            // Recently Added TV Shows
-            if (contentLists.recentTVShows.isNotEmpty()) {
-                item(key = "recent_tv_shows", contentType = "immersive_row") {
-                    ImmersiveMediaRow(
-                        title = stringResource(id = R.string.home_recently_added_tv_shows),
-                        items = contentLists.recentTVShows,
-                        getImageUrl = getImageUrl,
-                        onItemClick = stableOnItemClick,
-                        onItemLongPress = stableOnItemLongPress,
-                        size = ImmersiveCardSize.SMALL,
-                    )
-                }
-            }
-
-            // Recently Added Stuff (home videos, etc - vertical cards like other sections)
-            if (contentLists.recentVideos.isNotEmpty()) {
-                item(key = "recent_stuff", contentType = "immersive_row") {
-                    ImmersiveMediaRow(
-                        title = stringResource(id = R.string.home_recently_added_stuff),
-                        items = contentLists.recentVideos,
-                        getImageUrl = getImageUrl,
-                        onItemClick = stableOnItemClick,
-                        onItemLongPress = stableOnItemLongPress,
-                        size = ImmersiveCardSize.SMALL,
-                    )
-                }
-            }
-        }
+        ExpressiveBentoGrid(
+            contentLists = contentLists,
+            windowSizeClass = windowSizeClass,
+            getImageUrl = getImageUrl,
+            onItemClick = stableOnItemClick,
+            onItemLongPress = stableOnItemLongPress,
+            gridState = gridState,
+            contentPadding = contentPadding,
+            modifier = Modifier.fillMaxSize()
+        )
     }
 }
 
