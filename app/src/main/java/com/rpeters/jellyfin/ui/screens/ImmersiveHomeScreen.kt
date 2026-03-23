@@ -568,7 +568,7 @@ private fun LibraryNavigationCarousel(
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         HomeSectionTitle(
-            title = "Libraries",
+            title = stringResource(R.string.libraries),
             modifier = Modifier.padding(top = 8.dp),
         )
 
