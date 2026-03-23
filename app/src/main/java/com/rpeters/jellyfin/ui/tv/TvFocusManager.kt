@@ -2,7 +2,6 @@
 
 package com.rpeters.jellyfin.ui.tv
 
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.runtime.Composable
