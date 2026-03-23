@@ -27,7 +27,7 @@ internal data class BentoGridItem(
     val title: String? = null,
     val description: String? = null,
     val icon: ImageVector? = null,
-    val onClick: () -> Unit = {}
+    val onClick: () -> Unit = {},
 )
 
 /**
@@ -69,62 +69,74 @@ fun ExpressiveBentoGrid(
         buildList {
             // 1. Featured Hero (Top recommendation)
             contentLists.featuredItems.firstOrNull()?.let { item ->
-                add(BentoGridItem(
-                    id = "featured_hero_${item.id}",
-                    type = BentoItemType.Featured,
-                    item = item,
-                    onClick = { onItemClick(item) }
-                ))
+                add(
+                    BentoGridItem(
+                        id = "featured_hero_${item.id}",
+                        type = BentoItemType.Featured,
+                        item = item,
+                        onClick = { onItemClick(item) },
+                    ),
+                )
             }
 
             // 2. Action Tiles (Next Up / Continue Watching)
             contentLists.continueWatching.take(2).forEach { item ->
-                add(BentoGridItem(
-                    id = "action_nextup_${item.id}",
-                    type = BentoItemType.Action,
-                    item = item,
-                    onClick = { onItemClick(item) }
-                ))
+                add(
+                    BentoGridItem(
+                        id = "action_nextup_${item.id}",
+                        type = BentoItemType.Action,
+                        item = item,
+                        onClick = { onItemClick(item) },
+                    ),
+                )
             }
 
             // 3. Wide Discovery Banner
-            add(BentoGridItem(
-                id = "ai_discovery_banner",
-                type = BentoItemType.Wide,
-                title = aiDiscoveryTitle,
-                description = aiDiscoveryDescription,
-                icon = Icons.Default.AutoAwesome,
-                onClick = { /* TODO: Implement AI Discovery navigation */ }
-            ))
+            add(
+                BentoGridItem(
+                    id = "ai_discovery_banner",
+                    type = BentoItemType.Wide,
+                    title = aiDiscoveryTitle,
+                    description = aiDiscoveryDescription,
+                    icon = Icons.Default.AutoAwesome,
+                    onClick = { /* TODO: Implement AI Discovery navigation */ },
+                ),
+            )
 
             // 4. Secondary Featured Items
             contentLists.featuredItems.drop(1).take(2).forEach { item ->
-                add(BentoGridItem(
-                    id = "featured_secondary_${item.id}",
-                    type = BentoItemType.Featured,
-                    item = item,
-                    onClick = { onItemClick(item) }
-                ))
+                add(
+                    BentoGridItem(
+                        id = "featured_secondary_${item.id}",
+                        type = BentoItemType.Featured,
+                        item = item,
+                        onClick = { onItemClick(item) },
+                    ),
+                )
             }
 
             // 5. Recent Movies as Action Tiles
             contentLists.recentMovies.take(4).forEach { item ->
-                add(BentoGridItem(
-                    id = "recent_movie_${item.id}",
-                    type = BentoItemType.Action,
-                    item = item,
-                    onClick = { onItemClick(item) }
-                ))
+                add(
+                    BentoGridItem(
+                        id = "recent_movie_${item.id}",
+                        type = BentoItemType.Action,
+                        item = item,
+                        onClick = { onItemClick(item) },
+                    ),
+                )
             }
-            
+
             // 6. Recent TV Shows
             contentLists.recentTVShows.take(2).forEach { item ->
-                add(BentoGridItem(
-                    id = "recent_tv_${item.id}",
-                    type = BentoItemType.Action,
-                    item = item,
-                    onClick = { onItemClick(item) }
-                ))
+                add(
+                    BentoGridItem(
+                        id = "recent_tv_${item.id}",
+                        type = BentoItemType.Action,
+                        item = item,
+                        onClick = { onItemClick(item) },
+                    ),
+                )
             }
         }
     }
@@ -138,15 +150,15 @@ fun ExpressiveBentoGrid(
             start = contentPadding.calculateStartPadding(layoutDirection) + 16.dp,
             top = contentPadding.calculateTopPadding() + 16.dp,
             end = contentPadding.calculateEndPadding(layoutDirection) + 16.dp,
-            bottom = contentPadding.calculateBottomPadding() + 16.dp
+            bottom = contentPadding.calculateBottomPadding() + 16.dp,
         ),
         verticalArrangement = Arrangement.spacedBy(12.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         items(
             items = bentoItems,
             key = { it.id },
-            span = { bentoItem -> getBentoSpan(bentoItem.type, columns) }
+            span = { bentoItem -> getBentoSpan(bentoItem.type, columns) },
         ) { bentoItem ->
             when (bentoItem.type) {
                 BentoItemType.Featured -> {
@@ -155,7 +167,7 @@ fun ExpressiveBentoGrid(
                             item = item,
                             getImageUrl = getImageUrl,
                             onClick = onItemClick,
-                            onItemLongPress = onItemLongPress
+                            onItemLongPress = onItemLongPress,
                         )
                     }
                 }
@@ -165,7 +177,7 @@ fun ExpressiveBentoGrid(
                             item = item,
                             icon = Icons.Default.PlayArrow,
                             onClick = onItemClick,
-                            onItemLongPress = onItemLongPress
+                            onItemLongPress = onItemLongPress,
                         )
                     }
                 }
@@ -176,7 +188,7 @@ fun ExpressiveBentoGrid(
                         icon = bentoItem.icon ?: Icons.Default.AutoAwesome,
                         onClick = bentoItem.onClick,
                         onItemLongPress = onItemLongPress,
-                        item = bentoItem.item
+                        item = bentoItem.item,
                     )
                 }
             }

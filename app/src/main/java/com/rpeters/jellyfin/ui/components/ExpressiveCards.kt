@@ -10,8 +10,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -29,7 +29,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Surface
@@ -46,7 +45,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -101,7 +99,7 @@ fun ExpressiveMediaCard(
         .primaryExpressiveGlow(
             color = glowColor,
             alpha = if (cardType == ExpressiveCardType.ELEVATED) 0.12f else 0.08f,
-            borderRadius = 24.dp // Matching large shape token
+            borderRadius = 24.dp, // Matching large shape token
         )
 
     when (cardType) {
@@ -114,7 +112,7 @@ fun ExpressiveMediaCard(
                 elevation = CardDefaults.elevatedCardElevation(
                     defaultElevation = 8.dp,
                     pressedElevation = 2.dp,
-                    hoveredElevation = 12.dp
+                    hoveredElevation = 12.dp,
                 ),
                 shape = MaterialTheme.shapes.large,
             ) {
