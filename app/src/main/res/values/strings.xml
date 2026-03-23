@@ -37,12 +37,17 @@
     <string name="video">Video</string>
     <string name="audio">Audio</string>
     <string name="home_videos">Home Videos</string>
+    <string name="home_continue_watching">Continue Watching</string>
     <string name="home_next_up">Next Up</string>
     <string name="home_recently_added_movies">Recently Added in Movies</string>
     <string name="home_recently_added_tv_shows">Recently Added in Shows</string>
     <string name="home_recently_added_tv_episodes">Recently Added TV Episodes</string>
     <string name="home_recently_added_music">Recently Added Music</string>
     <string name="home_recently_added_stuff">Recently Added in Stuff</string>
+    <string name="home_libraries">Libraries</string>
+    <string name="home_viewing_vibe">Your Viewing Vibe</string>
+    <string name="home_ai_discovery">AI Discovery</string>
+    <string name="home_ai_discovery_description">Explore personalized recommendations based on your mood</string>
     <string name="library_recently_added_section">Recently Added</string>
 
     <!-- Search -->

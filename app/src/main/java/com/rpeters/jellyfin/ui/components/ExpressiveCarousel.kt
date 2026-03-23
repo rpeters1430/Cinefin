@@ -95,7 +95,7 @@ fun ExpressiveHeroCarousel(
         while (true) {
             kotlinx.coroutines.delay(autoScrollIntervalMillis)
             val nextPage = (carouselState.currentItem + 1) % items.size
-            carouselState.scrollToItem(nextPage)
+            carouselState.animateScrollToItem(nextPage)
         }
     }
 

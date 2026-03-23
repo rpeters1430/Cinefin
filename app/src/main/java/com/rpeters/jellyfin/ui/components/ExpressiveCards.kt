@@ -418,6 +418,18 @@ fun ExpressiveCompactCard(
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            // Leading icon (shown before the thumbnail image)
+            leadingIcon?.let { icon ->
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .padding(end = 12.dp)
+                        .size(24.dp),
+                )
+            }
+
             // Image
             OptimizedImage(
                 imageUrl = imageUrl,
@@ -455,18 +467,6 @@ fun ExpressiveCompactCard(
                         modifier = Modifier.padding(top = 2.dp),
                     )
                 }
-            }
-
-            // Leading icon
-            leadingIcon?.let { icon ->
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier
-                        .padding(end = 8.dp)
-                        .size(20.dp),
-                )
             }
 
             // Trailing content

@@ -184,6 +184,8 @@ fun HomeContent(
                 getSeriesImageUrl = getSeriesImageUrl,
                 onItemClick = stableOnItemClick,
                 onItemLongPress = stableOnItemLongPress,
+                onLibraryClick = onLibraryClick,
+                libraries = appState.libraries,
                 unknownText = unknownText,
                 viewingMood = viewingMood,
             )
@@ -284,6 +286,18 @@ fun HomeContent(
                     }
                 }
 
+                // Libraries Section
+                if (appState.libraries.isNotEmpty()) {
+                    item(key = "libraries", contentType = "libraries") {
+                        LibraryGridSection(
+                            libraries = appState.libraries,
+                            getImageUrl = getImageUrl,
+                            onLibraryClick = onLibraryClick,
+                            title = stringResource(R.string.home_libraries),
+                        )
+                    }
+                }
+
                 item { Spacer(modifier = Modifier.height(80.dp)) }
             }
         }
@@ -313,7 +327,7 @@ private fun ViewingMoodWidget(viewingMood: String) {
             )
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Your Viewing Vibe",
+                    text = stringResource(R.string.home_viewing_vibe),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -342,6 +356,8 @@ private fun TabletHomeLayout(
     getSeriesImageUrl: (BaseItemDto) -> String?,
     onItemClick: (BaseItemDto) -> Unit,
     onItemLongPress: (BaseItemDto) -> Unit,
+    onLibraryClick: (BaseItemDto) -> Unit,
+    libraries: List<BaseItemDto>,
     unknownText: String,
     viewingMood: String?,
 ) {
@@ -393,7 +409,7 @@ private fun TabletHomeLayout(
         // Continue Watching Grid
         if (contentLists.continueWatching.isNotEmpty()) {
             item(key = "continue_watching_header", contentType = "section_header") {
-                SectionHeader(title = "Continue Watching")
+                SectionHeader(title = stringResource(id = R.string.home_continue_watching))
             }
             item(key = "continue_watching_grid", contentType = "grid") {
                 NonScrollablePosterGrid(
@@ -469,6 +485,18 @@ private fun TabletHomeLayout(
                     onItemClick = onItemClick,
                     onItemLongPress = onItemLongPress,
                     cardWidth = adaptiveConfig.mediaCardWidth,
+                )
+            }
+        }
+
+        // Libraries Section
+        if (libraries.isNotEmpty()) {
+            item(key = "libraries", contentType = "libraries") {
+                LibraryGridSection(
+                    libraries = libraries,
+                    getImageUrl = getImageUrl,
+                    onLibraryClick = onLibraryClick,
+                    title = stringResource(id = R.string.home_libraries),
                 )
             }
         }

@@ -11,7 +11,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.components.*
 import org.jellyfin.sdk.model.api.BaseItemDto
 
@@ -59,8 +61,11 @@ fun ExpressiveBentoGrid(
         else -> 2
     }
 
+    val aiDiscoveryTitle = stringResource(R.string.home_ai_discovery)
+    val aiDiscoveryDescription = stringResource(R.string.home_ai_discovery_description)
+
     // Map content lists to bento grid items
-    val bentoItems = remember(contentLists) {
+    val bentoItems = remember(contentLists, aiDiscoveryTitle, aiDiscoveryDescription) {
         buildList {
             // 1. Featured Hero (Top recommendation)
             contentLists.featuredItems.firstOrNull()?.let { item ->
@@ -86,8 +91,8 @@ fun ExpressiveBentoGrid(
             add(BentoGridItem(
                 id = "ai_discovery_banner",
                 type = BentoItemType.Wide,
-                title = "AI Discovery",
-                description = "Explore personalized recommendations based on your mood",
+                title = aiDiscoveryTitle,
+                description = aiDiscoveryDescription,
                 icon = Icons.Default.AutoAwesome,
                 onClick = { /* TODO: Implement AI Discovery navigation */ }
             ))
