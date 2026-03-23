@@ -68,7 +68,7 @@ fun TvCarouselHomeContent(
     libraries: List<BaseItemDto>,
     onLibrarySelect: (String) -> Unit,
     isLoadingLibraries: Boolean,
-    initialFocusRequester: FocusRequester,
+    initialFocusRequester: FocusRequester?,
     firstSectionId: String?,
 ) {
     val scrollState = rememberScrollState()
@@ -90,7 +90,7 @@ fun TvCarouselHomeContent(
                 onItemFocus = onItemFocus,
                 onItemSelect = onItemSelect,
                 focusBridgeManager = focusBridgeManager,
-                initialFocusRequester = initialFocusRequester.takeIf { firstSectionId == section.id },
+                initialFocusRequester = initialFocusRequester?.takeIf { firstSectionId == section.id },
             )
         }
 

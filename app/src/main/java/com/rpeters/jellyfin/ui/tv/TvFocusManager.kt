@@ -2,7 +2,6 @@
 
 package com.rpeters.jellyfin.ui.tv
 
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.runtime.Composable
@@ -27,8 +26,6 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import com.rpeters.jellyfin.OptInAppExperimentalApis
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.delay
 
 /**
  * Data class to store focus information for a specific carousel or row
@@ -172,8 +169,10 @@ fun TvFocusableCarousel(
         }
     }
 
-    // Auto-scroll to keep focused item visible
-    LaunchedEffect(focusedIndex, hasFocus, itemCount) {
+    // Auto-scroll to keep focused item visible when the user navigates.
+    // Keyed only on focusedIndex/hasFocus so that items loading in (itemCount changing)
+    // does not trigger a premature scroll before the layout has settled.
+    LaunchedEffect(focusedIndex, hasFocus) {
         if (hasFocus && focusedIndex in 0 until itemCount) {
             lazyListState.animateScrollToItem(focusedIndex)
             focusManager.saveFocusState(
@@ -182,12 +181,9 @@ fun TvFocusableCarousel(
                 scrollPosition = lazyListState.firstVisibleItemIndex,
                 focusedItemKey = itemKeys?.getOrNull(focusedIndex),
             )
-            delay(50)
-            try {
-                itemFocusRequesters[focusedIndex].requestFocus()
-            } catch (e: CancellationException) {
-                throw e
-            }
+            // Removed requestFocus() here — TV Compose handles internal item focus
+            // natively; manually calling requestFocus() during a scroll animation
+            // fights with the framework and causes items to fly off-screen on load.
         }
     }
 
@@ -262,8 +258,10 @@ fun TvFocusableGrid(
         }
     }
 
-    // Auto-scroll to keep focused item visible
-    LaunchedEffect(focusedIndex, hasFocus, itemCount) {
+    // Auto-scroll to keep focused item visible when the user navigates.
+    // Keyed only on focusedIndex/hasFocus so that items loading in (itemCount changing)
+    // does not trigger a premature scroll before the layout has settled.
+    LaunchedEffect(focusedIndex, hasFocus) {
         if (hasFocus && focusedIndex in 0 until itemCount) {
             lazyGridState.animateScrollToItem(focusedIndex)
             focusManager.saveFocusState(
@@ -272,12 +270,9 @@ fun TvFocusableGrid(
                 scrollPosition = lazyGridState.firstVisibleItemIndex,
                 focusedItemKey = itemKeys?.getOrNull(focusedIndex),
             )
-            delay(50)
-            try {
-                itemFocusRequesters[focusedIndex].requestFocus()
-            } catch (e: CancellationException) {
-                throw e
-            }
+            // Removed requestFocus() here — TV Compose handles internal item focus
+            // natively; manually calling requestFocus() during a scroll animation
+            // fights with the framework and causes items to fly off-screen on load.
         }
     }
 

@@ -378,7 +378,7 @@ fun TvHomeScreen(
                             libraries = emptyList(),
                             onLibrarySelect = onLibrarySelect,
                             isLoadingLibraries = appState.isLoading,
-                            initialFocusRequester = if (featuredItems.isEmpty()) initialFocusRequester else FocusRequester(),
+                            initialFocusRequester = if (featuredItems.isEmpty()) initialFocusRequester else null,
                             firstSectionId = firstSectionId,
                         )
                     }
