@@ -171,8 +171,10 @@ fun TvHomeScreen(
 
     val firstSectionId = sections.firstOrNull()?.id
     val initialFocusRequester = remember(layoutConfig.shouldShowDualPane) { FocusRequester() }
+    val isDataLoaded = !appState.isLoading && !appState.isLoadingMovies && !appState.isLoadingTVShows
     initialFocusRequester.requestInitialFocus(
-        condition = (featuredItems.isNotEmpty() || firstSectionId != null) && layoutConfig.supportsFocusNavigation,
+        condition = isDataLoaded && (featuredItems.isNotEmpty() || firstSectionId != null) && layoutConfig.supportsFocusNavigation,
+        delayMs = 500L, // Increased from default 100ms to allow layout to settle
     )
 
     TvScreenFocusScope(

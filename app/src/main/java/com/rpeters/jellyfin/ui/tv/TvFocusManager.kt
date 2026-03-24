@@ -157,6 +157,16 @@ fun TvFocusableCarousel(
     var hasFocus by remember { mutableStateOf(false) }
     var focusedIndex by rememberSaveable { mutableIntStateOf(0) }
 
+    // Re-validate focusedIndex whenever itemCount changes to prevent out-of-bounds access
+    // or flying off-screen during data updates.
+    LaunchedEffect(itemCount) {
+        if (itemCount > 0 && focusedIndex >= itemCount) {
+            focusedIndex = itemCount - 1
+        } else if (itemCount == 0) {
+            focusedIndex = 0
+        }
+    }
+
     // Restore focus state when carousel is created
     LaunchedEffect(carouselId) {
         val savedState = focusManager.getFocusState(carouselId)
@@ -172,20 +182,22 @@ fun TvFocusableCarousel(
     }
 
     // Auto-scroll to keep focused item visible when the user navigates.
-    // Keyed only on focusedIndex/hasFocus so that items loading in (itemCount changing)
-    // does not trigger a premature scroll before the layout has settled.
-    LaunchedEffect(focusedIndex, hasFocus) {
+    // Keyed on focusedIndex and hasFocus.
+    LaunchedEffect(focusedIndex, hasFocus, itemCount) {
         if (hasFocus && focusedIndex in 0 until itemCount) {
-            lazyListState.animateScrollToItem(focusedIndex)
-            focusManager.saveFocusState(
-                carouselId = carouselId,
-                focusedIndex = focusedIndex,
-                scrollPosition = lazyListState.firstVisibleItemIndex,
-                focusedItemKey = itemKeys?.getOrNull(focusedIndex),
-            )
-            // Removed requestFocus() here — TV Compose handles internal item focus
-            // natively; manually calling requestFocus() during a scroll animation
-            // fights with the framework and causes items to fly off-screen on load.
+            // Only scroll if we actually have focus to prevent "flying" off-screen on initial load
+            // before the user has even interacted with the carousel.
+            try {
+                lazyListState.animateScrollToItem(focusedIndex)
+                focusManager.saveFocusState(
+                    carouselId = carouselId,
+                    focusedIndex = focusedIndex,
+                    scrollPosition = lazyListState.firstVisibleItemIndex,
+                    focusedItemKey = itemKeys?.getOrNull(focusedIndex),
+                )
+            } catch (e: Exception) {
+                // Ignore scroll errors if layout is not ready
+            }
         }
     }
 
@@ -246,6 +258,16 @@ fun TvFocusableGrid(
     var hasFocus by remember { mutableStateOf(false) }
     var focusedIndex by rememberSaveable { mutableIntStateOf(0) }
 
+    // Re-validate focusedIndex whenever itemCount changes to prevent out-of-bounds access
+    // or flying off-screen during data updates.
+    LaunchedEffect(itemCount) {
+        if (itemCount > 0 && focusedIndex >= itemCount) {
+            focusedIndex = itemCount - 1
+        } else if (itemCount == 0) {
+            focusedIndex = 0
+        }
+    }
+
     // Restore focus state when grid is created
     LaunchedEffect(gridId) {
         val savedState = focusManager.getFocusState(gridId)
@@ -261,20 +283,21 @@ fun TvFocusableGrid(
     }
 
     // Auto-scroll to keep focused item visible when the user navigates.
-    // Keyed only on focusedIndex/hasFocus so that items loading in (itemCount changing)
-    // does not trigger a premature scroll before the layout has settled.
-    LaunchedEffect(focusedIndex, hasFocus) {
+    // Keyed on focusedIndex and hasFocus.
+    LaunchedEffect(focusedIndex, hasFocus, itemCount) {
         if (hasFocus && focusedIndex in 0 until itemCount) {
-            lazyGridState.animateScrollToItem(focusedIndex)
-            focusManager.saveFocusState(
-                carouselId = gridId,
-                focusedIndex = focusedIndex,
-                scrollPosition = lazyGridState.firstVisibleItemIndex,
-                focusedItemKey = itemKeys?.getOrNull(focusedIndex),
-            )
-            // Removed requestFocus() here — TV Compose handles internal item focus
-            // natively; manually calling requestFocus() during a scroll animation
-            // fights with the framework and causes items to fly off-screen on load.
+            // Only scroll if we actually have focus to prevent "flying" off-screen on initial load
+            try {
+                lazyGridState.animateScrollToItem(focusedIndex)
+                focusManager.saveFocusState(
+                    carouselId = gridId,
+                    focusedIndex = focusedIndex,
+                    scrollPosition = lazyGridState.firstVisibleItemIndex,
+                    focusedItemKey = itemKeys?.getOrNull(focusedIndex),
+                )
+            } catch (e: Exception) {
+                // Ignore scroll errors if layout is not ready
+            }
         }
     }
 
