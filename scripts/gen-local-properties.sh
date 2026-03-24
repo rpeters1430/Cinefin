@@ -17,7 +17,9 @@ LOCAL_PROPERTIES_FILE="local.properties"
 TMP_FILE="$(mktemp)"
 
 if [ -f "${LOCAL_PROPERTIES_FILE}" ]; then
-  # Keep everything except sdk.dir so we can write the latest SDK path.
+  # Strip BOM, convert CRLF to LF, and remove existing sdk.dir
+  sed -i '1s/^\xEF\xBB\xBF//' "${LOCAL_PROPERTIES_FILE}" 2>/dev/null || true
+  sed -i 's/\r$//' "${LOCAL_PROPERTIES_FILE}" 2>/dev/null || true
   grep -v '^sdk\.dir=' "${LOCAL_PROPERTIES_FILE}" > "${TMP_FILE}" || true
 fi
 

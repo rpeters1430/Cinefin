@@ -186,6 +186,9 @@ if [ -f "$PROJECT_DIR/gradlew" ]; then
   TMP_FILE="$(mktemp)"
 
   if [ -f "$LOCAL_PROPERTIES_FILE" ]; then
+    # Strip BOM, convert CRLF to LF, and remove existing sdk.dir
+    sed -i '1s/^\xEF\xBB\xBF//' "$LOCAL_PROPERTIES_FILE" 2>/dev/null || true
+    sed -i 's/\r$//' "$LOCAL_PROPERTIES_FILE" 2>/dev/null || true
     grep -v '^sdk\.dir=' "$LOCAL_PROPERTIES_FILE" > "$TMP_FILE" || true
   fi
 

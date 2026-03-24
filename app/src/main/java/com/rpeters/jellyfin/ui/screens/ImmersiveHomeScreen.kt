@@ -130,7 +130,7 @@ fun ImmersiveHomeScreen(
 
     LaunchedEffect(appState.libraries) {
         appState.libraries.forEach { library ->
-            val libraryId = library.id?.toString() ?: return@forEach
+            val libraryId = library.id.toString()
             if (appState.itemsByLibrary[libraryId].isNullOrEmpty()) {
                 library.toLibraryTypeOrNull()?.let { libraryType ->
                     viewModel.loadLibraryTypeData(library = library, libraryType = libraryType)
@@ -446,7 +446,7 @@ private fun MobileExpressiveHomeContent(
     val unknownText = stringResource(id = R.string.unknown)
     val libraryRows = remember(appState.libraries, appState.itemsByLibrary) {
         appState.libraries.mapNotNull { library ->
-            val libraryId = library.id?.toString() ?: return@mapNotNull null
+            val libraryId = library.id.toString()
             val items = appState.itemsByLibrary[libraryId]
                 .orEmpty()
                 .sortedByDescending { it.dateCreated }
@@ -484,7 +484,7 @@ private fun MobileExpressiveHomeContent(
                     onPlayClick = { selected ->
                         contentLists.featuredItems.firstOrNull { it.id.toString() == selected.id }?.let(onItemClick)
                     },
-                    heroHeight = 420.dp,
+                    heroHeight = 440.dp, // Increased from 420dp
                     horizontalPadding = 20.dp,
                     pageSpacing = 12.dp,
                 )
@@ -515,7 +515,7 @@ private fun MobileExpressiveHomeContent(
                     getImageUrl = { item -> getSeriesImageUrl(item) ?: getImageUrl(item) },
                     onItemClick = onItemClick,
                     onItemLongPress = onItemLongPress,
-                    cardWidth = 176.dp,
+                    cardWidth = 320.dp, // Increased from 176dp
                 )
             }
         }
@@ -528,7 +528,7 @@ private fun MobileExpressiveHomeContent(
                     getImageUrl = { item -> getSeriesImageUrl(item) ?: getImageUrl(item) },
                     onItemClick = onItemClick,
                     onItemLongPress = onItemLongPress,
-                    cardWidth = 164.dp,
+                    cardWidth = 200.dp, // Increased from 164dp
                 )
             }
         }
@@ -568,19 +568,19 @@ private fun LibraryNavigationCarousel(
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         HomeSectionTitle(
-            title = stringResource(R.string.libraries),
+            title = stringResource(R.string.home_libraries),
             modifier = Modifier.padding(top = 8.dp),
         )
 
         val carouselState = rememberCarouselState { libraries.size }
-        HorizontalMultiBrowseCarousel(
+        androidx.compose.material3.carousel.HorizontalUncontainedCarousel(
             state = carouselState,
-            preferredItemWidth = 176.dp,
-            itemSpacing = 12.dp,
+            itemWidth = 220.dp, // Increased from 176dp
+            itemSpacing = 16.dp, // Increased spacing
             contentPadding = PaddingValues(horizontal = 16.dp),
             modifier = Modifier
                 .fillMaxWidth()
-                .height(188.dp),
+                .height(220.dp), // Match item width for balanced look
         ) { index ->
             val library = libraries[index]
             LibraryExpressiveCard(
@@ -638,14 +638,14 @@ private fun LibraryRecentSection(
                 getImageUrl = getImageUrl,
                 onItemClick = onItemClick,
                 onItemLongPress = onItemLongPress,
-                cardWidth = 240.dp,
+                cardWidth = 320.dp, // Increased from 240dp
             )
             else -> HomeLibraryPosterRow(
                 items = items,
                 getImageUrl = getImageUrl,
                 onItemClick = onItemClick,
                 onItemLongPress = onItemLongPress,
-                cardWidth = 164.dp,
+                cardWidth = 200.dp, // Increased from 164dp
             )
         }
     }

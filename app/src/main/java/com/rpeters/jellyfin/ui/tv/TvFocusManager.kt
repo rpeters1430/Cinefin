@@ -26,6 +26,8 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import com.rpeters.jellyfin.OptInAppExperimentalApis
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 
 /**
  * Data class to store focus information for a specific carousel or row

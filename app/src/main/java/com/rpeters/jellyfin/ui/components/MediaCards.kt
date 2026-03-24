@@ -195,7 +195,8 @@ fun MediaCard(
             )
 
             // ✅ Performance: Use drawWithCache for gradient to avoid recomposition
-            val surfaceColor = MaterialTheme.colorScheme.surface
+            // Use black-based gradient for media cards to prevent fading to white
+            val overlayColor = Color.Black
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -203,9 +204,10 @@ fun MediaCard(
                         val gradientBrush = Brush.verticalGradient(
                             colors = listOf(
                                 Color.Transparent,
-                                surfaceColor.copy(alpha = 0.85f),
+                                overlayColor.copy(alpha = 0.5f),
+                                overlayColor.copy(alpha = 0.9f),
                             ),
-                            startY = 0f,
+                            startY = size.height * 0.4f,
                             endY = size.height,
                         )
                         onDrawBehind {
@@ -223,7 +225,7 @@ fun MediaCard(
                     MaterialText(
                         text = item.name ?: stringResource(R.string.unknown),
                         style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        color = Color.White, // White text on black gradient
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                         autoSize = true,
@@ -241,7 +243,7 @@ fun MediaCard(
                             Text(
                                 text = year.toString(),
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                color = Color.White.copy(alpha = 0.8f), // Off-white for metadata
                             )
                         }
 

@@ -224,7 +224,7 @@ private fun ImmersiveCardContent(
                 .clip(RoundedCornerShape(ImmersiveDimens.CornerRadiusCinematic)),
         )
 
-        // Gradient overlay for text readability
+        // Gradient overlay for text readability - Use black-based gradient
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -232,9 +232,9 @@ private fun ImmersiveCardContent(
                     Brush.verticalGradient(
                         colors = listOf(
                             Color.Transparent,
-                            Color.Black.copy(alpha = 0.3f),
-                            Color.Black.copy(alpha = 0.7f),
-                            Color.Black.copy(alpha = 0.9f),
+                            Color.Black.copy(alpha = 0.4f),
+                            Color.Black.copy(alpha = 0.75f),
+                            Color.Black.copy(alpha = 0.95f),
                         ),
                         startY = 0f,
                         endY = Float.POSITIVE_INFINITY,

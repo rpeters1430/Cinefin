@@ -7,6 +7,7 @@ import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -34,12 +35,11 @@ fun Modifier.expressiveGlow(
     val shadowColor = color.copy(alpha = alpha).toArgb()
     
     drawIntoCanvas { canvas ->
-        val paint = Paint()
-        val frameworkPaint = paint.asFrameworkPaint()
-        frameworkPaint.color = transparentColor
+        val nativePaint = android.graphics.Paint()
+        nativePaint.color = transparentColor
         
         // Use setShadowLayer to create the glow effect
-        frameworkPaint.setShadowLayer(
+        nativePaint.setShadowLayer(
             blurRadius.toPx(),
             0f,
             offsetY.toPx(),
@@ -53,14 +53,14 @@ fun Modifier.expressiveGlow(
         val right = size.width + spreadPx
         val bottom = size.height + spreadPx
         
-        canvas.drawRoundRect(
-            left = left,
-            top = top,
-            right = right,
-            bottom = bottom,
-            radiusX = borderRadius.toPx(),
-            radiusY = borderRadius.toPx(),
-            paint = paint
+        canvas.nativeCanvas.drawRoundRect(
+            left,
+            top,
+            right,
+            bottom,
+            borderRadius.toPx(),
+            borderRadius.toPx(),
+            nativePaint
         )
     }
 }

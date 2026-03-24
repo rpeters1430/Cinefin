@@ -309,7 +309,7 @@ fun TvItemDetailScreen(
                 ) {
                     JellyfinAsyncImage(
                         model = cardImageUrl,
-                        contentDescription = item?.name,
+                        contentDescription = item.name,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize(),
                         requestSize = rememberCoilSize(cardWidth, cardHeight),
@@ -363,7 +363,7 @@ fun TvItemDetailScreen(
                         MediaInfoIcons(item = item, iconSize = 20.dp)
                     }
 
-                    item?.tvDetailContextLine()?.let { contextLine ->
+                    item.tvDetailContextLine()?.let { contextLine ->
                         TvText(
                             text = contextLine,
                             style = TvMaterialTheme.typography.titleMedium,
@@ -374,7 +374,7 @@ fun TvItemDetailScreen(
                     }
 
                     // Genres
-                    item?.genres?.takeIf { it.isNotEmpty() }?.let { genres ->
+                    item.genres?.takeIf { it.isNotEmpty() }?.let { genres ->
                         TvText(
                             text = genres.joinToString(" • "),
                             style = TvMaterialTheme.typography.titleMedium,
@@ -514,7 +514,7 @@ fun TvItemDetailScreen(
                             }
                         }
 
-                        if (item?.type == BaseItemKind.SERIES && nextEpisode != null) {
+                        if (item.type == BaseItemKind.SERIES && nextEpisode != null) {
                             TvButton(
                                 onClick = {
                                     val nextId = nextEpisode.id.toString()
@@ -548,7 +548,7 @@ fun TvItemDetailScreen(
 
                         TvButton(
                             onClick = {
-                                item?.let {
+                                item.let {
                                     userPrefs.toggleFavorite(it) { _, _ -> }
                                 }
                             },
@@ -572,13 +572,13 @@ fun TvItemDetailScreen(
                                 contentColor = Color.White
                             )
                         ) {
-                            val isFav = item?.userData?.isFavorite == true
+                            val isFav = item.userData?.isFavorite == true
                             TvIcon(if (isFav) Icons.Default.Favorite else Icons.Default.FavoriteBorder, null)
                         }
 
                         TvButton(
                             onClick = {
-                                item?.let {
+                                item.let {
                                     if (it.userData?.played == true) {
                                         userPrefs.markAsUnwatched(it) { _, _ -> }
                                     } else {
@@ -606,7 +606,7 @@ fun TvItemDetailScreen(
                                 contentColor = Color.White
                             )
                         ) {
-                            val watched = item?.userData?.played == true
+                            val watched = item.userData?.played == true
                             TvIcon(Icons.Default.Check, null, tint = if (watched) TvMaterialTheme.colorScheme.primary else Color.White)
                         }
 
@@ -675,8 +675,8 @@ fun TvItemDetailScreen(
                 }
             }
 
-            // TV Show Seasons & Episodes
-            if (item?.type == BaseItemKind.SERIES && seasonState.seasons.isNotEmpty()) {
+            // Seasons Row for TV Shows
+            if (item.type == BaseItemKind.SERIES && seasonState.seasons.isNotEmpty()) {
                 var selectedSeasonIndex by remember { mutableStateOf(0) }
                 val selectedSeason = seasonState.seasons.getOrNull(selectedSeasonIndex)
                 
@@ -737,7 +737,7 @@ fun TvItemDetailScreen(
                 }
             }
 
-            val castPeople = item?.people
+            val castPeople = item.people
                 ?.filter { person -> person.type.toString().lowercase() in setOf("actor", "gueststar") }
                 ?.take(12)
                 .orEmpty()
@@ -750,8 +750,8 @@ fun TvItemDetailScreen(
             }
 
             val relatedRail = remember(
-                item?.id,
-                item?.type,
+                item.id,
+                item.type,
                 seasonState.similarSeries,
                 appState.recentlyAddedByTypes,
             ) {

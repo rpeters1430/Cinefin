@@ -29,12 +29,12 @@ object ImmersiveDimens {
     val HeroHeightTV = 720.dp
 
     // Card dimensions (larger than expressive cards)
-    val CardWidthSmall = 200.dp
-    val CardWidthMedium = 280.dp
-    val CardWidthLarge = 400.dp
+    val CardWidthSmall = 200.dp // Increased from 176dp in usage or 200dp default
+    val CardWidthMedium = 320.dp // Increased from 280dp
+    val CardWidthLarge = 440.dp // Increased from 400dp
     val CardHeightSmall = 300.dp
-    val CardHeightMedium = 420.dp
-    val CardHeightLarge = 600.dp
+    val CardHeightMedium = 480.dp // Adjusted for 320dp width (2:3 aspect would be 480)
+    val CardHeightLarge = 660.dp
 
     // Spacing (tighter for immersive layouts)
     val SpacingRowTight = 16.dp

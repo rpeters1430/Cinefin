@@ -70,11 +70,11 @@ fun AutoHideBottomNavBar(
             shape = MaterialTheme.shapes.extraLarge,
             color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
             tonalElevation = 6.dp,
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(bottom = 12.dp, start = 16.dp, end = 16.dp, top = 0.dp),
         ) {
             Box(
                 modifier = Modifier
-                    .padding(horizontal = 8.dp, vertical = 8.dp)
+                    .padding(horizontal = 6.dp, vertical = 6.dp)
                     .animateContentSize(
                         animationSpec = spring(
                             dampingRatio = Spring.DampingRatioLowBouncy,
@@ -94,10 +94,10 @@ fun AutoHideBottomNavBar(
                             onClick = { onItemSelected(index) },
                             shape = MaterialTheme.shapes.extraLarge,
                             color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
-                            modifier = Modifier.size(height = 48.dp, width = if (isSelected) 120.dp else 48.dp)
+                            modifier = Modifier.size(height = 40.dp, width = if (isSelected) 110.dp else 40.dp)
                         ) {
                             Row(
-                                modifier = Modifier.padding(horizontal = 12.dp),
+                                modifier = Modifier.padding(horizontal = 10.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.Center
                             ) {
@@ -105,14 +105,14 @@ fun AutoHideBottomNavBar(
                                     imageVector = if (isSelected) item.selectedIcon else item.icon,
                                     contentDescription = item.label,
                                     tint = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(24.dp)
+                                    modifier = Modifier.size(20.dp)
                                 )
                                 if (isSelected) {
                                     Text(
                                         text = item.label,
-                                        style = MaterialTheme.typography.labelLarge,
+                                        style = MaterialTheme.typography.labelMedium,
                                         fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(start = 8.dp),
+                                        modifier = Modifier.padding(start = 6.dp),
                                         color = MaterialTheme.colorScheme.onPrimaryContainer,
                                         maxLines = 1
                                     )
