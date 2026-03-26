@@ -2,6 +2,7 @@ package com.rpeters.jellyfin.ui.screens
 
 import android.app.Activity
 import androidx.annotation.OptIn
+import androidx.annotation.VisibleForTesting
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.lazy.grid.LazyGridState
@@ -430,9 +431,10 @@ private fun ImmersiveHomeContent(
     }
 }
 
+@VisibleForTesting
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun MobileExpressiveHomeContent(
+internal fun MobileExpressiveHomeContent(
     appState: MainAppState,
     contentLists: HomeContentLists,
     getImageUrl: (BaseItemDto) -> String?,
