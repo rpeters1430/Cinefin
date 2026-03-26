@@ -139,13 +139,26 @@ fun ImmersiveHomeScreen(
         }
     }
 
+    // Calculate window size class for adaptive layout
+    val windowSizeClass = calculateWindowSizeClass(activity = context as Activity)
+    val adaptiveConfig = rememberAdaptiveLayoutConfig(windowSizeClass)
+
     // Track scroll state for auto-hiding navigation
     val gridState = rememberLazyGridState()
+    val listState = rememberLazyListState()
+    
     // Use hero height as threshold to avoid flickering within hero
-    val topBarVisible = rememberAutoHideTopBarVisible(
-        gridState = gridState,
-        nearTopOffsetPx = with(LocalDensity.current) { ImmersiveDimens.HeroHeightPhone.toPx().toInt() },
-    )
+    val topBarVisible = if (adaptiveConfig.isTablet) {
+        rememberAutoHideTopBarVisible(
+            gridState = gridState,
+            nearTopOffsetPx = with(LocalDensity.current) { ImmersiveDimens.HeroHeightPhone.toPx().toInt() },
+        )
+    } else {
+        rememberAutoHideTopBarVisible(
+            listState = listState,
+            nearTopOffsetPx = with(LocalDensity.current) { ImmersiveDimens.HeroHeightPhone.toPx().toInt() },
+        )
+    }
 
     Box(modifier = modifier.fillMaxSize()) {
         ImmersiveScaffold(
@@ -255,6 +268,9 @@ fun ImmersiveHomeScreen(
                     onLibraryClick = onLibraryClick,
                     onGenerateViewingMood = onGenerateViewingMood,
                     gridState = gridState,
+                    listState = listState,
+                    windowSizeClass = windowSizeClass,
+                    adaptiveConfig = adaptiveConfig,
                     contentPadding = paddingValues,
                     modifier = Modifier.fillMaxSize(),
                 )
@@ -333,14 +349,12 @@ private fun ImmersiveHomeContent(
     onLibraryClick: (BaseItemDto) -> Unit = {},
     onGenerateViewingMood: () -> Unit = {},
     gridState: LazyGridState,
+    listState: LazyListState,
+    windowSizeClass: androidx.compose.material3.windowsizeclass.WindowSizeClass,
+    adaptiveConfig: com.rpeters.jellyfin.ui.adaptive.AdaptiveLayoutConfig,
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
 ) {
-    // Calculate window size class for adaptive layout
-    val context = LocalContext.current
-    val windowSizeClass = calculateWindowSizeClass(activity = context as Activity)
-    val adaptiveConfig = rememberAdaptiveLayoutConfig(windowSizeClass)
-
     // Consolidate all derived state computations
     val contentLists by remember(
         appState.allItems,
@@ -424,6 +438,7 @@ private fun ImmersiveHomeContent(
                 onItemLongPress = stableOnItemLongPress,
                 onLibraryClick = onLibraryClick,
                 viewingMood = viewingMood,
+                listState = listState,
                 contentPadding = contentPadding,
                 modifier = Modifier.fillMaxSize(),
             )
@@ -444,6 +459,7 @@ internal fun MobileExpressiveHomeContent(
     onItemLongPress: (BaseItemDto) -> Unit,
     onLibraryClick: (BaseItemDto) -> Unit,
     viewingMood: String?,
+    listState: LazyListState,
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
 ) {
@@ -460,6 +476,7 @@ internal fun MobileExpressiveHomeContent(
     }
 
     LazyColumn(
+        state = listState,
         modifier = modifier,
         contentPadding = PaddingValues(
             start = 0.dp,
@@ -471,30 +488,39 @@ internal fun MobileExpressiveHomeContent(
     ) {
         // Replace wonky carousel with high-impact Recently Added Movies (Last 5)
         val heroMovies = contentLists.recentMovies.take(5)
-        if (heroMovies.isNotEmpty()) {
+        if (heroMovies.isNotEmpty() || appState.isLoading) {
             item(key = "recently_added_hero", contentType = "hero_row") {
-                val featuredItems = remember(heroMovies, unknownText) {
-                    heroMovies.map { movie ->
-                        CarouselItem(
-                            id = movie.id.toString(),
-                            title = movie.name ?: unknownText,
-                            subtitle = movie.productionYear?.toString() ?: "",
-                            imageUrl = getBackdropUrl(movie) ?: getImageUrl(movie) ?: "",
-                            type = MediaType.MOVIE
-                        )
+                if (heroMovies.isNotEmpty()) {
+                    val featuredItems = remember(heroMovies, unknownText) {
+                        heroMovies.map { movie ->
+                            CarouselItem(
+                                id = movie.id.toString(),
+                                title = movie.name ?: unknownText,
+                                subtitle = movie.productionYear?.toString() ?: "",
+                                imageUrl = getBackdropUrl(movie) ?: getImageUrl(movie) ?: "",
+                                type = MediaType.MOVIE
+                            )
+                        }
                     }
+                    
+                    ImmersiveHeroCarousel(
+                        items = featuredItems,
+                        onItemClick = { selected ->
+                            heroMovies.firstOrNull { it.id.toString() == selected.id }?.let(onItemClick)
+                        },
+                        onPlayClick = { selected ->
+                            heroMovies.firstOrNull { it.id.toString() == selected.id }?.let(onItemClick)
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                } else {
+                    // Placeholder while loading to prevent layout jump
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(com.rpeters.jellyfin.ui.theme.ImmersiveDimens.HeroHeightPhone)
+                    )
                 }
-                
-                ImmersiveHeroCarousel(
-                    items = featuredItems,
-                    onItemClick = { selected ->
-                        heroMovies.firstOrNull { it.id.toString() == selected.id }?.let(onItemClick)
-                    },
-                    onPlayClick = { selected ->
-                        heroMovies.firstOrNull { it.id.toString() == selected.id }?.let(onItemClick)
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                )
             }
         }
 
