@@ -44,8 +44,8 @@ android {
         applicationId = "com.rpeters.jellyfin"
         minSdk = 26
         targetSdk = 35
-        versionCode = 78
-        versionName = "14.46"
+        versionCode = 79
+        versionName = "14.47"
 
         testInstrumentationRunner = "com.rpeters.jellyfin.testing.HiltTestRunner"
 
@@ -303,7 +303,7 @@ dependencies {
     // causes ClassCastException (Looper cannot be cast to ShadowedObject) on real devices when
     // Espresso's onIdle() is called. The @Config annotation used in AppearanceSettingsScreenTest
     // only requires the annotations submodule, which does not carry the service descriptor.
-    androidTestImplementation("org.robolectric:annotations:${libs.versions.robolectric.get()}")
+    androidTestImplementation(libs.annotations)
     androidTestImplementation(libs.kotlinx.coroutines.test)
 
     androidTestImplementation(libs.dagger.hilt.android.testing)
