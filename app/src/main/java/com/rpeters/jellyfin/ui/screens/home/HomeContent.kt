@@ -237,7 +237,7 @@ fun HomeContent(
                     item(key = "continue_watching", contentType = "continueWatching") {
                         ContinueWatchingSection(
                             items = contentLists.continueWatching,
-                            getImageUrl = getImageUrl,
+                            getImageUrl = { item -> getBackdropUrl(item) ?: getImageUrl(item) },
                             onItemClick = stableOnItemClick,
                             onItemLongPress = stableOnItemLongPress,
                             cardWidth = adaptiveConfig.continueWatchingCardWidth,

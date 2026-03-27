@@ -552,10 +552,10 @@ internal fun MobileExpressiveHomeContent(
             item(key = "continue_watching", contentType = "continue_watching") {
                 ContinueWatchingSection(
                     items = contentLists.continueWatching,
-                    getImageUrl = { item -> getSeriesImageUrl(item) ?: getImageUrl(item) },
+                    getImageUrl = { item -> getBackdropUrl(item) ?: getSeriesImageUrl(item) ?: getImageUrl(item) },
                     onItemClick = onItemClick,
                     onItemLongPress = onItemLongPress,
-                    cardWidth = 320.dp, // Increased from 176dp
+                    cardWidth = 320.dp,
                 )
             }
         }

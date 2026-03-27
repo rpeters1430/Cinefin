@@ -222,17 +222,17 @@ data class AdaptiveLayoutConfig(
         }
 
     /**
-     * Continue watching card width
+     * Continue watching card width — landscape (16:9) cards.
      */
     val continueWatchingCardWidth: Dp
         get() = when {
-            isTV -> 240.dp
-            isTablet || isFoldable -> if (isLandscapeFirst) 200.dp else 180.dp
+            isTV -> 360.dp
+            isTablet || isFoldable -> if (isLandscapeFirst) 320.dp else 300.dp
             windowSizeClass.widthSizeClass == WindowWidthSizeClass.Compact -> {
                 // Check for ultra-compact phones
-                if (carouselItemWidth < 150.dp) 138.dp else 160.dp
+                if (carouselItemWidth < 150.dp) 200.dp else 240.dp
             }
-            else -> 180.dp
+            else -> 260.dp
         }
 
     /**

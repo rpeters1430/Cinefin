@@ -31,7 +31,7 @@ fun ContinueWatchingSection(
     getImageUrl: (BaseItemDto) -> String?,
     onItemClick: (BaseItemDto) -> Unit,
     onItemLongPress: (BaseItemDto) -> Unit = {},
-    cardWidth: Dp = 160.dp,
+    cardWidth: Dp = 240.dp,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -70,10 +70,11 @@ fun ContinueWatchingCard(
     getImageUrl: (BaseItemDto) -> String?,
     onItemClick: (BaseItemDto) -> Unit,
     onItemLongPress: (BaseItemDto) -> Unit = {},
-    cardWidth: Dp = 160.dp,
+    cardWidth: Dp = 240.dp,
     modifier: Modifier = Modifier,
 ) {
     val watchedPercentage = item.userData?.playedPercentage ?: 0.0
+    val imageHeight = cardWidth * (9f / 16f)
 
     ElevatedCard(
         modifier = modifier.width(cardWidth),
@@ -94,10 +95,10 @@ fun ContinueWatchingCard(
                     imageUrl = getImageUrl(item),
                     contentDescription = item.name,
                     contentScale = ContentScale.Crop,
-                    size = ImageSize.POSTER,
+                    size = ImageSize.BANNER,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(220.dp),
+                        .height(imageHeight),
                 )
 
                 WatchProgressBar(
