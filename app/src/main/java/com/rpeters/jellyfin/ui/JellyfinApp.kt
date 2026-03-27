@@ -16,13 +16,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuOpen
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteDefaults
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,7 +41,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hierarchy
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.rpeters.jellyfin.network.ConnectivityChecker
@@ -48,6 +50,9 @@ import com.rpeters.jellyfin.ui.components.OfflineIndicatorBanner
 import com.rpeters.jellyfin.ui.navigation.BottomNavItem
 import com.rpeters.jellyfin.ui.navigation.JellyfinNavGraph
 import com.rpeters.jellyfin.ui.navigation.Screen
+import com.rpeters.jellyfin.ui.navigation.LocalNavBarVisible
+import com.rpeters.jellyfin.ui.navigation.navigateToMainDestination
+import com.rpeters.jellyfin.ui.navigation.shouldShowNavigation
 import com.rpeters.jellyfin.ui.shortcuts.DynamicShortcutManager
 import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
 import com.rpeters.jellyfin.ui.viewmodel.ServerConnectionViewModel
@@ -90,7 +95,12 @@ fun JellyfinApp(
     val mainAppViewModel: com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel = hiltViewModel()
     val appState by mainAppViewModel.appState.collectAsStateWithLifecycle()
 
+    // Mutable state for nav bar scroll-hide. Immersive screens write to this via
+    // LocalNavBarVisible; JellyfinApp reads it for the ExpressiveFloatingNavBar visibility.
+    val navBarVisible = remember { mutableStateOf(true) }
+
     JellyfinAndroidTheme(themePreferences = themePreferences) {
+        CompositionLocalProvider(LocalNavBarVisible provides navBarVisible) {
         val navController = rememberNavController()
         val connectionViewModel: ServerConnectionViewModel = hiltViewModel()
         val connectionState by connectionViewModel.connectionState.collectAsStateWithLifecycle()
@@ -172,6 +182,12 @@ fun JellyfinApp(
         val navBackStackEntry = navController.currentBackStackEntryAsState()
         val currentDestination = navBackStackEntry.value?.destination
 
+        // Reset nav bar visibility whenever the destination changes so hidden state from an
+        // immersive screen never bleeds into the next screen.
+        LaunchedEffect(currentDestination) {
+            navBarVisible.value = true
+        }
+
         val isCompactWidth = windowSizeClass.widthSizeClass == WindowWidthSizeClass.Compact
         var isNavExpanded by rememberSaveable(windowSizeClass.widthSizeClass) {
             mutableStateOf(windowSizeClass.widthSizeClass == WindowWidthSizeClass.Expanded)
@@ -190,42 +206,33 @@ fun JellyfinApp(
         val showNavToggle = !isCompactWidth
 
         // Only show navigation on main screens
-        val shouldShowNavigation = shouldShowNavigation(currentDestination)
+        val shouldShowNavigation = shouldShowNavigation(currentDestination?.route)
+
+        // Pre-compute toggle item colors outside the non-composable navigationSuiteItems lambda.
+        val toggleItemColors = NavigationSuiteDefaults.itemColors(
+            navigationRailItemColors = androidx.compose.material3.NavigationRailItemDefaults.colors(
+                indicatorColor = MaterialTheme.colorScheme.secondaryContainer,
+                selectedIconColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            ),
+            navigationDrawerItemColors = androidx.compose.material3.NavigationDrawerItemDefaults.colors(
+                selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+                selectedIconColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                selectedTextColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            ),
+        )
 
         if (shouldShowNavigation) {
             // Adaptive navigation scaffold for main screens
             NavigationSuiteScaffold(
                 navigationSuiteItems = {
-                    if (showNavToggle) {
-                        item(
-                            selected = false,
-                            onClick = { isNavExpanded = !isNavExpanded },
-                            icon = {
-                                Icon(
-                                    imageVector = if (isNavExpanded) Icons.AutoMirrored.Filled.MenuOpen else Icons.Filled.Menu,
-                                    contentDescription = if (isNavExpanded) "Collapse navigation" else "Expand navigation",
-                                )
-                            },
-                            label = if (showNavLabels) {
-                                { Text(if (isNavExpanded) "Collapse" else "Expand") }
-                            } else {
-                                null
-                            },
-                        )
-                    }
+                    // Destination items first so the toggle never interrupts keyboard/D-pad flow
                     BottomNavItem.bottomNavItems.forEach { item ->
                         item(
                             selected = currentDestination?.hierarchy?.any {
                                 it.route == item.route
                             } == true,
                             onClick = {
-                                navController.navigate(item.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
+                                navController.navigateToMainDestination(item.navigateTo)
                             },
                             icon = {
                                 Icon(
@@ -238,6 +245,27 @@ fun JellyfinApp(
                             } else {
                                 null
                             },
+                        )
+                    }
+                    // Toggle placed last and styled with secondary colors so it reads as a
+                    // utility action rather than a navigation destination.
+                    if (showNavToggle) {
+                        item(
+                            selected = false,
+                            onClick = { isNavExpanded = !isNavExpanded },
+                            icon = {
+                                Icon(
+                                    imageVector = if (isNavExpanded) Icons.AutoMirrored.Filled.MenuOpen else Icons.Filled.Menu,
+                                    contentDescription = if (isNavExpanded) "Collapse navigation" else "Expand navigation",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            },
+                            label = if (showNavLabels) {
+                                { Text(if (isNavExpanded) "Collapse" else "Expand") }
+                            } else {
+                                null
+                            },
+                            colors = toggleItemColors,
                         )
                     }
                 },
@@ -303,15 +331,9 @@ fun JellyfinApp(
                                 items = BottomNavItem.bottomNavItems,
                                 currentDestination = currentDestination,
                                 onNavigate = { item ->
-                                    navController.navigate(item.route) {
-                                        popUpTo(navController.graph.findStartDestination().id) {
-                                            saveState = true
-                                        }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
+                                    navController.navigateToMainDestination(item.navigateTo)
                                 },
-                                isVisible = true,
+                                isVisible = navBarVisible.value,
                                 modifier = Modifier.padding(bottom = 4.dp)
                             )
                         } else {
@@ -368,22 +390,7 @@ fun JellyfinApp(
                 }
             }
         }
+        } // CompositionLocalProvider(LocalNavBarVisible)
     }
 }
 
-/**
- * Determines whether to show navigation based on the current destination.
- * Only shows navigation on main app screens, not on auth or detail screens.
- */
-private fun shouldShowNavigation(destination: NavDestination?): Boolean {
-    val route = destination?.route ?: return false
-    return when (route) {
-        Screen.Home.route,
-        Screen.Library.route,
-        Screen.Search.route,
-        Screen.Favorites.route,
-        Screen.Settings.route,
-        -> true
-        else -> false
-    }
-}

@@ -32,6 +32,7 @@ import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
 import com.rpeters.jellyfin.data.JellyfinServer
 import com.rpeters.jellyfin.ui.adaptive.rememberAdaptiveLayoutConfig
+import com.rpeters.jellyfin.ui.navigation.LocalNavBarVisible
 import com.rpeters.jellyfin.ui.components.*
 import com.rpeters.jellyfin.ui.components.immersive.*
 import com.rpeters.jellyfin.ui.components.immersive.itemSubtitle
@@ -158,6 +159,12 @@ fun ImmersiveHomeScreen(
             listState = listState,
             nearTopOffsetPx = with(LocalDensity.current) { ImmersiveDimens.HeroHeightPhone.toPx().toInt() },
         )
+    }
+
+    // Drive global nav bar visibility from the same scroll state as the top bar.
+    val globalNavBarVisible = LocalNavBarVisible.current
+    LaunchedEffect(topBarVisible) {
+        globalNavBarVisible.value = topBarVisible
     }
 
     Box(modifier = modifier.fillMaxSize()) {

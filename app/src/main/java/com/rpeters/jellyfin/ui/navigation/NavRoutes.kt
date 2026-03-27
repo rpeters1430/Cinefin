@@ -17,7 +17,6 @@ sealed class Screen(val route: String) {
 
     // Main app flow
     object Home : Screen("home")
-    object EnhancedHome : Screen("enhanced_home")
     object Library : Screen("library")
     object Movies : Screen("movies")
     object TVShows : Screen("tv_shows")
@@ -94,8 +93,19 @@ sealed class Screen(val route: String) {
 
 /**
  * Sealed class representing navigation destinations that should be shown in the bottom navigation.
+ *
+ * [route] is the full route template (including argument placeholders) used for hierarchy
+ * matching when determining which item is currently selected.
+ * [navigateTo] is the actual route string passed to [NavController.navigate]. For optional-
+ * argument routes like Search, this is the base path without the query template so that
+ * [defaultValue] kicks in rather than passing a literal placeholder string.
  */
-sealed class BottomNavItem(val route: String, val title: String, val icon: AppDestinations) {
+sealed class BottomNavItem(
+    val route: String,
+    val title: String,
+    val icon: AppDestinations,
+    val navigateTo: String = route,
+) {
     object Home : BottomNavItem(
         route = Screen.Home.route,
         title = "Home",
@@ -109,9 +119,10 @@ sealed class BottomNavItem(val route: String, val title: String, val icon: AppDe
     )
 
     object Search : BottomNavItem(
-        route = Screen.Search.route,
+        route = Screen.Search.route,       // "search?query={query}" — for hierarchy matching
         title = "Search",
         icon = AppDestinations.SEARCH,
+        navigateTo = "search",             // base route — lets defaultValue = null apply
     )
 
     object Favorites : BottomNavItem(

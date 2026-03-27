@@ -17,25 +17,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ./gradlew assembleRelease
 ```
 
-**Windows Note**: Replace `./gradlew` with `./gradlew.bat` or `gradlew.bat` in all commands.
+**Windows Note**: Replace `./gradlew` with `./gradlew.bat` in all commands below.
 
 ### Testing
 ```bash
 # Run unit tests (JVM-based)
-./gradlew testDebugUnitTest          # Linux/macOS
-./gradlew.bat testDebugUnitTest      # Windows
+./gradlew testDebugUnitTest
 
 # Run instrumentation tests (requires device/emulator)
-./gradlew connectedAndroidTest       # Linux/macOS
-./gradlew.bat connectedAndroidTest   # Windows
+./gradlew connectedAndroidTest
 
 # Run both test types (used in CI)
-./gradlew ciTest                     # Linux/macOS
-./gradlew.bat ciTest                 # Windows
+./gradlew ciTest
 
 # Run a single test class
-./gradlew testDebugUnitTest --tests "com.rpeters.jellyfin.ClassName"         # Linux/macOS
-./gradlew.bat testDebugUnitTest --tests "com.rpeters.jellyfin.ClassName"     # Windows
+./gradlew testDebugUnitTest --tests "com.rpeters.jellyfin.ClassName"
 
 # Run a specific test method
 ./gradlew testDebugUnitTest --tests "com.rpeters.jellyfin.ClassName.methodName"
@@ -44,22 +40,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Code Quality
 ```bash
 # Run Android Lint
-./gradlew lintDebug                  # Linux/macOS
-./gradlew.bat lintDebug              # Windows
+./gradlew lintDebug
 
 # Generate JaCoCo coverage report (HTML/XML in app/build/reports)
-./gradlew jacocoTestReport           # Linux/macOS
-./gradlew.bat jacocoTestReport       # Windows
+./gradlew jacocoTestReport
 ```
 
 ### Environment Setup (CI/Codex/Web Environments)
 ```bash
-# Linux/macOS: Install Android SDK and setup environment
+# Install Android SDK and setup environment (Linux/macOS)
 ./setup.sh
 
 # Generate local.properties from environment variables
-scripts/gen-local-properties.sh   # bash (Linux/macOS)
-scripts/gen-local-properties.ps1  # PowerShell (Windows)
+scripts/gen-local-properties.sh   # Linux/macOS
+scripts/gen-local-properties.ps1  # Windows (PowerShell)
 ```
 
 **Note**: The setup scripts configure `ANDROID_SDK_ROOT` (or `ANDROID_HOME`) and generate `local.properties` with the SDK path. Required for CI/CD environments without Android Studio.
@@ -94,6 +88,7 @@ The app detects device type and displays different UIs:
 - **JellyfinSessionManager** (data/session/JellyfinSessionManager.kt) manages SDK client lifecycle and reconnection
 - **SecureCredentialManager** (data/SecureCredentialManager.kt) uses Android Keystore for secure token storage
 - **BiometricAuthManager**: Optional biometric lock over stored credentials, configured via `CredentialSecurityPreferencesRepository`
+- **Quick Connect**: Supported as an auth method (code-based login without password)
 - **Certificate Pinning**: Dynamic TOFU (Trust-on-First-Use) model for enhanced security
 - Authentication state flows through ViewModels to UI via StateFlow
 
@@ -152,7 +147,12 @@ Key pattern: Use `Provider<T>` for circular dependencies (e.g., `Provider<Jellyf
   - Checks codec support via MediaCodecList
   - Decides between Direct Play (no transcoding) vs Transcoding
   - Configures ExoPlayer accordingly
-- **VideoPlayerScreen** (ui/screens/VideoPlayerScreen.kt): Main video player UI
+- **VideoPlayerActivity** (ui/player/VideoPlayerActivity.kt): Video player is a separate Activity (not a Compose screen); launched via Intent from the nav graph
+  - **ExpressiveVideoControls**: Material 3 Expressive-styled player controls overlay
+  - **VideoPlayerGestures**: Swipe-to-seek and brightness/volume gesture handling
+  - **TrackSelectionManager**: Audio track and subtitle track selection
+  - **VideoPlayerMetadataManager**: Populates player UI with media metadata
+- **PipActionReceiver** (ui/player/PipActionReceiver.kt): Handles Picture-in-Picture playback controls
 - **AudioService** (ui/player/audio/AudioService.kt): Background audio playback with Media3 session
 - **PlaybackProgressManager**: Tracks and reports playback position to server
 
@@ -358,11 +358,11 @@ The repository uses automated workflows powered by Google's Gemini AI:
 - **Security**: Only repository OWNER, MEMBER, and COLLABORATOR can use commands
 
 ### Standard CI Workflows
-- ✅ Build verification on every push
-- 🧪 Unit testing with detailed reports
-- 🔍 Code quality checks (lint, security scans)
-- 📦 Dependency monitoring (weekly updates via Renovate)
-- 🚀 Automated releases on git tags
+- Build verification on every push
+- Unit testing with detailed reports
+- Code quality checks (lint, security scans)
+- Dependency monitoring (weekly updates via Renovate)
+- Automated releases on git tags
 
 ## Material 3 Design System
 
@@ -401,7 +401,7 @@ The home screen uses Material 3 Expressive components in the following order:
 The app has a complete immersive UI layer (Netflix/Disney+ style) alongside the standard Material 3 screens, controlled by feature flags for gradual rollout.
 
 ### Architecture
-- **13 immersive screens** in `ui/screens/Immersive*.kt` (Home, Movies, TV Shows, Library, Search, Favorites, detail screens for Movie/TV Show/TV Season/TV Episode/Home Video/Home Videos/Album)
+- **14 immersive screens** in `ui/screens/Immersive*.kt` (Home, Movies, TV Shows, Library, LibraryBrowser, Search, Favorites, detail screens for Movie/TV Show/TV Season/TV Episode/Home Video/Home Videos/Album)
 - **11 reusable components** in `ui/components/immersive/` (hero carousel, parallax hero, media cards, auto-hide nav bars, scaffold, gradient scrims, floating action groups, top bar visibility, performance config)
 - **Feature flag routing**: `core/FeatureFlags.kt` defines per-screen flags (e.g., `immersive_home_screen`, `immersive_movie_detail`) toggled via Firebase Remote Config
 

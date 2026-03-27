@@ -133,7 +133,6 @@ class MainActivity : FragmentActivity() {
         private val ALLOWED_SHORTCUT_ROUTES = setOf(
             // Main screens
             "home",
-            "enhanced_home",
             "library",
             "search",
             "favorites",
