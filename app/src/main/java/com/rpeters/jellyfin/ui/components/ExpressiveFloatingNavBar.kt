@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -51,7 +52,7 @@ fun ExpressiveFloatingNavBar(
             shape = MaterialTheme.shapes.extraLarge,
             color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
             tonalElevation = 6.dp,
-            modifier = Modifier.padding(6.dp),
+            modifier = Modifier.wrapContentWidth().padding(6.dp),
         ) {
             Row(
                 modifier = Modifier
