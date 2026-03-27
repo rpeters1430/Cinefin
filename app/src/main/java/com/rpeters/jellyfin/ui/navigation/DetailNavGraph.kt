@@ -510,6 +510,7 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                     isDownloaded = detailState.isDownloaded,
                     isOffline = detailState.isOffline,
                     onDeleteOfflineCopy = { viewModel.deleteOfflineCopy() },
+                    chapters = detailState.chapters,
                 )
 
                 LaunchedEffect(episode.id) {

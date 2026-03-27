@@ -77,6 +77,7 @@ import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
 import com.rpeters.jellyfin.ui.components.AiSummaryCard
+import com.rpeters.jellyfin.ui.screens.details.components.ChapterListSection
 import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
 import com.rpeters.jellyfin.ui.components.ExpressiveFilledButton
 import com.rpeters.jellyfin.ui.components.PerformanceOptimizedLazyRow
@@ -136,6 +137,7 @@ fun ImmersiveTVEpisodeDetailScreen(
     isDownloaded: Boolean = false,
     isOffline: Boolean = false,
     onDeleteOfflineCopy: () -> Unit = {},
+    chapters: List<org.jellyfin.sdk.model.api.ChapterInfo> = emptyList(),
     modifier: Modifier = Modifier,
 ) {
     val perfConfig = rememberImmersivePerformanceConfig()
@@ -316,6 +318,18 @@ fun ImmersiveTVEpisodeDetailScreen(
                             isLoadingAiSummary = isLoadingAiSummary,
                             playbackAnalysis = playbackAnalysis,
                         )
+                    }
+                }
+
+                // Chapters
+                if (chapters.isNotEmpty()) {
+                    item(key = "chapters") {
+                        Box(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)) {
+                            ChapterListSection(
+                                chapters = chapters,
+                                onChapterClick = { positionMs -> onPlayClick(episode, null, positionMs) },
+                            )
+                        }
                     }
                 }
 

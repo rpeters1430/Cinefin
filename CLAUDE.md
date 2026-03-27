@@ -70,15 +70,15 @@ scripts/gen-local-properties.ps1  # PowerShell (Windows)
 - **Project Name**: Cinefin Android (formerly Jellyfin Android Client)
 - **Application ID**: `com.rpeters.jellyfin`
 - **Namespace**: `com.rpeters.jellyfin`
-- **Version**: Defined in `app/build.gradle.kts` (versionCode: 49, versionName: "14.17")
+- **Version**: Defined in `app/build.gradle.kts` (versionCode: 79, versionName: "14.47")
 
 ### High-Level Architecture
 This is a modern Android client for Jellyfin media servers built with:
-- **UI**: Jetpack Compose (BOM 2026.02.00) with Material 3 design system
+- **UI**: Jetpack Compose (BOM 2026.03.01) with Material 3 design system
 - **Architecture**: MVVM pattern with Repository pattern for data access
 - **DI**: Hilt 2.59.1 for dependency injection throughout the app
 - **Async**: Kotlin Coroutines 1.10.2 with StateFlow for reactive UI updates
-- **Media Playback**: ExoPlayer (Media3 1.10.0-alpha01) with Jellyfin FFmpeg decoder
+- **Media Playback**: ExoPlayer (Media3 1.10.0-rc03) with Jellyfin FFmpeg decoder
 - **Networking**: Retrofit 3.0.0 + OkHttp 5.3.2 + Jellyfin SDK 1.8.6
 - **Image Loading**: Coil 3.3.0 with custom performance optimizations
 - **Security**: Android Keystore encryption, dynamic certificate pinning with TOFU model
@@ -91,14 +91,15 @@ The app detects device type and displays different UIs:
 
 ### Authentication & Session Management
 - **JellyfinAuthRepository** (data/repository/JellyfinAuthRepository.kt) handles all authentication
-- **JellyfinSessionManager** (data/session/JellyfinSessionManager.kt) manages SDK client lifecycle
+- **JellyfinSessionManager** (data/session/JellyfinSessionManager.kt) manages SDK client lifecycle and reconnection
 - **SecureCredentialManager** (data/SecureCredentialManager.kt) uses Android Keystore for secure token storage
+- **BiometricAuthManager**: Optional biometric lock over stored credentials, configured via `CredentialSecurityPreferencesRepository`
 - **Certificate Pinning**: Dynamic TOFU (Trust-on-First-Use) model for enhanced security
 - Authentication state flows through ViewModels to UI via StateFlow
 
 ### Repository Layer Pattern
 All data access goes through repositories that wrap the Jellyfin SDK:
-- **JellyfinRepository**: Main repository for media library operations
+- **JellyfinRepository**: Main repository for media library operations (large item lists use Paging 3 via `LibraryItemPagingSource`)
 - **JellyfinAuthRepository**: Authentication and server connection
 - **JellyfinStreamRepository**: Streaming URLs and playback info
 - **JellyfinSearchRepository**: Search functionality
@@ -114,6 +115,15 @@ sealed class ApiResult<out T> {
 }
 ```
 
+### Preferences & Settings Pattern
+User preferences are stored with Jetpack DataStore and follow a consistent pattern: a `*PreferencesRepository` that reads/writes typed data classes + enums, provided by `DataStoreModule`. Key preference repositories:
+- **PlaybackPreferencesRepository**: Transcoding quality, audio channels, resume mode (`TranscodingQuality`, `AudioChannelPreference`, `ResumePlaybackMode` enums)
+- **ThemePreferencesRepository**: App theme selection
+- **CastPreferencesRepository**: Auto-reconnect and last-used device
+- **SubtitleAppearancePreferencesRepository**: Font size, style, color
+- **CredentialSecurityPreferencesRepository**: Biometric lock settings
+- **DownloadPreferencesRepository**: Download quality and storage preferences
+
 ### Dependency Injection Structure
 Hilt modules are organized in `di/` directory:
 - **NetworkModule**: Provides OkHttpClient, Jellyfin SDK, ImageLoader, caching
@@ -122,6 +132,8 @@ Hilt modules are organized in `di/` directory:
 - **DispatcherModule**: Provides coroutine dispatchers (Main, IO, Default)
 - **AiModule**: Provides AI models with smart Nano/Cloud fallback
 - **RemoteConfigModule**: Provides Firebase Remote Config instance
+- **DataStoreModule**: Provides DataStore instances for preferences
+- **SecurityModule**: Provides biometric auth manager and secure storage
 
 Key pattern: Use `Provider<T>` for circular dependencies (e.g., `Provider<JellyfinAuthRepository>` in interceptors)
 
@@ -163,6 +175,14 @@ The Cast system is split into dedicated controllers in `ui/player/cast/`:
 - **Authentication**: Cast URLs currently include `api_key` query parameters for receiver playback compatibility; this works for many setups but may still fail on hardened/auth-restricted deployments without a cast-safe proxy/token strategy
 - **Stream optimization**: Prefers HLS transcoding (`container=hls`) for maximum compatibility with adaptive streaming fallback
 - **Feature flag**: `ENABLE_CAST_FIX_PATH` gates cast reliability fixes for gradual rollout
+
+### Network Layer
+OkHttp interceptor stack in `network/` directory:
+- **JellyfinAuthInterceptor**: Injects auth tokens into requests
+- **CachePolicyInterceptor**: Per-request cache control headers
+- **NetworkStateInterceptor**: Checks connectivity before requests (throws offline error)
+- **ConnectivityChecker**: Utility for network state queries
+- **DeviceIdentityProvider**: Supplies device ID for Jellyfin client headers
 
 ### Image Loading & Performance
 - Custom `ImageLoadingOptimizer` (ui/image/OptimizedImageLoader.kt) configures Coil based on device performance
@@ -221,9 +241,9 @@ The Cast system is split into dedicated controllers in `ui/player/cast/`:
 ### Key Constants & Configuration
 - Centralized constants in `core/constants/Constants.kt`
 - **SDK versions**: compileSdk 36, targetSdk 35, minSdk 26 (Android 8.0+)
-- **Current version**: versionCode 49, versionName "14.17"
+- **Current version**: versionCode 79, versionName "14.47"
 - **Java version**: 21 with core library desugaring enabled
-- **Kotlin version**: 2.3.10 with KSP 2.3.5
+- **Kotlin version**: 2.3.20 with KSP 2.3.6
 - **Dependency versions**: Centralized in `gradle/libs.versions.toml`
 - **Release builds**: ProGuard/R8 enabled with shrinking and minification (`proguard-rules.pro`)
 - **Native debug symbols**: FULL debug symbols enabled for Play Console crash reporting
@@ -413,6 +433,9 @@ LazyColumn(modifier = Modifier.fillMaxSize()) {  // No .background() modifier!
 - Use `graphicsLayer` for animations, not `scale()` modifier (better performance)
 - `season.childCount` from Jellyfin API is often null; only show episode count when data is available
 
+### DLNA / UPnP Casting
+A DLNA renderer is also available (`ui/player/dlna/`) as an alternative to Chromecast for UPnP-capable devices. It is separate from the Cast system and uses its own discovery and session management.
+
 ## Android TV Considerations
 
 When working on TV features:
@@ -423,10 +446,12 @@ When working on TV features:
 
 ## Offline & Download Features
 
-**Status**: Partially implemented
-- Screens exist: `ui/downloads/DownloadsScreen.kt`
-- Manager: `data/offline/OfflineDownloadManager.kt`
-- Core functionality incomplete - this is a known gap per CURRENT_STATUS.md
+**Status**: Partially implemented — UI and architecture exist but end-to-end flow is incomplete.
+- **OfflineDownloadManager** (`data/offline/`): Coordinates downloads; uses WorkManager workers (`OfflineDownloadWorker`, `OfflineProgressSyncWorker`) for background scheduling
+- **OfflinePlaybackManager**: Handles playback from local storage
+- **MediaStoreSaver**: Saves downloaded media to the device MediaStore
+- **DownloadsScreen** (`ui/downloads/`): UI for managing downloads
+- Core download → playback pipeline is incomplete — see `docs/plans/CURRENT_STATUS.md`
 
 ## Commit Convention
 

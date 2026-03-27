@@ -67,6 +67,7 @@ import com.rpeters.jellyfin.ui.components.QualitySelectionDialog
 import com.rpeters.jellyfin.ui.components.immersive.StaticHeroSection
 import com.rpeters.jellyfin.ui.downloads.DownloadsViewModel
 import com.rpeters.jellyfin.ui.screens.details.components.ActionButton
+import com.rpeters.jellyfin.ui.screens.details.components.ChapterListSection
 import com.rpeters.jellyfin.ui.screens.details.components.DetailCastAndCrewSection
 import com.rpeters.jellyfin.ui.screens.details.components.DetailSubtitleRow
 import com.rpeters.jellyfin.ui.screens.details.components.DetailVideoInfoRow
@@ -303,6 +304,23 @@ fun ImmersiveMovieDetailScreen(
                             .background(MaterialTheme.colorScheme.background),
                     ) {
                         MovieTechSpecsSection(movie)
+                    }
+                }
+
+                // Chapters
+                val movieChapters = movie.chapters ?: emptyList()
+                if (movieChapters.isNotEmpty()) {
+                    item(key = "chapters") {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(MaterialTheme.colorScheme.background),
+                        ) {
+                            ChapterListSection(
+                                chapters = movieChapters,
+                                onChapterClick = { positionMs -> onPlayClick(movie, null, positionMs) },
+                            )
+                        }
                     }
                 }
 

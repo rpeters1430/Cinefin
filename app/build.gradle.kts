@@ -44,8 +44,8 @@ android {
         applicationId = "com.rpeters.jellyfin"
         minSdk = 26
         targetSdk = 35
-        versionCode = 79
-        versionName = "14.47"
+        versionCode = 81
+        versionName = "14.49"
 
         testInstrumentationRunner = "com.rpeters.jellyfin.testing.HiltTestRunner"
 

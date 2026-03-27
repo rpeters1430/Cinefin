@@ -28,6 +28,7 @@ data class TVEpisodeDetailState(
     val previousEpisode: BaseItemDto? = null,
     val nextEpisode: BaseItemDto? = null,
     val seasonEpisodes: List<BaseItemDto> = emptyList(),
+    val chapters: List<org.jellyfin.sdk.model.api.ChapterInfo> = emptyList(),
     val playbackAnalysis: PlaybackCapabilityAnalysis? = null,
     val playbackProgress: com.rpeters.jellyfin.ui.player.PlaybackProgress? = null,
     val isLoading: Boolean = false,
@@ -89,6 +90,7 @@ class TVEpisodeDetailViewModel @Inject constructor(
                 episode = episode,
                 seriesInfo = seriesInfo,
                 isLoading = true,
+                chapters = emptyList(),
             )
 
             // Also fetch initial progress from server
@@ -113,8 +115,23 @@ class TVEpisodeDetailViewModel @Inject constructor(
                 loadAdjacentEpisodes(seasonId.toString(), episode.indexNumber)
             }
 
+            // Fetch full episode details to get chapters (the episode passed in comes from
+            // a list API call which does not include chapter data)
+            loadChapters(episodeId)
+
             observeDownloadState(episodeId)
             _state.value = _state.value.copy(isLoading = false)
+        }
+    }
+
+    private suspend fun loadChapters(episodeId: String) {
+        when (val result = mediaRepository.getEpisodeDetails(episodeId)) {
+            is ApiResult.Success -> {
+                _state.value = _state.value.copy(
+                    chapters = result.data.chapters ?: emptyList(),
+                )
+            }
+            else -> { /* chapters remain empty — non-critical */ }
         }
     }
 
