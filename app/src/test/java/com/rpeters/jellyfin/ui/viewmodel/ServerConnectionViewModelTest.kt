@@ -280,17 +280,3 @@ class ServerConnectionViewModelTest {
         viewModel.viewModelScope.cancel()
     }
 }
-
-@OptIn(ExperimentalCoroutinesApi::class)
-class MainDispatcherRule(
-    val dispatcher: TestDispatcher = StandardTestDispatcher(),
-) : org.junit.rules.TestWatcher() {
-
-    override fun starting(description: org.junit.runner.Description) {
-        kotlinx.coroutines.Dispatchers.setMain(dispatcher)
-    }
-
-    override fun finished(description: org.junit.runner.Description) {
-        kotlinx.coroutines.Dispatchers.resetMain()
-    }
-}
