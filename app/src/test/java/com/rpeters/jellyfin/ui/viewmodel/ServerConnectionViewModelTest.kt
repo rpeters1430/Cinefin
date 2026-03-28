@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.test.core.app.ApplicationProvider
 import com.rpeters.jellyfin.data.BiometricCapability
 import com.rpeters.jellyfin.data.SecureCredentialManager
+import com.rpeters.jellyfin.data.JellyfinServer
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.data.security.CertificatePinningManager
@@ -16,30 +17,35 @@ import com.rpeters.jellyfin.ui.viewmodel.PreferencesKeys.BIOMETRIC_REQUIRE_STRON
 import com.rpeters.jellyfin.ui.viewmodel.PreferencesKeys.REMEMBER_LOGIN
 import com.rpeters.jellyfin.ui.viewmodel.PreferencesKeys.SERVER_URL
 import com.rpeters.jellyfin.ui.viewmodel.PreferencesKeys.USERNAME
-import io.mockk.coEvery
-import io.mockk.coVerify
-import io.mockk.every
-import io.mockk.mockk
+import com.rpeters.jellyfin.ui.components.ConnectionPhase
+import io.mockk.*
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.jellyfin.sdk.model.api.AuthenticationResult
 import org.jellyfin.sdk.model.api.PublicSystemInfo
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
 @OptIn(ExperimentalCoroutinesApi::class)
+@RunWith(RobolectricTestRunner::class)
 class ServerConnectionViewModelTest {
 
     @get:Rule
@@ -54,6 +60,9 @@ class ServerConnectionViewModelTest {
 
     @Before
     fun setUp() = runTest {
+        unmockkAll()
+        MockKAnnotations.init(this)
+        
         context = ApplicationProvider.getApplicationContext()
         repository = mockk(relaxed = true)
         secureCredentialManager = mockk(relaxed = true)
@@ -62,6 +71,11 @@ class ServerConnectionViewModelTest {
         offlineDownloadManager = mockk(relaxed = true)
 
         every { repository.isConnected } returns MutableStateFlow(false)
+        val mockServer = mockk<com.rpeters.jellyfin.data.JellyfinServer>(relaxed = true)
+        every { mockServer.url } returns "https://example.com"
+        every { mockServer.username } returns "user"
+        every { mockServer.accessToken } returns "token"
+        every { repository.currentServer } returns MutableStateFlow(mockServer)
         val strongCapability = BiometricCapability(
             authenticators = BiometricManager.Authenticators.BIOMETRIC_STRONG or
                 BiometricManager.Authenticators.DEVICE_CREDENTIAL,
@@ -277,6 +291,60 @@ class ServerConnectionViewModelTest {
         val preferences = context.dataStore.data.first()
         assertFalse(preferences[REMEMBER_LOGIN] == true)
         coVerify(exactly = 0) { secureCredentialManager.savePassword(any(), any(), any()) }
+        viewModel.viewModelScope.cancel()
+    }
+
+    @Test
+    fun `testServerConnection handles various URL formats`() = runTest(mainDispatcherRule.dispatcher) {
+        val formats = listOf("192.168.1.1", "http://jellyfin:8096", "jellyfin.local")
+        val viewModel = ServerConnectionViewModel(
+            repository,
+            secureCredentialManager,
+            certificatePinningManager,
+            connectivityChecker,
+            offlineDownloadManager,
+            context,
+        )
+        advanceUntilIdle()
+
+        formats.forEach { url ->
+            coEvery { repository.testServerConnection(any()) } returns ApiResult.Success(mockk(relaxed = true))
+            coEvery { repository.authenticateUser(any(), any(), any()) } returns ApiResult.Success(mockk(relaxed = true))
+            
+            viewModel.connectToServer(url, "user", "pass")
+            advanceUntilIdle()
+            
+            // Verify normalization (implementation detail, but observable via repo call)
+            coVerify { repository.testServerConnection(match { it.startsWith("http") }) }
+            
+            // Reset for next iteration
+            viewModel.logout()
+            advanceUntilIdle()
+        }
+        viewModel.viewModelScope.cancel()
+    }
+
+    @Test
+    fun `connection phases transition correctly`() = runTest(mainDispatcherRule.dispatcher) {
+        coEvery { repository.testServerConnection(any()) } returns ApiResult.Success(mockk(relaxed = true))
+        coEvery { repository.authenticateUser(any(), any(), any()) } returns ApiResult.Success(mockk(relaxed = true))
+
+        val viewModel = ServerConnectionViewModel(
+            repository,
+            secureCredentialManager,
+            certificatePinningManager,
+            connectivityChecker,
+            offlineDownloadManager,
+            context,
+        )
+        advanceUntilIdle()
+
+        viewModel.connectToServer("https://example.com", "user", "pass")
+        
+        // Wait for the Connected state (this handles the background work on real IO dispatcher)
+        val finalState = viewModel.connectionState.first { it.connectionPhase == ConnectionPhase.Connected }
+        assertEquals(ConnectionPhase.Connected, finalState.connectionPhase)
+        
         viewModel.viewModelScope.cancel()
     }
 }
