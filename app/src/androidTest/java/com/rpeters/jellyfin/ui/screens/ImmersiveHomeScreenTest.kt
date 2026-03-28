@@ -76,6 +76,7 @@ class ImmersiveHomeScreenTest {
                     onItemLongPress = onItemLongPress,
                     onLibraryClick = onLibraryClick,
                     viewingMood = viewingMood,
+                    listState = androidx.compose.foundation.lazy.rememberLazyListState(),
                     contentPadding = PaddingValues(),
                 )
             }

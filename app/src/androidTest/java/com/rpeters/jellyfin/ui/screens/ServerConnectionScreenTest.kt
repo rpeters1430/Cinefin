@@ -12,15 +12,12 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableStateFlow
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.rpeters.jellyfin.TestCinefinApplication
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.annotation.Config
 
 @OptIn(com.rpeters.jellyfin.OptInAppExperimentalApis::class)
 @RunWith(AndroidJUnit4::class)
-@Config(sdk = [34], application = TestCinefinApplication::class)
 class ServerConnectionScreenTest {
 
     @get:Rule
