@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,6 +26,15 @@ import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.focus.FocusDirection
+import com.rpeters.jellyfin.ui.tv.*
+
+import com.rpeters.jellyfin.ui.components.tv.TvContentCard
+import com.rpeters.jellyfin.ui.components.tv.TvPlaybackProgressBar
+
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun TvHomeScreen(
@@ -37,135 +48,209 @@ fun TvHomeScreen(
 ) {
     val appState by viewModel.appState.collectAsState()
     var focusedBackdrop by remember { mutableStateOf<String?>(null) }
+    val focusManager = rememberTvFocusManager()
+    val localFocusManager = LocalFocusManager.current
     val tvLayout = CinefinTvTheme.layout
+    
+    // Initial focus requester for the first row's first item
+    val firstItemFocusRequester = remember { FocusRequester() }
 
     LaunchedEffect(Unit) {
         viewModel.loadInitialData(forceRefresh = false)
         viewModel.loadFavorites()
     }
 
-    Box(modifier = modifier.fillMaxSize()) {
-        TvImmersiveBackground(backdropUrl = focusedBackdrop)
+    // Request initial focus when data is loaded
+    firstItemFocusRequester.requestInitialFocus(
+        condition = appState.libraries.isNotEmpty() || appState.continueWatching.isNotEmpty(),
+        delayMs = 800 // Increased delay to ensure layout is stable
+    )
 
-        if (appState.isLoading && appState.libraries.isEmpty()) {
-            TvFullScreenLoading(message = "Syncing your library...")
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(
-                    top = tvLayout.screenTopPadding,
-                    bottom = tvLayout.contentBottomPadding,
-                ),
-                verticalArrangement = Arrangement.spacedBy(tvLayout.sectionSpacing),
-            ) {
-                item {
-                    TvHomeHeader(
-                        modifier = Modifier.padding(
-                            start = tvLayout.screenHorizontalPadding,
-                            bottom = 8.dp,
-                        ),
-                    )
-                }
+    TvScreenFocusScope(screenKey = screenKey, focusManager = focusManager) {
+        Box(modifier = modifier.fillMaxSize()) {
+            // Background layer
+            TvImmersiveBackground(backdropUrl = focusedBackdrop)
 
-                if (appState.libraries.isNotEmpty()) {
+            // Loading state
+            if (appState.isLoading && appState.libraries.isEmpty()) {
+                TvFullScreenLoading(message = "Syncing your library...")
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(
+                        top = tvLayout.screenTopPadding,
+                        bottom = tvLayout.contentBottomPadding,
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(tvLayout.sectionSpacing),
+                ) {
+                    // Welcome Header
                     item {
-                        TvSectionRow(
-                            title = "Your Libraries",
-                            sectionPadding = tvLayout.screenHorizontalPadding,
-                            items = appState.libraries,
-                            onItemFocus = { focusedBackdrop = viewModel.getBackdropUrl(it) },
-                            onItemClick = { onLibrarySelect(it.id.toString()) },
-                            content = { library, isFocused ->
-                                LibraryCard(library, isFocused)
-                            },
+                        TvHomeHeader(
+                            modifier = Modifier
+                                .padding(
+                                    start = tvLayout.screenHorizontalPadding,
+                                    bottom = 8.dp
+                                )
                         )
                     }
-                }
 
-                if (appState.continueWatching.isNotEmpty()) {
-                    item {
-                        TvSectionRow(
-                            title = "Continue Watching",
-                            sectionPadding = tvLayout.screenHorizontalPadding,
-                            items = appState.continueWatching.take(10),
-                            onItemFocus = { focusedBackdrop = viewModel.getBackdropUrl(it) },
-                            onItemClick = { onItemSelect(it.id.toString()) },
-                            content = { item, isFocused ->
-                                MediaCard(
-                                    item = item,
-                                    getImageUrl = { viewModel.getSeriesImageUrl(it) ?: viewModel.getImageUrl(it) },
-                                    isFocused = isFocused,
-                                    aspectRatio = 16f / 9f,
-                                    width = 320.dp,
-                                )
-                            },
-                        )
+                    // Libraries Row
+                    if (appState.libraries.isNotEmpty()) {
+                        item {
+                            TvSectionRow(
+                                title = "Your Libraries",
+                                sectionPadding = tvLayout.screenHorizontalPadding,
+                                items = appState.libraries,
+                                focusManager = focusManager,
+                                carouselId = "libraries_row",
+                                focusRequester = firstItemFocusRequester,
+                                onExitLeft = { 
+                                    localFocusManager.moveFocus(FocusDirection.Left)
+                                    true 
+                                },
+                                onItemFocus = { focusedBackdrop = viewModel.getBackdropUrl(it) },
+                                onItemClick = { onLibrarySelect(it.id.toString()) },
+                                content = { library, isFocused, focusRequester ->
+                                    LibraryCard(
+                                        library = library,
+                                        isFocused = isFocused,
+                                        focusRequester = focusRequester,
+                                        onClick = { onLibrarySelect(library.id.toString()) }
+                                    )
+                                }
+                            )
+                        }
                     }
-                }
 
-                val recentMovies = appState.recentlyAddedByTypes[BaseItemKind.MOVIE.name].orEmpty()
-                if (recentMovies.isNotEmpty()) {
-                    item {
-                        TvSectionRow(
-                            title = "Recently Added Movies",
-                            sectionPadding = tvLayout.screenHorizontalPadding,
-                            items = recentMovies.take(15),
-                            onItemFocus = { focusedBackdrop = viewModel.getBackdropUrl(it) },
-                            onItemClick = { onItemSelect(it.id.toString()) },
-                            content = { item, isFocused ->
-                                MediaCard(
-                                    item = item,
-                                    getImageUrl = viewModel::getImageUrl,
-                                    isFocused = isFocused,
-                                    aspectRatio = 2f / 3f,
-                                    width = 180.dp,
-                                )
-                            },
-                        )
+                    // Continue Watching
+                    if (appState.continueWatching.isNotEmpty()) {
+                        item {
+                            TvSectionRow(
+                                title = "Continue Watching",
+                                sectionPadding = tvLayout.screenHorizontalPadding,
+                                items = appState.continueWatching.take(10),
+                                focusManager = focusManager,
+                                carouselId = "continue_watching_row",
+                                onExitLeft = { 
+                                    localFocusManager.moveFocus(FocusDirection.Left)
+                                    true 
+                                },
+                                onItemFocus = { focusedBackdrop = viewModel.getBackdropUrl(it) },
+                                onItemClick = { onItemSelect(it.id.toString()) },
+                                content = { item, isFocused, focusRequester ->
+                                    TvContentCard(
+                                        item = item,
+                                        onItemFocus = { focusedBackdrop = viewModel.getBackdropUrl(item) },
+                                        onItemSelect = { onItemSelect(item.id.toString()) },
+                                        getImageUrl = { viewModel.getSeriesImageUrl(it) ?: viewModel.getImageUrl(it) },
+                                        getSeriesImageUrl = viewModel::getSeriesImageUrl,
+                                        focusRequester = focusRequester,
+                                        isFocused = isFocused,
+                                        posterWidth = 320.dp,
+                                        posterHeight = 180.dp
+                                    )
+                                }
+                            )
+                        }
                     }
-                }
 
-                val recentShows = appState.recentlyAddedByTypes[BaseItemKind.SERIES.name].orEmpty()
-                if (recentShows.isNotEmpty()) {
-                    item {
-                        TvSectionRow(
-                            title = "Latest TV Shows",
-                            sectionPadding = tvLayout.screenHorizontalPadding,
-                            items = recentShows.take(15),
-                            onItemFocus = { focusedBackdrop = viewModel.getBackdropUrl(it) },
-                            onItemClick = { onItemSelect(it.id.toString()) },
-                            content = { item, isFocused ->
-                                MediaCard(
-                                    item = item,
-                                    getImageUrl = viewModel::getImageUrl,
-                                    isFocused = isFocused,
-                                    aspectRatio = 2f / 3f,
-                                    width = 180.dp,
-                                )
-                            },
-                        )
+                    // Recently Added Movies
+                    val recentMovies = appState.recentlyAddedByTypes[BaseItemKind.MOVIE.name].orEmpty()
+                    if (recentMovies.isNotEmpty()) {
+                        item {
+                            TvSectionRow(
+                                title = "Recently Added Movies",
+                                sectionPadding = tvLayout.screenHorizontalPadding,
+                                items = recentMovies.take(15),
+                                focusManager = focusManager,
+                                carouselId = "recent_movies_row",
+                                onExitLeft = { 
+                                    localFocusManager.moveFocus(FocusDirection.Left)
+                                    true 
+                                },
+                                onItemFocus = { focusedBackdrop = viewModel.getBackdropUrl(it) },
+                                onItemClick = { onItemSelect(it.id.toString()) },
+                                content = { item, isFocused, focusRequester ->
+                                    TvContentCard(
+                                        item = item,
+                                        onItemFocus = { focusedBackdrop = viewModel.getBackdropUrl(item) },
+                                        onItemSelect = { onItemSelect(item.id.toString()) },
+                                        getImageUrl = viewModel::getImageUrl,
+                                        getSeriesImageUrl = viewModel::getSeriesImageUrl,
+                                        focusRequester = focusRequester,
+                                        isFocused = isFocused,
+                                        posterWidth = 180.dp,
+                                        posterHeight = 270.dp
+                                    )
+                                }
+                            )
+                        }
                     }
-                }
 
-                val recentStuff = appState.recentlyAddedByTypes[BaseItemKind.VIDEO.name].orEmpty()
-                if (recentStuff.isNotEmpty()) {
-                    item {
-                        TvSectionRow(
-                            title = "Recent Stuff",
-                            sectionPadding = tvLayout.screenHorizontalPadding,
-                            items = recentStuff.take(15),
-                            onItemFocus = { focusedBackdrop = viewModel.getBackdropUrl(it) },
-                            onItemClick = { onItemSelect(it.id.toString()) },
-                            content = { item, isFocused ->
-                                MediaCard(
-                                    item = item,
-                                    getImageUrl = viewModel::getImageUrl,
-                                    isFocused = isFocused,
-                                    aspectRatio = 16f / 9f,
-                                    width = 280.dp,
-                                )
-                            },
-                        )
+                    // Recently Added Shows
+                    val recentShows = appState.recentlyAddedByTypes[BaseItemKind.SERIES.name].orEmpty()
+                    if (recentShows.isNotEmpty()) {
+                        item {
+                            TvSectionRow(
+                                title = "Latest TV Shows",
+                                sectionPadding = tvLayout.screenHorizontalPadding,
+                                items = recentShows.take(15),
+                                focusManager = focusManager,
+                                carouselId = "recent_shows_row",
+                                onExitLeft = { 
+                                    localFocusManager.moveFocus(FocusDirection.Left)
+                                    true 
+                                },
+                                onItemFocus = { focusedBackdrop = viewModel.getBackdropUrl(it) },
+                                onItemClick = { onItemSelect(it.id.toString()) },
+                                content = { item, isFocused, focusRequester ->
+                                    TvContentCard(
+                                        item = item,
+                                        onItemFocus = { focusedBackdrop = viewModel.getBackdropUrl(item) },
+                                        onItemSelect = { onItemSelect(item.id.toString()) },
+                                        getImageUrl = viewModel::getImageUrl,
+                                        getSeriesImageUrl = viewModel::getSeriesImageUrl,
+                                        focusRequester = focusRequester,
+                                        isFocused = isFocused,
+                                        posterWidth = 180.dp,
+                                        posterHeight = 270.dp
+                                    )
+                                }
+                            )
+                        }
+                    }
+                    
+                    // Stuff / Home Videos
+                    val recentStuff = appState.recentlyAddedByTypes[BaseItemKind.VIDEO.name].orEmpty()
+                    if (recentStuff.isNotEmpty()) {
+                        item {
+                            TvSectionRow(
+                                title = "Recent Stuff",
+                                sectionPadding = tvLayout.screenHorizontalPadding,
+                                items = recentStuff.take(15),
+                                focusManager = focusManager,
+                                carouselId = "recent_stuff_row",
+                                onExitLeft = { 
+                                    localFocusManager.moveFocus(FocusDirection.Left)
+                                    true 
+                                },
+                                onItemFocus = { focusedBackdrop = viewModel.getBackdropUrl(it) },
+                                onItemClick = { onItemSelect(it.id.toString()) },
+                                content = { item, isFocused, focusRequester ->
+                                    TvContentCard(
+                                        item = item,
+                                        onItemFocus = { focusedBackdrop = viewModel.getBackdropUrl(item) },
+                                        onItemSelect = { onItemSelect(item.id.toString()) },
+                                        getImageUrl = viewModel::getImageUrl,
+                                        getSeriesImageUrl = viewModel::getSeriesImageUrl,
+                                        focusRequester = focusRequester,
+                                        isFocused = isFocused,
+                                        posterWidth = 280.dp,
+                                        posterHeight = 158.dp
+                                    )
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -179,14 +264,17 @@ private fun TvSectionRow(
     title: String,
     sectionPadding: Dp,
     items: List<BaseItemDto>,
+    focusManager: TvFocusManager,
+    carouselId: String,
     onItemFocus: (BaseItemDto) -> Unit,
     onItemClick: (BaseItemDto) -> Unit,
-    content: @Composable (BaseItemDto, Boolean) -> Unit,
+    focusRequester: FocusRequester? = null,
+    onExitLeft: (() -> Boolean)? = null,
+    content: @Composable (BaseItemDto, Boolean, FocusRequester) -> Unit
 ) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
+    val lazyListState = rememberLazyListState()
+    
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(
             text = title,
             style = MaterialTheme.typography.headlineSmall,
@@ -194,29 +282,24 @@ private fun TvSectionRow(
             color = Color.White.copy(alpha = 0.9f),
         )
 
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = sectionPadding),
-            horizontalArrangement = Arrangement.spacedBy(20.dp),
-        ) {
-            items(items, key = { it.id.toString() }) { item ->
-                var isFocused by remember { mutableStateOf(false) }
-
-                Surface(
-                    onClick = { onItemClick(item) },
-                    modifier = Modifier
-                        .wrapContentSize()
-                        .onFocusChanged {
-                            isFocused = it.isFocused
-                            if (it.isFocused) onItemFocus(item)
-                        },
-                    scale = ClickableSurfaceDefaults.scale(focusedScale = 1.1f),
-                    shape = ClickableSurfaceDefaults.shape(shape = MaterialTheme.shapes.medium),
-                    colors = ClickableSurfaceDefaults.colors(
-                        containerColor = Color.Transparent,
-                        focusedContainerColor = Color.Transparent,
-                    ),
-                ) {
-                    content(item, isFocused)
+        TvFocusableCarousel(
+            carouselId = carouselId,
+            focusManager = focusManager,
+            lazyListState = lazyListState,
+            itemCount = items.size,
+            itemKeys = items.map { it.id.toString() },
+            focusRequester = focusRequester,
+            onExitLeft = onExitLeft,
+        ) { focusModifier, wrapperFocusedIndex, itemFocusRequesters ->
+            LazyRow(
+                state = lazyListState,
+                modifier = focusModifier.fillMaxWidth(),
+                contentPadding = PaddingValues(horizontal = sectionPadding),
+                horizontalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                itemsIndexed(items, key = { _, it -> it.id.toString() }) { index, item ->
+                    val isItemFocused = index == wrapperFocusedIndex
+                    content(item, isItemFocused, itemFocusRequesters[index])
                 }
             }
         }
@@ -225,14 +308,28 @@ private fun TvSectionRow(
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
-private fun LibraryCard(library: BaseItemDto, isFocused: Boolean) {
+private fun LibraryCard(
+    library: BaseItemDto,
+    isFocused: Boolean,
+    focusRequester: FocusRequester,
+    onClick: () -> Unit
+) {
     Card(
-        onClick = { /* Handled by parent surface */ },
-        modifier = Modifier.size(200.dp, 100.dp),
+        onClick = onClick,
+        modifier = Modifier
+            .size(200.dp, 100.dp)
+            .focusRequester(focusRequester),
         colors = CardDefaults.colors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f),
+            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f)
         ),
+        scale = CardDefaults.scale(focusedScale = 1.1f),
+        glow = CardDefaults.glow(
+            focusedGlow = Glow(
+                elevationColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                elevation = 16.dp
+            )
+        )
     ) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(
@@ -242,64 +339,6 @@ private fun LibraryCard(library: BaseItemDto, isFocused: Boolean) {
             )
         }
     }
-}
-
-@OptIn(ExperimentalTvMaterial3Api::class)
-@Composable
-private fun MediaCard(
-    item: BaseItemDto,
-    getImageUrl: (BaseItemDto) -> String?,
-    isFocused: Boolean,
-    aspectRatio: Float,
-    width: Dp,
-) {
-    val height = width / aspectRatio
-
-    StandardCardContainer(
-        imageCard = {
-            Card(
-                onClick = { /* Handled by parent surface */ },
-                modifier = Modifier.size(width, height),
-            ) {
-                Box(modifier = Modifier.fillMaxSize()) {
-                    JellyfinAsyncImage(
-                        model = getImageUrl(item),
-                        contentDescription = item.name,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop,
-                        requestSize = rememberCoilSize(width, height),
-                    )
-
-                    val isPlayed = item.userData?.played == true
-                    val playbackTicks = item.userData?.playbackPositionTicks ?: 0L
-                    val runtimeTicks = item.runTimeTicks ?: 0L
-                    val progress = if (runtimeTicks > 0) playbackTicks.toFloat() / runtimeTicks else 0f
-
-                    if (progress > 0 && !isPlayed) {
-                        TvPlaybackProgressBar(
-                            progressRatio = progress,
-                            modifier = Modifier
-                                .align(Alignment.BottomStart)
-                                .fillMaxWidth()
-                                .height(4.dp),
-                        )
-                    }
-                }
-            }
-        },
-        title = {
-            Text(
-                text = item.name ?: "Unknown",
-                style = MaterialTheme.typography.labelMedium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(top = 8.dp),
-                color = if (isFocused) Color.White else Color.White.copy(alpha = 0.7f),
-                fontWeight = if (isFocused) FontWeight.Bold else FontWeight.Normal,
-            )
-        },
-        modifier = Modifier.width(width),
-    )
 }
 
 @Composable

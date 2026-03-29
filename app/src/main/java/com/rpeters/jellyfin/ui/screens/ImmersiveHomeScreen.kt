@@ -34,6 +34,7 @@ import com.rpeters.jellyfin.data.JellyfinServer
 import com.rpeters.jellyfin.ui.adaptive.rememberAdaptiveLayoutConfig
 import com.rpeters.jellyfin.ui.navigation.LocalNavBarVisible
 import com.rpeters.jellyfin.ui.components.*
+import com.rpeters.jellyfin.ui.components.aiAura
 import com.rpeters.jellyfin.ui.components.immersive.*
 import com.rpeters.jellyfin.ui.components.immersive.itemSubtitle
 import com.rpeters.jellyfin.ui.screens.home.*
@@ -87,8 +88,12 @@ fun ImmersiveHomeScreen(
     showBackButton: Boolean = false,
     viewModel: MainAppViewModel = hiltViewModel(),
     libraryActionsPreferencesViewModel: LibraryActionsPreferencesViewModel = hiltViewModel(),
+    animatedVisibilityScope: androidx.compose.animation.AnimatedVisibilityScope? = null,
 ) {
-    val libraryActionPrefs by libraryActionsPreferencesViewModel.preferences.collectAsStateWithLifecycle()
+    androidx.compose.runtime.CompositionLocalProvider(
+        com.rpeters.jellyfin.ui.navigation.LocalAnimatedVisibilityScope provides animatedVisibilityScope
+    ) {
+        val libraryActionPrefs by libraryActionsPreferencesViewModel.preferences.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -217,8 +222,8 @@ fun ImmersiveHomeScreen(
                             onClick = onAiAssistantClick,
                             containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                             contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-                        ) {
-                            Icon(
+                            modifier = Modifier.aiAura(),
+                        ) {                            Icon(
                                 imageVector = Icons.Default.AutoAwesome,
                                 contentDescription = stringResource(id = R.string.ai_assistant),
                             )
@@ -279,6 +284,7 @@ fun ImmersiveHomeScreen(
                     windowSizeClass = windowSizeClass,
                     adaptiveConfig = adaptiveConfig,
                     contentPadding = paddingValues,
+                    animatedVisibilityScope = animatedVisibilityScope,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
@@ -338,6 +344,7 @@ fun ImmersiveHomeScreen(
         }
     }
 }
+}
 
 /**
  * Immersive home content with full-bleed hero and tighter spacing
@@ -360,6 +367,7 @@ private fun ImmersiveHomeContent(
     windowSizeClass: androidx.compose.material3.windowsizeclass.WindowSizeClass,
     adaptiveConfig: com.rpeters.jellyfin.ui.adaptive.AdaptiveLayoutConfig,
     contentPadding: PaddingValues,
+    animatedVisibilityScope: androidx.compose.animation.AnimatedVisibilityScope? = null,
     modifier: Modifier = Modifier,
 ) {
     // Consolidate all derived state computations
@@ -447,6 +455,7 @@ private fun ImmersiveHomeContent(
                 viewingMood = viewingMood,
                 listState = listState,
                 contentPadding = contentPadding,
+                animatedVisibilityScope = animatedVisibilityScope,
                 modifier = Modifier.fillMaxSize(),
             )
         }
@@ -468,6 +477,7 @@ internal fun MobileExpressiveHomeContent(
     viewingMood: String?,
     listState: LazyListState,
     contentPadding: PaddingValues,
+    animatedVisibilityScope: androidx.compose.animation.AnimatedVisibilityScope? = null,
     modifier: Modifier = Modifier,
 ) {
     val unknownText = stringResource(id = R.string.unknown)

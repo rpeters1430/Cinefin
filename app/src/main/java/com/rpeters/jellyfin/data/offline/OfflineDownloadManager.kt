@@ -76,6 +76,7 @@ class OfflineDownloadManager @Inject constructor(
     val downloadProgress: StateFlow<Map<String, DownloadProgress>> = _downloadProgress.asStateFlow()
 
     private val downloadJobs = ConcurrentHashMap<String, Job>()
+    private val lastPublishedProgress = ConcurrentHashMap<String, PublishedProgressSnapshot>()
     private val supervisorJob = SupervisorJob()
     private val downloadScope = CoroutineScope(dispatchers.io + supervisorJob)
 
@@ -94,11 +95,20 @@ class OfflineDownloadManager @Inject constructor(
         private const val ENCRYPTED_URL_PREFIX = "encrypted_url_"
         private const val OFFLINE_DOWNLOAD_WORK_TAG = "offline_download"
         private const val TRANSCODING_POLL_INTERVAL_MS = 3000L
+        private const val PROGRESS_EMIT_INTERVAL_MS = 250L
+        private const val PROGRESS_EMIT_PERCENT_DELTA = 1f
+        private const val PROGRESS_EMIT_BYTES_DELTA = 256 * 1024L
 
         private val KNOWN_VIDEO_CONTAINERS = setOf(
             "mkv", "mp4", "avi", "mov", "wmv", "flv", "webm", "m4v", "ts", "m2ts", "mpg", "mpeg",
         )
     }
+
+    private data class PublishedProgressSnapshot(
+        val atMs: Long,
+        val progressPercent: Float,
+        val downloadedBytes: Long,
+    )
 
     enum class DownloadExecutionResult {
         SUCCESS,
@@ -276,6 +286,12 @@ class OfflineDownloadManager @Inject constructor(
     fun observeCurrentDownload(itemId: String): kotlinx.coroutines.flow.Flow<OfflineDownload?> {
         return downloads
             .map { items -> selectCurrentDownloadForItem(items, itemId) }
+            .distinctUntilChanged()
+    }
+
+    fun observeDownloadProgress(downloadId: String): kotlinx.coroutines.flow.Flow<DownloadProgress?> {
+        return downloadProgress
+            .map { it[downloadId] }
             .distinctUntilChanged()
     }
 
@@ -502,7 +518,7 @@ class OfflineDownloadManager @Inject constructor(
                             transcodingEtaMs = null,
                         )
 
-                        updateDownloadProgress(progress)
+                        publishDownloadProgress(progress)
                         onProgress?.invoke(download, progress)
                         // Only persist to DataStore every 1 MB to avoid hammering storage
                         if (totalBytesRead - lastSavedBytes >= SAVE_INTERVAL_BYTES) {
@@ -572,7 +588,7 @@ class OfflineDownloadManager @Inject constructor(
                             transcodingProgress = percent.toFloat(),
                             transcodingEtaMs = etaMs,
                         )
-                        updateDownloadProgress(progressUpdate)
+                        publishDownloadProgress(progressUpdate, force = true)
                     }
 
                     previousPercent = percent
@@ -962,6 +978,46 @@ class OfflineDownloadManager @Inject constructor(
         _downloadProgress.update { it + (progress.downloadId to progress) }
     }
 
+    private fun publishDownloadProgress(
+        progress: DownloadProgress,
+        force: Boolean = false,
+    ) {
+        if (force || shouldPublishDownloadProgress(progress)) {
+            updateDownloadProgress(progress)
+        }
+    }
+
+    private fun shouldPublishDownloadProgress(progress: DownloadProgress): Boolean {
+        val nowMs = System.currentTimeMillis()
+        val previous = lastPublishedProgress[progress.downloadId]
+        if (previous == null) {
+            lastPublishedProgress[progress.downloadId] = PublishedProgressSnapshot(
+                atMs = nowMs,
+                progressPercent = progress.progressPercent,
+                downloadedBytes = progress.downloadedBytes,
+            )
+            return true
+        }
+
+        val elapsedMs = nowMs - previous.atMs
+        val percentDelta = kotlin.math.abs(progress.progressPercent - previous.progressPercent)
+        val bytesDelta = progress.downloadedBytes - previous.downloadedBytes
+        val shouldPublish = progress.progressPercent >= 100f ||
+            elapsedMs >= PROGRESS_EMIT_INTERVAL_MS ||
+            percentDelta >= PROGRESS_EMIT_PERCENT_DELTA ||
+            bytesDelta >= PROGRESS_EMIT_BYTES_DELTA
+
+        if (shouldPublish) {
+            lastPublishedProgress[progress.downloadId] = PublishedProgressSnapshot(
+                atMs = nowMs,
+                progressPercent = progress.progressPercent,
+                downloadedBytes = progress.downloadedBytes,
+            )
+        }
+
+        return shouldPublish
+    }
+
     /**
      * Clean up all resources and cancel ongoing downloads.
      * Should be called when the application is terminating or when the manager is no longer needed.
@@ -977,6 +1033,7 @@ class OfflineDownloadManager @Inject constructor(
 
         // Clear progress state
         _downloadProgress.update { emptyMap() }
+        lastPublishedProgress.clear()
 
         // Cancel the supervisor job and scope
         supervisorJob.cancel(CancellationException("OfflineDownloadManager cleanup"))
@@ -1003,6 +1060,7 @@ class OfflineDownloadManager @Inject constructor(
 
         // Remove from progress tracking
         _downloadProgress.update { it - downloadId }
+        lastPublishedProgress.remove(downloadId)
 
         // Update download status to cancelled
         _downloads.update { currentDownloads ->

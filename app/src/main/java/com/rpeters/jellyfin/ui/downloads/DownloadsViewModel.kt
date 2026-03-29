@@ -27,6 +27,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
@@ -375,21 +376,55 @@ class DownloadsViewModel @Inject constructor(
                         position
                     }
                 }
-
+                val item = download.toBaseItem()
                 val mediaItem = playbackManager.getOfflineMediaItem(itemId)
                 val localUri = mediaItem?.localConfiguration?.uri?.toString() ?: download.localFilePath
 
-                com.rpeters.jellyfin.ui.utils.MediaPlayerUtils.playMedia(
-                    context = context,
-                    streamUrl = localUri,
-                    item = download.toBaseItem(),
-                    startPosition = resumePositionMs,
-                )
+                when (item.type) {
+                    BaseItemKind.AUDIO,
+                    BaseItemKind.MUSIC_ALBUM,
+                    BaseItemKind.AUDIO_BOOK -> {
+                        com.rpeters.jellyfin.ui.utils.MediaPlayerUtils.playMedia(
+                            context = context,
+                            streamUrl = localUri,
+                            item = item,
+                            startPosition = resumePositionMs,
+                        )
+                    }
+                    BaseItemKind.BOOK -> {
+                        Toast.makeText(
+                            context,
+                            "Offline reading is not available for books yet.",
+                            Toast.LENGTH_SHORT,
+                        ).show()
+                    }
+                    else -> {
+                        val intent = VideoPlayerActivity.createIntent(
+                            context = context,
+                            itemId = download.jellyfinItemId,
+                            itemName = download.itemName,
+                            startPosition = resumePositionMs,
+                            forceOffline = true,
+                        ).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+
+                        context.startActivity(intent)
+                    }
+                }
             } else {
                 // Keep offline records honest if the file was removed externally.
                 downloadManager.deleteOfflineCopy(itemId)
             }
         }
+    }
+
+    fun observeCurrentDownload(itemId: String): Flow<OfflineDownload?> {
+        return downloadManager.observeCurrentDownload(itemId)
+    }
+
+    fun observeDownloadProgress(downloadId: String): Flow<DownloadProgress?> {
+        return downloadManager.observeDownloadProgress(downloadId)
     }
 
     fun validateOfflineFiles() {

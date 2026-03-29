@@ -115,9 +115,13 @@ fun ImmersiveMovieDetailScreen(
     onGenerateAiSummary: () -> Unit,
     aiSummary: String? = null,
     isLoadingAiSummary: Boolean = false,
+    animatedVisibilityScope: androidx.compose.animation.AnimatedVisibilityScope? = null,
 ) {
-    val context = LocalContext.current
-    val downloadsViewModel: DownloadsViewModel = hiltViewModel()
+    androidx.compose.runtime.CompositionLocalProvider(
+        com.rpeters.jellyfin.ui.navigation.LocalAnimatedVisibilityScope provides animatedVisibilityScope
+    ) {
+        val context = LocalContext.current
+        val downloadsViewModel: DownloadsViewModel = hiltViewModel()
     var isFavorite by remember(movie.id) { mutableStateOf(movie.userData?.isFavorite == true) }
     var isWatched by remember(movie.id) { mutableStateOf(movie.userData?.played ?: false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -144,6 +148,8 @@ fun ImmersiveMovieDetailScreen(
             StaticHeroSection(
                 imageUrl = getBackdropUrl(movie),
                 height = ImmersiveDimens.HeroHeightPhone,
+                itemId = movie.id.toString(),
+                animatedVisibilityScope = animatedVisibilityScope,
             )
 
             // 2. Main Content
@@ -504,6 +510,7 @@ fun ImmersiveMovieDetailScreen(
     // However, QualitySelectionDialog requires a downloadsViewModel.
     // Since we don't have it here, we'll assume the parent handles it OR we inject it.
     // For now, let's assume it's passed or handled.
+}
 }
 
 @Composable

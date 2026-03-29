@@ -7,9 +7,15 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.flow.onStart
+import java.util.concurrent.atomic.AtomicInteger
+
 /**
  * A hybrid AI model that prioritizes on-device Gemini Nano (via ML Kit)
  * but falls back to cloud Gemini (via Firebase AI) when unavailable.
+ * Includes a "Circuit Breaker" to permanently fallback to cloud if Nano is flaky.
  */
 class HybridAiTextModel(
     private val remoteConfig: RemoteConfigRepository,
@@ -18,6 +24,8 @@ class HybridAiTextModel(
 ) : AiTextModel {
 
     private val nanoModel = MlKitAiTextModel()
+    private val failureCount = AtomicInteger(0)
+    private var circuitBroken = false
 
     val downloadState: StateFlow<AiDownloadState> = nanoModel.downloadState
 
@@ -26,12 +34,15 @@ class HybridAiTextModel(
 
     /**
      * Checks if Nano is available and starts download if necessary.
-     * Suspends until the model reaches a terminal state (READY, FAILED, NOT_SUPPORTED).
      */
     suspend fun initialize() {
         if (remoteConfig.getBoolean("enable_on_device_ai")) {
-            nanoModel.initialize()
-            updateActiveState()
+            try {
+                nanoModel.initialize()
+                updateActiveState()
+            } catch (e: Exception) {
+                Log.e("HybridAi", "[$label] Nano initialization failed: ${e.message}")
+            }
         } else {
             Log.d("HybridAi", "[$label] On-Device AI disabled via Remote Config")
         }
@@ -41,12 +52,15 @@ class HybridAiTextModel(
      * Manually triggers a download retry.
      */
     suspend fun retryDownload() {
+        circuitBroken = false
+        failureCount.set(0)
         nanoModel.downloadModel()
         updateActiveState()
     }
 
     private fun updateActiveState() {
-        _isNanoActive.value = remoteConfig.getBoolean("enable_on_device_ai") &&
+        _isNanoActive.value = !circuitBroken && 
+            remoteConfig.getBoolean("enable_on_device_ai") &&
             nanoModel.downloadState.value == AiDownloadState.READY
     }
 
@@ -58,15 +72,26 @@ class HybridAiTextModel(
     override suspend fun generateText(prompt: String): String {
         val model = getActiveModel()
         val isNano = model is MlKitAiTextModel
-        Log.d("HybridAi", "[$label] Generating text using ${if (isNano) "On-Device (Nano)" else "Cloud"}")
-
+        
         return try {
-            model.generateText(prompt)
+            val result = model.generateText(prompt)
+            if (isNano) failureCount.set(0) // Reset on success
+            result
         } catch (e: Exception) {
             if (isNano) {
-                Log.w("HybridAi", "[$label] Nano failed, falling back to cloud", e)
+                val currentFailures = failureCount.incrementAndGet()
+                Log.w("HybridAi", "[$label] Nano failed ($currentFailures/3), falling back to cloud", e)
+                
+                if (currentFailures >= 3) {
+                    Log.e("HybridAi", "[$label] Circuit broken for Nano! Switching to Cloud for this session.")
+                    circuitBroken = true
+                    updateActiveState()
+                }
+                
+                // Immediate fallback to cloud for this request
                 cloudModel.generateText(prompt)
             } else {
+                Log.e("HybridAi", "[$label] Cloud AI failed: ${e.message}")
                 throw e
             }
         }
@@ -75,7 +100,25 @@ class HybridAiTextModel(
     override fun generateTextStream(prompt: String): Flow<String> {
         val model = getActiveModel()
         val isNano = model is MlKitAiTextModel
-        Log.d("HybridAi", "[$label] Streaming using ${if (isNano) "On-Device (Nano)" else "Cloud"}")
-        return model.generateTextStream(prompt)
+        
+        return if (isNano) {
+            model.generateTextStream(prompt).catch { e ->
+                Log.w("HybridAi", "[$label] Nano stream failed, falling back to cloud", e)
+                val currentFailures = failureCount.incrementAndGet()
+                if (currentFailures >= 3) {
+                    circuitBroken = true
+                    updateActiveState()
+                }
+                // Emit fallback from cloud
+                emitAll(cloudModel.generateTextStream(prompt))
+            }
+        } else {
+            cloudModel.generateTextStream(prompt)
+        }
     }
+}
+
+// Extension to allow emitAll in catch block
+private suspend fun <T> kotlinx.coroutines.flow.FlowCollector<T>.emitAll(flow: Flow<T>) {
+    flow.collect { value -> emit(value) }
 }

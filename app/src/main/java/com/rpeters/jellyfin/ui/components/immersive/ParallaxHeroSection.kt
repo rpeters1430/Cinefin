@@ -28,10 +28,14 @@ import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
  * @param parallaxFactor Strength of parallax effect (0f = none, 1f = full)
  * @param content Content to overlay on the hero image
  */
+import androidx.compose.animation.AnimatedVisibilityScope
+
 @Composable
 fun ParallaxHeroSection(
     imageUrl: String?,
     modifier: Modifier = Modifier,
+    itemId: String? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope? = null,
     scrollOffset: Float = 0f,
     height: Dp = ImmersiveDimens.HeroHeightPhone,
     parallaxFactor: Float = 0.5f,
@@ -39,10 +43,24 @@ fun ParallaxHeroSection(
     showGradient: Boolean = true,
     content: @Composable BoxScope.() -> Unit = {},
 ) {
+    val sharedTransitionScope = com.rpeters.jellyfin.ui.navigation.LocalSharedTransitionScope.current
+
+    val sharedElementModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null && itemId != null) {
+        with(sharedTransitionScope) {
+            Modifier.sharedElement(
+                rememberSharedContentState(key = "media_$itemId"),
+                animatedVisibilityScope = animatedVisibilityScope
+            )
+        }
+    } else {
+        Modifier
+    }
+
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(height),
+            .height(height)
+            .then(sharedElementModifier),
     ) {
         // Background image with parallax effect
         AsyncImage(
@@ -95,6 +113,8 @@ fun ParallaxHeroSection(
 fun StaticHeroSection(
     imageUrl: String?,
     modifier: Modifier = Modifier,
+    itemId: String? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope? = null,
     height: Dp = ImmersiveDimens.HeroHeightPhone,
     contentScale: ContentScale = ContentScale.Crop,
     content: @Composable BoxScope.() -> Unit = {},
@@ -102,6 +122,8 @@ fun StaticHeroSection(
     ParallaxHeroSection(
         imageUrl = imageUrl,
         modifier = modifier,
+        itemId = itemId,
+        animatedVisibilityScope = animatedVisibilityScope,
         scrollOffset = 0f,
         height = height,
         parallaxFactor = 0f,

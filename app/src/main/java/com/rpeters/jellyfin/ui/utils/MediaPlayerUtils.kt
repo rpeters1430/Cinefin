@@ -41,7 +41,7 @@ object MediaPlayerUtils {
         subtitleIndex: Int? = null,
         startPosition: Long? = null
     ) {
-        if (item.type == BaseItemKind.AUDIO || item.type == BaseItemKind.MUSIC_ALBUM) {
+        if (item.type == BaseItemKind.AUDIO || item.type == BaseItemKind.MUSIC_ALBUM || item.type == BaseItemKind.AUDIO_BOOK) {
             playAudio(context, streamUrl, item)
             return
         }
@@ -75,6 +75,9 @@ object MediaPlayerUtils {
                 startPosition = resumePosition,
                 subtitleIndex = subtitleIndex,
             )
+            if (context !is android.app.Activity) {
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
 
             context.startActivity(intent)
             if (BuildConfig.DEBUG) {
@@ -188,6 +191,9 @@ object MediaPlayerUtils {
                 itemName = item.name ?: context.getString(R.string.unknown),
                 startPosition = startPosition,
             )
+            if (context !is android.app.Activity) {
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
 
             context.startActivity(intent)
             if (BuildConfig.DEBUG) {

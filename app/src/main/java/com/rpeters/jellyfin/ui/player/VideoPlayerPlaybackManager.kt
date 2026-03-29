@@ -3,6 +3,7 @@ package com.rpeters.jellyfin.ui.player
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import androidx.annotation.VisibleForTesting
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
@@ -79,6 +80,18 @@ class VideoPlayerPlaybackManager @Inject constructor(
     private var currentPreparedMediaSourceId: String? = null
     private var currentPlaybackSessionId: String? = null
 
+    companion object {
+        @JvmStatic
+        @VisibleForTesting
+        internal fun shouldUseOfflineSource(
+            isDownloaded: Boolean,
+            forceOffline: Boolean,
+            isOnline: Boolean,
+        ): Boolean {
+            return isDownloaded
+        }
+    }
+
     fun initializeExoPlayer(listener: Player.Listener) {
         playerListener = listener
         val renderersFactory = DefaultRenderersFactory(applicationContext)
@@ -154,7 +167,11 @@ class VideoPlayerPlaybackManager @Inject constructor(
 
         val isDownloaded = offlinePlaybackManager.isOfflinePlaybackAvailable(itemId)
         val isOnline = isDeviceOnline()
-        val shouldUseOfflineSource = isDownloaded && (forceOffline || !isOnline)
+        val shouldUseOfflineSource = shouldUseOfflineSource(
+            isDownloaded = isDownloaded,
+            forceOffline = forceOffline,
+            isOnline = isOnline,
+        )
 
         if (shouldUseOfflineSource) {
             initializeOfflinePlayback(itemId, itemName, startPosition, metadata, sideLoadedSubs, scope)

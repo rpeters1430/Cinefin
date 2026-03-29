@@ -5,10 +5,12 @@ package com.rpeters.jellyfin.ui.navigation
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavHostController
@@ -17,6 +19,7 @@ import androidx.navigation.compose.rememberNavController
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @OptInAppExperimentalApis
 @androidx.media3.common.util.UnstableApi
 @Composable
@@ -53,19 +56,23 @@ fun JellyfinNavGraph(
         ) + fadeOut()
     }
 
-    NavHost(
-        navController = navController,
-        startDestination = startDestination,
-        modifier = modifier,
-        enterTransition = forwardNavigationEnter,
-        exitTransition = forwardNavigationExit,
-        popEnterTransition = backwardNavigationEnter,
-        popExitTransition = backwardNavigationExit,
-    ) {
-        authNavGraph(navController)
-        homeLibraryNavGraph(navController)
-        mediaNavGraph(navController, mainViewModel)
-        profileNavGraph(navController, onLogout)
-        detailNavGraph(navController)
+    SharedTransitionLayout(modifier = modifier) {
+        CompositionLocalProvider(LocalSharedTransitionScope provides this) {
+            NavHost(
+                navController = navController,
+                startDestination = startDestination,
+                modifier = Modifier,
+                enterTransition = forwardNavigationEnter,
+                exitTransition = forwardNavigationExit,
+                popEnterTransition = backwardNavigationEnter,
+                popExitTransition = backwardNavigationExit,
+            ) {
+                authNavGraph(navController)
+                homeLibraryNavGraph(navController)
+                mediaNavGraph(navController, mainViewModel)
+                profileNavGraph(navController, onLogout)
+                detailNavGraph(navController)
+            }
+        }
     }
 }

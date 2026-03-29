@@ -209,6 +209,8 @@ private fun MediaCardContent(
         onPressedChange(isPressed)
     }
 
+    val haptics = com.rpeters.jellyfin.ui.utils.rememberExpressiveHaptics()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -217,6 +219,7 @@ private fun MediaCardContent(
                 indication = null,
                 onClickLabel = "Open $title",
             ) {
+                haptics.lightClick()
                 onCardClick()
             },
     ) {

@@ -71,6 +71,7 @@ import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
 import com.rpeters.jellyfin.ui.components.ExpressiveSelectableMenuItem
 import com.rpeters.jellyfin.ui.theme.MotionTokens
+import com.rpeters.jellyfin.ui.utils.rememberExpressiveHaptics
 
 @UnstableApi
 @Composable
@@ -94,6 +95,22 @@ fun ExpressiveVideoControls(
     overlayScrim: Color = Color.Black.copy(alpha = 0.7f),
     modifier: Modifier = Modifier,
 ) {
+    val haptics = rememberExpressiveHaptics()
+    
+    val stableOnPlayPause = remember(onPlayPause, haptics, playerState.isPlaying) {
+        {
+            if (playerState.isPlaying) haptics.playbackPaused() else haptics.playbackStarted()
+            onPlayPause()
+        }
+    }
+
+    val stableOnSeek = remember(onSeek, haptics) {
+        { position: Long ->
+            haptics.lightClick()
+            onSeek(position)
+        }
+    }
+
     AnimatedVisibility(
         visible = isVisible,
         enter = fadeIn(animationSpec = MotionTokens.mediaControlsEnter),
@@ -135,8 +152,8 @@ fun ExpressiveVideoControls(
                 ExpressiveBottomControls(
                     playerState = playerState,
                     showPrimaryLoadingUi = showPrimaryLoadingUi,
-                    onSeek = onSeek,
-                    onPlayPause = onPlayPause,
+                    onSeek = stableOnSeek,
+                    onPlayPause = stableOnPlayPause,
                     onAudioClick = onAudioClick,
                     onQualityClick = onQualityClick,
                     onSubtitlesClick = onSubtitlesClick,

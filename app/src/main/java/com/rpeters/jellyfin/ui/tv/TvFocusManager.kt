@@ -206,6 +206,20 @@ fun TvFocusableCarousel(
         .onFocusChanged { focusState ->
             hasFocus = focusState.hasFocus
             onFocusChanged(hasFocus, focusedIndex)
+            if (hasFocus && !focusState.isFocused) {
+                // If the container HAS focus (one of its children or itself) 
+                // but the container ITSELF is not the focused node, it means a child is focused.
+                // If hasFocus is true but NO child is actually focused yet (first entry),
+                // we should force focus to the active child.
+            }
+            
+            if (focusState.isFocused) {
+                // The container itself received focus, delegate to child
+                if (focusedIndex in 0 until itemCount) {
+                    itemFocusRequesters.getOrNull(focusedIndex)?.requestFocus()
+                }
+            }
+
             if (hasFocus) {
                 focusManager.saveFocusState(
                     carouselId = carouselId,
@@ -306,6 +320,14 @@ fun TvFocusableGrid(
         .onFocusChanged { focusState ->
             hasFocus = focusState.hasFocus
             onFocusChanged(hasFocus, focusedIndex)
+            
+            if (focusState.isFocused) {
+                // The container itself received focus, delegate to child
+                if (focusedIndex in 0 until itemCount) {
+                    itemFocusRequesters.getOrNull(focusedIndex)?.requestFocus()
+                }
+            }
+
             if (hasFocus) {
                 focusManager.saveFocusState(
                     carouselId = gridId,

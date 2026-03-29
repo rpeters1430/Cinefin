@@ -23,15 +23,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.data.offline.DownloadProgress
 import com.rpeters.jellyfin.data.offline.DownloadStatus
-import com.rpeters.jellyfin.data.offline.OfflineDownload
 import com.rpeters.jellyfin.ui.downloads.DownloadsViewModel
 import com.rpeters.jellyfin.ui.components.ExpressiveWavyCircularLoading
 import com.rpeters.jellyfin.ui.components.ExpressiveWavyCircularProgress
 import com.rpeters.jellyfin.ui.components.ExpressiveWavyLinearProgress
 import com.rpeters.jellyfin.utils.SecureLogger
+import kotlinx.coroutines.flow.flowOf
 import org.jellyfin.sdk.model.api.BaseItemDto
 import kotlin.math.roundToInt
 
@@ -43,12 +45,19 @@ fun DownloadButton(
     downloadsViewModel: DownloadsViewModel = hiltViewModel(),
     showText: Boolean = false,
 ) {
-    val downloads by downloadsViewModel.downloads.collectAsState()
-    val downloadProgress by downloadsViewModel.downloadProgress.collectAsState()
     val context = LocalContext.current
     var showQualityDialog by remember { mutableStateOf(false) }
     var redownloadMode by remember { mutableStateOf(false) }
     var pendingQuality by remember { mutableStateOf<com.rpeters.jellyfin.data.offline.VideoQuality?>(null) }
+    val itemId = item.id.toString()
+    val currentDownloadFlow = remember(downloadsViewModel, itemId) {
+        downloadsViewModel.observeCurrentDownload(itemId)
+    }
+    val currentDownload by currentDownloadFlow.collectAsStateWithLifecycle(initialValue = null)
+    val progressFlow = remember(downloadsViewModel, currentDownload?.id) {
+        currentDownload?.id?.let(downloadsViewModel::observeDownloadProgress) ?: flowOf<DownloadProgress?>(null)
+    }
+    val progress by progressFlow.collectAsStateWithLifecycle(initialValue = null)
 
     // Deferred permission launcher
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
@@ -98,11 +107,6 @@ fun DownloadButton(
         }
     }
 
-    val currentDownload = remember(downloads, item.id) {
-        selectPreferredDownloadForItem(downloads, item.id.toString())
-    }
-    val progress = currentDownload?.let { downloadProgress[it.id] }
-
     if (showQualityDialog) {
         QualitySelectionDialog(
             item = item,
@@ -118,8 +122,10 @@ fun DownloadButton(
         )
     }
 
+    val activeDownload = currentDownload
+
     Box(modifier = modifier) {
-        when (currentDownload?.status) {
+        when (activeDownload?.status) {
             DownloadStatus.PENDING -> {
                 PendingDownloadButton(showText = showText)
             }
@@ -128,32 +134,32 @@ fun DownloadButton(
                     progress = progress?.progressPercent ?: 0f,
                     isTranscoding = progress?.isTranscoding == true,
                     transcodingProgress = progress?.transcodingProgress,
-                    onPause = { downloadsViewModel.pauseDownload(currentDownload.id) },
+                    onPause = { downloadsViewModel.pauseDownload(activeDownload.id) },
                     showText = showText,
                 )
             }
             DownloadStatus.PAUSED -> {
                 PausedDownloadButton(
-                    onResume = { downloadsViewModel.resumeDownload(currentDownload.id) },
-                    onCancel = { downloadsViewModel.cancelDownload(currentDownload.id) },
+                    onResume = { downloadsViewModel.resumeDownload(activeDownload.id) },
+                    onCancel = { downloadsViewModel.cancelDownload(activeDownload.id) },
                     showText = showText,
                 )
             }
             DownloadStatus.COMPLETED -> {
                 CompletedDownloadButton(
-                    onPlay = { downloadsViewModel.playOfflineContent(item.id.toString()) },
+                    onPlay = { downloadsViewModel.playOfflineContent(itemId) },
                     onRedownload = {
                         redownloadMode = true
                         showQualityDialog = true
                     },
-                    onDelete = { downloadsViewModel.deleteDownload(currentDownload.id) },
+                    onDelete = { downloadsViewModel.deleteDownload(activeDownload.id) },
                     showText = showText,
                 )
             }
             DownloadStatus.FAILED -> {
                 FailedDownloadButton(
-                    onRetry = { downloadsViewModel.resumeDownload(currentDownload.id) },
-                    onDelete = { downloadsViewModel.deleteDownload(currentDownload.id) },
+                    onRetry = { downloadsViewModel.resumeDownload(activeDownload.id) },
+                    onDelete = { downloadsViewModel.deleteDownload(activeDownload.id) },
                     showText = showText,
                 )
             }
@@ -169,33 +175,6 @@ fun DownloadButton(
             }
         }
     }
-}
-
-private fun selectPreferredDownloadForItem(
-    downloads: List<OfflineDownload>,
-    itemId: String,
-): OfflineDownload? {
-    fun statusPriority(status: DownloadStatus): Int {
-        return when (status) {
-            DownloadStatus.DOWNLOADING -> 6
-            DownloadStatus.PENDING -> 5
-            DownloadStatus.PAUSED -> 4
-            DownloadStatus.FAILED -> 3
-            DownloadStatus.COMPLETED -> 2
-            DownloadStatus.CANCELLED -> 1
-        }
-    }
-
-    return downloads
-        .asSequence()
-        .filter { it.jellyfinItemId == itemId }
-        .maxWithOrNull(
-            compareBy<OfflineDownload>(
-                { statusPriority(it.status) },
-                { it.downloadStartTime ?: 0L },
-                { it.downloadCompleteTime ?: 0L },
-            ),
-        )
 }
 
 @Composable

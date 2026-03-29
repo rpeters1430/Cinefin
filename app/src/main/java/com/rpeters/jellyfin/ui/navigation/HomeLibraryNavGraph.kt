@@ -145,6 +145,7 @@ fun androidx.navigation.NavGraphBuilder.homeLibraryNavGraph(
             onSettingsClick = onSettingsClick,
             onNowPlayingClick = onNowPlayingClick,
             onAiHealthCheck = onAiHealthCheck,
+            animatedVisibilityScope = this,
         )
     }
 
@@ -202,6 +203,7 @@ fun androidx.navigation.NavGraphBuilder.homeLibraryNavGraph(
             onAiAssistantClick = onAiAssistantClick,
             onSettingsClick = onSettingsClick,
             onNowPlayingClick = onNowPlayingClick,
+            animatedVisibilityScope = this,
         )
     }
 

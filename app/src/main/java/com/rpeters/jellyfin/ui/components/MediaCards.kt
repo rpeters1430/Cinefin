@@ -65,8 +65,20 @@ fun MediaCard(
     cardWidth: Dp = 280.dp,
     cardAspectRatio: Float = 16f / 9f,
 ) {
+    val sharedTransitionScope = com.rpeters.jellyfin.ui.navigation.LocalSharedTransitionScope.current
+    val animatedVisibilityScope = com.rpeters.jellyfin.ui.navigation.LocalAnimatedVisibilityScope.current
     val contentTypeColor = getContentTypeColor(item.type.toString())
-    // ✅ Performance: Removed unused rememberCoroutineScope()
+    
+    val sharedElementModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null) {
+        with(sharedTransitionScope) {
+            Modifier.sharedElement(
+                rememberSharedContentState(key = "media_${item.id}"),
+                animatedVisibilityScope = animatedVisibilityScope
+            )
+        }
+    } else {
+        Modifier
+    }
 
     Card(
         modifier = modifier
@@ -77,6 +89,7 @@ fun MediaCard(
                 alpha = 0.15f,
                 borderRadius = 16.dp
             )
+            .then(sharedElementModifier)
             .mediaCardSemantics(item) { onClick(item) }
             .combinedClickable(
                 onClick = { onClick(item) },
@@ -303,8 +316,20 @@ fun PosterMediaCard(
     titleMinLines: Int = 1,
     cardWidth: Dp? = null, // Made optional - null means fill available width
 ) {
+    val sharedTransitionScope = com.rpeters.jellyfin.ui.navigation.LocalSharedTransitionScope.current
+    val animatedVisibilityScope = com.rpeters.jellyfin.ui.navigation.LocalAnimatedVisibilityScope.current
     val contentTypeColor = getContentTypeColor(item.type.toString())
-    // ✅ Performance: Removed unused rememberCoroutineScope()
+    
+    val sharedElementModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null) {
+        with(sharedTransitionScope) {
+            Modifier.sharedElement(
+                rememberSharedContentState(key = "media_${item.id}"),
+                animatedVisibilityScope = animatedVisibilityScope
+            )
+        }
+    } else {
+        Modifier
+    }
 
     Card(
         modifier = modifier
@@ -320,6 +345,7 @@ fun PosterMediaCard(
                 alpha = 0.15f,
                 borderRadius = 16.dp
             )
+            .then(sharedElementModifier)
             .mediaCardSemantics(item) { onClick(item) }
             .combinedClickable(
                 onClick = { onClick(item) },
@@ -517,7 +543,20 @@ fun RecentlyAddedCard(
     modifier: Modifier = Modifier,
     enhancedPlaybackUtils: com.rpeters.jellyfin.ui.utils.EnhancedPlaybackUtils? = null,
 ) {
+    val sharedTransitionScope = com.rpeters.jellyfin.ui.navigation.LocalSharedTransitionScope.current
+    val animatedVisibilityScope = com.rpeters.jellyfin.ui.navigation.LocalAnimatedVisibilityScope.current
     val contentTypeColor = getContentTypeColor(item.type.toString())
+
+    val sharedElementModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null) {
+        with(sharedTransitionScope) {
+            Modifier.sharedElement(
+                rememberSharedContentState(key = "media_${item.id}"),
+                animatedVisibilityScope = animatedVisibilityScope
+            )
+        }
+    } else {
+        Modifier
+    }
 
     Card(
         modifier = modifier
@@ -527,6 +566,7 @@ fun RecentlyAddedCard(
                 alpha = 0.12f,
                 borderRadius = 12.dp
             )
+            .then(sharedElementModifier)
             .mediaCardSemantics(item) { onClick(item) }
             .combinedClickable(
                 onClick = { onClick(item) },

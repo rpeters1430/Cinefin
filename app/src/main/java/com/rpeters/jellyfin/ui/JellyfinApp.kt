@@ -280,8 +280,8 @@ fun JellyfinApp(
                                 if (isCompactWidth) {
                                     // Add padding for floating toolbar, mini player, and system navigation bars
                                     val navBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-                                    // Room for MiniPlayer (72dp) + SlimNavBar (40dp) + Spacing (8dp)
-                                    Modifier.padding(bottom = 120.dp + navBarPadding)
+                                    // Room for MiniPlayer (72dp) + ExpressiveNavBar (60dp) + Spacing (8dp) + Floating Gap (8dp)
+                                    Modifier.padding(bottom = 148.dp + navBarPadding)
                                 } else {
                                     // Room for MiniPlayer on tablets
                                     Modifier.padding(bottom = 80.dp)

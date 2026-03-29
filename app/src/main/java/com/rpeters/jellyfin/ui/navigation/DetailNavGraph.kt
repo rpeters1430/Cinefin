@@ -372,6 +372,7 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                 onGenerateAiSummary = { detailViewModel.generateAiSummary() },
                 aiSummary = detailState.aiSummary,
                 isLoadingAiSummary = detailState.isLoadingAiSummary,
+                animatedVisibilityScope = this,
             )
         } else if (detailState.isLoading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

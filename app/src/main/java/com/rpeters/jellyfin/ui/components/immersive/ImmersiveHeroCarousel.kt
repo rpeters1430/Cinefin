@@ -174,7 +174,20 @@ private fun ImmersiveHeroCard(
     performanceConfig: ImmersivePerformanceConfig,
     modifier: Modifier = Modifier,
 ) {
+    val sharedTransitionScope = com.rpeters.jellyfin.ui.navigation.LocalSharedTransitionScope.current
+    val animatedVisibilityScope = com.rpeters.jellyfin.ui.navigation.LocalAnimatedVisibilityScope.current
     val scale = if (isActive) 1.0f else 0.98f
+
+    val sharedElementModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null) {
+        with(sharedTransitionScope) {
+            Modifier.sharedElement(
+                rememberSharedContentState(key = "media_${item.id}"),
+                animatedVisibilityScope = animatedVisibilityScope
+            )
+        }
+    } else {
+        Modifier
+    }
 
     Box(
         modifier = modifier
@@ -184,6 +197,7 @@ private fun ImmersiveHeroCard(
                 scaleX = scale
                 scaleY = scale
             }
+            .then(sharedElementModifier)
             .clickable { onItemClick() },
     ) {
         // ✅ Performance: Full-bleed background image with adaptive quality

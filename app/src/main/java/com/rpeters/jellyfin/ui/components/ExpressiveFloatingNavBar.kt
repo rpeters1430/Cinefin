@@ -9,6 +9,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -48,36 +49,52 @@ fun ExpressiveFloatingNavBar(
         exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
         modifier = modifier,
     ) {
-        Surface(
-            shape = MaterialTheme.shapes.extraLarge,
-            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
-            tonalElevation = 6.dp,
-            modifier = Modifier.wrapContentWidth().padding(6.dp),
+        // Outer container handles the floating gap and centering
+        // Increased horizontal padding for a more "pill" floating look
+        Box(
+            modifier = Modifier
+                .wrapContentWidth()
+                .padding(horizontal = 24.dp, vertical = 12.dp)
         ) {
-            Row(
+            ExpressiveBlurSurface(
+                shape = MaterialTheme.shapes.extraLarge,
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+                blurRadius = 16.dp,
                 modifier = Modifier
-                    .padding(horizontal = 4.dp, vertical = 4.dp)
-                    .animateContentSize(
-                        animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioLowBouncy,
-                            stiffness = Spring.StiffnessLow
-                        )
+                    .wrapContentWidth()
+                    .expressiveGlow(
+                        color = MaterialTheme.colorScheme.primary,
+                        alpha = 0.08f,
+                        borderRadius = 32.dp,
+                        blurRadius = 12.dp,
+                        offsetY = 4.dp
                     ),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalAlignment = Alignment.CenterVertically,
             ) {
-                items.forEach { item ->
-                    val isSelected = currentDestination?.hierarchy?.any {
-                        it.route == item.route
-                    } == true
-                    
-                    ExpressiveNavBarButton(
-                        icon = item.icon.icon,
-                        contentDescription = item.title,
-                        label = item.title,
-                        selected = isSelected,
-                        onClick = { onNavigate(item) }
-                    )
+                Row(
+                    modifier = Modifier
+                        .padding(horizontal = 8.dp, vertical = 6.dp)
+                        .animateContentSize(
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioLowBouncy,
+                                stiffness = Spring.StiffnessLow
+                            )
+                        ),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    items.forEach { item ->
+                        val isSelected = currentDestination?.hierarchy?.any {
+                            it.route == item.route
+                        } == true
+                        
+                        ExpressiveNavBarButton(
+                            icon = item.icon.icon,
+                            contentDescription = item.title,
+                            label = item.title,
+                            selected = isSelected,
+                            onClick = { onNavigate(item) }
+                        )
+                    }
                 }
             }
         }
@@ -96,12 +113,10 @@ private fun ExpressiveNavBarButton(
         onClick = onClick,
         shape = MaterialTheme.shapes.extraLarge,
         color = if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
-        modifier = Modifier
-            .minimumInteractiveComponentSize()
-            .size(height = 36.dp, width = if (selected) 110.dp else 36.dp)
+        modifier = Modifier.size(height = 48.dp, width = if (selected) 130.dp else 48.dp)
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 8.dp),
+            modifier = Modifier.padding(horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center
         ) {
@@ -115,7 +130,7 @@ private fun ExpressiveNavBarButton(
                 Text(
                     text = label,
                     style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.ExtraBold,
                     modifier = Modifier.padding(start = 8.dp),
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                     maxLines = 1,

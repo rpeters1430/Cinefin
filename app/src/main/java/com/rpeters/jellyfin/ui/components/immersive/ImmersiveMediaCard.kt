@@ -91,12 +91,15 @@ import com.rpeters.jellyfin.ui.theme.MotionTokens
  * @param modifier Optional modifier
  * @param cardSize Size variant for the card
  */
+import androidx.compose.animation.AnimatedVisibilityScope
+
 @Composable
 fun ImmersiveMediaCard(
     title: String,
     imageUrl: String,
     onCardClick: () -> Unit,
     modifier: Modifier = Modifier,
+    itemId: String? = null,
     subtitle: String = "",
     rating: Float? = null,
     isFavorite: Boolean = false,
@@ -109,6 +112,9 @@ fun ImmersiveMediaCard(
     imageQuality: ImageQuality = ImageQuality.HIGH,
     cardSize: ImmersiveCardSize = ImmersiveCardSize.MEDIUM,
 ) {
+    val sharedTransitionScope = com.rpeters.jellyfin.ui.navigation.LocalSharedTransitionScope.current
+    val animatedVisibilityScope = com.rpeters.jellyfin.ui.navigation.LocalAnimatedVisibilityScope.current
+    
     var isPressed by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.96f else 1.0f,
@@ -134,6 +140,17 @@ fun ImmersiveMediaCard(
     }
     val cardShape = RoundedCornerShape(ImmersiveDimens.CornerRadiusCinematic)
 
+    val sharedElementModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null && itemId != null) {
+        with(sharedTransitionScope) {
+            Modifier.sharedElement(
+                rememberSharedContentState(key = "media_$itemId"),
+                animatedVisibilityScope = animatedVisibilityScope
+            )
+        }
+    } else {
+        Modifier
+    }
+
     Card(
         modifier = Modifier
             .width(width)
@@ -149,6 +166,7 @@ fun ImmersiveMediaCard(
                 blurRadius = 24.dp,
                 offsetY = 10.dp
             )
+            .then(sharedElementModifier)
             // Allow call sites to override default immersive size when needed (e.g. episode rows).
             .then(modifier),
         colors = CardDefaults.cardColors(
@@ -200,6 +218,8 @@ private fun ImmersiveCardContent(
         onPressedChange(isPressed)
     }
 
+    val haptics = com.rpeters.jellyfin.ui.utils.rememberExpressiveHaptics()
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -209,6 +229,7 @@ private fun ImmersiveCardContent(
                 indication = null,
                 onClickLabel = "Open $title",
             ) {
+                haptics.lightClick()
                 onCardClick()
             },
     ) {

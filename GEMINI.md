@@ -65,11 +65,11 @@ This is a modern Android client for Jellyfin media servers (branded as Cinefin),
 - **Coroutines:** Use `StandardTestDispatcher` with `advanceUntilIdle()` in `runTest`.
 - **Coverage:** Target 70%+ for ViewModels.
 
-## 5. Development Status (Updated Feb 5, 2026)
+## 5. Development Status (Updated March 28, 2026)
 - **Active Development:**
+  - Android 16 & 17 Modernization (Handoff API, Rich Haptics).
+  - Shared Element Transitions & Glassmorphism.
   - Music Background Playback.
-  - Offline Downloads (Core logic).
-  - Android TV D-pad Navigation.
 - **Stable Features:**
   - Authentication (Multi-server, Quick Connect).
   - Video Playback (ExoPlayer, PiP, HLS/DASH).
@@ -78,11 +78,13 @@ This is a modern Android client for Jellyfin media servers (branded as Cinefin),
   - Adaptive Bitrate Monitoring & Quality Control.
   - Transcoding Diagnostics Tool.
   - Firebase Integration (Analytics, Config, Crashlytics).
-  - AI Assistant & AI Summaries.
+  - AI Assistant & AI Summaries (NPU optimization planned).
   - DNS Resolution Error Handling.
 - **Security Enhancements:**
   - Authorization headers used instead of URL tokens.
   - TOFU Certificate Pinning.
+  - Android 17 read-only dynamic code loading compliance.
+
 
 ## 6. Commit & Contribution
 - **Format:** Conventional Commits (`feat:`, `fix:`, `docs:`, `refactor:`).

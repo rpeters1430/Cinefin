@@ -66,6 +66,7 @@ import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
 import com.rpeters.jellyfin.ui.components.ExpressiveSimpleEmptyState
 import com.rpeters.jellyfin.ui.components.immersive.rememberImmersivePerformanceConfig
 import com.rpeters.jellyfin.ui.components.shimmer
+import com.rpeters.jellyfin.ui.components.aiAura
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
 import com.rpeters.jellyfin.utils.getItemKey
 import kotlinx.coroutines.CancellationException
@@ -97,9 +98,13 @@ fun ImmersiveLibraryScreen(
     onNowPlayingClick: () -> Unit = {},
     showBackButton: Boolean = false,
     modifier: Modifier = Modifier,
+    animatedVisibilityScope: androidx.compose.animation.AnimatedVisibilityScope? = null,
 ) {
-    @Suppress("UNUSED_VARIABLE")
-    val perfConfig = rememberImmersivePerformanceConfig()
+    androidx.compose.runtime.CompositionLocalProvider(
+        com.rpeters.jellyfin.ui.navigation.LocalAnimatedVisibilityScope provides animatedVisibilityScope
+    ) {
+        @Suppress("UNUSED_VARIABLE")
+        val perfConfig = rememberImmersivePerformanceConfig()
     val listState = rememberLazyListState()
 
     PerformanceMetricsTracker(
@@ -265,6 +270,7 @@ fun ImmersiveLibraryScreen(
                     onClick = onAiAssistantClick,
                     containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                     contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                    modifier = Modifier.aiAura(),
                 ) {
                     Icon(
                         imageVector = Icons.Default.AutoAwesome,
@@ -286,6 +292,7 @@ fun ImmersiveLibraryScreen(
         }
     }
 }
+}
 
 @Composable
 private fun ImmersiveLibraryCard(
@@ -295,7 +302,7 @@ private fun ImmersiveLibraryCard(
     modifier: Modifier = Modifier,
 ) {
     val libraryIcon = getImmersiveLibraryIcon(library.collectionType)
-    val libraryColor = getLibraryColor(library.collectionType)
+    val libColor = getLibraryColor(library.collectionType)
 
     Card(
         modifier = modifier
@@ -315,7 +322,7 @@ private fun ImmersiveLibraryCard(
                     .background(
                         brush = Brush.horizontalGradient(
                             colors = listOf(
-                                libraryColor.copy(alpha = 0.15f),
+                                libColor.copy(alpha = 0.15f),
                                 Color.Transparent,
                             ),
                         ),
@@ -331,7 +338,7 @@ private fun ImmersiveLibraryCard(
             ) {
                 Surface(
                     shape = CircleShape,
-                    color = libraryColor.copy(alpha = 0.2f),
+                    color = libColor.copy(alpha = 0.2f),
                     modifier = Modifier.size(64.dp),
                 ) {
                     Box(
@@ -341,7 +348,7 @@ private fun ImmersiveLibraryCard(
                         Icon(
                             imageVector = libraryIcon,
                             contentDescription = null,
-                            tint = libraryColor,
+                            tint = libColor,
                             modifier = Modifier.size(32.dp),
                         )
                     }
