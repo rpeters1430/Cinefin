@@ -7,8 +7,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
@@ -33,8 +33,11 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.tv.material3.ExperimentalTvMaterial3Api
+import androidx.tv.material3.FilterChip
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.ui.adaptive.rememberAdaptiveLayoutConfig
 import com.rpeters.jellyfin.ui.adaptive.rememberWindowLayoutInfo
@@ -51,9 +54,6 @@ import com.rpeters.jellyfin.ui.tv.tvKeyboardHandler
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import org.jellyfin.sdk.model.api.CollectionType
 import kotlin.math.min
-import androidx.compose.ui.unit.Dp
-import androidx.tv.material3.FilterChip
-import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.MaterialTheme as TvMaterialTheme
 import androidx.tv.material3.Text as TvText
 
@@ -242,7 +242,9 @@ fun TvLibraryScreen(
                     val gridState = rememberLazyGridState()
                     val horizontalScreenPadding = tvLayout.screenHorizontalPadding * 2
                     val gridSpacing = tvLayout.cardSpacing
-                    val availableWidth = (configuration.screenWidthDp.dp - horizontalScreenPadding).coerceAtLeast(0.dp)
+                    // Subtract drawerWidth because configuration.screenWidthDp is the full physical
+                    // screen width, but the content area is already narrowed by the persistent sidebar.
+                    val availableWidth = (configuration.screenWidthDp.dp - tvLayout.drawerWidth - horizontalScreenPadding).coerceAtLeast(0.dp)
                     val maxColumnsForCardWidth =
                         ((availableWidth + gridSpacing) / (routeConfig.cardWidth + gridSpacing))
                             .toInt()
