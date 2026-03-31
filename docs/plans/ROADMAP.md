@@ -10,38 +10,7 @@ A clear, actionable improvement plan for the Jellyfin Android client.
 
 ## Current Status
 
-### Working Features
-- Server connection & authentication (multi-server, auto-login)
-- Secure credential storage (Android Keystore, AES-256-GCM encryption)
-- Certificate pinning (TOFU model)
-- Video playback (ExoPlayer/Media3, HLS/DASH, FFmpeg decoder, adaptive track selection)
-- Library browsing (Movies, TV Shows, Music)
-- Material 3 Expressive UI with dark/light/AMOLED themes
-- Resume playback, favorites, search
-- Android TV UI (partial)
-
-### Partially Working
-- **Music playback** - UI exists, background playback incomplete
-- **Offline downloads** - Screen exists, core functionality incomplete
-- **Android TV** - Screens exist, D-pad navigation needs testing
-
-### Verified Complete
-- **Picture-in-Picture** - Full implementation with remote actions (play/pause, skip ±30s)
-- **Chromecast** - Full casting with seek bar, volume control, position tracking
-- **Auto-Play Next Episode** - Automatic continuation with countdown UI (added Jan 23, 2026)
-- **Progress Sync Resilience** - Local queuing and background sync for offline playback (added Feb 5, 2026)
-- **Transcoding position reset fix** - Position preserved across codec flushes with retry limits
-- **Transcoding diagnostics tool** - Identifies which videos need transcoding and why
-
-### Needs Improvement
-- **Transcoding system** - Works but missing DeviceProfile, hardcoded bitrates, broken network assessment. See [IMPROVEMENT_PLAN Phase A](docs/IMPROVEMENT_PLAN.md#phase-a-transcoding--playback-system-overhaul-critical)
-- **Subtitle system** - Embedded subs work, but no external subs, no ASS/SSA styling, no sync delay
-
-### Not Implemented
-- Live TV & DVR
-- Sync Play (watch together)
-- Home screen widgets
-- Multi-profile support
+For a comprehensive snapshot of currently working, partially working, and non-implemented features, please refer to the **[CURRENT_STATUS.md](CURRENT_STATUS.md)** document.
 
 ---
 

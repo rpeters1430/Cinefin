@@ -303,14 +303,7 @@ private fun backoff(attempt: Int) {
 
 ## Issue Summary
 
-| Priority | Count | Status |
-|----------|-------|--------|
-| 🔴 Critical | 0 | None identified |
-| 🟠 High | 0 | All fixed in Jan 2026 |
-| 🟡 Medium | 3 | In progress or planned |
-| 🟢 Low | 3 | Planned for Phase 2-3 |
-| ✅ Resolved | 8 | Fixed in Jan 2026 |
-| **Total Active** | **6** | - |
+For a summary of active issues and overall project status, please refer to the **[CURRENT_STATUS.md](../plans/CURRENT_STATUS.md)** document.
 
 ---
 

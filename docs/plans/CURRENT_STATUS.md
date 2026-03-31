@@ -2,6 +2,8 @@
 
 **Last Updated**: March 16, 2026
 
+> **Quick Links**: [Feature Status](CURRENT_STATUS.md) | [Known Issues](../features/KNOWN_ISSUES.md) | [Roadmap](ROADMAP.md) | [Upgrade Path](UPGRADE_PATH.md)
+
 This document provides a comprehensive snapshot of what works RIGHT NOW in the Jellyfin Android client. For planned features and improvements, see [ROADMAP.md](ROADMAP.md). For known bugs and workarounds, see [KNOWN_ISSUES.md](../features/KNOWN_ISSUES.md). For dependency upgrade strategy, see [UPGRADE_PATH.md](UPGRADE_PATH.md).
 
 ---
