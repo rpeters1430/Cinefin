@@ -45,7 +45,8 @@ fun androidx.navigation.NavGraphBuilder.homeLibraryNavGraph(
         // ✅ Performance: Stabilize callbacks to prevent unnecessary recompositions
         val onRefresh = remember(viewModel) { { viewModel.loadInitialData() } }
         val onSearch = remember(viewModel, navController) {
-            { query: String ->
+            {
+                    query: String ->
                 viewModel.search(query)
                 navController.navigate(Screen.Search.route)
             }
@@ -56,9 +57,10 @@ fun androidx.navigation.NavGraphBuilder.homeLibraryNavGraph(
         val getImageUrl = remember(viewModel) { { item: org.jellyfin.sdk.model.api.BaseItemDto -> viewModel.getImageUrl(item) } }
         val getBackdropUrl = remember(viewModel) { { item: org.jellyfin.sdk.model.api.BaseItemDto -> viewModel.getBackdropUrl(item) } }
         val getSeriesImageUrl = remember(viewModel) { { item: org.jellyfin.sdk.model.api.BaseItemDto -> viewModel.getSeriesImageUrl(item) } }
-        
+
         val onItemClick = remember(navController) {
-            { item: org.jellyfin.sdk.model.api.BaseItemDto ->
+            {
+                    item: org.jellyfin.sdk.model.api.BaseItemDto ->
                 when (item.type) {
                     org.jellyfin.sdk.model.api.BaseItemKind.MOVIE -> {
                         item.id.let { movieId ->
@@ -94,7 +96,8 @@ fun androidx.navigation.NavGraphBuilder.homeLibraryNavGraph(
         }
 
         val onLibraryClick = remember(navController) {
-            { library: org.jellyfin.sdk.model.api.BaseItemDto ->
+            {
+                    library: org.jellyfin.sdk.model.api.BaseItemDto ->
                 try {
                     libraryRouteFor(library)?.let { route ->
                         navController.navigate(route)
@@ -110,7 +113,7 @@ fun androidx.navigation.NavGraphBuilder.homeLibraryNavGraph(
                 Unit
             }
         }
-        
+
         val onSettingsClick = remember(navController) { { navController.navigate(Screen.Settings.route) } }
         val onNowPlayingClick = remember(navController) { { navController.navigate(Screen.NowPlaying.route) } }
         val onAiHealthCheck = remember(viewModel) { { viewModel.runAiHealthCheck(force = true) } }
@@ -171,7 +174,8 @@ fun androidx.navigation.NavGraphBuilder.homeLibraryNavGraph(
         val onRefresh = remember(viewModel) { { viewModel.loadInitialData(forceRefresh = true) } }
         val getImageUrl = remember(viewModel) { { item: org.jellyfin.sdk.model.api.BaseItemDto -> viewModel.getImageUrl(item) } }
         val onLibraryClick = remember(navController) {
-            { library: org.jellyfin.sdk.model.api.BaseItemDto ->
+            {
+                    library: org.jellyfin.sdk.model.api.BaseItemDto ->
                 try {
                     libraryRouteFor(library)?.let { route ->
                         navController.navigate(route)
