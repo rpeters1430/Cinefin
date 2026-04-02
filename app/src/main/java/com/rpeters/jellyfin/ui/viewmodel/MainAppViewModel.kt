@@ -257,7 +257,13 @@ constructor(
     @OptIn(ExperimentalCoroutinesApi::class)
     fun loadInitialData(forceRefresh: Boolean = false) {
         viewModelScope.launch {
-            if (!ensureValidToken()) return@launch
+            if (!ensureValidToken()) {
+                _appState.value = _appState.value.copy(
+                    isLoading = false,
+                    errorMessage = "Session expired. Please pull down to retry or re-open the app.",
+                )
+                return@launch
+            }
 
             if (forceRefresh) {
                 analytics.logUiEvent("Home", "refresh_data")

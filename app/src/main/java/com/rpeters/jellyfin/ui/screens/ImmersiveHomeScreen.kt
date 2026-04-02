@@ -458,6 +458,7 @@ private fun ImmersiveHomeContent(
                 onItemClick = stableOnItemClick,
                 onItemLongPress = stableOnItemLongPress,
                 onLibraryClick = onLibraryClick,
+                onRetry = onRefresh,
                 viewingMood = viewingMood,
                 listState = listState,
                 contentPadding = contentPadding,
@@ -481,6 +482,7 @@ internal fun MobileExpressiveHomeContent(
     onItemClick: (BaseItemDto) -> Unit,
     onItemLongPress: (BaseItemDto) -> Unit,
     onLibraryClick: (BaseItemDto) -> Unit,
+    onRetry: () -> Unit,
     viewingMood: String?,
     listState: LazyListState,
     contentPadding: PaddingValues,
@@ -547,6 +549,17 @@ internal fun MobileExpressiveHomeContent(
                             .height(com.rpeters.jellyfin.ui.theme.ImmersiveDimens.HeroHeightPhone)
                     )
                 }
+            }
+        }
+
+        // Show error banner when content failed to load
+        if (appState.errorMessage != null && !appState.isLoading) {
+            item(key = "error_banner", contentType = "error_banner") {
+                HomeErrorBanner(
+                    message = appState.errorMessage,
+                    onRetry = onRetry,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                )
             }
         }
 
@@ -624,6 +637,55 @@ internal fun MobileExpressiveHomeContent(
                 onItemClick = onItemClick,
                 onItemLongPress = onItemLongPress,
             )
+        }
+    }
+}
+
+@Composable
+private fun HomeErrorBanner(
+    message: String,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.errorContainer,
+        ),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Warning,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onErrorContainer,
+                )
+                Text(
+                    text = stringResource(id = R.string.error_loading_data),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                )
+            }
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onErrorContainer,
+            )
+            Button(
+                onClick = onRetry,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error,
+                    contentColor = MaterialTheme.colorScheme.onError,
+                ),
+            ) {
+                Text(text = stringResource(id = R.string.retry))
+            }
         }
     }
 }
