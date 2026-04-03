@@ -8,7 +8,7 @@ Reduce coupling to the concrete `JellyfinRepository` by moving consumers to `IJe
 
 ## Current State
 
-The refactor is in progress and the app still builds.
+The repository refactor is complete at the current boundary and the app still builds.
 
 Build verification completed with:
 
@@ -93,36 +93,28 @@ Reasons:
 - token refresh helpers
 - server connection test helpers
 
-### Likely next hard boundary
+### Cast boundary
 
-This cast-specific code still depends on concrete `JellyfinRepository` behavior or nested repository types:
+Cast-specific playback has now been split off from the main repository contract:
 
-- [CastMediaLoadBuilder.kt](/home/rpeters1428/Cinefin/app/src/main/java/com/rpeters/jellyfin/ui/player/cast/CastMediaLoadBuilder.kt)
+- `CastReceiverProfile` is now a top-level type
+- `ICastPlaybackRepository` owns cast playback info lookup
+- [CastMediaLoadBuilder.kt](/home/rpeters1428/Cinefin/app/src/main/java/com/rpeters/jellyfin/ui/player/cast/CastMediaLoadBuilder.kt) now depends on the cast interface instead of concrete `JellyfinRepository`
 
-Reason:
+This keeps cast concerns out of `IJellyfinRepository` while still reusing the existing concrete implementation.
 
-- it uses `JellyfinRepository.CastReceiverProfile`
-- it calls cast-specific playback APIs that are not part of `IJellyfinRepository`
+## Conclusion
 
-## Recommended Next Step
+This repository refactor should be considered complete as-is.
 
-Do **not** immediately dump every remaining `JellyfinRepository` method into `IJellyfinRepository`.
+The remaining concrete consumers are intentionally concrete because they depend on session and connection lifecycle concerns, not because the repository refactor is unfinished:
 
-Instead, choose one of these two directions deliberately:
+1. [ServerConnectionViewModel.kt](/home/rpeters1428/Cinefin/app/src/main/java/com/rpeters/jellyfin/ui/viewmodel/ServerConnectionViewModel.kt)
+2. [MainAppViewModel.kt](/home/rpeters1428/Cinefin/app/src/main/java/com/rpeters/jellyfin/ui/viewmodel/MainAppViewModel.kt)
 
-1. Keep the auth/session/connection layer concrete.
-2. Extract a second, narrower interface for connection/session concerns.
+Do **not** expand `IJellyfinRepository` further just to eliminate these last concrete usages.
 
-Recommended tomorrow:
-
-1. Leave [ServerConnectionViewModel.kt](/home/rpeters1428/Cinefin/app/src/main/java/com/rpeters/jellyfin/ui/viewmodel/ServerConnectionViewModel.kt) concrete for now.
-2. Leave [MainAppViewModel.kt](/home/rpeters1428/Cinefin/app/src/main/java/com/rpeters/jellyfin/ui/viewmodel/MainAppViewModel.kt) concrete for now unless you want to introduce a dedicated session-state abstraction.
-3. Decide whether cast belongs on:
-   - `IJellyfinRepository`
-   - a separate `ICastPlaybackRepository`
-   - or the concrete repository intentionally
-
-The cleanest next design is probably a separate cast-facing abstraction rather than expanding `IJellyfinRepository` with cast-only concerns.
+If future work is needed, treat it as a separate design effort to extract a dedicated session/connection abstraction rather than continuing this repository refactor.
 
 ## Known Caveat
 
@@ -139,7 +131,4 @@ When resuming:
 rg -n "JellyfinRepository\\b" app/src/main/java app/src/test/java
 ```
 
-3. Decide whether the next slice is:
-   - session/connection abstraction
-   - cast abstraction
-   - or stopping the refactor at the current boundary
+3. If revisiting this area later, decide whether to introduce a separate session/connection abstraction.

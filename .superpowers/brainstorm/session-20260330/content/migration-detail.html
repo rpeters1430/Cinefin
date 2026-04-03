@@ -1,0 +1,55 @@
+<h2>Section 2: High-Impact Migration (Home & Player)</h2>
+<p class="subtitle">Solving state complexity and oversized composables through MVI</p>
+
+<div class="split">
+  <div class="mockup">
+    <div class="mockup-header">Target: VideoPlayerScreen.kt</div>
+    <div class="mockup-body">
+      <div style="padding: 1rem; font-size: 0.85rem;">
+        <h4 style="margin-top: 0; color: #d9534f;">The Problem (Current)</h4>
+        <ul>
+          <li>Scattered <code>StateFlow</code> for: position, buffer, quality, subtitles, transcoding status.</li>
+          <li>Manual synchronization between UI actions and playback state.</li>
+          <li>Composables (>1000 lines) pass down many lambdas for state updates.</li>
+        </ul>
+        <h4 style="color: #5cb85c;">The Solution (MVI)</h4>
+        <ul>
+          <li><b>Single Source:</b> <code>VideoPlayerUiState</code> contains all playback and overlay flags.</li>
+          <li><b>Deterministic Actions:</b> All UI inputs (seek, toggle, etc.) go through a single <code>intent { ... }</code> flow.</li>
+          <li><b>SideEffects:</b> Navigation-to-Home or Errors are one-time events.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="mockup">
+    <div class="mockup-header">MVI State Flow Example</div>
+    <div class="mockup-body">
+      <div style="padding: 1rem; font-family: monospace; font-size: 0.8rem;">
+        data class <b>PlayerState</b>(<br>
+        &nbsp;&nbsp;val isPlaying: Boolean = false,<br>
+        &nbsp;&nbsp;val currentPosition: Long = 0L,<br>
+        &nbsp;&nbsp;val transcodingStatus: <b>TranscodingStatus</b> = Idle<br>
+        )<br><br>
+        sealed class <b>PlayerIntent</b> {<br>
+        &nbsp;&nbsp;object TogglePlay : PlayerIntent()<br>
+        &nbsp;&nbsp;data class SeekTo(val pos: Long) : PlayerIntent()<br>
+        }<br><br>
+        <span style="color: #008000;">// UI simplifies to:</span><br>
+        val state by viewModel.collectAsState()<br>
+        VideoControls(state, onIntent = viewModel::handleIntent)
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Addressing "Large Composables" (Phase 3 Evolution)</h3>
+  <p>The MVI transition acts as a <b>forced refactor</b> for your 1000+ line composables:</p>
+  <ul>
+    <li><b>Stateless Sub-components:</b> Large screens will be broken into smaller, stateless components (e.g., <code>PlaybackOverlay.kt</code>, <code>QualitySelector.kt</code>) that only accept <code>UiState</code> and an <code>(Intent) -> Unit</code> callback.</li>
+    <li><b>Improved Testability:</b> We can test the entire state-machine logic in isolation from the Compose UI.</li>
+    <li><b>Haptics & Rich Feedback:</b> MVI side-effects are the perfect place to trigger the "Rich Haptics" from your Android 16 plan.</li>
+  </ul>
+</div>
+
+<p>Does this migration strategy for your core screens look solid?</p>

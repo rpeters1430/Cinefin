@@ -1,0 +1,95 @@
+<h2>Approach 1: Core-Out Architecture Migration</h2>
+<p class="subtitle">Transitioning from MVVM to strict MVI for core screens (Home & Player)</p>
+
+<div class="split">
+  <div class="mockup">
+    <div class="mockup-header">Current: MVVM + StateFlow</div>
+    <div class="mockup-body">
+      <div style="padding: 1rem; font-size: 0.9rem;">
+        <div class="placeholder" style="margin-bottom: 0.5rem; text-align: center;">View (Compose)</div>
+        <div style="text-align: center; font-size: 1.2rem; margin: 0.5rem;">↓ ↑</div>
+        <div class="placeholder" style="margin-bottom: 0.5rem; text-align: center;">ViewModel</div>
+        <div style="padding: 0.5rem; background: #eee; font-family: monospace; font-size: 0.8rem;">
+          private val _uiState = MutableStateFlow(...)<br>
+          val uiState = _uiState.asStateFlow()<br><br>
+          fun onAction(...) {<br>
+          &nbsp;&nbsp;// Manual state updates<br>
+          &nbsp;&nbsp;_uiState.value = ...<br>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="mockup">
+    <div class="mockup-header">Proposed: Orbit MVI (The "Clean Break")</div>
+    <div class="mockup-body">
+      <div style="padding: 1rem; font-size: 0.9rem;">
+        <div class="placeholder" style="margin-bottom: 0.5rem; text-align: center;">View (Compose)</div>
+        <div style="text-align: center; font-size: 1.2rem; margin: 0.5rem;">↓ (Intents)</div>
+        <div class="placeholder" style="margin-bottom: 0.5rem; text-align: center;">MVI Store / Container</div>
+        <div style="text-align: center; font-size: 1.2rem; margin: 0.5rem;">↑ (State / SideEffects)</div>
+        <div style="padding: 0.5rem; background: #eef; font-family: monospace; font-size: 0.8rem;">
+          intent {<br>
+          &nbsp;&nbsp;reduce {<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;state.copy(loading = true)<br>
+          &nbsp;&nbsp;}<br>
+          &nbsp;&nbsp;// Async logic<br>
+          &nbsp;&nbsp;postSideEffect(Toast("..."))<br>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Migration Roadmap (A + C)</h3>
+  <div class="options" data-multiselect>
+    <div class="option" data-choice="p0" onclick="toggleSelect(this)">
+      <div class="letter">0</div>
+      <div class="content">
+        <h3>Phase 0: Documentation Alignment</h3>
+        <p>Align <code>CURRENT_STATUS.md</code>, <code>KNOWN_ISSUES.md</code>, and <code>ROADMAP.md</code>. Establish a "single source of truth."</p>
+      </div>
+    </div>
+    <div class="option" data-choice="p1" onclick="toggleSelect(this)">
+      <div class="letter">1</div>
+      <div class="content">
+        <h3>Phase 1: Architecture Core</h3>
+        <p>Implement <code>:core:architecture</code> with Orbit MVI. Abstract common state logic for the "Clean Break."</p>
+      </div>
+    </div>
+    <div class="option" data-choice="p2" onclick="toggleSelect(this)">
+      <div class="letter">2</div>
+      <div class="content">
+        <h3>Phase 2: High-Impact Migration (Home/Player)</h3>
+        <p>Migrate the most complex screens to MVI. This also addresses <b>Phase 3</b> of your existing plan (Refactoring Oversized Composables).</p>
+      </div>
+    </div>
+    <div class="option" data-choice="p3" onclick="toggleSelect(this)">
+      <div class="letter">3</div>
+      <div class="content">
+        <h3>Phase 3: Dependency Stabilization</h3>
+        <p>Stabilize Media3, Navigation, and Lifecycle dependencies (Phase 1 of your existing plan).</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="pros-cons">
+  <div class="pros">
+    <h4>Pros</h4>
+    <ul>
+      <li>Solves state-management complexity for Home/Player early.</li>
+      <li>Establishes a repeatable modern standard for the whole app.</li>
+      <li>Directly reduces the "large composable" maintenance burden.</li>
+    </ul>
+  </div>
+  <div class="cons">
+    <h4>Cons</h4>
+    <ul>
+      <li>Higher initial learning curve for the new pattern.</li>
+      <li>Requires temporary split architecture (MVVM vs MVI) until full migration.</li>
+    </ul>
+  </div>
+</div>

@@ -7,6 +7,7 @@ import com.rpeters.jellyfin.data.DeviceCapabilities
 import com.rpeters.jellyfin.data.cache.JellyfinCache
 import com.rpeters.jellyfin.data.playback.EnhancedPlaybackManager
 import com.rpeters.jellyfin.data.preferences.PlaybackPreferencesRepository
+import com.rpeters.jellyfin.data.repository.ICastPlaybackRepository
 import com.rpeters.jellyfin.data.repository.IJellyfinAuthRepository
 import com.rpeters.jellyfin.data.repository.IJellyfinRepository
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
@@ -208,9 +209,14 @@ object NetworkModule {
         jellyfin: Jellyfin,
         secureCredentialManager: com.rpeters.jellyfin.data.SecureCredentialManager,
         timeProvider: () -> Long,
-    ): IJellyfinAuthRepository {
-        return JellyfinAuthRepository(jellyfin, secureCredentialManager, timeProvider)
-    }
+    ): JellyfinAuthRepository =
+        JellyfinAuthRepository(jellyfin, secureCredentialManager, timeProvider)
+
+    @Provides
+    @Singleton
+    fun provideIJellyfinAuthRepository(
+        authRepository: JellyfinAuthRepository,
+    ): IJellyfinAuthRepository = authRepository
 
     @Provides
     @Singleton
@@ -222,7 +228,7 @@ object NetworkModule {
         authRepository: IJellyfinAuthRepository,
         streamRepository: JellyfinStreamRepository,
         connectivityChecker: ConnectivityChecker,
-    ): IJellyfinRepository {
+    ): JellyfinRepository {
         return JellyfinRepository(
             sessionManager,
             secureCredentialManager,
@@ -233,6 +239,18 @@ object NetworkModule {
             connectivityChecker,
         )
     }
+
+    @Provides
+    @Singleton
+    fun provideIJellyfinRepository(
+        repository: JellyfinRepository,
+    ): IJellyfinRepository = repository
+
+    @Provides
+    @Singleton
+    fun provideCastPlaybackRepository(
+        repository: JellyfinRepository,
+    ): ICastPlaybackRepository = repository
 
     @Provides
     @Singleton

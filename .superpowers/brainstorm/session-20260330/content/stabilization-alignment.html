@@ -1,0 +1,41 @@
+<h2>Section 3: Stabilization & Alignment (Phase 0 & 3)</h2>
+<p class="subtitle">Ensuring a solid foundation and reducing dependency risk</p>
+
+<div class="split">
+  <div class="mockup">
+    <div class="mockup-header">Phase 0: Documentation Truth</div>
+    <div class="mockup-body">
+      <div style="padding: 1rem; font-size: 0.85rem;">
+        <h4 style="margin-top: 0; color: #337ab7;">Authoritative Mapping</h4>
+        <p>Currently, <code>CURRENT_STATUS.md</code>, <code>KNOWN_ISSUES.md</code>, and <code>ROADMAP.md</code> have overlapping or conflicting information.</p>
+        <p><b>Action:</b> Create a single "Source of Truth" table in <code>docs/plans/CURRENT_STATUS.md</code> and update all other files to point there via markdown links. This stops the "drift" that makes planning difficult.</p>
+      </div>
+    </div>
+  </div>
+  <div class="mockup">
+    <div class="mockup-header">Phase 3: Dependency Health</div>
+    <div class="mockup-body">
+      <div style="padding: 1rem; font-size: 0.85rem;">
+        <h4 style="margin-top: 0; color: #337ab7;">Stabilization Gate</h4>
+        <ul>
+          <li><b>Media3:</b> <code>1.10.0-rc02</code> → <code>1.10.x</code> (Stable)</li>
+          <li><b>Navigation:</b> <code>2.10.0-alpha01</code> → <code>2.10.x</code> (Stable path check)</li>
+          <li><b>Lifecycle:</b> <code>2.11.0-alpha02</code> → Stable candidate</li>
+        </ul>
+        <p><b>Goal:</b> Shrink the "Alpha Surface Area" by 30-40% before starting the Android 16/17 modernization.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Verification & Testing Strategy</h3>
+  <p>To ensure this massive migration doesn't break the core streaming experience:</p>
+  <ul>
+    <li><b>Playback Regression Matrix:</b> Every MVI refactor of the Player must pass a "Playback Matrix" (Direct Play, Transcoding, Subtitles, Audio Track switching).</li>
+    <li><b>TV Focus Checks:</b> Any change to navigation or material libraries requires a D-pad navigation audit on the TV home screen.</li>
+    <li><b>Screenshot Tests:</b> Capture baseline screenshots of Home/Player before refactoring to detect layout regressions during the MVI transition.</li>
+  </ul>
+</div>
+
+<p>This completes the design. Does this stabilization and alignment strategy look right to you?</p>

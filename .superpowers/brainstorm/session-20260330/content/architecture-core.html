@@ -1,0 +1,35 @@
+<h2>Section 1: Architecture Core (:core:architecture)</h2>
+<p class="subtitle">Building the foundation for the "Clean Break" MVI transition</p>
+
+<div class="mockup">
+  <div class="mockup-header">New Module: :core:architecture</div>
+  <div class="mockup-body">
+    <div style="padding: 1rem; font-family: monospace; font-size: 0.85rem;">
+      <span style="color: #008000;">// Orbit MVI Base ViewModel</span><br>
+      abstract class <b>BaseMviViewModel</b>&lt;S : Any, SE : Any&gt; : ViewModel(), <b>ContainerHost</b>&lt;S, SE&gt; {<br>
+      &nbsp;&nbsp;abstract val initialState: S<br>
+      &nbsp;&nbsp;override val container by <b>lazy</b> { container&lt;S, SE&gt;(initialState) }<br><br>
+      &nbsp;&nbsp;<span style="color: #008000;">// Helper for intent-based actions</span><br>
+      &nbsp;&nbsp;protected fun <b>updateState</b>(reducer: S.() -> S) = intent { reduce { state.reducer() } }<br>
+      }<br><br>
+      <span style="color: #008000;">// UI State Example</span><br>
+      data class <b>HomeUiState</b>(<br>
+      &nbsp;&nbsp;val items: List&lt;MediaItem&gt; = emptyList(),<br>
+      &nbsp;&nbsp;val isLoading: Boolean = false,<br>
+      &nbsp;&nbsp;val error: String? = null<br>
+      )
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Key Components</h3>
+  <ul>
+    <li><b>Orbit MVI:</b> Chosen for its balance of strictness and boiler-plate reduction. It handles state reduction and side effects (toasts, navigation) elegantly.</li>
+    <li><b>State-In-Container:</b> ViewModels will no longer hold individual <code>MutableStateFlows</code>. All UI state resides in a single, immutable <code>UiState</code> object.</li>
+    <li><b>SideEffects:</b> One-time events (like showing a Snackbar or navigating) are modeled as <code>SideEffects</code>, preventing "double-fire" issues on configuration changes.</li>
+    <li><b>Compose Integration:</b> Uses <code>collectAsStateWithLifecycle()</code> for state and <code>collectSideEffect()</code> for events.</li>
+  </ul>
+</div>
+
+<p>Does this core architectural approach look right before we move to the migration details for Home/Player?</p>

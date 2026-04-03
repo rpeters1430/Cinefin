@@ -58,13 +58,7 @@ open class JellyfinRepository @Inject constructor(
     private val authRepository: IJellyfinAuthRepository,
     private val streamRepository: JellyfinStreamRepository,
     val connectivityChecker: com.rpeters.jellyfin.network.ConnectivityChecker,
-) : IJellyfinRepository {
-    enum class CastReceiverProfile {
-        CHROMECAST_STRICT,
-        GOOGLE_TV_MODERATE,
-        SHIELD_PERMISSIVE,
-    }
-
+) : IJellyfinRepository, ICastPlaybackRepository {
     companion object {
         private const val TAG = "JellyfinRepository"
 
@@ -1204,12 +1198,12 @@ open class JellyfinRepository @Inject constructor(
      * @param itemId The item ID to get playback info for
      * @param isShieldOrAndroidTV Whether the Cast receiver is a SHIELD/Android TV (more capable)
      */
-    suspend fun getCastPlaybackInfo(
+    override suspend fun getCastPlaybackInfo(
         itemId: String,
-        castReceiverProfile: CastReceiverProfile = CastReceiverProfile.CHROMECAST_STRICT,
-        forceTranscode: Boolean = false,
-        audioStreamIndex: Int? = null,
-        subtitleStreamIndex: Int? = null,
+        castReceiverProfile: CastReceiverProfile,
+        forceTranscode: Boolean,
+        audioStreamIndex: Int?,
+        subtitleStreamIndex: Int?,
     ): PlaybackInfoResponse {
         val server = validateServer()
         val client = sessionManager.getClientForUrl(server.url)

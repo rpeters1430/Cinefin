@@ -1,8 +1,10 @@
 package com.rpeters.jellyfin.ui.screens
 
+import android.app.Activity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -30,10 +33,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
+import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -47,6 +54,7 @@ import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.FeatureFlags
 import com.rpeters.jellyfin.data.JellyfinServer
 import com.rpeters.jellyfin.data.model.CurrentUserDetails
+import com.rpeters.jellyfin.ui.adaptive.rememberAdaptiveLayoutConfig
 import com.rpeters.jellyfin.ui.components.ExpressiveBackNavigationIcon
 import com.rpeters.jellyfin.ui.components.ExpressiveContentCard
 import com.rpeters.jellyfin.ui.components.ExpressiveFilledButton
@@ -138,6 +146,15 @@ private fun SettingsScreenContent(
     onAiDiagnosticsClick: () -> Unit = {},
     showTranscodingDiagnostics: Boolean = true,
 ) {
+    val context = LocalContext.current
+    val activity = context as? Activity
+    val windowSizeClass = activity?.let { calculateWindowSizeClass(it) }
+    val adaptiveConfig = windowSizeClass?.let { rememberAdaptiveLayoutConfig(it) }
+    val isTabletLayout = adaptiveConfig?.isTablet == true &&
+        windowSizeClass.widthSizeClass != WindowWidthSizeClass.Compact
+    val contentPadding = adaptiveConfig?.contentPadding ?: PaddingValues(horizontal = 16.dp, vertical = 12.dp)
+    val sectionSpacing = adaptiveConfig?.sectionSpacing ?: 16.dp
+
     Scaffold(
         topBar = {
             ExpressiveTopAppBar(
@@ -160,155 +177,227 @@ private fun SettingsScreenContent(
         },
         modifier = modifier,
     ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.app_logo),
-                        contentDescription = stringResource(id = R.string.app_name),
-                        modifier = Modifier.size(120.dp),
-                    )
-                }
-            }
-
-            item {
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-
-            if (currentUser != null || currentServer != null) {
+        if (isTabletLayout) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentPadding = PaddingValues(
+                    start = 24.dp,
+                    top = contentPadding.calculateTopPadding(),
+                    end = 24.dp,
+                    bottom = contentPadding.calculateBottomPadding(),
+                ),
+                verticalArrangement = Arrangement.spacedBy(sectionSpacing),
+            ) {
                 item {
-                    AccountCard(
-                        currentUser = currentUser,
-                        userAvatarUrl = userAvatarUrl,
-                        currentServer = currentServer,
-                        onLogout = onLogout,
-                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .widthIn(max = 1440.dp),
+                        horizontalArrangement = Arrangement.spacedBy(24.dp),
+                        verticalAlignment = Alignment.Top,
+                    ) {
+                        Column(
+                            modifier = Modifier.weight(0.92f),
+                            verticalArrangement = Arrangement.spacedBy(sectionSpacing),
+                        ) {
+                            SettingsBrandHeader()
+                            if (currentUser != null || currentServer != null) {
+                                AccountCard(
+                                    currentUser = currentUser,
+                                    userAvatarUrl = userAvatarUrl,
+                                    currentServer = currentServer,
+                                    onLogout = onLogout,
+                                )
+                            }
+                            LibraryManagementCard(
+                                enabled = enableManagementActions,
+                                onToggle = onToggleManagementActions,
+                            )
+                            PinningManagementCard(onManagePinsClick = onManagePinsClick)
+                        }
+
+                        SettingsDestinationsSection(
+                            modifier = Modifier.weight(1.18f),
+                            onAppearanceSettingsClick = onAppearanceSettingsClick,
+                            onPlaybackSettingsClick = onPlaybackSettingsClick,
+                            onDownloadsSettingsClick = onDownloadsSettingsClick,
+                            onSubtitleSettingsClick = onSubtitleSettingsClick,
+                            onNotificationsSettingsClick = onNotificationsSettingsClick,
+                            onPrivacySettingsClick = onPrivacySettingsClick,
+                            onAccessibilitySettingsClick = onAccessibilitySettingsClick,
+                            onPrivacyPolicyClick = onPrivacyPolicyClick,
+                            onTranscodingDiagnosticsClick = onTranscodingDiagnosticsClick,
+                            onAiDiagnosticsClick = onAiDiagnosticsClick,
+                            showTranscodingDiagnostics = showTranscodingDiagnostics,
+                        )
+                    }
                 }
             }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                item { SettingsBrandHeader() }
 
-            item {
-                LibraryManagementCard(
-                    enabled = enableManagementActions,
-                    onToggle = onToggleManagementActions,
-                )
-            }
+                if (currentUser != null || currentServer != null) {
+                    item {
+                        AccountCard(
+                            currentUser = currentUser,
+                            userAvatarUrl = userAvatarUrl,
+                            currentServer = currentServer,
+                            onLogout = onLogout,
+                        )
+                    }
+                }
 
-            item {
-                PinningManagementCard(onManagePinsClick = onManagePinsClick)
-            }
-
-            item {
-                SettingsHeader(
-                    titleStyle = MaterialTheme.typography.headlineSmall,
-                )
-            }
-
-            item {
-                ExpressiveMediaListItem(
-                    title = stringResource(id = R.string.settings_appearance_title),
-                    subtitle = stringResource(id = R.string.settings_appearance_description),
-                    leadingIcon = Icons.Default.Palette,
-                    onClick = onAppearanceSettingsClick,
-                )
-            }
-
-            item {
-                ExpressiveMediaListItem(
-                    title = stringResource(id = R.string.settings_playback_title),
-                    subtitle = stringResource(id = R.string.settings_playback_description),
-                    leadingIcon = Icons.Default.PlayCircle,
-                    onClick = onPlaybackSettingsClick,
-                )
-            }
-
-            if (showTranscodingDiagnostics) {
                 item {
-                    ExpressiveMediaListItem(
-                        title = "Transcoding Diagnostics",
-                        subtitle = "Analyze which videos need transcoding and why",
-                        leadingIcon = Icons.Default.BugReport,
-                        onClick = onTranscodingDiagnosticsClick,
+                    LibraryManagementCard(
+                        enabled = enableManagementActions,
+                        onToggle = onToggleManagementActions,
                     )
                 }
-            }
 
-            item {
-                ExpressiveMediaListItem(
-                    title = "AI Backend Diagnostics",
-                    subtitle = "Check cloud API status and troubleshoot AI features",
-                    leadingIcon = Icons.Default.AutoAwesome,
-                    onClick = onAiDiagnosticsClick,
-                )
-            }
+                item {
+                    PinningManagementCard(onManagePinsClick = onManagePinsClick)
+                }
 
-            item {
-                ExpressiveMediaListItem(
-                    title = stringResource(id = R.string.settings_downloads_title),
-                    subtitle = stringResource(id = R.string.settings_downloads_description),
-                    leadingIcon = Icons.Default.Download,
-                    onClick = onDownloadsSettingsClick,
-                )
-            }
-
-            item {
-                ExpressiveMediaListItem(
-                    title = stringResource(id = R.string.settings_subtitles_title),
-                    subtitle = stringResource(id = R.string.settings_subtitles_description),
-                    leadingIcon = Icons.Default.ClosedCaption,
-                    onClick = onSubtitleSettingsClick,
-                )
-            }
-
-            item {
-                ExpressiveMediaListItem(
-                    title = stringResource(id = R.string.settings_notifications_title),
-                    subtitle = stringResource(id = R.string.settings_notifications_description),
-                    leadingIcon = Icons.Default.Notifications,
-                    onClick = onNotificationsSettingsClick,
-                )
-            }
-
-            item {
-                ExpressiveMediaListItem(
-                    title = stringResource(id = R.string.settings_privacy_title),
-                    subtitle = stringResource(id = R.string.settings_privacy_description),
-                    leadingIcon = Icons.Default.Security,
-                    onClick = onPrivacySettingsClick,
-                )
-            }
-
-            item {
-                ExpressiveMediaListItem(
-                    title = stringResource(id = R.string.settings_accessibility_title),
-                    subtitle = stringResource(id = R.string.settings_accessibility_description),
-                    leadingIcon = Icons.Default.Accessibility,
-                    onClick = onAccessibilitySettingsClick,
-                )
-            }
-
-            item {
-                ExpressiveMediaListItem(
-                    title = stringResource(id = R.string.privacy_policy_title),
-                    subtitle = stringResource(id = R.string.privacy_policy_description),
-                    leadingIcon = Icons.Default.Settings,
-                    onClick = onPrivacyPolicyClick,
-                )
-            }
-
-            item {
-                Spacer(modifier = Modifier.height(8.dp))
+                item {
+                    SettingsDestinationsSection(
+                        onAppearanceSettingsClick = onAppearanceSettingsClick,
+                        onPlaybackSettingsClick = onPlaybackSettingsClick,
+                        onDownloadsSettingsClick = onDownloadsSettingsClick,
+                        onSubtitleSettingsClick = onSubtitleSettingsClick,
+                        onNotificationsSettingsClick = onNotificationsSettingsClick,
+                        onPrivacySettingsClick = onPrivacySettingsClick,
+                        onAccessibilitySettingsClick = onAccessibilitySettingsClick,
+                        onPrivacyPolicyClick = onPrivacyPolicyClick,
+                        onTranscodingDiagnosticsClick = onTranscodingDiagnosticsClick,
+                        onAiDiagnosticsClick = onAiDiagnosticsClick,
+                        showTranscodingDiagnostics = showTranscodingDiagnostics,
+                    )
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun SettingsBrandHeader(
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.app_logo),
+                contentDescription = stringResource(id = R.string.app_name),
+                modifier = Modifier.size(120.dp),
+            )
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+    }
+}
+
+@Composable
+private fun SettingsDestinationsSection(
+    onAppearanceSettingsClick: () -> Unit,
+    onPlaybackSettingsClick: () -> Unit,
+    onDownloadsSettingsClick: () -> Unit,
+    onSubtitleSettingsClick: () -> Unit,
+    onNotificationsSettingsClick: () -> Unit,
+    onPrivacySettingsClick: () -> Unit,
+    onAccessibilitySettingsClick: () -> Unit,
+    onPrivacyPolicyClick: () -> Unit,
+    onTranscodingDiagnosticsClick: () -> Unit,
+    onAiDiagnosticsClick: () -> Unit,
+    showTranscodingDiagnostics: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        SettingsHeader(
+            titleStyle = MaterialTheme.typography.headlineSmall,
+        )
+
+        ExpressiveMediaListItem(
+            title = stringResource(id = R.string.settings_appearance_title),
+            subtitle = stringResource(id = R.string.settings_appearance_description),
+            leadingIcon = Icons.Default.Palette,
+            onClick = onAppearanceSettingsClick,
+        )
+        ExpressiveMediaListItem(
+            title = stringResource(id = R.string.settings_playback_title),
+            subtitle = stringResource(id = R.string.settings_playback_description),
+            leadingIcon = Icons.Default.PlayCircle,
+            onClick = onPlaybackSettingsClick,
+        )
+        if (showTranscodingDiagnostics) {
+            ExpressiveMediaListItem(
+                title = "Transcoding Diagnostics",
+                subtitle = "Analyze which videos need transcoding and why",
+                leadingIcon = Icons.Default.BugReport,
+                onClick = onTranscodingDiagnosticsClick,
+            )
+        }
+        ExpressiveMediaListItem(
+            title = "AI Backend Diagnostics",
+            subtitle = "Check cloud API status and troubleshoot AI features",
+            leadingIcon = Icons.Default.AutoAwesome,
+            onClick = onAiDiagnosticsClick,
+        )
+        ExpressiveMediaListItem(
+            title = stringResource(id = R.string.settings_downloads_title),
+            subtitle = stringResource(id = R.string.settings_downloads_description),
+            leadingIcon = Icons.Default.Download,
+            onClick = onDownloadsSettingsClick,
+        )
+        ExpressiveMediaListItem(
+            title = stringResource(id = R.string.settings_subtitles_title),
+            subtitle = stringResource(id = R.string.settings_subtitles_description),
+            leadingIcon = Icons.Default.ClosedCaption,
+            onClick = onSubtitleSettingsClick,
+        )
+        ExpressiveMediaListItem(
+            title = stringResource(id = R.string.settings_notifications_title),
+            subtitle = stringResource(id = R.string.settings_notifications_description),
+            leadingIcon = Icons.Default.Notifications,
+            onClick = onNotificationsSettingsClick,
+        )
+        ExpressiveMediaListItem(
+            title = stringResource(id = R.string.settings_privacy_title),
+            subtitle = stringResource(id = R.string.settings_privacy_description),
+            leadingIcon = Icons.Default.Security,
+            onClick = onPrivacySettingsClick,
+        )
+        ExpressiveMediaListItem(
+            title = stringResource(id = R.string.settings_accessibility_title),
+            subtitle = stringResource(id = R.string.settings_accessibility_description),
+            leadingIcon = Icons.Default.Accessibility,
+            onClick = onAccessibilitySettingsClick,
+        )
+        ExpressiveMediaListItem(
+            title = stringResource(id = R.string.privacy_policy_title),
+            subtitle = stringResource(id = R.string.privacy_policy_description),
+            leadingIcon = Icons.Default.Settings,
+            onClick = onPrivacyPolicyClick,
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
     }
 }
 

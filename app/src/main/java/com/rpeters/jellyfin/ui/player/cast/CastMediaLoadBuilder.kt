@@ -9,9 +9,9 @@ import com.google.android.gms.cast.MediaTrack
 import com.google.android.gms.cast.framework.CastContext
 import com.google.android.gms.common.images.WebImage
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.data.repository.CastReceiverProfile
+import com.rpeters.jellyfin.data.repository.ICastPlaybackRepository
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
-import com.rpeters.jellyfin.data.repository.JellyfinRepository.CastReceiverProfile
-import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
 import com.rpeters.jellyfin.ui.player.SubtitleSpec
 import com.rpeters.jellyfin.utils.AppResources
@@ -31,7 +31,7 @@ import javax.inject.Singleton
 @Singleton
 class CastMediaLoadBuilder @Inject constructor(
     private val authRepository: JellyfinAuthRepository,
-    private val repository: JellyfinRepository,
+    private val repository: ICastPlaybackRepository,
     private val streamRepository: JellyfinStreamRepository,
 ) {
 

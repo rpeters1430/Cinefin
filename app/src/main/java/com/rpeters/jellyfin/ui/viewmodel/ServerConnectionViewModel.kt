@@ -538,7 +538,7 @@ class ServerConnectionViewModel @Inject constructor(
         // Use NonCancellable to prevent a race condition where navigation (triggered by
         // repository.isConnected becoming true) cancels this coroutine between the DataStore
         // write and the password save, leaving USERNAME saved but hasSavedPassword = false.
-        withContext(NonCancellable) {
+        withContext(Dispatchers.IO + NonCancellable) {
             context.dataStore.edit { preferences ->
                 preferences[PreferencesKeys.SERVER_URL] = normalizedUrl
                 preferences[PreferencesKeys.USERNAME] = username
@@ -554,17 +554,19 @@ class ServerConnectionViewModel @Inject constructor(
 
     private suspend fun clearSavedCredentials() {
         val currentState = _connectionState.value
-        context.dataStore.edit { preferences ->
-            preferences.remove(PreferencesKeys.SERVER_URL)
-            preferences.remove(PreferencesKeys.USERNAME)
-            preferences.remove(PreferencesKeys.SESSION_TOKEN)
-            preferences.remove(PreferencesKeys.SESSION_USER_ID)
-            preferences.remove(PreferencesKeys.SESSION_SERVER_ID)
-            preferences.remove(PreferencesKeys.SESSION_SERVER_NAME)
-            preferences.remove(PreferencesKeys.SESSION_LOGIN_TIMESTAMP)
-        }
-        if (currentState.savedServerUrl.isNotBlank() && currentState.savedUsername.isNotBlank()) {
-            secureCredentialManager.clearPassword(currentState.savedServerUrl, currentState.savedUsername)
+        withContext(Dispatchers.IO) {
+            context.dataStore.edit { preferences ->
+                preferences.remove(PreferencesKeys.SERVER_URL)
+                preferences.remove(PreferencesKeys.USERNAME)
+                preferences.remove(PreferencesKeys.SESSION_TOKEN)
+                preferences.remove(PreferencesKeys.SESSION_USER_ID)
+                preferences.remove(PreferencesKeys.SESSION_SERVER_ID)
+                preferences.remove(PreferencesKeys.SESSION_SERVER_NAME)
+                preferences.remove(PreferencesKeys.SESSION_LOGIN_TIMESTAMP)
+            }
+            if (currentState.savedServerUrl.isNotBlank() && currentState.savedUsername.isNotBlank()) {
+                secureCredentialManager.clearPassword(currentState.savedServerUrl, currentState.savedUsername)
+            }
         }
         _connectionState.value = _connectionState.value.copy(
             savedServerUrl = "",
@@ -574,12 +576,14 @@ class ServerConnectionViewModel @Inject constructor(
     }
 
     private suspend fun clearPersistedSessionToken() {
-        context.dataStore.edit { preferences ->
-            preferences.remove(PreferencesKeys.SESSION_TOKEN)
-            preferences.remove(PreferencesKeys.SESSION_USER_ID)
-            preferences.remove(PreferencesKeys.SESSION_SERVER_ID)
-            preferences.remove(PreferencesKeys.SESSION_SERVER_NAME)
-            preferences.remove(PreferencesKeys.SESSION_LOGIN_TIMESTAMP)
+        withContext(Dispatchers.IO) {
+            context.dataStore.edit { preferences ->
+                preferences.remove(PreferencesKeys.SESSION_TOKEN)
+                preferences.remove(PreferencesKeys.SESSION_USER_ID)
+                preferences.remove(PreferencesKeys.SESSION_SERVER_ID)
+                preferences.remove(PreferencesKeys.SESSION_SERVER_NAME)
+                preferences.remove(PreferencesKeys.SESSION_LOGIN_TIMESTAMP)
+            }
         }
     }
 
@@ -589,14 +593,16 @@ class ServerConnectionViewModel @Inject constructor(
             return
         }
 
-        context.dataStore.edit { preferences ->
-            preferences[PreferencesKeys.SERVER_URL] = normalizeServerUrl(server.url)
-            preferences[PreferencesKeys.USERNAME] = server.username
-            preferences[PreferencesKeys.SESSION_TOKEN] = server.accessToken
-            server.userId?.let { preferences[PreferencesKeys.SESSION_USER_ID] = it }
-            preferences[PreferencesKeys.SESSION_SERVER_ID] = server.id
-            preferences[PreferencesKeys.SESSION_SERVER_NAME] = server.name
-            preferences[PreferencesKeys.SESSION_LOGIN_TIMESTAMP] = server.loginTimestamp ?: System.currentTimeMillis()
+        withContext(Dispatchers.IO) {
+            context.dataStore.edit { preferences ->
+                preferences[PreferencesKeys.SERVER_URL] = normalizeServerUrl(server.url)
+                preferences[PreferencesKeys.USERNAME] = server.username
+                preferences[PreferencesKeys.SESSION_TOKEN] = server.accessToken
+                server.userId?.let { preferences[PreferencesKeys.SESSION_USER_ID] = it }
+                preferences[PreferencesKeys.SESSION_SERVER_ID] = server.id
+                preferences[PreferencesKeys.SESSION_SERVER_NAME] = server.name
+                preferences[PreferencesKeys.SESSION_LOGIN_TIMESTAMP] = server.loginTimestamp ?: System.currentTimeMillis()
+            }
         }
     }
 

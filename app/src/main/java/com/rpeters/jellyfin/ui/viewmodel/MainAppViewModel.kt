@@ -29,6 +29,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -202,6 +203,22 @@ constructor(
         return withContext(dispatchers.io) {
             try {
                 if (!authRepository.isTokenExpired()) return@withContext true
+
+                // Fresh sign-in can briefly report an expired token before all auth state
+                // settles, even though an in-memory authenticated session is already present.
+                val currentServer = authRepository.getCurrentServer()
+                if (
+                    authRepository.isUserAuthenticated() &&
+                    currentServer?.accessToken != null &&
+                    currentServer.loginTimestamp != null
+                ) {
+                    SecureLogger.v(
+                        "MainAppViewModel-Initial",
+                        "Proceeding with freshly authenticated in-memory session for initial load",
+                    )
+                    return@withContext true
+                }
+
                 return@withContext authRepository.reAuthenticate()
             } catch (e: CancellationException) {
                 throw e
@@ -257,7 +274,46 @@ constructor(
     @OptIn(ExperimentalCoroutinesApi::class)
     fun loadInitialData(forceRefresh: Boolean = false) {
         viewModelScope.launch {
-            if (!ensureValidToken()) return@launch
+            SecureLogger.v(
+                "MainAppViewModel-Initial",
+                "loadInitialData requested (forceRefresh=$forceRefresh)",
+            )
+
+            var hasValidToken = ensureValidToken()
+            val server = currentServer.first()
+            if (!hasValidToken) {
+                SecureLogger.w(
+                    "MainAppViewModel-Initial",
+                    "Initial token validation failed. currentServer=${server?.name ?: "null"} userId=${server?.userId ?: "null"}",
+                )
+
+                if (server != null) {
+                    delay(250)
+                    hasValidToken = ensureValidToken()
+                    if (!hasValidToken) {
+                        SecureLogger.w(
+                            "MainAppViewModel-Initial",
+                            "Retry token validation failed; skipping initial load",
+                        )
+                    }
+                }
+            }
+
+            if (!hasValidToken) {
+                val canAttemptLoadWithSession =
+                    server?.isConnected == true &&
+                        !server.accessToken.isNullOrBlank() &&
+                        !server.userId.isNullOrBlank()
+
+                if (canAttemptLoadWithSession) {
+                    SecureLogger.w(
+                        "MainAppViewModel-Initial",
+                        "Proceeding with repository-backed initial load despite token preflight failure",
+                    )
+                } else {
+                    return@launch
+                }
+            }
 
             if (forceRefresh) {
                 analytics.logUiEvent("Home", "refresh_data")

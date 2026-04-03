@@ -95,6 +95,8 @@ fun JellyfinApp(
     // Main app ViewModel for global state and sync tasks
     val mainAppViewModel: com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel = hiltViewModel()
     val appState by mainAppViewModel.appState.collectAsStateWithLifecycle()
+    val currentServer by mainAppViewModel.currentServer.collectAsStateWithLifecycle(initialValue = null)
+    val isConnected by mainAppViewModel.isConnected.collectAsStateWithLifecycle(initialValue = false)
 
     // Mutable state for nav bar scroll-hide. Immersive screens write to this via
     // LocalNavBarVisible; JellyfinApp reads it for the ExpressiveFloatingNavBar visibility.
@@ -126,14 +128,30 @@ fun JellyfinApp(
             SecureLogger.i("JellyfinApp", "Network state changed: ${if (isOnline) "ONLINE" else "OFFLINE"}")
         }
 
-        // Determine start destination based on authentication state
-        val startDestination = if (
-            connectionState.isConnected ||
-            (
-                connectionState.hasSavedPassword && connectionState.rememberLogin &&
-                    connectionState.savedServerUrl.isNotBlank() && connectionState.savedUsername.isNotBlank()
-                )
+        LaunchedEffect(
+            currentServer?.normalizedUrl ?: currentServer?.url,
+            currentServer?.userId,
+            isConnected,
+            appState.libraries.size,
+            appState.isLoading,
+            appState.errorMessage,
         ) {
+            if (
+                isConnected &&
+                currentServer != null &&
+                appState.libraries.isEmpty() &&
+                !appState.isLoading &&
+                appState.errorMessage == null
+            ) {
+                SecureLogger.v("JellyfinApp", "Session ready with no libraries loaded yet; triggering initial data load")
+                mainAppViewModel.loadInitialData()
+            }
+        }
+
+        // Only enter the main app when a session is actually connected. Remembered credentials
+        // should go through ServerConnectionViewModel auto-login first; otherwise Home can render
+        // with a stale/restored shell and no usable authenticated session.
+        val startDestination = if (connectionState.isConnected) {
             Screen.Home.route
         } else {
             Screen.ServerConnection.route

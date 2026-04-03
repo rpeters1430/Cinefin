@@ -36,6 +36,11 @@ fun androidx.navigation.NavGraphBuilder.homeLibraryNavGraph(
             lifecycle = lifecycleOwner.lifecycle,
             minActiveState = Lifecycle.State.STARTED,
         )
+        val isConnected by viewModel.isConnected.collectAsStateWithLifecycle(
+            initialValue = false,
+            lifecycle = lifecycleOwner.lifecycle,
+            minActiveState = Lifecycle.State.STARTED,
+        )
 
         // ✅ Performance: Stabilize callbacks to prevent unnecessary recompositions
         val onRefresh = remember(viewModel) { { viewModel.loadInitialData() } }
@@ -51,7 +56,7 @@ fun androidx.navigation.NavGraphBuilder.homeLibraryNavGraph(
         val getImageUrl = remember(viewModel) { { item: org.jellyfin.sdk.model.api.BaseItemDto -> viewModel.getImageUrl(item) } }
         val getBackdropUrl = remember(viewModel) { { item: org.jellyfin.sdk.model.api.BaseItemDto -> viewModel.getBackdropUrl(item) } }
         val getSeriesImageUrl = remember(viewModel) { { item: org.jellyfin.sdk.model.api.BaseItemDto -> viewModel.getSeriesImageUrl(item) } }
-        
+
         val onItemClick = remember(navController) {
             { item: org.jellyfin.sdk.model.api.BaseItemDto ->
                 when (item.type) {
@@ -105,17 +110,17 @@ fun androidx.navigation.NavGraphBuilder.homeLibraryNavGraph(
                 Unit
             }
         }
-        
+
         val onSettingsClick = remember(navController) { { navController.navigate(Screen.Settings.route) } }
         val onNowPlayingClick = remember(navController) { { navController.navigate(Screen.NowPlaying.route) } }
         val onAiHealthCheck = remember(viewModel) { { viewModel.runAiHealthCheck(force = true) } }
 
-        // CRITICAL FIX: Wait for currentServer to be available before loading data
-        // During auto-login, the navigation happens before the session is fully established
-        // This ensures we only load data when we have a valid connection
-        LaunchedEffect(currentServer) {
+        // Wait for an active connection before loading data. A restored but expired session can
+        // populate currentServer before auto-login completes, which would otherwise trigger a
+        // doomed initial load on phones.
+        LaunchedEffect(currentServer, isConnected) {
             val server = currentServer
-            if (server != null) {
+            if (server != null && isConnected) {
                 if (BuildConfig.DEBUG) {
                     Log.d("HomeScreen", "Current server available, loading initial data for: ${server.name}")
                 }
@@ -128,7 +133,6 @@ fun androidx.navigation.NavGraphBuilder.homeLibraryNavGraph(
             }
         }
 
-        // Use ImmersiveHomeScreen by default
         ImmersiveHomeScreen(
             appState = appState,
             currentServer = currentServer,
@@ -156,8 +160,17 @@ fun androidx.navigation.NavGraphBuilder.homeLibraryNavGraph(
             lifecycle = lifecycleOwner.lifecycle,
             minActiveState = Lifecycle.State.STARTED,
         )
+        val currentServer by viewModel.currentServer.collectAsStateWithLifecycle(
+            initialValue = null,
+            lifecycle = lifecycleOwner.lifecycle,
+            minActiveState = Lifecycle.State.STARTED,
+        )
+        val isConnected by viewModel.isConnected.collectAsStateWithLifecycle(
+            initialValue = false,
+            lifecycle = lifecycleOwner.lifecycle,
+            minActiveState = Lifecycle.State.STARTED,
+        )
 
-        // ✅ Performance: Stabilize callbacks
         val onRefresh = remember(viewModel) { { viewModel.loadInitialData(forceRefresh = true) } }
         val getImageUrl = remember(viewModel) { { item: org.jellyfin.sdk.model.api.BaseItemDto -> viewModel.getImageUrl(item) } }
         val onLibraryClick = remember(navController) {
@@ -182,16 +195,21 @@ fun androidx.navigation.NavGraphBuilder.homeLibraryNavGraph(
         val onSettingsClick = remember(navController) { { navController.navigate(Screen.Settings.route) } }
         val onNowPlayingClick = remember(navController) { { navController.navigate(Screen.NowPlaying.route) } }
 
-        LaunchedEffect(Unit) {
-            if (appState.libraries.isEmpty() && !appState.isLoading) {
+        LaunchedEffect(currentServer, isConnected, appState.libraries.size, appState.isLoading, appState.errorMessage) {
+            if (
+                isConnected &&
+                currentServer != null &&
+                appState.libraries.isEmpty() &&
+                !appState.isLoading &&
+                appState.errorMessage == null
+            ) {
                 if (BuildConfig.DEBUG) {
-                    SecureLogger.v("NavGraph", "Library screen - triggering initial data load")
+                    SecureLogger.v("NavGraph", "Library screen - session ready, triggering initial data load")
                 }
                 viewModel.loadInitialData()
             }
         }
 
-        // Use ImmersiveLibraryScreen by default
         ImmersiveLibraryScreen(
             libraries = appState.libraries,
             isLoading = appState.isLoading,
