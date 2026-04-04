@@ -2,7 +2,8 @@ package com.rpeters.jellyfin.ui.viewmodel
 
 import android.content.Context
 import com.rpeters.jellyfin.data.SecureCredentialManager
-import com.rpeters.jellyfin.data.repository.JellyfinRepository
+import com.rpeters.jellyfin.data.repository.IJellyfinAuthRepository
+import com.rpeters.jellyfin.data.repository.IJellyfinRepository
 import com.rpeters.jellyfin.data.security.CertificatePinningManager
 import com.rpeters.jellyfin.network.ConnectivityChecker
 import io.mockk.coEvery
@@ -28,7 +29,8 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class ServerConnectionViewModelOfflineTest {
 
-    private lateinit var repository: JellyfinRepository
+    private lateinit var repository: IJellyfinRepository
+    private lateinit var authRepository: IJellyfinAuthRepository
     private lateinit var secureCredentialManager: SecureCredentialManager
     private lateinit var certificatePinningManager: CertificatePinningManager
     private lateinit var connectivityChecker: ConnectivityChecker
@@ -43,6 +45,7 @@ class ServerConnectionViewModelOfflineTest {
         Dispatchers.setMain(testDispatcher)
 
         repository = mockk(relaxed = true)
+        authRepository = mockk(relaxed = true)
         secureCredentialManager = mockk(relaxed = true)
         certificatePinningManager = mockk(relaxed = true)
         connectivityChecker = mockk(relaxed = true)
@@ -50,7 +53,8 @@ class ServerConnectionViewModelOfflineTest {
         context = mockk(relaxed = true)
 
         // Setup default mocks
-        coEvery { repository.isConnected } returns flowOf(false)
+        coEvery { repository.isConnectedFlow } returns flowOf(false)
+        coEvery { authRepository.isTokenExpired() } returns false
         coEvery { secureCredentialManager.getBiometricCapability(any()) } returns
             mockk {
                 every { isAvailable } returns false
@@ -76,6 +80,7 @@ class ServerConnectionViewModelOfflineTest {
         // When: ViewModel initializes
         viewModel = ServerConnectionViewModel(
             repository,
+            authRepository,
             secureCredentialManager,
             certificatePinningManager,
             connectivityChecker,
@@ -118,6 +123,7 @@ class ServerConnectionViewModelOfflineTest {
         // When: ViewModel initializes while offline
         viewModel = ServerConnectionViewModel(
             repository,
+            authRepository,
             secureCredentialManager,
             certificatePinningManager,
             connectivityChecker,
@@ -137,7 +143,7 @@ class ServerConnectionViewModelOfflineTest {
         // Then: Should attempt to connect
         state = viewModel.connectionState.value
         // Note: connectToServer would be called but we're not testing the full flow here
-        // We verify the password was retrieved for retry
+        // We verify the password for retry
         coVerify(atLeast = 1) {
             secureCredentialManager.getPassword("https://server.com", "testuser")
         }
@@ -164,6 +170,7 @@ class ServerConnectionViewModelOfflineTest {
         // When: ViewModel initializes
         viewModel = ServerConnectionViewModel(
             repository,
+            authRepository,
             secureCredentialManager,
             certificatePinningManager,
             connectivityChecker,
@@ -190,6 +197,7 @@ class ServerConnectionViewModelOfflineTest {
 
         viewModel = ServerConnectionViewModel(
             repository,
+            authRepository,
             secureCredentialManager,
             certificatePinningManager,
             connectivityChecker,

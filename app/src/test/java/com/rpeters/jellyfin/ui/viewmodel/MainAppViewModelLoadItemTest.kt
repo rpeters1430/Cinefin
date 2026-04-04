@@ -93,8 +93,8 @@ class MainAppViewModelLoadItemTest {
         repository = mockk(relaxed = true)
 
         // Use every{} (not coEvery{}) for non-suspend Flow properties
-        every { repository.currentServer } returns MutableStateFlow(null)
-        every { repository.isConnected } returns MutableStateFlow(false)
+        every { repository.currentServerFlow } returns MutableStateFlow(null)
+        every { repository.isConnectedFlow } returns MutableStateFlow(false)
 
         viewModel = MainAppViewModel(
             context = context,

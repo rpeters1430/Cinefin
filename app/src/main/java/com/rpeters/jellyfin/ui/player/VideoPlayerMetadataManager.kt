@@ -125,7 +125,7 @@ class VideoPlayerMetadataManager @Inject constructor(
         return try {
             val subtitleSpecs = mutableListOf<SubtitleSpec>()
             val itemId = item.id.toString()
-            val serverUrl = repository.getCurrentServer()?.url ?: return emptyList()
+            val serverUrl = repository.getCurrentServerSync()?.url ?: return emptyList()
 
             val mediaSource = playbackInfo.mediaSources.firstOrNull() ?: return emptyList()
 

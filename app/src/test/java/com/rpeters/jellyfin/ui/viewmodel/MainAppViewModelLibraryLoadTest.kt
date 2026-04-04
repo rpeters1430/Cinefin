@@ -9,6 +9,8 @@ import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.JellyfinSearchRepository
 import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
 import com.rpeters.jellyfin.data.repository.JellyfinUserRepository
+import com.rpeters.jellyfin.data.JellyfinServer
+import com.rpeters.jellyfin.data.model.CurrentUserDetails
 import com.rpeters.jellyfin.data.repository.LibraryItemsResult
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.ui.player.CastManager
@@ -22,6 +24,7 @@ import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -34,6 +37,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -45,37 +49,41 @@ import java.util.UUID
 @OptIn(ExperimentalCoroutinesApi::class, androidx.media3.common.util.UnstableApi::class)
 class MainAppViewModelLibraryLoadTest {
 
-    private lateinit var repository: JellyfinRepository
+    @MockK(relaxed = true)
+    private lateinit var repository: com.rpeters.jellyfin.data.repository.IJellyfinRepository
 
-    @MockK
-    private lateinit var authRepository: JellyfinAuthRepository
+    @MockK(relaxed = true)
+    private lateinit var authRepository: com.rpeters.jellyfin.data.repository.IJellyfinAuthRepository
 
-    @MockK
+    @MockK(relaxed = true)
     private lateinit var mediaRepository: JellyfinMediaRepository
 
-    @MockK
+    @MockK(relaxed = true)
     private lateinit var userRepository: JellyfinUserRepository
 
-    @MockK
+    @MockK(relaxed = true)
     private lateinit var streamRepository: JellyfinStreamRepository
 
-    @MockK
+    @MockK(relaxed = true)
     private lateinit var searchRepository: JellyfinSearchRepository
 
-    @MockK
+    @MockK(relaxed = true)
     private lateinit var credentialManager: SecureCredentialManager
 
-    @MockK
+    @MockK(relaxed = true)
     private lateinit var castManager: CastManager
 
-    @MockK
+    @MockK(relaxed = true)
     private lateinit var generativeAiRepository: com.rpeters.jellyfin.data.repository.GenerativeAiRepository
 
-    @MockK
+    @MockK(relaxed = true)
     private lateinit var analyticsHelper: com.rpeters.jellyfin.utils.AnalyticsHelper
 
-    @MockK
+    @MockK(relaxed = true)
     private lateinit var context: Context
+
+    private val currentServerFlow = MutableStateFlow<JellyfinServer?>(null)
+    private val isConnectedFlow = MutableStateFlow(false)
 
     private lateinit var viewModel: MainAppViewModel
 
@@ -90,13 +98,16 @@ class MainAppViewModelLibraryLoadTest {
 
         testDispatchers = TestDispatcherProvider(testDispatcher)
 
-        repository = mockk(relaxed = true)
+        every { repository.connectivityChecker.observeNetworkConnectivity() } returns kotlinx.coroutines.flow.flowOf(false)
 
-        every { repository.currentServer } returns MutableStateFlow(null)
-        every { repository.isConnected } returns MutableStateFlow(false)
+        every { repository.currentServerFlow } returns currentServerFlow
+        every { repository.isConnectedFlow } returns isConnectedFlow
 
         every { authRepository.isTokenExpired() } returns false
         coEvery { authRepository.reAuthenticate() } returns true
+
+        currentServerFlow.value = null
+        isConnectedFlow.value = false
 
         viewModel = MainAppViewModel(
             context = context,
@@ -318,7 +329,7 @@ class MainAppViewModelLibraryLoadTest {
                 limit = any(),
                 collectionType = "movies",
             )
-        } returns ApiResult.Success(LibraryItemsResult(movies, 100))
+        } returns ApiResult.Success(LibraryItemsResult(movies, 200))
 
         // Act
         viewModel.loadLibraryTypeData(LibraryType.MOVIES, forceRefresh = false)
@@ -330,7 +341,7 @@ class MainAppViewModelLibraryLoadTest {
         assertNotNull("Pagination state should exist", paginationState)
         assertEquals(100, paginationState!!.nextStartIndex)
         assertTrue(
-            "hasMore should be true when exactly 100 items returned",
+            "hasMore should be true when items returned is less than totalCount",
             paginationState.hasMore,
         )
         assertFalse("isLoadingMore should be false", paginationState.isLoadingMore)
@@ -486,5 +497,139 @@ class MainAppViewModelLibraryLoadTest {
         val items = state.itemsByLibrary[libraryId.toString()]
         assertEquals(1, items?.size)
         assertEquals("New Movie", items?.firstOrNull()?.name)
+    }
+
+    @Test
+    fun `loadInitialData_whenAuthenticated_loadsAllCategoriesCorrectly`() = runTest {
+        // Arrange
+        val library = BaseItemDto(
+            id = UUID.randomUUID(),
+            name = "Movies",
+            type = BaseItemKind.COLLECTION_FOLDER,
+            collectionType = CollectionType.MOVIES,
+        )
+        val recentlyAdded = BaseItemDto(
+            id = UUID.randomUUID(),
+            name = "Recent Movie",
+            type = BaseItemKind.MOVIE,
+        )
+        val continueWatching = BaseItemDto(
+            id = UUID.randomUUID(),
+            name = "Continue Movie",
+            type = BaseItemKind.MOVIE,
+        )
+        val userDetails = CurrentUserDetails(
+            name = "Test User",
+            primaryImageTag = null,
+            lastLoginDate = null,
+            isAdministrator = false,
+        )
+
+        val server = JellyfinServer(
+            id = "test-server",
+            url = "http://localhost",
+            name = "Test Server",
+            accessToken = "token",
+            userId = "user",
+            isConnected = true,
+        )
+        currentServerFlow.value = server
+
+        coEvery { mediaRepository.getUserLibraries(any()) } returns ApiResult.Success(listOf(library))
+        coEvery { mediaRepository.getRecentlyAdded(any(), any()) } returns ApiResult.Success(listOf(recentlyAdded))
+        coEvery { mediaRepository.getContinueWatching(any()) } returns ApiResult.Success(listOf(continueWatching))
+        coEvery { userRepository.getCurrentUser() } returns ApiResult.Success(userDetails)
+        coEvery { mediaRepository.getRecentlyAddedByType(any(), any(), any()) } returns ApiResult.Success(emptyList())
+
+        // Act
+        viewModel.loadInitialData()
+        advanceUntilIdle()
+
+        // Assert
+        val state = viewModel.appState.value
+        assertFalse("Should not be loading after completion", state.isLoading)
+        assertNull("Should not have error message", state.errorMessage)
+        assertEquals(1, state.libraries.size)
+        assertEquals("Movies", state.libraries[0].name)
+        assertEquals(1, state.recentlyAdded.size)
+        assertEquals("Recent Movie", recentlyAdded.name)
+        assertEquals(1, state.continueWatching.size)
+        assertEquals("Continue Movie", continueWatching.name)
+        assertNotNull("User should be loaded", state.currentUser)
+        assertEquals("Test User", state.currentUser?.name)
+    }
+
+    @Test
+    fun `loadInitialData_whenTokenPreflightFailsButSessionAvailable_stillAttemptsLoad`() = runTest {
+        // Arrange
+        val server = JellyfinServer(
+            id = "test-server",
+            url = "http://localhost",
+            name = "Test Server",
+            accessToken = "token",
+            userId = "user",
+            isConnected = true,
+        )
+        currentServerFlow.value = server
+
+        // Mock reAuthenticate to fail but ensureValidToken might still pass or we hit the fallback logic
+        coEvery { authRepository.reAuthenticate() } returns false
+        every { authRepository.isTokenExpired() } returns true
+        every { authRepository.isUserAuthenticated() } returns true
+        every { authRepository.getCurrentServer() } returns server
+
+        val library = BaseItemDto(
+            id = UUID.randomUUID(),
+            name = "Movies",
+            type = BaseItemKind.COLLECTION_FOLDER,
+            collectionType = CollectionType.MOVIES,
+        )
+
+        coEvery { mediaRepository.getUserLibraries(any()) } returns ApiResult.Success(listOf(library))
+        coEvery { mediaRepository.getRecentlyAdded(any(), any()) } returns ApiResult.Success(emptyList())
+        coEvery { mediaRepository.getContinueWatching(any()) } returns ApiResult.Success(emptyList())
+        coEvery { userRepository.getCurrentUser() } returns ApiResult.Error("Fail")
+        coEvery { mediaRepository.getRecentlyAddedByType(any(), any(), any()) } returns ApiResult.Success(emptyList())
+
+        // Act
+        viewModel.loadInitialData()
+        advanceUntilIdle()
+
+        // Assert
+        val state = viewModel.appState.value
+        assertEquals(1, state.libraries.size)
+        assertEquals("Movies", state.libraries[0].name)
+    }
+
+    @Test
+    fun `loadInitialData_onLibraryError_updatesStateWithError`() = runTest {
+        // Arrange
+        val server = JellyfinServer(
+            id = "test-server",
+            url = "http://localhost",
+            name = "Test Server",
+            accessToken = "token",
+            userId = "user",
+            isConnected = true,
+        )
+        currentServerFlow.value = server
+
+        coEvery { mediaRepository.getUserLibraries(any()) } returns ApiResult.Error("Network Error")
+        coEvery { mediaRepository.getRecentlyAdded(any(), any()) } returns ApiResult.Success(emptyList())
+        coEvery { mediaRepository.getContinueWatching(any()) } returns ApiResult.Success(emptyList())
+        coEvery { userRepository.getCurrentUser() } returns ApiResult.Success(
+            CurrentUserDetails("User", null, null, false),
+        )
+        coEvery { mediaRepository.getRecentlyAddedByType(any(), any(), any()) } returns ApiResult.Success(emptyList())
+
+        // Act
+        viewModel.loadInitialData()
+        advanceUntilIdle()
+
+        // Assert
+        val state = viewModel.appState.value
+        assertFalse(state.isLoading)
+        assertNotNull(state.errorMessage)
+        assertTrue(state.errorMessage!!.contains("Failed to load libraries: Network Error"))
     }
 }

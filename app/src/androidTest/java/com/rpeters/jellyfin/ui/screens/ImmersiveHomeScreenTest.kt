@@ -78,6 +78,7 @@ class ImmersiveHomeScreenTest {
                     viewingMood = viewingMood,
                     listState = androidx.compose.foundation.lazy.rememberLazyListState(),
                     contentPadding = PaddingValues(),
+                    bottomSpacing = androidx.compose.ui.unit.Dp.Hairline,
                 )
             }
         }

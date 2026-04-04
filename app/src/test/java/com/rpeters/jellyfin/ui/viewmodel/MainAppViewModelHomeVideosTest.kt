@@ -82,8 +82,8 @@ class MainAppViewModelHomeVideosTest {
 
         coEvery { mediaRepository.getUserLibraries() } returns ApiResult.Success(emptyList())
 
-        every { repository.currentServer } returns MutableStateFlow(null)
-        every { repository.isConnected } returns MutableStateFlow(true)
+        every { repository.currentServerFlow } returns MutableStateFlow(null)
+        every { repository.isConnectedFlow } returns MutableStateFlow(true)
 
         viewModel = MainAppViewModel(
             context = context,

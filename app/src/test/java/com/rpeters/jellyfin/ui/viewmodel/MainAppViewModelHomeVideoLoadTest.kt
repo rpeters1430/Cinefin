@@ -86,8 +86,8 @@ class MainAppViewModelHomeVideoLoadTest {
         Dispatchers.setMain(testDispatcher)
 
         repository = mockk(relaxed = true)
-        every { repository.currentServer } returns MutableStateFlow(null)
-        every { repository.isConnected } returns MutableStateFlow(false)
+        every { repository.currentServerFlow } returns MutableStateFlow(null)
+        every { repository.isConnectedFlow } returns MutableStateFlow(false)
 
         every { authRepository.isTokenExpired() } returns false
         coEvery { authRepository.reAuthenticate() } returns true

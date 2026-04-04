@@ -183,7 +183,7 @@ class EnhancedPlaybackManager @Inject constructor(
         subtitleStreamIndex: Int? = null,
     ): PlaybackResult {
         val itemId = item.id.toString()
-        val serverUrl = repository.getCurrentServer()?.url
+        val serverUrl = repository.getCurrentServerSync()?.url
         val mediaSources = playbackInfo.mediaSources
         val playSessionId = playbackInfo.playSessionId
         val sessionId = java.util.UUID.randomUUID().toString()
@@ -488,7 +488,7 @@ class EnhancedPlaybackManager @Inject constructor(
         subtitleStreamIndex: Int? = null,
     ): PlaybackResult {
         val itemId = item.id.toString()
-        val serverUrl = repository.getCurrentServer()?.url
+        val serverUrl = repository.getCurrentServerSync()?.url
         val mediaSourceId = mediaSource.id
         val playSessionId = playbackInfo.playSessionId
         // Get source video info (we're keeping this unchanged)

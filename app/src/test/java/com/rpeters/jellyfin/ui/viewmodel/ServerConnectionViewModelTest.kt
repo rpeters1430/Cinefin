@@ -9,7 +9,8 @@ import androidx.test.core.app.ApplicationProvider
 import com.rpeters.jellyfin.data.BiometricCapability
 import com.rpeters.jellyfin.data.SecureCredentialManager
 import com.rpeters.jellyfin.data.JellyfinServer
-import com.rpeters.jellyfin.data.repository.JellyfinRepository
+import com.rpeters.jellyfin.data.repository.IJellyfinAuthRepository
+import com.rpeters.jellyfin.data.repository.IJellyfinRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.data.security.CertificatePinningManager
 import com.rpeters.jellyfin.ui.viewmodel.PreferencesKeys.BIOMETRIC_AUTH_ENABLED
@@ -51,7 +52,8 @@ class ServerConnectionViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    private lateinit var repository: JellyfinRepository
+    private lateinit var repository: IJellyfinRepository
+    private lateinit var authRepository: IJellyfinAuthRepository
     private lateinit var secureCredentialManager: SecureCredentialManager
     private lateinit var certificatePinningManager: CertificatePinningManager
     private lateinit var connectivityChecker: com.rpeters.jellyfin.network.ConnectivityChecker
@@ -65,17 +67,21 @@ class ServerConnectionViewModelTest {
         
         context = ApplicationProvider.getApplicationContext()
         repository = mockk(relaxed = true)
+        authRepository = mockk(relaxed = true)
         secureCredentialManager = mockk(relaxed = true)
         certificatePinningManager = mockk(relaxed = true)
         connectivityChecker = mockk(relaxed = true)
         offlineDownloadManager = mockk(relaxed = true)
 
-        every { repository.isConnected } returns MutableStateFlow(false)
+        every { repository.isConnectedFlow } returns MutableStateFlow(false)
         val mockServer = mockk<com.rpeters.jellyfin.data.JellyfinServer>(relaxed = true)
         every { mockServer.url } returns "https://example.com"
         every { mockServer.username } returns "user"
         every { mockServer.accessToken } returns "token"
-        every { repository.currentServer } returns MutableStateFlow(mockServer)
+        every { repository.currentServerFlow } returns MutableStateFlow(mockServer)
+        
+        every { authRepository.isTokenExpired() } returns false
+        
         val strongCapability = BiometricCapability(
             authenticators = BiometricManager.Authenticators.BIOMETRIC_STRONG or
                 BiometricManager.Authenticators.DEVICE_CREDENTIAL,
@@ -111,15 +117,16 @@ class ServerConnectionViewModelTest {
             } returns "biometricPassword"
             coEvery { secureCredentialManager.savePassword(any(), any(), any()) } returns Unit
 
-            coEvery { repository.testServerConnection("https://example.com") } returns ApiResult.Success(
+            coEvery { authRepository.testServerConnection("https://example.com") } returns ApiResult.Success(
                 mockk<PublicSystemInfo>(relaxed = true),
             )
             coEvery {
-                repository.authenticateUser("https://example.com", "user", "biometricPassword")
+                authRepository.authenticateUser("https://example.com", "user", "biometricPassword")
             } returns ApiResult.Success(mockk<AuthenticationResult>(relaxed = true))
 
             val viewModel = ServerConnectionViewModel(
                 repository,
+                authRepository,
                 secureCredentialManager,
                 certificatePinningManager,
                 connectivityChecker,
@@ -136,7 +143,7 @@ class ServerConnectionViewModelTest {
             advanceUntilIdle()
 
             coVerify(exactly = 1) {
-                repository.authenticateUser("https://example.com", "user", "biometricPassword")
+                authRepository.authenticateUser("https://example.com", "user", "biometricPassword")
             }
 
             viewModel.viewModelScope.cancel()
@@ -156,6 +163,7 @@ class ServerConnectionViewModelTest {
 
         val viewModel = ServerConnectionViewModel(
             repository,
+            authRepository,
             secureCredentialManager,
             certificatePinningManager,
             connectivityChecker,
@@ -183,10 +191,11 @@ class ServerConnectionViewModelTest {
         context.dataStore.edit { preferences ->
             preferences.clear()
         }
-        every { repository.isConnected } returns MutableStateFlow(false)
+        every { repository.isConnectedFlow } returns MutableStateFlow(false)
 
         val viewModel = ServerConnectionViewModel(
             repository,
+            authRepository,
             secureCredentialManager,
             certificatePinningManager,
             connectivityChecker,
@@ -222,15 +231,16 @@ class ServerConnectionViewModelTest {
                 )
             } returns "biometricPassword"
             coEvery { secureCredentialManager.savePassword(any(), any(), any()) } returns Unit
-            coEvery { repository.testServerConnection("https://example.com") } returns ApiResult.Success(
+            coEvery { authRepository.testServerConnection("https://example.com") } returns ApiResult.Success(
                 mockk<PublicSystemInfo>(relaxed = true),
             )
             coEvery {
-                repository.authenticateUser("https://example.com", "user", "biometricPassword")
+                authRepository.authenticateUser("https://example.com", "user", "biometricPassword")
             } returns ApiResult.Success(mockk<AuthenticationResult>(relaxed = true))
 
             val viewModel = ServerConnectionViewModel(
                 repository,
+                authRepository,
                 secureCredentialManager,
                 certificatePinningManager,
                 connectivityChecker,
@@ -264,17 +274,18 @@ class ServerConnectionViewModelTest {
             preferences.clear()
             preferences[REMEMBER_LOGIN] = false
         }
-        every { repository.isConnected } returns MutableStateFlow(false)
-        coEvery { repository.testServerConnection("https://example.com") } returns ApiResult.Success(
+        every { repository.isConnectedFlow } returns MutableStateFlow(false)
+        coEvery { authRepository.testServerConnection("https://example.com") } returns ApiResult.Success(
             mockk<PublicSystemInfo>(relaxed = true),
         )
         coEvery {
-            repository.authenticateUser("https://example.com", "user", "password")
+            authRepository.authenticateUser("https://example.com", "user", "password")
         } returns ApiResult.Success(mockk<AuthenticationResult>(relaxed = true))
         coEvery { secureCredentialManager.savePassword(any(), any(), any()) } returns Unit
 
         val viewModel = ServerConnectionViewModel(
             repository,
+            authRepository,
             secureCredentialManager,
             certificatePinningManager,
             connectivityChecker,
@@ -299,6 +310,7 @@ class ServerConnectionViewModelTest {
         val formats = listOf("192.168.1.1", "http://jellyfin:8096", "jellyfin.local")
         val viewModel = ServerConnectionViewModel(
             repository,
+            authRepository,
             secureCredentialManager,
             certificatePinningManager,
             connectivityChecker,
@@ -308,14 +320,14 @@ class ServerConnectionViewModelTest {
         advanceUntilIdle()
 
         formats.forEach { url ->
-            coEvery { repository.testServerConnection(any()) } returns ApiResult.Success(mockk(relaxed = true))
-            coEvery { repository.authenticateUser(any(), any(), any()) } returns ApiResult.Success(mockk(relaxed = true))
+            coEvery { authRepository.testServerConnection(any()) } returns ApiResult.Success(mockk(relaxed = true))
+            coEvery { authRepository.authenticateUser(any(), any(), any()) } returns ApiResult.Success(mockk(relaxed = true))
             
             viewModel.connectToServer(url, "user", "pass")
             advanceUntilIdle()
             
             // Verify normalization (implementation detail, but observable via repo call)
-            coVerify { repository.testServerConnection(match { it.startsWith("http") }) }
+            coVerify { authRepository.testServerConnection(match { it.startsWith("http") }) }
             
             // Reset for next iteration
             viewModel.logout()
@@ -326,11 +338,12 @@ class ServerConnectionViewModelTest {
 
     @Test
     fun `connection phases transition correctly`() = runTest(mainDispatcherRule.dispatcher) {
-        coEvery { repository.testServerConnection(any()) } returns ApiResult.Success(mockk(relaxed = true))
-        coEvery { repository.authenticateUser(any(), any(), any()) } returns ApiResult.Success(mockk(relaxed = true))
+        coEvery { authRepository.testServerConnection(any()) } returns ApiResult.Success(mockk(relaxed = true))
+        coEvery { authRepository.authenticateUser(any(), any(), any()) } returns ApiResult.Success(mockk(relaxed = true))
 
         val viewModel = ServerConnectionViewModel(
             repository,
+            authRepository,
             secureCredentialManager,
             certificatePinningManager,
             connectivityChecker,

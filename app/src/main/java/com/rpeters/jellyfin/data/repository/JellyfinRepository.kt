@@ -57,7 +57,7 @@ open class JellyfinRepository @Inject constructor(
     private val deviceCapabilities: DeviceCapabilities,
     private val authRepository: IJellyfinAuthRepository,
     private val streamRepository: JellyfinStreamRepository,
-    val connectivityChecker: com.rpeters.jellyfin.network.ConnectivityChecker,
+    override open val connectivityChecker: com.rpeters.jellyfin.network.ConnectivityChecker,
 ) : IJellyfinRepository, ICastPlaybackRepository {
     companion object {
         private const val TAG = "JellyfinRepository"
@@ -93,8 +93,8 @@ open class JellyfinRepository @Inject constructor(
     }
 
     // ===== STATE FLOWS - Delegated to JellyfinAuthRepository =====
-    val currentServer: Flow<JellyfinServer?> = authRepository.currentServer
-    val isConnected: Flow<Boolean> = authRepository.isConnected
+    override open val currentServerFlow: Flow<JellyfinServer?> = authRepository.currentServer
+    override open val isConnectedFlow: Flow<Boolean> = authRepository.isConnected
 
     // ✅ FIX: Removed authMutex - authentication is now handled by AuthRepository
 
@@ -188,7 +188,7 @@ open class JellyfinRepository @Inject constructor(
     suspend fun testServerConnection(serverUrl: String): ApiResult<PublicSystemInfo> =
         authRepository.testServerConnection(serverUrl)
 
-    suspend fun getServerInfo(): ApiResult<ServerInfo> =
+    override suspend fun getServerInfo(): ApiResult<ServerInfo> =
         withServerClient("getServerInfo") { _, client ->
             val info = client.systemApi.getSystemInfo().content
             @Suppress("DEPRECATION")
@@ -236,10 +236,8 @@ open class JellyfinRepository @Inject constructor(
         authRepository.authenticateWithQuickConnect(serverUrl, secret)
 
     fun restorePersistedSession(server: JellyfinServer) {
-        authRepository.seedCurrentServer(server.copy(isConnected = true))
+        authRepository.restorePersistedSession(server)
     }
-
-    fun isSessionTokenExpired(): Boolean = authRepository.isTokenExpired()
 
     // ===== LIBRARY METHODS - Simplified for better maintainability =====
 
@@ -375,7 +373,7 @@ open class JellyfinRepository @Inject constructor(
         }
     }
 
-    suspend fun getRecentlyAdded(limit: Int = RECENTLY_ADDED_LIMIT): ApiResult<List<BaseItemDto>> {
+    override suspend fun getRecentlyAdded(limit: Int): ApiResult<List<BaseItemDto>> {
         // ✅ FIX: Validate token before making requests
         if (isTokenExpired()) {
             Log.w("JellyfinRepository", "getRecentlyAdded: Token expired, attempting proactive refresh")
@@ -549,7 +547,7 @@ open class JellyfinRepository @Inject constructor(
         return ApiResult.Error("$operationName failed after $maxRetries retry attempts", errorType = ErrorType.UNKNOWN)
     }
 
-    suspend fun getRecentlyAddedByType(itemType: BaseItemKind, limit: Int = RECENTLY_ADDED_BY_TYPE_LIMIT): ApiResult<List<BaseItemDto>> {
+    override suspend fun getRecentlyAddedByType(itemType: BaseItemKind, limit: Int): ApiResult<List<BaseItemDto>> {
         val server = authRepository.getCurrentServer()
         if (server?.accessToken == null || server.userId == null) {
             return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
@@ -690,7 +688,7 @@ open class JellyfinRepository @Inject constructor(
         return ApiResult.Success(results)
     }
 
-    suspend fun getFavorites(): ApiResult<List<BaseItemDto>> {
+    override suspend fun getFavorites(): ApiResult<List<BaseItemDto>> {
         // ✅ FIX: Validate token before making requests
         if (isTokenExpired()) {
             Log.w("JellyfinRepository", "getFavorites: Token expired, attempting proactive refresh")
@@ -815,7 +813,7 @@ open class JellyfinRepository @Inject constructor(
     /**
      * Fetches a single item by ID without requiring knowledge of its type.
      */
-    suspend fun getItemDetails(itemId: String): ApiResult<BaseItemDto> {
+    override suspend fun getItemDetails(itemId: String): ApiResult<BaseItemDto> {
         return getItemDetailsById(itemId, "item")
     }
 
@@ -911,11 +909,11 @@ open class JellyfinRepository @Inject constructor(
     /**
      * Manually validate and refresh token - exposed for manual refresh
      */
-    suspend fun validateAndRefreshTokenManually() {
+    override suspend fun validateAndRefreshTokenManually() {
         validateAndRefreshToken()
     }
 
-    suspend fun toggleFavorite(itemId: String, isFavorite: Boolean): ApiResult<Boolean> {
+    override suspend fun toggleFavorite(itemId: String, isFavorite: Boolean): ApiResult<Boolean> {
         val server = authRepository.getCurrentServer()
         if (server?.accessToken == null || server.userId == null) {
             return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
@@ -1309,9 +1307,13 @@ open class JellyfinRepository @Inject constructor(
         }
     }
 
-    override fun getCurrentServer(): JellyfinServer? = authRepository.getCurrentServer()
+    override fun getCurrentServerSync(): JellyfinServer? = authRepository.getCurrentServer()
 
-    override fun isUserAuthenticated(): Boolean = authRepository.isUserAuthenticated()
+    fun getCurrentServer(): JellyfinServer? = getCurrentServerSync()
+
+    override fun isUserAuthenticatedSync(): Boolean = authRepository.isUserAuthenticated()
+
+    fun isUserAuthenticated(): Boolean = isUserAuthenticatedSync()
 
     override fun getDownloadUrl(itemId: String): String? =
         streamRepository.getDownloadUrl(itemId)
@@ -1399,10 +1401,3 @@ open class JellyfinRepository @Inject constructor(
     private fun validateServer(): JellyfinServer = RepositoryUtils.validateServer(authRepository.getCurrentServer())
     private fun parseUuid(id: String, idType: String): UUID = RepositoryUtils.parseUuid(id, idType)
 }
-
-data class TranscodingProgressInfo(
-    val completionPercentage: Double,
-    val bitrate: Int? = null,
-    val width: Int? = null,
-    val height: Int? = null,
-)

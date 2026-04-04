@@ -78,7 +78,6 @@ class EnhancedPlaybackManagerTest {
         mockkStatic(android.util.Log::class)
         every { android.util.Log.v(any<String>(), any<String>()) } returns 0
         every { android.util.Log.d(any<String>(), any<String>()) } answers {
-            println("DEBUG: ${args[0]}: ${args[1]}")
             0
         }
         every { android.util.Log.w(any<String>(), any<String>()) } answers {
@@ -91,11 +90,19 @@ class EnhancedPlaybackManagerTest {
         }
 
         // Default repository stubs
-        every { repository.getCurrentServer() } returns com.rpeters.jellyfin.data.JellyfinServer(
+        every { repository.getCurrentServerSync() } returns com.rpeters.jellyfin.data.JellyfinServer(
             id = "server-id",
             name = "Test Server",
             url = "https://server",
         )
+        every { repository.currentServerFlow } returns kotlinx.coroutines.flow.MutableStateFlow(
+            com.rpeters.jellyfin.data.JellyfinServer(
+                id = "server-id",
+                name = "Test Server",
+                url = "https://server",
+            )
+        )
+        every { repository.isConnectedFlow } returns kotlinx.coroutines.flow.MutableStateFlow(true)
 
         manager = EnhancedPlaybackManager(
             context = context,
@@ -184,13 +191,21 @@ class EnhancedPlaybackManagerTest {
         coEvery { repository.getPlaybackInfo(itemId.toString(), any(), any()) } returns playbackInfo
         every {
             streamRepository.getTranscodedStreamUrl(
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
+                itemId = any(),
+                maxBitrate = any(),
+                maxWidth = any(),
+                maxHeight = any(),
+                videoCodec = any(),
+                audioCodec = any(),
+                container = any(),
+                mediaSourceId = any(),
+                playSessionId = any(),
+                audioStreamIndex = any(),
+                subtitleStreamIndex = any(),
+                audioChannels = any(),
+                audioBitrate = any(),
+                allowVideoStreamCopy = any(),
+                allowAudioStreamCopy = any(),
             )
         } returns "https://server/transcode"
 
@@ -226,13 +241,21 @@ class EnhancedPlaybackManagerTest {
         coEvery { repository.getPlaybackInfo(itemId.toString(), any(), any()) } returns playbackInfo
         every {
             streamRepository.getTranscodedStreamUrl(
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
+                itemId = any(),
+                maxBitrate = any(),
+                maxWidth = any(),
+                maxHeight = any(),
+                videoCodec = any(),
+                audioCodec = any(),
+                container = any(),
+                mediaSourceId = any(),
+                playSessionId = any(),
+                audioStreamIndex = any(),
+                subtitleStreamIndex = any(),
+                audioChannels = any(),
+                audioBitrate = any(),
+                allowVideoStreamCopy = any(),
+                allowAudioStreamCopy = any(),
             )
         } returns "https://server/transcode"
 
@@ -297,13 +320,21 @@ class EnhancedPlaybackManagerTest {
         coEvery { repository.getPlaybackInfo(itemId.toString(), any(), any()) } returns playbackInfo
         every {
             streamRepository.getTranscodedStreamUrl(
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
+                itemId = any(),
+                maxBitrate = any(),
+                maxWidth = any(),
+                maxHeight = any(),
+                videoCodec = any(),
+                audioCodec = any(),
+                container = any(),
+                mediaSourceId = any(),
+                playSessionId = any(),
+                audioStreamIndex = any(),
+                subtitleStreamIndex = any(),
+                audioChannels = any(),
+                audioBitrate = any(),
+                allowVideoStreamCopy = any(),
+                allowAudioStreamCopy = any(),
             )
         } returns "https://server/transcode"
 
@@ -331,13 +362,19 @@ class EnhancedPlaybackManagerTest {
         val itemId = UUID.randomUUID()
         val item = buildBaseItem(id = itemId)
 
-        // Mock repository to throw exception
-        coEvery { repository.getPlaybackInfo(itemId.toString(), any(), any()) } throws RuntimeException("Network failure")
+        // Mock repository to throw exception that propagates past getPlaybackInfo catch
+        // Actually getPlaybackInfo catches all Exceptions, so we need to mock a call
+        // that happens AFTER getPlaybackInfo.
+        coEvery { repository.getPlaybackInfo(itemId.toString(), any(), any()) } returns buildPlaybackInfo(listOf(buildMediaSource("mp4", "h264", "aac", 1000)))
+        
+        // Let's mock repository.getCurrentServerSync() to throw, which happens in computePlaybackDecision
+        every { repository.getCurrentServerSync() } throws RuntimeException("Critical failure")
 
         val result = manager.getOptimalPlaybackUrl(item)
 
-        assertTrue(result is PlaybackResult.Error)
-        assertTrue((result as PlaybackResult.Error).message.contains("Network failure"))
+        assertTrue("Expected Error result, but got $result", result is PlaybackResult.Error)
+        assertTrue("Error message should contain 'Critical failure', but was: ${(result as PlaybackResult.Error).message}", 
+            result.message.contains("Critical failure"))
     }
 
     @Test
@@ -365,13 +402,21 @@ class EnhancedPlaybackManagerTest {
         coEvery { repository.getPlaybackInfo(itemId.toString(), any(), any()) } returns playbackInfo
         every {
             streamRepository.getTranscodedStreamUrl(
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
+                itemId = any(),
+                maxBitrate = any(),
+                maxWidth = any(),
+                maxHeight = any(),
+                videoCodec = any(),
+                audioCodec = any(),
+                container = any(),
+                mediaSourceId = any(),
+                playSessionId = any(),
+                audioStreamIndex = any(),
+                subtitleStreamIndex = any(),
+                audioChannels = any(),
+                audioBitrate = any(),
+                allowVideoStreamCopy = any(),
+                allowAudioStreamCopy = any(),
             )
         } returns "https://server/transcode"
 
@@ -403,7 +448,7 @@ class EnhancedPlaybackManagerTest {
         every { connectivityChecker.getNetworkQuality() } returns com.rpeters.jellyfin.network.ConnectivityQuality.GOOD
 
         coEvery { repository.getPlaybackInfo(itemId.toString(), any(), any()) } returns playbackInfo
-        every { repository.getCurrentServer() } returns com.rpeters.jellyfin.data.JellyfinServer(
+        every { repository.getCurrentServerSync() } returns com.rpeters.jellyfin.data.JellyfinServer(
             id = "server",
             name = "Test",
             url = "https://server",
@@ -412,9 +457,9 @@ class EnhancedPlaybackManagerTest {
 
         val result = manager.getOptimalPlaybackUrl(item)
 
-        assertTrue(result is PlaybackResult.DirectPlay)
+        assertTrue("Expected DirectPlay result, but got $result", result is PlaybackResult.DirectPlay)
         val directPlay = result as PlaybackResult.DirectPlay
-        assertEquals("https://server/Videos/$itemId/stream.mkv?static=true&mediaSourceId=test-source-id", directPlay.url)
+        assertEquals("https://server/Videos/$itemId/stream.mkv?static=true&mediaSourceId=test-source-id&PlaySessionId=test-session-id", directPlay.url)
     }
 
     @Test
@@ -434,13 +479,18 @@ class EnhancedPlaybackManagerTest {
         // Mock device capabilities
         every { deviceCapabilities.canPlayContainer("mkv") } returns true
         every { deviceCapabilities.canPlayVideoCodec("h265", 1920, 1080) } returns true
-        every { deviceCapabilities.canPlayAudioCodec("ac3") } returns true
+        every { deviceCapabilities.canPlayAudioCodecStrict("ac3", any()) } returns true
 
         // Mock network
         every { networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) } returns true
 
         // Mock repository responses
         coEvery { repository.getPlaybackInfo(itemId.toString(), any(), any()) } returns playbackInfo
+        every { repository.getCurrentServerSync() } returns com.rpeters.jellyfin.data.JellyfinServer(
+            id = "server",
+            name = "Test",
+            url = "https://server",
+        )
         every { streamRepository.getDirectStreamUrl(itemId.toString(), "mkv") } returns "https://server/video.mkv"
 
         manager.getOptimalPlaybackUrl(item)
@@ -448,7 +498,7 @@ class EnhancedPlaybackManagerTest {
         // Verify correct methods called with correct parameters
         verify { deviceCapabilities.canPlayContainer("mkv") }
         verify { deviceCapabilities.canPlayVideoCodec("h265", 1920, 1080) }
-        verify { deviceCapabilities.canPlayAudioCodec("ac3") }
+        verify { deviceCapabilities.canPlayAudioCodecStrict("ac3", any()) }
     }
 
     @Test
@@ -476,7 +526,7 @@ class EnhancedPlaybackManagerTest {
 
         // Mock repository responses
         coEvery { repository.getPlaybackInfo(itemId.toString(), any(), any()) } returns playbackInfo
-        every { repository.getCurrentServer() } returns com.rpeters.jellyfin.data.JellyfinServer(
+        every { repository.getCurrentServerSync() } returns com.rpeters.jellyfin.data.JellyfinServer(
             id = "server",
             name = "Test",
             url = "https://server",
@@ -505,6 +555,7 @@ class EnhancedPlaybackManagerTest {
         val playbackInfo = buildPlaybackInfo(listOf(mediaSource), playSessionId = testSessionId)
 
         // Mock device capabilities
+        every { deviceCapabilities.canPlayVideoCodec("h265", any(), any()) } returns false
         every { deviceCapabilities.getDirectPlayCapabilities() } returns mockk(relaxed = true) {
             every { supportedVideoCodecs } returns listOf("h264")
             every { supportedAudioCodecs } returns listOf("aac")
@@ -518,22 +569,28 @@ class EnhancedPlaybackManagerTest {
 
         // Mock repository responses
         coEvery { repository.getPlaybackInfo(itemId.toString(), any(), any()) } returns playbackInfo
-        every { repository.getCurrentServer() } returns com.rpeters.jellyfin.data.JellyfinServer(
+        every { repository.getCurrentServerSync() } returns com.rpeters.jellyfin.data.JellyfinServer(
             id = "server",
             name = "Test",
             url = "https://server",
         )
         every {
             streamRepository.getTranscodedStreamUrl(
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
+                itemId = any(),
+                maxBitrate = any(),
+                maxWidth = any(),
+                maxHeight = any(),
+                videoCodec = any(),
+                audioCodec = any(),
+                container = any(),
+                mediaSourceId = any(),
+                playSessionId = any(),
+                audioStreamIndex = any(),
+                subtitleStreamIndex = any(),
+                audioChannels = any(),
+                audioBitrate = any(),
+                allowVideoStreamCopy = any(),
+                allowAudioStreamCopy = any(),
             )
         } returns "https://server/transcode"
 

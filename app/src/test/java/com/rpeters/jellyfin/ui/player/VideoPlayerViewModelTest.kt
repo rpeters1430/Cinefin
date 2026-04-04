@@ -25,6 +25,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -164,5 +165,28 @@ class VideoPlayerViewModelTest {
 
         // Assert
         verify { mockExoPlayer.pause() }
+    }
+
+    @Test
+    fun `acceptQualityRecommendation persists recommended quality before restart`() = runTest {
+        val recommendation = com.rpeters.jellyfin.data.playback.QualityRecommendation(
+            recommendedQuality = com.rpeters.jellyfin.data.preferences.TranscodingQuality.MEDIUM,
+            reason = "Buffering",
+            severity = com.rpeters.jellyfin.data.playback.RecommendationSeverity.MEDIUM,
+        )
+        playerStateFlow.value = VideoPlayerState(
+            itemId = "item-1",
+            itemName = "Test Video",
+            currentPosition = 12_000L,
+            qualityRecommendation = recommendation,
+        )
+        every { mockExoPlayer.currentPosition } returns 12_000L
+        coEvery { playbackPreferencesRepository.setTranscodingQuality(recommendation.recommendedQuality) } just Runs
+
+        viewModel.onIntent(VideoPlayerIntent.AcceptQualityRecommendation)
+        advanceUntilIdle()
+
+        coVerify { playbackPreferencesRepository.setTranscodingQuality(recommendation.recommendedQuality) }
+        coVerify { playbackManager.releasePlayer(reportStop = false) }
     }
 }

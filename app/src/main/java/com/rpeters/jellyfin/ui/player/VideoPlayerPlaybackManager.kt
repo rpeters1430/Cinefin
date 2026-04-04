@@ -218,10 +218,9 @@ class VideoPlayerPlaybackManager @Inject constructor(
             }
 
             currentPreparedMediaItem = mediaItem
-            player.setMediaItem(mediaItem)
+            player.setMediaItem(mediaItem, startPosition)
             player.prepare()
             player.play()
-            if (startPosition > 0) player.seekTo(startPosition)
         }
     }
 
@@ -321,10 +320,9 @@ class VideoPlayerPlaybackManager @Inject constructor(
                 mimeTypeHint = mimeType
             )
             currentPreparedMediaItem = mediaItem
-            player.setMediaItem(mediaItem)
+            player.setMediaItem(mediaItem, startPosition)
             player.prepare()
             player.play()
-            if (startPosition > 0) player.seekTo(startPosition)
         }
     }
 
@@ -383,7 +381,7 @@ class VideoPlayerPlaybackManager @Inject constructor(
         exoPlayer = null
         trackSelector = null
         adaptiveBitrateMonitor.stopMonitoring()
-        playbackProgressManager.stopTrackingAsync(reportStop = false)
+        playbackProgressManager.stopTrackingAsync(reportStop = true)
     }
 
     fun handlePlaybackStateChanged(playbackState: Int, previousPlaybackState: Int, scope: CoroutineScope) {

@@ -10,6 +10,8 @@ import com.rpeters.jellyfin.data.SecureCredentialManager
 import com.rpeters.jellyfin.data.ServerInfo
 import com.rpeters.jellyfin.data.common.DispatcherProvider
 import com.rpeters.jellyfin.data.model.CurrentUserDetails
+import com.rpeters.jellyfin.data.repository.IJellyfinAuthRepository
+import com.rpeters.jellyfin.data.repository.IJellyfinRepository
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
 import com.rpeters.jellyfin.data.repository.JellyfinMediaRepository
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
@@ -130,8 +132,8 @@ class MainAppViewModel
 @Inject
 constructor(
     @ApplicationContext private val context: Context,
-    private val repository: JellyfinRepository,
-    private val authRepository: JellyfinAuthRepository,
+    private val repository: IJellyfinRepository,
+    private val authRepository: IJellyfinAuthRepository,
     private val mediaRepository: JellyfinMediaRepository,
     private val userRepository: JellyfinUserRepository,
     private val streamRepository: JellyfinStreamRepository,
@@ -182,8 +184,8 @@ constructor(
     val appState: StateFlow<MainAppState> = _appState.asStateFlow()
 
     // Delegate to repositories for compatibility
-    val currentServer = repository.currentServer
-    val isConnected = repository.isConnected
+    val currentServer = repository.currentServerFlow
+    val isConnected = repository.isConnectedFlow
 
     private val _serverInfo = MutableStateFlow<ApiResult<ServerInfo>?>(null)
     val serverInfo: StateFlow<ApiResult<ServerInfo>?> = _serverInfo.asStateFlow()
@@ -229,11 +231,11 @@ constructor(
     fun loadServerInfo() {
         viewModelScope.launch {
             if (!ensureValidToken()) {
-                _serverInfo.value = ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
+                _serverInfo.value = ApiResult.Error<ServerInfo>("Not authenticated", errorType = ErrorType.AUTHENTICATION)
                 return@launch
             }
 
-            _serverInfo.value = ApiResult.Loading()
+            _serverInfo.value = ApiResult.Loading<ServerInfo>()
             _serverInfo.value = repository.getServerInfo()
         }
     }
@@ -389,8 +391,9 @@ constructor(
                     when (librariesResult) {
                         is ApiResult.Success -> {
                             val libraries = librariesResult.data
-                            val recentlyAdded = if (recentResult is ApiResult.Success) {
-                                recentResult.data
+                            val recentResultValue = recentResult
+                            val recentlyAdded = if (recentResultValue is ApiResult.Success) {
+                                recentResultValue.data
                             } else {
                                 emptyList()
                             }
@@ -458,10 +461,11 @@ constructor(
         viewModelScope.launch {
             _appState.update { it.copy(isLoadingAiSummary = true) }
             val item = repository.getItemDetails(itemId)
-            if (item is com.rpeters.jellyfin.data.repository.common.ApiResult.Success) {
+            if (item is ApiResult.Success) {
+                val data = item.data
                 val summary = generativeAiRepository.generateSummary(
-                    item.data.name ?: "Unknown",
-                    item.data.overview ?: ""
+                    data.name ?: "Unknown",
+                    data.overview ?: ""
                 )
                 _appState.update { it.copy(
                     aiSummary = summary,
@@ -479,8 +483,8 @@ constructor(
             val itemResult = repository.getItemDetails(itemId)
             val recentResult = repository.getRecentlyAdded()
             
-            if (itemResult is com.rpeters.jellyfin.data.repository.common.ApiResult.Success && 
-                recentResult is com.rpeters.jellyfin.data.repository.common.ApiResult.Success) {
+            if (itemResult is ApiResult.Success && 
+                recentResult is ApiResult.Success) {
                 val pitch = generativeAiRepository.generateWhyYoullLoveThis(
                     itemResult.data,
                     recentResult.data
@@ -505,10 +509,10 @@ constructor(
                 is ApiResult.Success -> {
                     _appState.value = _appState.value.copy(selectedItem = result.data)
                 }
-                is ApiResult.Error -> {
+                is ApiResult.Error<*> -> {
                     // Leave selectedItem null; screen will show error/empty state
                 }
-                is ApiResult.Loading -> { /* no-op */ }
+                is ApiResult.Loading<*> -> { /* no-op */ }
             }
         }
     }
@@ -520,13 +524,13 @@ constructor(
                     _appState.value = _appState.value.copy(favorites = result.data)
                 }
 
-                is ApiResult.Error -> {
+                is ApiResult.Error<*> -> {
                     _appState.value = _appState.value.copy(
                         errorMessage = "Failed to load favorites: ${result.message}",
                     )
                 }
 
-                is ApiResult.Loading -> {
+                is ApiResult.Loading<*> -> {
                     // Handle loading state
                 }
             }
@@ -540,13 +544,13 @@ constructor(
                     _appState.value = _appState.value.copy(currentUser = result.data)
                 }
 
-                is ApiResult.Error -> {
+                is ApiResult.Error<*> -> {
                     _appState.value = _appState.value.copy(
                         errorMessage = "Failed to load user profile: ${result.message}",
                     )
                 }
 
-                is ApiResult.Loading -> {
+                is ApiResult.Loading<*> -> {
                     // No-op
                 }
             }
@@ -570,7 +574,7 @@ constructor(
                     )
                 }
 
-                is ApiResult.Error -> {
+                is ApiResult.Error<*> -> {
                     _appState.value = _appState.value.copy(
                         searchResults = emptyList(),
                         isSearching = false,
@@ -578,7 +582,7 @@ constructor(
                     )
                 }
 
-                is ApiResult.Loading -> {
+                is ApiResult.Loading<*> -> {
                     // Already handled
                 }
             }
@@ -604,13 +608,13 @@ constructor(
                     loadInitialData() // Refresh data
                 }
 
-                is ApiResult.Error -> {
+                is ApiResult.Error<*> -> {
                     _appState.value = _appState.value.copy(
                         errorMessage = "Failed to update favorite: ${result.message}",
                     )
                 }
 
-                is ApiResult.Loading -> {
+                is ApiResult.Loading<*> -> {
                     // Handle loading state
                 }
             }
@@ -624,13 +628,13 @@ constructor(
                     // Update item userData in state immediately for responsive UI
                     updateItemWatchedStatus(item.id, isWatched = true)
                 }
-                is ApiResult.Error -> {
+                is ApiResult.Error<*> -> {
                     _appState.value = _appState.value.copy(
                         errorMessage = "Failed to mark as watched: ${result.message}",
                     )
                 }
 
-                is ApiResult.Loading -> {
+                is ApiResult.Loading<*> -> {
                     // Handle loading state
                 }
             }
@@ -644,13 +648,13 @@ constructor(
                     // Update item userData in state immediately for responsive UI
                     updateItemWatchedStatus(item.id, isWatched = false)
                 }
-                is ApiResult.Error -> {
+                is ApiResult.Error<*> -> {
                     _appState.value = _appState.value.copy(
                         errorMessage = "Failed to mark as unwatched: ${result.message}",
                     )
                 }
 
-                is ApiResult.Loading -> {
+                is ApiResult.Loading<*> -> {
                     // Handle loading state
                 }
             }
@@ -725,14 +729,14 @@ constructor(
                     onResult(true, null)
                 }
 
-                is ApiResult.Error -> {
+                is ApiResult.Error<*> -> {
                     _appState.value = _appState.value.copy(
                         errorMessage = "Failed to delete item: ${result.message}",
                     )
                     onResult(false, result.message)
                 }
 
-                is ApiResult.Loading -> {
+                is ApiResult.Loading<*> -> {
                     // Handle loading state
                 }
             }
@@ -746,14 +750,14 @@ constructor(
                     onResult(true, null)
                 }
 
-                is ApiResult.Error -> {
+                is ApiResult.Error<*> -> {
                     _appState.value = _appState.value.copy(
                         errorMessage = "Failed to refresh metadata: ${result.message}",
                     )
                     onResult(false, result.message)
                 }
 
-                is ApiResult.Loading -> {
+                is ApiResult.Loading<*> -> {
                     // Handle loading state
                 }
             }
@@ -1082,8 +1086,9 @@ constructor(
 
         return when (val result = mediaRepository.getUserLibraries(forceRefresh = forceRefresh)) {
             is ApiResult.Success -> {
-                _appState.value = _appState.value.copy(libraries = result.data)
-                result.data
+                val data = result.data
+                _appState.value = _appState.value.copy(libraries = data)
+                data
             }
             is ApiResult.Error -> {
                 _appState.value = _appState.value.copy(

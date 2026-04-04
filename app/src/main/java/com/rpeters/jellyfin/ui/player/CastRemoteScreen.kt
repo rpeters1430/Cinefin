@@ -38,7 +38,7 @@ fun CastRemoteScreen(
     Box(
         modifier = modifier
             .background(playerColors.background)
-            .testTag("cast_overlay"),
+            .testTag(VideoPlayerTestTags.CastOverlay),
     ) {
         if (!artwork.isNullOrBlank()) {
             JellyfinAsyncImage(
@@ -107,6 +107,37 @@ fun CastRemoteScreen(
             }
 
             Spacer(modifier = Modifier.height(12.dp))
+
+            if (!playerState.error.isNullOrBlank()) {
+                Surface(
+                    color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.92f),
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                    shape = MaterialTheme.shapes.medium,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 10.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Cast,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Text(
+                            text = playerState.error,
+                            style = MaterialTheme.typography.bodyMedium,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+            }
 
             Box(
                 modifier = Modifier
@@ -268,7 +299,7 @@ fun CastNowPlayingOverlay(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .testTag("cast_overlay"),
+            .testTag(VideoPlayerTestTags.CastOverlay),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.85f),
         ),

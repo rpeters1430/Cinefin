@@ -8,12 +8,19 @@ import androidx.compose.ui.input.pointer.pointerInput
 object VideoPlayerGestureConstants {
     const val SEEK_AMOUNT_MS = 10_000L
     const val MIN_VERTICAL_DRAG_PX = 5f
+    const val VERTICAL_DRAG_DOMINANCE_RATIO = 1.15f
     const val NORMALIZATION_FRACTION = 0.5f
     const val BRIGHTNESS_MIN_DELTA = 0.01f
     const val DEFAULT_BRIGHTNESS = 0.5f
     const val GESTURE_UPDATE_MIN_INTERVAL_MS = 50L
     const val CENTER_TAP_BOUNDARY_FRACTION = 0.33f
     val PLAYBACK_SPEEDS = listOf(0.25f, 0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 1.75f, 2.0f)
+
+    fun shouldHandleVerticalDrag(dragAmountX: Float, dragAmountY: Float): Boolean {
+        val absX = kotlin.math.abs(dragAmountX)
+        val absY = kotlin.math.abs(dragAmountY)
+        return absY >= MIN_VERTICAL_DRAG_PX && absY > absX * VERTICAL_DRAG_DOMINANCE_RATIO
+    }
 }
 
 /**
@@ -45,8 +52,13 @@ fun Modifier.videoPlayerGestures(
     .then(
         if (enableVerticalDragGestures) {
             Modifier.pointerInput(Unit) {
-                detectDragGestures { change, _ ->
+                detectDragGestures { change, dragAmount ->
+                    if (!VideoPlayerGestureConstants.shouldHandleVerticalDrag(dragAmount.x, dragAmount.y)) {
+                        return@detectDragGestures
+                    }
+
                     val deltaY = change.previousPosition.y - change.position.y
+                    change.consume()
                     onVerticalDrag(change.position.x < size.width / 2, deltaY)
                 }
             }

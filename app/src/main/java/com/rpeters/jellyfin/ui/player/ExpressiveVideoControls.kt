@@ -336,8 +336,8 @@ private fun ExpressiveBottomControls(
                     .padding(horizontal = 16.dp, vertical = 12.dp),
             ) {
                 val effectiveDuration = playerState.duration.takeIf { it > 0L }
-                var sliderPosition by remember { mutableFloatStateOf(0f) }
-                var isDragging by remember { mutableStateOf(false) }
+                var sliderPosition by remember(playerState.itemId) { mutableFloatStateOf(0f) }
+                var isDragging by remember(playerState.itemId) { mutableStateOf(false) }
 
                 LaunchedEffect(playerState.currentPosition, playerState.duration, isDragging) {
                     if (effectiveDuration != null && !isDragging) {
@@ -371,8 +371,13 @@ private fun ExpressiveBottomControls(
                     modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
+                    val displayedPosition = if (isDragging && effectiveDuration != null) {
+                        (sliderPosition * effectiveDuration).toLong()
+                    } else {
+                        playerState.currentPosition
+                    }
                     Text(
-                        text = formatTime(playerState.currentPosition),
+                        text = formatTime(displayedPosition),
                         color = overlayContent,
                         style = MaterialTheme.typography.bodySmall.copy(
                             fontWeight = FontWeight.Medium,

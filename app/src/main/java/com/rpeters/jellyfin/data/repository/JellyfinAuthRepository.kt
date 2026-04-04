@@ -228,6 +228,10 @@ class JellyfinAuthRepository @Inject constructor(
         _tokenState.update { server?.accessToken }
     }
 
+    override fun restorePersistedSession(server: JellyfinServer) {
+        seedCurrentServer(server.copy(isConnected = true))
+    }
+
     override suspend fun logout() {
         authMutex.withLock {
             val server = _currentServer.value

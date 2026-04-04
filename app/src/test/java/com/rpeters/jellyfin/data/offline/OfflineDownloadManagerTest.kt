@@ -66,7 +66,7 @@ class OfflineDownloadManagerTest {
         okHttpClient = mockk(relaxed = true)
 
         // Mock repository explicitly to avoid ClassCastException from relaxed mock
-        every { repository.getCurrentServer() } returns null
+        every { repository.getCurrentServerSync() } returns null
         coEvery { repository.getPlaybackInfo(any()) } returns mockk(relaxed = true)
 
         // Create a temporary directory for test downloads and datastore

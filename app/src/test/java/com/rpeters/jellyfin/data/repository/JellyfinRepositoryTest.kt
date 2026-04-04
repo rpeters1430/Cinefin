@@ -42,6 +42,7 @@ class JellyfinRepositoryTest {
         override fun isTokenExpired(): Boolean = false
         override fun shouldRefreshToken(): Boolean = false
         override fun seedCurrentServer(server: JellyfinServer?) {}
+        override fun restorePersistedSession(server: JellyfinServer) {}
         override suspend fun authenticateUser(s: String, u: String, p: String) = ApiResult.Error<org.jellyfin.sdk.model.api.AuthenticationResult>("Not implemented")
         override suspend fun reAuthenticate(): Boolean = true
         override suspend fun forceReAuthenticate(): Boolean = true
@@ -113,14 +114,14 @@ class JellyfinRepositoryTest {
             accessToken = "token",
         )
         serverFlow.value = server
-        val emitted = repository.currentServer.first()
+        val emitted = repository.currentServerFlow.first()
         assertEquals(server, emitted)
     }
 
     @Test
     fun `isConnected flow mirrors auth repository`() = runTest {
         connectedFlow.value = true
-        val emitted = repository.isConnected.first()
+        val emitted = repository.isConnectedFlow.first()
         assertTrue(emitted)
     }
 }

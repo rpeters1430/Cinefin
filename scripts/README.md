@@ -85,6 +85,53 @@ Building signed release bundle (AAB) for Play Console...
 ...
 ```
 
+### `release-android.sh` (Linux/macOS)
+
+Automates the full Android release flow for this repository.
+
+**Features:**
+- Increments `versionCode` by 1
+- Increments the trailing numeric segment of `versionName` by 1
+- Commits the version bump
+- Builds a signed release bundle with `./gradlew bundleRelease`
+- Creates an annotated git tag like `v14.57`
+- Pushes the branch and tag
+- Publishes a GitHub release with generated release notes and uploads the AAB
+
+**Usage:**
+
+```bash
+./scripts/release-android.sh
+```
+
+Non-interactive:
+
+```bash
+./scripts/release-android.sh --yes
+```
+
+Useful options:
+
+```bash
+./scripts/release-android.sh --skip-push --skip-release
+./scripts/release-android.sh --dry-run
+./scripts/release-android.sh --no-changelog
+./scripts/release-android.sh --tag-prefix release-
+```
+
+**Requirements:**
+
+- `gh` authenticated to the target GitHub repo
+- A working git remote named `origin`
+- Signing credentials configured through `local.properties`, `gradle.properties`, or environment variables:
+  - `JELLYFIN_KEYSTORE_FILE`
+  - `JELLYFIN_KEYSTORE_PASSWORD`
+  - `JELLYFIN_KEY_ALIAS`
+  - `JELLYFIN_KEY_PASSWORD`
+
+`--dry-run` shows the exact version bump, tag, and generated GitHub changelog preview without changing files or creating a release.
+If the tree is dirty during a real run, the script shows the changed files, asks whether they should be included, then bumps the versions, creates the release commit, and only after that runs the signed bundle build.
+
 ## Other Scripts
 
 ### `gen-local-properties.ps1` / `gen-local-properties.sh`

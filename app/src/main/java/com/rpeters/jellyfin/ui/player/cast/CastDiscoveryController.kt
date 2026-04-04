@@ -2,8 +2,11 @@ package com.rpeters.jellyfin.ui.player.cast
 
 import android.content.Context
 import androidx.media3.common.util.UnstableApi
+import androidx.mediarouter.media.MediaRouteSelector
 import androidx.mediarouter.media.MediaRouter
 import com.google.android.gms.cast.framework.CastContext
+import com.rpeters.jellyfin.data.preferences.CastPreferences
+import com.rpeters.jellyfin.data.preferences.CastPreferencesRepository
 import com.rpeters.jellyfin.ui.player.dlna.DlnaDevice
 import com.rpeters.jellyfin.ui.player.dlna.DlnaDiscoveryController
 import com.rpeters.jellyfin.utils.SecureLogger
@@ -11,6 +14,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -23,12 +27,18 @@ import javax.inject.Singleton
 class CastDiscoveryController @Inject constructor(
     @ApplicationContext private val context: Context,
     private val stateStore: CastStateStore,
+    private val castPreferencesRepository: CastPreferencesRepository,
     private val dlnaDiscoveryController: DlnaDiscoveryController,
 ) {
     private var routeCallbackAdded = false
     private var discoveryJob: Job? = null
     private var castDevices: List<String> = emptyList()
     private var dlnaDevices: List<String> = emptyList()
+    private var currentSelector: MediaRouteSelector? = null
+    private var preferredDeviceName: String? = null
+    private var autoReconnectEnabled: Boolean = false
+    private var autoReconnectAttempted: Boolean = false
+    private var publishDiscoveryState: Boolean = true
 
     private val routeCallback = object : MediaRouter.Callback() {
         override fun onRouteAdded(router: MediaRouter, route: MediaRouter.RouteInfo) {
@@ -46,39 +56,74 @@ class CastDiscoveryController @Inject constructor(
 
     companion object {
         private const val DISCOVERY_TIMEOUT_MS = 15_000L
+
+        @JvmStatic
+        internal fun prioritizedDevices(devices: List<String>, preferredDeviceName: String?): List<String> {
+            if (preferredDeviceName.isNullOrBlank()) return devices
+            return devices.sortedWith(
+                compareByDescending<String> { it == preferredDeviceName }
+                    .thenBy { it.lowercase() },
+            )
+        }
+
+        @JvmStatic
+        internal fun shouldAutoReconnect(
+            preferredDeviceName: String?,
+            autoReconnectEnabled: Boolean,
+            autoReconnectAttempted: Boolean,
+            devices: List<String>,
+        ): Boolean {
+            return !preferredDeviceName.isNullOrBlank() &&
+                autoReconnectEnabled &&
+                !autoReconnectAttempted &&
+                devices.contains(preferredDeviceName)
+        }
+
+        @JvmStatic
+        internal fun rememberedDeviceName(prefs: CastPreferences, nowMs: Long): String? {
+            val lastCastTimestamp = prefs.lastCastTimestamp ?: return null
+            val sessionIsFresh = nowMs - lastCastTimestamp <= CastPreferencesRepository.MAX_SESSION_AGE_MS
+            if (!prefs.rememberLastDevice || !sessionIsFresh) return null
+            return prefs.lastDeviceName?.takeIf { it.isNotBlank() }
+        }
+
+        @JvmStatic
+        internal fun autoReconnectTarget(prefs: CastPreferences, nowMs: Long): String? {
+            val rememberedDevice = rememberedDeviceName(prefs, nowMs) ?: return null
+            return rememberedDevice.takeIf { prefs.autoReconnect }
+        }
     }
 
     /**
      * Starts discovering devices.
      */
-    fun startDiscovery(scope: CoroutineScope, castContext: CastContext?) {
+    fun startDiscovery(
+        scope: CoroutineScope,
+        castContext: CastContext?,
+        onAutoReconnect: ((String) -> Unit)? = null,
+    ) {
         discoveryJob?.cancel()
         castDevices = emptyList()
         dlnaDevices = emptyList()
+        preferredDeviceName = null
+        autoReconnectEnabled = false
+        autoReconnectAttempted = false
+        publishDiscoveryState = true
         stateStore.update { it.copy(discoveryState = DiscoveryState.DISCOVERING, availableDevices = emptyList()) }
 
-        if (castContext == null) {
-            SecureLogger.w("CastDiscovery", "CastContext unavailable; discovering DLNA devices only")
-        } else {
-            val router = MediaRouter.getInstance(context)
-            val selector = castContext.mergedSelector
-            if (selector != null) {
-                if (!routeCallbackAdded) {
-                    router.addCallback(
-                        selector,
-                        routeCallback,
-                        MediaRouter.CALLBACK_FLAG_REQUEST_DISCOVERY or
-                            MediaRouter.CALLBACK_FLAG_PERFORM_ACTIVE_SCAN,
-                    )
-                    routeCallbackAdded = true
-                }
-                updateDiscoveredDevices(router)
-            }
+        scope.launch {
+            val prefs = castPreferencesRepository.castPreferencesFlow.first()
+            val nowMs = System.currentTimeMillis()
+            preferredDeviceName = rememberedDeviceName(prefs, nowMs)
+            autoReconnectEnabled = autoReconnectTarget(prefs, nowMs) != null
+            publishMergedDevices(onAutoReconnect)
         }
+
+        beginRouteDiscovery(castContext)
 
         dlnaDiscoveryController.startDiscovery(scope) { devices ->
             dlnaDevices = devices.map { "DLNA: ${it.friendlyName}" }
-            publishMergedDevices()
+            publishMergedDevices(onAutoReconnect)
         }
 
         discoveryJob = scope.launch {
@@ -95,10 +140,107 @@ class CastDiscoveryController @Inject constructor(
         }
     }
 
+    fun attemptAutoReconnect(
+        scope: CoroutineScope,
+        castContext: CastContext?,
+        onAutoReconnect: (String) -> Unit,
+    ) {
+        discoveryJob?.cancel()
+        castDevices = emptyList()
+        dlnaDevices = emptyList()
+        preferredDeviceName = null
+        autoReconnectEnabled = false
+        autoReconnectAttempted = false
+        publishDiscoveryState = false
+
+        scope.launch {
+            val prefs = castPreferencesRepository.castPreferencesFlow.first()
+            val reconnectTarget = autoReconnectTarget(prefs, System.currentTimeMillis()) ?: run {
+                stopInternalDiscovery()
+                return@launch
+            }
+            preferredDeviceName = reconnectTarget
+            autoReconnectEnabled = true
+
+            beginRouteDiscovery(castContext)
+            dlnaDiscoveryController.startDiscovery(scope) { devices ->
+                dlnaDevices = devices.map { "DLNA: ${it.friendlyName}" }
+                publishMergedDevices(onAutoReconnect)
+            }
+
+            discoveryJob = launch {
+                delay(DISCOVERY_TIMEOUT_MS)
+                stopInternalDiscovery()
+            }
+        }
+    }
+
     /**
      * Stops device discovery and clears callbacks.
      */
     fun stopDiscovery() {
+        stopInternalDiscovery()
+        stateStore.update { it.copy(discoveryState = DiscoveryState.IDLE) }
+    }
+
+    fun findDlnaDevice(displayName: String): DlnaDevice? = dlnaDiscoveryController.findByDisplayName(displayName)
+
+    private fun updateDiscoveredDevices(router: MediaRouter) {
+        val selector = currentSelector
+        castDevices = router.routes
+            .filter { route ->
+                !route.isDefault &&
+                    route.isEnabled &&
+                    route.name.isNotEmpty() &&
+                    selector != null &&
+                    route.matchesSelector(selector)
+            }
+            .map { it.name }
+            .distinct()
+        publishMergedDevices()
+    }
+
+    private fun publishMergedDevices(onAutoReconnect: ((String) -> Unit)? = null) {
+        val devices = prioritizedDevices((castDevices + dlnaDevices).distinct(), preferredDeviceName)
+        if (publishDiscoveryState) {
+            stateStore.update { state ->
+                state.copy(
+                    availableDevices = devices,
+                    discoveryState = if (devices.isNotEmpty()) DiscoveryState.DEVICES_FOUND else state.discoveryState,
+                )
+            }
+        }
+
+        if (shouldAutoReconnect(preferredDeviceName, autoReconnectEnabled, autoReconnectAttempted, devices)) {
+            autoReconnectAttempted = true
+            preferredDeviceName?.let { onAutoReconnect?.invoke(it) }
+        }
+    }
+
+    private fun beginRouteDiscovery(castContext: CastContext?) {
+        if (castContext == null) {
+            SecureLogger.w("CastDiscovery", "CastContext unavailable; discovering DLNA devices only")
+            currentSelector = null
+            return
+        }
+        val router = MediaRouter.getInstance(context)
+        val selector = castContext.mergedSelector
+        currentSelector = selector
+        if (selector != null) {
+            if (!routeCallbackAdded) {
+                router.addCallback(
+                    selector,
+                    routeCallback,
+                    MediaRouter.CALLBACK_FLAG_REQUEST_DISCOVERY or
+                        MediaRouter.CALLBACK_FLAG_PERFORM_ACTIVE_SCAN,
+                )
+                routeCallbackAdded = true
+            }
+            updateDiscoveredDevices(router)
+        }
+    }
+
+    private fun stopInternalDiscovery() {
         discoveryJob?.cancel()
         discoveryJob = null
 
@@ -106,30 +248,11 @@ class CastDiscoveryController @Inject constructor(
             MediaRouter.getInstance(context).removeCallback(routeCallback)
             routeCallbackAdded = false
         }
+        currentSelector = null
+        preferredDeviceName = null
+        autoReconnectEnabled = false
+        autoReconnectAttempted = false
+        publishDiscoveryState = true
         dlnaDiscoveryController.stopDiscovery()
-
-        stateStore.update { it.copy(discoveryState = DiscoveryState.IDLE) }
-    }
-
-    fun findDlnaDevice(displayName: String): DlnaDevice? = dlnaDiscoveryController.findByDisplayName(displayName)
-
-    private fun updateDiscoveredDevices(router: MediaRouter) {
-        // We can't access CastContext easily here, so we assume the router has the right routes
-        // The filter is applied based on standard Cast framework behavior
-        castDevices = router.routes
-            .filter { !it.isDefault && it.isEnabled && it.name.isNotEmpty() }
-            .map { it.name }
-            .distinct()
-        publishMergedDevices()
-    }
-
-    private fun publishMergedDevices() {
-        val devices = (castDevices + dlnaDevices).distinct()
-        stateStore.update { state ->
-            state.copy(
-                availableDevices = devices,
-                discoveryState = if (devices.isNotEmpty()) DiscoveryState.DEVICES_FOUND else state.discoveryState,
-            )
-        }
     }
 }

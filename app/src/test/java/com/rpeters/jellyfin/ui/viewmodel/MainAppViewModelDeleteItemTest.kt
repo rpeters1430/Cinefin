@@ -90,8 +90,8 @@ class MainAppViewModelDeleteItemTest {
         Dispatchers.setMain(dispatcher)
 
         // Setup default mock behaviors
-        coEvery { repository.currentServer } returns MutableStateFlow(null)
-        coEvery { repository.isConnected } returns MutableStateFlow(false)
+        coEvery { repository.currentServerFlow } returns MutableStateFlow(null)
+        coEvery { repository.isConnectedFlow } returns MutableStateFlow(false)
 
         viewModel = MainAppViewModel(
             context = context,

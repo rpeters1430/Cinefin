@@ -508,6 +508,7 @@ class VideoPlayerViewModel @Inject constructor(
         adaptiveBitrateMonitor.clearRecommendation()
         adaptiveBitrateMonitor.resetBufferingTracking()
         viewModelScope.launch {
+            playbackPreferencesRepository.setTranscodingQuality(recommendation.recommendedQuality)
             playbackManager.releasePlayer(reportStop = false)
             initializePlayerInternal(
                 itemId = itemId,

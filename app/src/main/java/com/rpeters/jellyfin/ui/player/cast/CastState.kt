@@ -12,6 +12,14 @@ enum class DiscoveryState {
 }
 
 @UnstableApi
+enum class CastSessionEndReason {
+    NONE,
+    USER_DISCONNECTED,
+    LOAD_FAILED,
+    CONNECTION_LOST,
+}
+
+@UnstableApi
 data class CastState(
     val isInitialized: Boolean = false,
     val isAvailable: Boolean = false,
@@ -24,6 +32,7 @@ data class CastState(
     val currentPosition: Long = 0L,
     val duration: Long = 0L,
     val volume: Float = 1.0f,
+    val sessionEndReason: CastSessionEndReason = CastSessionEndReason.NONE,
     // Discovery
     val discoveryState: DiscoveryState = DiscoveryState.IDLE,
     val availableDevices: List<String> = emptyList(),

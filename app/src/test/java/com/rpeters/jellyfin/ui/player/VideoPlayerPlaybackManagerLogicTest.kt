@@ -40,4 +40,24 @@ class VideoPlayerPlaybackManagerLogicTest {
             ),
         )
     }
+
+    @Test
+    fun `vertical drag handler ignores mostly horizontal drags`() {
+        assertFalse(
+            VideoPlayerGestureConstants.shouldHandleVerticalDrag(
+                dragAmountX = 60f,
+                dragAmountY = 8f,
+            ),
+        )
+    }
+
+    @Test
+    fun `vertical drag handler accepts clear vertical swipes`() {
+        assertTrue(
+            VideoPlayerGestureConstants.shouldHandleVerticalDrag(
+                dragAmountX = 8f,
+                dragAmountY = 60f,
+            ),
+        )
+    }
 }

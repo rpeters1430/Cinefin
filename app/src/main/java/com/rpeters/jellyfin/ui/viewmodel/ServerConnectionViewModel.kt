@@ -18,7 +18,8 @@ import com.rpeters.jellyfin.data.JellyfinServer
 import com.rpeters.jellyfin.data.SecureCredentialManager
 import com.rpeters.jellyfin.data.offline.DownloadStatus
 import com.rpeters.jellyfin.data.offline.OfflineDownloadManager
-import com.rpeters.jellyfin.data.repository.JellyfinRepository
+import com.rpeters.jellyfin.data.repository.IJellyfinAuthRepository
+import com.rpeters.jellyfin.data.repository.IJellyfinRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.data.repository.common.ErrorType
 import com.rpeters.jellyfin.data.security.CertificatePinningManager
@@ -67,7 +68,8 @@ object PreferencesKeys {
 
 @HiltViewModel
 class ServerConnectionViewModel @Inject constructor(
-    private val repository: JellyfinRepository,
+    private val repository: IJellyfinRepository,
+    private val authRepository: IJellyfinAuthRepository,
     private val secureCredentialManager: SecureCredentialManager,
     private val certificatePinningManager: CertificatePinningManager,
     private val connectivityChecker: ConnectivityChecker,
@@ -159,9 +161,9 @@ class ServerConnectionViewModel @Inject constructor(
                     loginTimestamp = restoredLoginTimestamp,
                     normalizedUrl = normalizeServerUrl(savedServerUrl),
                 )
-                repository.restorePersistedSession(restoredServer)
+                authRepository.restorePersistedSession(restoredServer)
 
-                if (repository.isSessionTokenExpired()) {
+                if (authRepository.isTokenExpired()) {
                     clearPersistedSessionToken()
                 } else {
                     _connectionState.value = _connectionState.value.copy(
@@ -264,7 +266,7 @@ class ServerConnectionViewModel @Inject constructor(
 
         // Observe repository connection state
         viewModelScope.launch {
-            repository.isConnected.collect { isConnected ->
+            repository.isConnectedFlow.collect { isConnected ->
                 _connectionState.value = _connectionState.value.copy(
                     isConnected = isConnected,
                     isConnecting = false,
@@ -319,7 +321,7 @@ class ServerConnectionViewModel @Inject constructor(
         viewModelScope.launch {
             // First test server connection with enhanced feedback (IO dispatcher)
             val serverResult = withContext(Dispatchers.IO) {
-                repository.testServerConnection(normalizedServerUrl)
+                authRepository.testServerConnection(normalizedServerUrl)
             }
             when (serverResult) {
                 is ApiResult.Success -> {
@@ -331,7 +333,7 @@ class ServerConnectionViewModel @Inject constructor(
 
                     // Now authenticate with enhanced feedback (IO dispatcher)
                     val authResult = withContext(Dispatchers.IO) {
-                        repository.authenticateUser(normalizedServerUrl, username, password)
+                        authRepository.authenticateUser(normalizedServerUrl, username, password)
                     }
                     when (authResult) {
                         is ApiResult.Success -> {
@@ -588,7 +590,7 @@ class ServerConnectionViewModel @Inject constructor(
     }
 
     private suspend fun saveCurrentSessionToken() {
-        val server = repository.currentServer.first { it != null } ?: return
+        val server = repository.currentServerFlow.first { it != null } ?: return
         if (server.url.isBlank() || server.username.isNullOrBlank() || server.accessToken.isNullOrBlank()) {
             return
         }
@@ -851,13 +853,13 @@ class ServerConnectionViewModel @Inject constructor(
             // First test server connection
             when (
                 val serverResult = withContext(Dispatchers.IO) {
-                    repository.testServerConnection(normalizedServerUrl)
+                    authRepository.testServerConnection(normalizedServerUrl)
                 }
             ) {
                 is ApiResult.Success -> {
                     when (
                         val enabledResult = withContext(Dispatchers.IO) {
-                            repository.isQuickConnectEnabled(normalizedServerUrl)
+                            authRepository.isQuickConnectEnabled(normalizedServerUrl)
                         }
                     ) {
                         is ApiResult.Success -> {
@@ -888,7 +890,7 @@ class ServerConnectionViewModel @Inject constructor(
                     // Now initiate Quick Connect
                     when (
                         val quickConnectResult = withContext(Dispatchers.IO) {
-                            repository.initiateQuickConnect(normalizedServerUrl)
+                            authRepository.initiateQuickConnect(normalizedServerUrl)
                         }
                     ) {
                         is ApiResult.Success -> {
@@ -957,7 +959,7 @@ class ServerConnectionViewModel @Inject constructor(
 
             when (
                 val stateResult = withContext(Dispatchers.IO) {
-                    repository.getQuickConnectState(serverUrl, secret)
+                    authRepository.getQuickConnectState(serverUrl, secret)
                 }
             ) {
                 is ApiResult.Success -> {
@@ -967,7 +969,7 @@ class ServerConnectionViewModel @Inject constructor(
                             // User approved the connection, authenticate
                             when (
                                 val authResult = withContext(Dispatchers.IO) {
-                                    repository.authenticateWithQuickConnect(serverUrl, secret)
+                                    authRepository.authenticateWithQuickConnect(serverUrl, secret)
                                 }
                             ) {
                                 is ApiResult.Success -> {

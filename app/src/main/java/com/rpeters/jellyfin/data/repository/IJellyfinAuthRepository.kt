@@ -19,6 +19,7 @@ interface IJellyfinAuthRepository : TokenProvider {
     fun isTokenExpired(): Boolean
     fun shouldRefreshToken(): Boolean
     fun seedCurrentServer(server: JellyfinServer?)
+    fun restorePersistedSession(server: JellyfinServer)
 
     suspend fun authenticateUser(
         serverUrl: String,

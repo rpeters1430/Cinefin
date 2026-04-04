@@ -59,6 +59,9 @@ class VideoPlayerActivity : FragmentActivity() {
     @Inject
     lateinit var deviceCapabilities: DeviceCapabilities
 
+    @Inject
+    lateinit var playbackProgressManager: PlaybackProgressManager
+
     // Receiver for PiP control actions
     private val playerCommandReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -133,6 +136,7 @@ class VideoPlayerActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         onBackPressedDispatcher.addCallback(this, backPressedCallback)
+        lifecycle.addObserver(playbackProgressManager)
 
         try {
             // Set up full screen mode and allow sensor-based orientation
@@ -285,6 +289,7 @@ class VideoPlayerActivity : FragmentActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        lifecycle.removeObserver(playbackProgressManager)
         updateHdrMode(false)
         try {
             unregisterReceiver(playerCommandReceiver)

@@ -8,13 +8,23 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.w3c.dom.Element
+import java.io.StringReader
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
+import javax.xml.parsers.DocumentBuilderFactory
+import org.xml.sax.InputSource
 
 @UnstableApi
 @Singleton
 class DlnaPlaybackController @Inject constructor() {
+    data class DlnaPlaybackState(
+        val currentPositionMs: Long,
+        val durationMs: Long,
+        val isPlaying: Boolean,
+    )
+
     companion object {
         private const val TAG = "DlnaPlayback"
         private const val SERVICE = "urn:schemas-upnp-org:service:AVTransport:1"
@@ -79,7 +89,37 @@ class DlnaPlaybackController @Inject constructor() {
         return sendSoapAction(device, "Seek", body)
     }
 
+    suspend fun getPlaybackState(device: DlnaDevice): DlnaPlaybackState? {
+        val positionInfoBody = """
+            <u:GetPositionInfo xmlns:u="$SERVICE">
+                <InstanceID>0</InstanceID>
+            </u:GetPositionInfo>
+        """.trimIndent()
+        val transportInfoBody = """
+            <u:GetTransportInfo xmlns:u="$SERVICE">
+                <InstanceID>0</InstanceID>
+            </u:GetTransportInfo>
+        """.trimIndent()
+
+        val positionResponse = sendSoapRequest(device, "GetPositionInfo", positionInfoBody) ?: return null
+        val transportResponse = sendSoapRequest(device, "GetTransportInfo", transportInfoBody)
+
+        val relTime = parseTagText(positionResponse, "RelTime")
+        val trackDuration = parseTagText(positionResponse, "TrackDuration")
+        val currentTransportState = transportResponse?.let { parseTagText(it, "CurrentTransportState") }
+
+        return DlnaPlaybackState(
+            currentPositionMs = parseDlnaTime(relTime),
+            durationMs = parseDlnaTime(trackDuration),
+            isPlaying = currentTransportState.equals("PLAYING", ignoreCase = true),
+        )
+    }
+
     private suspend fun sendSoapAction(device: DlnaDevice, action: String, innerBody: String): Boolean = withContext(Dispatchers.IO) {
+        sendSoapRequest(device, action, innerBody) != null
+    }
+
+    private suspend fun sendSoapRequest(device: DlnaDevice, action: String, innerBody: String): String? = withContext(Dispatchers.IO) {
         val envelope = """
             <?xml version="1.0" encoding="utf-8"?>
             <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
@@ -100,12 +140,13 @@ class DlnaPlaybackController @Inject constructor() {
             client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
                     SecureLogger.w(TAG, "DLNA action $action failed for ${device.friendlyName}: HTTP ${response.code}")
+                    return@use null
                 }
-                response.isSuccessful
+                response.body?.string()
             }
         }.onFailure { e ->
             SecureLogger.w(TAG, "DLNA action $action threw for ${device.friendlyName}", e)
-        }.getOrDefault(false)
+        }.getOrNull()
     }
 
     private fun buildDidlLite(title: String): String {
@@ -127,6 +168,30 @@ class DlnaPlaybackController @Inject constructor() {
         return "%02d:%02d:%02d".format(hours, minutes, seconds)
     }
 
+    private fun parseDlnaTime(value: String?): Long {
+        if (value.isNullOrBlank() || value == "NOT_IMPLEMENTED") return 0L
+        val parts = value.split(":")
+        if (parts.size != 3) return 0L
+        val hours = parts[0].toLongOrNull() ?: return 0L
+        val minutes = parts[1].toLongOrNull() ?: return 0L
+        val seconds = parts[2].substringBefore('.').toLongOrNull() ?: return 0L
+        return ((hours * 3600) + (minutes * 60) + seconds) * 1000L
+    }
+
+    private fun parseTagText(xml: String, tagName: String): String? {
+        return runCatching {
+            val factory = DocumentBuilderFactory.newInstance().apply {
+                isNamespaceAware = false
+            }
+            val document = factory.newDocumentBuilder().parse(InputSource(StringReader(xml)))
+            val nodes = document.getElementsByTagName(tagName)
+            val node = nodes.item(0) as? Element ?: return@runCatching null
+            node.textContent?.trim()
+        }.onFailure { e ->
+            SecureLogger.w(TAG, "Failed parsing DLNA SOAP response tag $tagName", e)
+        }.getOrNull()
+    }
+
     private fun xmlEscape(value: String): String {
         return value
             .replace("&", "&amp;")
@@ -136,4 +201,3 @@ class DlnaPlaybackController @Inject constructor() {
             .replace("'", "&apos;")
     }
 }
-

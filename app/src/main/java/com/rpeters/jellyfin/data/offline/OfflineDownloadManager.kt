@@ -722,7 +722,7 @@ class OfflineDownloadManager @Inject constructor(
     }
 
     private suspend fun downloadExternalSubtitles(itemId: String): List<OfflineSubtitle> {
-        val serverUrl = repository.getCurrentServer()?.url ?: return emptyList()
+        val serverUrl = repository.getCurrentServerSync()?.url ?: return emptyList()
         val playbackInfo = runCatching { repository.getPlaybackInfo(itemId) }.getOrNull() ?: return emptyList()
         val mediaSource = playbackInfo.mediaSources.firstOrNull() ?: return emptyList()
         val streams = mediaSource.mediaStreams

@@ -35,6 +35,7 @@ class CastSessionController @Inject constructor(
                         deviceName = deviceName,
                         isCasting = true,
                         error = null,
+                        sessionEndReason = CastSessionEndReason.NONE,
                     )
                 }
                 stateStore.persistSession(scope, deviceName, sessionId)
@@ -44,15 +45,29 @@ class CastSessionController @Inject constructor(
                 if (BuildConfig.DEBUG) SecureLogger.d("CastSession", "Ended")
                 
                 playbackController.unregisterCallback(session.remoteMediaClient)
+                val wasUserInitiated = stateStore.castState.value.sessionEndReason == CastSessionEndReason.USER_DISCONNECTED
+                val sessionEndReason = if (wasUserInitiated) {
+                    CastSessionEndReason.USER_DISCONNECTED
+                } else {
+                    CastSessionEndReason.CONNECTION_LOST
+                }
                 stateStore.update { state ->
                     state.copy(
                         isConnected = false,
                         deviceName = null,
                         isCasting = false,
                         isRemotePlaying = false,
+                        error = if (sessionEndReason == CastSessionEndReason.CONNECTION_LOST) {
+                            "Cast connection lost"
+                        } else {
+                            state.error
+                        },
+                        sessionEndReason = sessionEndReason,
                     )
                 }
-                stateStore.clearPersistedSession(scope)
+                if (wasUserInitiated) {
+                    stateStore.clearPersistedSession(scope)
+                }
             }
 
             override fun onSessionResumed(session: CastSession, wasSuspended: Boolean) {
@@ -67,12 +82,21 @@ class CastSessionController @Inject constructor(
                         deviceName = deviceName,
                         isCasting = true,
                         error = null,
+                        sessionEndReason = CastSessionEndReason.NONE,
                     )
                 }
+                stateStore.persistSession(scope, deviceName, session.sessionId)
             }
 
             override fun onSessionSuspended(session: CastSession, reason: Int) {
-                stateStore.update { it.copy(isCasting = false, isRemotePlaying = false) }
+                stateStore.update {
+                    it.copy(
+                        isCasting = false,
+                        isRemotePlaying = false,
+                        error = "Cast connection interrupted",
+                        sessionEndReason = CastSessionEndReason.CONNECTION_LOST,
+                    )
+                }
             }
 
             override fun onSessionStarting(session: CastSession) {}
@@ -82,7 +106,15 @@ class CastSessionController @Inject constructor(
             override fun onSessionEnding(session: CastSession) {}
             override fun onSessionResuming(session: CastSession, sessionId: String) {}
             override fun onSessionResumeFailed(session: CastSession, error: Int) {
-                stateStore.clearPersistedSession(scope)
+                stateStore.update {
+                    it.copy(
+                        isConnected = false,
+                        isCasting = false,
+                        isRemotePlaying = false,
+                        error = "Cast reconnect failed",
+                        sessionEndReason = CastSessionEndReason.CONNECTION_LOST,
+                    )
+                }
             }
         }
     }

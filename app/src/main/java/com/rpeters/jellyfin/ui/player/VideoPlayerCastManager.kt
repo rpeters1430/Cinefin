@@ -2,6 +2,7 @@ package com.rpeters.jellyfin.ui.player
 
 import androidx.media3.common.MediaItem
 import androidx.media3.common.util.UnstableApi
+import com.rpeters.jellyfin.ui.player.cast.CastSessionEndReason
 import com.rpeters.jellyfin.ui.player.cast.CastState
 import com.rpeters.jellyfin.utils.AnalyticsHelper
 import kotlinx.coroutines.CoroutineScope
@@ -22,8 +23,66 @@ class VideoPlayerCastManager @Inject constructor(
     private val stateManager: VideoPlayerStateManager,
     private val analytics: AnalyticsHelper
 ) {
+    private data class PendingLocalResume(
+        val itemId: String,
+        val itemName: String,
+        val resumePosition: Long,
+        val message: String?,
+    )
+
     private var castPositionJob: Job? = null
+    private var reconnectGraceJob: Job? = null
+    private var pendingLocalResume: PendingLocalResume? = null
     private var hasSentCastLoad = false
+    private var awaitingRemotePlaybackStart = false
+    private var localPlaybackReleasedForCast = false
+    private var releasePlayerCallback: (() -> Unit)? = null
+
+    companion object {
+        private const val CONNECTION_LOSS_RESUME_DELAY_MS = 3_500L
+
+        @JvmStatic
+        internal fun shouldResumeLocallyAfterCastEnds(
+            wasCastConnected: Boolean,
+            localPlaybackReleasedForCast: Boolean,
+            isConnected: Boolean,
+            sessionEndReason: CastSessionEndReason,
+        ): Boolean {
+            if (isConnected || sessionEndReason == CastSessionEndReason.USER_DISCONNECTED) return false
+            return wasCastConnected || localPlaybackReleasedForCast
+        }
+
+        @JvmStatic
+        internal fun shouldDelayLocalResume(sessionEndReason: CastSessionEndReason): Boolean {
+            return sessionEndReason == CastSessionEndReason.CONNECTION_LOST
+        }
+
+        @JvmStatic
+        internal fun playerMessageForCastEnd(
+            sessionEndReason: CastSessionEndReason,
+            didResumeLocally: Boolean,
+        ): String? {
+            return when (sessionEndReason) {
+                CastSessionEndReason.CONNECTION_LOST -> {
+                    if (didResumeLocally) {
+                        "Cast connection lost. Playback resumed on this device."
+                    } else {
+                        "Cast connection lost."
+                    }
+                }
+                CastSessionEndReason.LOAD_FAILED -> {
+                    if (didResumeLocally) {
+                        "Couldn't start casting. Playback continued on this device."
+                    } else {
+                        "Couldn't start casting."
+                    }
+                }
+                CastSessionEndReason.USER_DISCONNECTED,
+                CastSessionEndReason.NONE,
+                -> null
+            }
+        }
+    }
 
     fun initialize(
         scope: CoroutineScope,
@@ -31,6 +90,7 @@ class VideoPlayerCastManager @Inject constructor(
         onReleasePlayer: () -> Unit,
         onStartCasting: (position: Long) -> Unit,
     ) {
+        releasePlayerCallback = onReleasePlayer
         castManager.initialize()
         scope.launch {
             castManager.castState.collect { castState ->
@@ -47,12 +107,20 @@ class VideoPlayerCastManager @Inject constructor(
         scope: CoroutineScope
     ) {
         val currentState = stateManager.playerState.value
-        val isConnecting = castState.isConnected && !stateManager.playerState.value.isCastConnected
+        val wasCastConnected = currentState.isCastConnected
+        val isConnecting = castState.isConnected && !wasCastConnected && !localPlaybackReleasedForCast
+        val shouldExposeRemoteUi = castState.isConnected && !awaitingRemotePlaybackStart
+
+        if (castState.isConnected) {
+            reconnectGraceJob?.cancel()
+            reconnectGraceJob = null
+            pendingLocalResume = null
+        }
 
         stateManager.updateState { it.copy(
             isCastAvailable = castState.isAvailable,
-            isCasting = castState.isCasting,
-            isCastConnected = castState.isConnected,
+            isCasting = castState.isCasting && shouldExposeRemoteUi,
+            isCastConnected = shouldExposeRemoteUi,
             castDeviceName = castState.deviceName,
             isCastPlaying = castState.isRemotePlaying,
             castPosition = castState.currentPosition,
@@ -66,21 +134,52 @@ class VideoPlayerCastManager @Inject constructor(
 
         if (isConnecting && !hasSentCastLoad) {
             val startPosition = currentState.currentPosition
-            onReleasePlayer()
+            awaitingRemotePlaybackStart = true
             onStartCasting(startPosition)
         }
 
-        if (currentState.isCastConnected && !castState.isConnected) {
+        if ((wasCastConnected || localPlaybackReleasedForCast) && !castState.isConnected) {
             hasSentCastLoad = false
+            awaitingRemotePlaybackStart = false
+            val shouldResumeLocally = shouldResumeLocallyAfterCastEnds(
+                wasCastConnected = wasCastConnected,
+                localPlaybackReleasedForCast = localPlaybackReleasedForCast,
+                isConnected = castState.isConnected,
+                sessionEndReason = castState.sessionEndReason,
+            )
+            localPlaybackReleasedForCast = false
             val resumePosition = castState.currentPosition
             val itemId = currentState.itemId
             val itemName = currentState.itemName
-            if (itemId.isNotEmpty()) {
-                onStartPlayback(itemId, itemName, resumePosition)
+            val playerMessage = playerMessageForCastEnd(
+                sessionEndReason = castState.sessionEndReason,
+                didResumeLocally = shouldResumeLocally && itemId.isNotEmpty(),
+            )
+            val localResume = PendingLocalResume(
+                itemId = itemId,
+                itemName = itemName,
+                resumePosition = resumePosition,
+                message = playerMessage,
+            )
+            if (shouldResumeLocally && itemId.isNotEmpty()) {
+                if (shouldDelayLocalResume(castState.sessionEndReason)) {
+                    scheduleDelayedLocalResume(scope, localResume, onStartPlayback)
+                } else {
+                    performLocalResume(localResume, onStartPlayback)
+                }
+            } else if (playerMessage != null) {
+                stateManager.updateState { it.copy(error = playerMessage) }
             }
         }
 
-        if (castState.isCasting) {
+        if (awaitingRemotePlaybackStart && castState.error != null) {
+            awaitingRemotePlaybackStart = false
+            localPlaybackReleasedForCast = false
+            hasSentCastLoad = false
+            castManager.disconnectCastSession(userInitiated = false)
+        }
+
+        if (castState.isCasting || awaitingRemotePlaybackStart) {
             startCastPositionUpdates(scope)
         } else {
             stopCastPositionUpdates()
@@ -102,6 +201,37 @@ class VideoPlayerCastManager @Inject constructor(
         castPositionJob = null
     }
 
+    private fun scheduleDelayedLocalResume(
+        scope: CoroutineScope,
+        pendingResume: PendingLocalResume,
+        onStartPlayback: (itemId: String, itemName: String, position: Long) -> Unit,
+    ) {
+        reconnectGraceJob?.cancel()
+        pendingLocalResume = pendingResume
+        stateManager.updateState {
+            it.copy(error = "Cast connection interrupted. Reconnecting to receiver...")
+        }
+        reconnectGraceJob = scope.launch(Dispatchers.Main) {
+            delay(CONNECTION_LOSS_RESUME_DELAY_MS)
+            val resume = pendingLocalResume ?: return@launch
+            pendingLocalResume = null
+            reconnectGraceJob = null
+            performLocalResume(resume, onStartPlayback)
+        }
+    }
+
+    private fun performLocalResume(
+        pendingResume: PendingLocalResume,
+        onStartPlayback: (itemId: String, itemName: String, position: Long) -> Unit,
+    ) {
+        if (pendingResume.itemId.isNotEmpty()) {
+            onStartPlayback(pendingResume.itemId, pendingResume.itemName, pendingResume.resumePosition)
+        }
+        pendingResume.message?.let { message ->
+            stateManager.updateState { it.copy(error = message) }
+        }
+    }
+
     fun startCasting(
         mediaItem: MediaItem,
         item: BaseItemDto,
@@ -117,7 +247,19 @@ class VideoPlayerCastManager @Inject constructor(
             sideLoadedSubs = sideLoadedSubs,
             startPositionMs = startPositionMs,
             playSessionId = playSessionId,
-            mediaSourceId = mediaSourceId
+            mediaSourceId = mediaSourceId,
+            onStarted = {
+                if (!localPlaybackReleasedForCast) {
+                    localPlaybackReleasedForCast = true
+                    awaitingRemotePlaybackStart = false
+                    releasePlayerCallback?.invoke()
+                }
+            },
+            onError = {
+                awaitingRemotePlaybackStart = false
+                localPlaybackReleasedForCast = false
+                hasSentCastLoad = false
+            },
         )
         hasSentCastLoad = true
     }
@@ -132,6 +274,11 @@ class VideoPlayerCastManager @Inject constructor(
     fun stopCasting() {
         castManager.stopCasting()
         hasSentCastLoad = false
+        awaitingRemotePlaybackStart = false
+        localPlaybackReleasedForCast = false
+        reconnectGraceJob?.cancel()
+        reconnectGraceJob = null
+        pendingLocalResume = null
         stopCastPositionUpdates()
     }
     fun seekTo(positionMs: Long) = castManager.seekTo(positionMs)

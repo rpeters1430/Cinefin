@@ -73,8 +73,8 @@ class MainAppViewModelLibraryItemTest {
         MockKAnnotations.init(this, relaxUnitFun = true)
         Dispatchers.setMain(dispatcher)
 
-        coEvery { repository.currentServer } returns MutableStateFlow(null)
-        coEvery { repository.isConnected } returns MutableStateFlow(false)
+        coEvery { repository.currentServerFlow } returns MutableStateFlow(null)
+        coEvery { repository.isConnectedFlow } returns MutableStateFlow(false)
 
         viewModel = MainAppViewModel(
             context = context,
