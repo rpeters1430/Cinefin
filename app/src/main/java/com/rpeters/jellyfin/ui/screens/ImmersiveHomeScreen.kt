@@ -19,6 +19,7 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -183,6 +184,8 @@ fun ImmersiveHomeScreen(
             scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(),
             overlayContent = {
                 // Floating settings icon based on scroll direction
+                val haptics = com.rpeters.jellyfin.ui.utils.rememberExpressiveHaptics()
+                
                 androidx.compose.animation.AnimatedVisibility(
                     visible = topBarVisible,
                     enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.expandVertically(),
@@ -190,12 +193,25 @@ fun ImmersiveHomeScreen(
                     modifier = Modifier.align(Alignment.TopEnd),
                 ) {
                     Surface(
-                        onClick = onSettingsClick,
+                        onClick = { 
+                            haptics.lightClick()
+                            onSettingsClick() 
+                        },
                         shape = CircleShape,
                         color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
                         modifier = Modifier
                             .statusBarsPadding()
-                            .padding(horizontal = 12.dp, vertical = 12.dp),
+                            .padding(horizontal = 12.dp, vertical = 12.dp)
+                            .graphicsLayer {
+                                if (android.os.Build.VERSION.SDK_INT >= 31) {
+                                    renderEffect = android.graphics.RenderEffect.createBlurEffect(
+                                        12f, 12f, android.graphics.Shader.TileMode.CLAMP
+                                    ).let { effect ->
+                                        @Suppress("DEPRECATION")
+                                        com.rpeters.jellyfin.ui.utils.asComposeRenderEffect(effect)
+                                    }
+                                }
+                            },
                     ) {
                         Icon(
                             imageVector = Icons.Default.Settings,
@@ -220,7 +236,10 @@ fun ImmersiveHomeScreen(
                         horizontalAlignment = Alignment.End,
                     ) {
                         FloatingActionButton(
-                            onClick = onAiAssistantClick,
+                            onClick = { 
+                                haptics.heavyClick()
+                                onAiAssistantClick() 
+                            },
                             containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                             contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
                             modifier = Modifier.aiAura(),
@@ -231,7 +250,10 @@ fun ImmersiveHomeScreen(
                         }
 
                         FloatingActionButton(
-                            onClick = onSearchClick,
+                            onClick = { 
+                                haptics.lightClick()
+                                onSearchClick() 
+                            },
                             containerColor = MaterialTheme.colorScheme.primaryContainer,
                             contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                         ) {
@@ -431,9 +453,14 @@ private fun ImmersiveHomeContent(
         label = "homeContentBottomPadding",
     )
 
+    val haptics = com.rpeters.jellyfin.ui.utils.rememberExpressiveHaptics()
+
     ExpressivePullToRefreshBox(
         isRefreshing = appState.isLoading,
-        onRefresh = onRefresh,
+        onRefresh = {
+            haptics.heavyClick()
+            onRefresh()
+        },
         modifier = modifier,
         indicatorSize = 48.dp, // Standard expressive size
     ) {
@@ -673,6 +700,8 @@ private fun LibraryRecentSection(
     onItemClick: (BaseItemDto) -> Unit,
     onItemLongPress: (BaseItemDto) -> Unit,
 ) {
+    val haptics = com.rpeters.jellyfin.ui.utils.rememberExpressiveHaptics()
+    
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(
             modifier = Modifier
@@ -698,7 +727,12 @@ private fun LibraryRecentSection(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            FilledTonalButton(onClick = { onLibraryClick(library) }) {
+            FilledTonalButton(
+                onClick = { 
+                    haptics.lightClick()
+                    onLibraryClick(library) 
+                }
+            ) {
                 Text(text = stringResource(R.string.open))
             }
         }
@@ -780,12 +814,43 @@ private fun LibraryExpressiveCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val haptics = com.rpeters.jellyfin.ui.utils.rememberExpressiveHaptics()
+    val sharedTransitionScope = com.rpeters.jellyfin.ui.navigation.LocalSharedTransitionScope.current
+    val animatedVisibilityScope = com.rpeters.jellyfin.ui.navigation.LocalAnimatedVisibilityScope.current
+    val libraryId = library.id.toString()
+    
+    val sharedElementModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null) {
+        with(sharedTransitionScope) {
+            Modifier.sharedElement(
+                rememberSharedContentState(key = "library_$libraryId"),
+                animatedVisibilityScope = animatedVisibilityScope
+            )
+        }
+    } else {
+        Modifier
+    }
+
     ElevatedCard(
-        onClick = onClick,
-        modifier = modifier,
+        onClick = {
+            haptics.lightClick()
+            onClick()
+        },
+        modifier = modifier
+            .then(sharedElementModifier)
+            .graphicsLayer {
+                // Apply glassmorphism blur on Android 12+ (API 31+)
+                if (android.os.Build.VERSION.SDK_INT >= 31) {
+                    renderEffect = android.graphics.RenderEffect.createBlurEffect(
+                        8f, 8f, android.graphics.Shader.TileMode.CLAMP
+                    ).let { effect ->
+                        @Suppress("DEPRECATION")
+                        com.rpeters.jellyfin.ui.utils.asComposeRenderEffect(effect)
+                    }
+                }
+            },
         shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.82f),
         ),
     ) {
         Box(modifier = Modifier.fillMaxSize()) {

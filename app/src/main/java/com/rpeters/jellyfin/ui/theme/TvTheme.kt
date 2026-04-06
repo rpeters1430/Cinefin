@@ -40,6 +40,7 @@ object TvThemeTokens {
 @Immutable
 data class CinefinTvLayoutTokens(
     val drawerWidth: Dp = 300.dp,
+    val collapsedDrawerWidth: Dp = 80.dp,
     val drawerPadding: Dp = 24.dp,
     val drawerItemSpacing: Dp = 14.dp,
     val screenHorizontalPadding: Dp = 72.dp,

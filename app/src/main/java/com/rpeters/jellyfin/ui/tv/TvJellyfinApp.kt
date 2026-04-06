@@ -1,5 +1,11 @@
 package com.rpeters.jellyfin.ui.tv
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,11 +18,15 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -78,10 +88,9 @@ fun TvJellyfinApp(
 @Composable
 fun TvMainScreen(
     navController: NavHostController,
-    showDrawer: Boolean = true,
     modifier: Modifier = Modifier,
+    showDrawer: Boolean = true,
 ) {
-    val layout = CinefinTvTheme.layout
     val focusManager = LocalFocusManager.current
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
@@ -99,9 +108,7 @@ fun TvMainScreen(
             TvNavigationSidebar(
                 navController = navController,
                 selectedItem = selectedItem,
-                modifier = Modifier
-                    .width(layout.drawerWidth)
-                    .fillMaxHeight(),
+                modifier = Modifier.fillMaxHeight(),
             )
         }
 
@@ -164,15 +171,25 @@ private fun TvNavigationSidebar(
     modifier: Modifier = Modifier,
 ) {
     val layout = CinefinTvTheme.layout
+    var hasFocus by remember { mutableStateOf(false) }
+
+    val drawerWidth by animateDpAsState(
+        targetValue = if (hasFocus) layout.drawerWidth else layout.collapsedDrawerWidth,
+        label = "DrawerWidth",
+    )
 
     Column(
-        modifier = modifier.padding(layout.drawerPadding),
+        modifier = modifier
+            .width(drawerWidth)
+            .onFocusChanged { hasFocus = it.hasFocus }
+            .padding(layout.drawerPadding),
         verticalArrangement = Arrangement.spacedBy(layout.drawerItemSpacing),
         horizontalAlignment = Alignment.Start,
     ) {
         TvText(
-            text = "CINEFIN",
+            text = if (hasFocus) "CINEFIN" else "C",
             style = TvMaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
             color = TvMaterialTheme.colorScheme.primary,
             modifier = Modifier.padding(vertical = layout.sectionSpacing),
         )
@@ -181,6 +198,7 @@ private fun TvNavigationSidebar(
             TvSidebarNavItem(
                 item = item,
                 selected = selectedItem == item,
+                expanded = hasFocus,
                 onClick = {
                     navController.navigate(item.route) {
                         popUpTo(navController.graph.findStartDestination().id) {
@@ -204,6 +222,7 @@ private fun TvNavigationSidebar(
 private fun TvSidebarNavItem(
     item: TvNavigationItem,
     selected: Boolean,
+    expanded: Boolean,
     onClick: () -> Unit,
 ) {
     val primaryColor = TvMaterialTheme.colorScheme.primary
@@ -232,11 +251,19 @@ private fun TvSidebarNavItem(
                 contentDescription = item.title,
                 tint = if (selected) primaryColor else onSurface.copy(alpha = 0.8f),
             )
-            TvText(
-                text = item.title,
-                style = TvMaterialTheme.typography.titleMedium,
-                color = if (selected) primaryColor else onSurface.copy(alpha = 0.8f),
-            )
+            AnimatedVisibility(
+                visible = expanded,
+                enter = fadeIn() + expandHorizontally(),
+                exit = fadeOut() + shrinkHorizontally(),
+            ) {
+                TvText(
+                    text = item.title,
+                    style = TvMaterialTheme.typography.titleMedium,
+                    color = if (selected) primaryColor else onSurface.copy(alpha = 0.8f),
+                    maxLines = 1,
+                )
+            }
         }
     }
 }
+

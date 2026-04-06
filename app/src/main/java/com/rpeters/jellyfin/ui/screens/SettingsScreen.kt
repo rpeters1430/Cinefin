@@ -155,6 +155,8 @@ private fun SettingsScreenContent(
     val contentPadding = adaptiveConfig?.contentPadding ?: PaddingValues(horizontal = 16.dp, vertical = 12.dp)
     val sectionSpacing = adaptiveConfig?.sectionSpacing ?: 16.dp
 
+    val haptics = com.rpeters.jellyfin.ui.utils.rememberExpressiveHaptics()
+
     Scaffold(
         topBar = {
             ExpressiveTopAppBar(
@@ -163,7 +165,10 @@ private fun SettingsScreenContent(
                     ExpressiveBackNavigationIcon(onClick = onBackClick)
                 },
                 actions = {
-                    ExpressiveTextButton(onClick = onAppearanceSettingsClick) {
+                    ExpressiveTextButton(onClick = {
+                        haptics.lightClick()
+                        onAppearanceSettingsClick()
+                    }) {
                         Icon(
                             imageVector = Icons.Default.Palette,
                             contentDescription = null,
@@ -173,6 +178,7 @@ private fun SettingsScreenContent(
                         Text(text = stringResource(id = R.string.settings_appearance_title))
                     }
                 },
+                translucent = true,
             )
         },
         modifier = modifier,
@@ -536,8 +542,12 @@ private fun AccountCard(
                     )
                 }
             }
+            val haptics = com.rpeters.jellyfin.ui.utils.rememberExpressiveHaptics()
             ExpressiveFilledButton(
-                onClick = onLogout,
+                onClick = {
+                    haptics.heavyClick()
+                    onLogout()
+                },
                 modifier = Modifier,
             ) {
                 Icon(

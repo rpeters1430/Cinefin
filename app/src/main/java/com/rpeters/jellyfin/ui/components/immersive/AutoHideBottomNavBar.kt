@@ -18,6 +18,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 
 import androidx.compose.animation.animateContentSize
@@ -48,6 +49,8 @@ fun AutoHideBottomNavBar(
     onItemSelected: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val haptics = com.rpeters.jellyfin.ui.utils.rememberExpressiveHaptics()
+    
     AnimatedVisibility(
         visible = visible,
         enter = slideInVertically(
@@ -68,13 +71,25 @@ fun AutoHideBottomNavBar(
     ) {
         Surface(
             shape = MaterialTheme.shapes.extraLarge,
-            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.98f),
-            tonalElevation = 2.dp, // Reduced from 6dp
-            modifier = Modifier.padding(bottom = 8.dp, start = 16.dp, end = 16.dp, top = 0.dp),
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+            tonalElevation = 2.dp,
+            modifier = Modifier
+                .padding(bottom = 12.dp, start = 16.dp, end = 16.dp)
+                .graphicsLayer {
+                    // Apply glassmorphism blur on Android 12+ (API 31+)
+                    if (android.os.Build.VERSION.SDK_INT >= 31) {
+                        renderEffect = android.graphics.RenderEffect.createBlurEffect(
+                            12f, 12f, android.graphics.Shader.TileMode.CLAMP
+                        ).let { effect ->
+                            @Suppress("DEPRECATION")
+                            com.rpeters.jellyfin.ui.utils.asComposeRenderEffect(effect)
+                        }
+                    }
+                },
         ) {
             Box(
                 modifier = Modifier
-                    .padding(horizontal = 4.dp, vertical = 4.dp) // Reduced from 6dp
+                    .padding(horizontal = 4.dp, vertical = 4.dp)
                     .animateContentSize(
                         animationSpec = spring(
                             dampingRatio = Spring.DampingRatioLowBouncy,
@@ -84,17 +99,20 @@ fun AutoHideBottomNavBar(
                 contentAlignment = Alignment.Center,
             ) {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     items.forEachIndexed { index, item ->
                         val isSelected = index == selectedItem
                         
                         Surface(
-                            onClick = { onItemSelected(index) },
+                            onClick = { 
+                                haptics.lightClick()
+                                onItemSelected(index) 
+                            },
                             shape = MaterialTheme.shapes.extraLarge,
-                            color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
-                            modifier = Modifier.size(height = 36.dp, width = if (isSelected) 100.dp else 36.dp) // Reduced height from 40dp
+                            color = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f) else Color.Transparent,
+                            modifier = Modifier.size(height = 40.dp, width = if (isSelected) 110.dp else 40.dp)
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = 8.dp),

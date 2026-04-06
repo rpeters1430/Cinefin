@@ -71,6 +71,16 @@ fun AutoHideTopAppBar(
                 } else {
                     1f
                 }
+                
+                // Apply glassmorphism blur on Android 12+ (API 31+)
+                if (android.os.Build.VERSION.SDK_INT >= 31 && translucent) {
+                    renderEffect = android.graphics.RenderEffect.createBlurEffect(
+                        12f, 12f, android.graphics.Shader.TileMode.CLAMP
+                    ).let { effect ->
+                        @Suppress("DEPRECATION")
+                        com.rpeters.jellyfin.ui.utils.asComposeRenderEffect(effect)
+                    }
+                }
             },
     ) {
         TopAppBar(
@@ -80,8 +90,8 @@ fun AutoHideTopAppBar(
             scrollBehavior = scrollBehavior,
             colors = if (translucent) {
                 TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
-                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.9f),
+                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.8f),
                 )
             } else {
                 TopAppBarDefaults.topAppBarColors()

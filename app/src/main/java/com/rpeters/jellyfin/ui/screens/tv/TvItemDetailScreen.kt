@@ -284,11 +284,11 @@ fun TvItemDetailScreen(
                     horizontalArrangement = Arrangement.spacedBy(48.dp),
                     verticalAlignment = Alignment.Top,
                 ) {
-                    val isVideo = item.type == BaseItemKind.VIDEO
+                    val isVideo = item.type == BaseItemKind.MOVIE || item.type == BaseItemKind.EPISODE || item.type == BaseItemKind.VIDEO
 
                     // Poster / Backdrop Card
-                    val cardWidth = if (isVideo) 400.dp else 280.dp
-                    val cardHeight = if (isVideo) 225.dp else 420.dp
+                    val cardWidth = if (isVideo) 320.dp else 200.dp
+                    val cardHeight = if (isVideo) 180.dp else 300.dp
                     val cardImageUrl = if (isVideo) {
                         item.let { viewModel.getBackdropUrl(it) ?: viewModel.getImageUrl(it) }
                     } else {

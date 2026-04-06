@@ -226,7 +226,7 @@ data class AdaptiveLayoutConfig(
      */
     val continueWatchingCardWidth: Dp
         get() = when {
-            isTV -> 360.dp
+            isTV -> 260.dp
             isTablet || isFoldable -> if (isLandscapeFirst) 320.dp else 300.dp
             windowSizeClass.widthSizeClass == WindowWidthSizeClass.Compact -> {
                 // Check for ultra-compact phones
@@ -240,7 +240,7 @@ data class AdaptiveLayoutConfig(
      */
     val posterCardWidth: Dp
         get() = when {
-            isTV -> 220.dp
+            isTV -> 150.dp
             isTablet || isFoldable -> if (isLandscapeFirst) 180.dp else 160.dp
             windowSizeClass.widthSizeClass == WindowWidthSizeClass.Compact -> {
                 // Check for ultra-compact phones
@@ -254,7 +254,7 @@ data class AdaptiveLayoutConfig(
      */
     val mediaCardWidth: Dp
         get() = when {
-            isTV -> 360.dp
+            isTV -> 260.dp
             isTablet || isFoldable -> if (isLandscapeFirst) 320.dp else 300.dp
             else -> 260.dp
         }
@@ -521,7 +521,7 @@ private fun calculateCarouselItemWidth(
     orientation: ScreenOrientation,
 ): Dp {
     return when {
-        isTV -> if (orientation == ScreenOrientation.TV_LANDSCAPE) 176.dp else 168.dp
+        isTV -> if (orientation == ScreenOrientation.TV_LANDSCAPE) 150.dp else 140.dp
         formFactor == DeviceFormFactor.TABLET || formFactor == DeviceFormFactor.FOLDABLE -> {
             if (orientation == ScreenOrientation.PORTRAIT) 200.dp else 220.dp
         }
@@ -539,7 +539,7 @@ private fun calculateCarouselItemHeight(
     orientation: ScreenOrientation,
 ): Dp {
     return when {
-        isTV -> if (orientation == ScreenOrientation.TV_LANDSCAPE) 264.dp else 252.dp
+        isTV -> if (orientation == ScreenOrientation.TV_LANDSCAPE) 225.dp else 210.dp
         formFactor == DeviceFormFactor.TABLET || formFactor == DeviceFormFactor.FOLDABLE -> {
             if (orientation == ScreenOrientation.PORTRAIT) 300.dp else 320.dp
         }

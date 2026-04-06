@@ -14,8 +14,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.OptInAppExperimentalApis
+import com.rpeters.jellyfin.ui.components.expressiveGlow
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.components.WatchProgressBar
 import com.rpeters.jellyfin.ui.image.ImageSize
@@ -73,21 +75,60 @@ fun ContinueWatchingCard(
     cardWidth: Dp = 240.dp,
     modifier: Modifier = Modifier,
 ) {
+    val haptics = com.rpeters.jellyfin.ui.utils.rememberExpressiveHaptics()
+    val sharedTransitionScope = com.rpeters.jellyfin.ui.navigation.LocalSharedTransitionScope.current
+    val animatedVisibilityScope = com.rpeters.jellyfin.ui.navigation.LocalAnimatedVisibilityScope.current
+    val itemId = item.id.toString()
+    
+    val sharedElementModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null) {
+        with(sharedTransitionScope) {
+            Modifier.sharedElement(
+                rememberSharedContentState(key = "media_$itemId"),
+                animatedVisibilityScope = animatedVisibilityScope
+            )
+        }
+    } else {
+        Modifier
+    }
+
     val watchedPercentage = item.userData?.playedPercentage ?: 0.0
     val imageHeight = cardWidth * (9f / 16f)
 
     ElevatedCard(
-        modifier = modifier.width(cardWidth),
+        modifier = modifier
+            .width(cardWidth)
+            .then(sharedElementModifier)
+            .expressiveGlow(
+                color = MaterialTheme.colorScheme.primary,
+                alpha = 0.1f,
+                borderRadius = 20.dp
+            )
+            .graphicsLayer {
+                if (android.os.Build.VERSION.SDK_INT >= 31) {
+                    renderEffect = android.graphics.RenderEffect.createBlurEffect(
+                        8f, 8f, android.graphics.Shader.TileMode.CLAMP
+                    ).let { effect ->
+                        @Suppress("DEPRECATION")
+                        com.rpeters.jellyfin.ui.utils.asComposeRenderEffect(effect)
+                    }
+                }
+            },
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp),
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.85f),
         ),
     ) {
         Column(
             modifier = Modifier.combinedClickable(
-                onClick = { onItemClick(item) },
-                onLongClick = { onItemLongPress(item) },
+                onClick = { 
+                    haptics.lightClick()
+                    onItemClick(item) 
+                },
+                onLongClick = { 
+                    haptics.heavyClick()
+                    onItemLongPress(item) 
+                },
             ),
         ) {
             Box {

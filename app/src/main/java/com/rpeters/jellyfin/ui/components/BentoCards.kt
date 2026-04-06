@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -25,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -48,17 +50,55 @@ fun BentoFeaturedCard(
     onItemLongPress: (BaseItemDto) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val haptics = com.rpeters.jellyfin.ui.utils.rememberExpressiveHaptics()
+    val sharedTransitionScope = com.rpeters.jellyfin.ui.navigation.LocalSharedTransitionScope.current
+    val animatedVisibilityScope = com.rpeters.jellyfin.ui.navigation.LocalAnimatedVisibilityScope.current
+    val itemId = item.id.toString()
+    
+    val sharedElementModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null) {
+        with(sharedTransitionScope) {
+            Modifier.sharedElement(
+                rememberSharedContentState(key = "media_$itemId"),
+                animatedVisibilityScope = animatedVisibilityScope
+            )
+        }
+    } else {
+        Modifier
+    }
+
     Card(
         modifier = modifier
             .height(240.dp)
             .fillMaxWidth()
+            .then(sharedElementModifier)
+            .expressiveGlow(
+                color = MaterialTheme.colorScheme.primary,
+                alpha = 0.12f,
+                borderRadius = 28.dp
+            )
+            .graphicsLayer {
+                if (android.os.Build.VERSION.SDK_INT >= 31) {
+                    renderEffect = android.graphics.RenderEffect.createBlurEffect(
+                        8f, 8f, android.graphics.Shader.TileMode.CLAMP
+                    ).let { effect ->
+                        @Suppress("DEPRECATION")
+                        com.rpeters.jellyfin.ui.utils.asComposeRenderEffect(effect)
+                    }
+                }
+            }
             .combinedClickable(
-                onClick = { onClick(item) },
-                onLongClick = { onItemLongPress(item) }
+                onClick = { 
+                    haptics.lightClick()
+                    onClick(item) 
+                },
+                onLongClick = { 
+                    haptics.heavyClick()
+                    onItemLongPress(item) 
+                }
             ),
-        shape = MaterialTheme.shapes.extraLarge,
+        shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.85f)
         )
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -142,17 +182,55 @@ fun BentoActionCard(
     modifier: Modifier = Modifier,
     description: String? = null
 ) {
+    val haptics = com.rpeters.jellyfin.ui.utils.rememberExpressiveHaptics()
+    val sharedTransitionScope = com.rpeters.jellyfin.ui.navigation.LocalSharedTransitionScope.current
+    val animatedVisibilityScope = com.rpeters.jellyfin.ui.navigation.LocalAnimatedVisibilityScope.current
+    val itemId = item.id.toString()
+    
+    val sharedElementModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null) {
+        with(sharedTransitionScope) {
+            Modifier.sharedElement(
+                rememberSharedContentState(key = "media_$itemId"),
+                animatedVisibilityScope = animatedVisibilityScope
+            )
+        }
+    } else {
+        Modifier
+    }
+
     Card(
         modifier = modifier
             .height(140.dp)
             .fillMaxWidth()
+            .then(sharedElementModifier)
+            .expressiveGlow(
+                color = MaterialTheme.colorScheme.secondary,
+                alpha = 0.08f,
+                borderRadius = 28.dp
+            )
+            .graphicsLayer {
+                if (android.os.Build.VERSION.SDK_INT >= 31) {
+                    renderEffect = android.graphics.RenderEffect.createBlurEffect(
+                        6f, 6f, android.graphics.Shader.TileMode.CLAMP
+                    ).let { effect ->
+                        @Suppress("DEPRECATION")
+                        com.rpeters.jellyfin.ui.utils.asComposeRenderEffect(effect)
+                    }
+                }
+            }
             .combinedClickable(
-                onClick = { onClick(item) },
-                onLongClick = { onItemLongPress(item) }
+                onClick = { 
+                    haptics.lightClick()
+                    onClick(item) 
+                },
+                onLongClick = { 
+                    haptics.heavyClick()
+                    onItemLongPress(item) 
+                }
             ),
-        shape = MaterialTheme.shapes.extraLarge,
+        shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer
+            containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.85f)
         )
     ) {
         Column(
@@ -207,17 +285,42 @@ fun BentoWideCard(
     item: BaseItemDto? = null,
     modifier: Modifier = Modifier
 ) {
+    val haptics = com.rpeters.jellyfin.ui.utils.rememberExpressiveHaptics()
+
     Card(
         modifier = modifier
             .height(100.dp)
             .fillMaxWidth()
+            .expressiveGlow(
+                color = MaterialTheme.colorScheme.tertiary,
+                alpha = 0.1f,
+                borderRadius = 28.dp
+            )
+            .graphicsLayer {
+                if (android.os.Build.VERSION.SDK_INT >= 31) {
+                    renderEffect = android.graphics.RenderEffect.createBlurEffect(
+                        10f, 10f, android.graphics.Shader.TileMode.CLAMP
+                    ).let { effect ->
+                        @Suppress("DEPRECATION")
+                        com.rpeters.jellyfin.ui.utils.asComposeRenderEffect(effect)
+                    }
+                }
+            }
             .combinedClickable(
-                onClick = { onClick() },
-                onLongClick = { item?.let { onItemLongPress(it) } }
+                onClick = { 
+                    haptics.lightClick()
+                    onClick() 
+                },
+                onLongClick = { 
+                    item?.let { 
+                        haptics.heavyClick()
+                        onItemLongPress(it) 
+                    } 
+                }
             ),
-        shape = MaterialTheme.shapes.extraLarge,
+        shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.tertiaryContainer
+            containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.85f)
         )
     ) {
         Row(

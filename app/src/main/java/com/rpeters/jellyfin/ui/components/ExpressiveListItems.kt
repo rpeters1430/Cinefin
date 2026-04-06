@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.rpeters.jellyfin.ui.utils.rememberExpressiveHaptics
 
 /**
  * Shared list item wrappers built on official Material 3 `ListItem`, `Checkbox`, `Switch`, and
@@ -47,11 +48,19 @@ fun ExpressiveMediaListItem(
     onClick: () -> Unit = {},
     onLongClick: (() -> Unit)? = null,
 ) {
+    val haptics = rememberExpressiveHaptics()
+    
     val clickModifier = modifier
         .fillMaxWidth()
         .combinedClickable(
-            onClick = onClick,
-            onLongClick = onLongClick,
+            onClick = {
+                haptics.lightClick()
+                onClick()
+            },
+            onLongClick = {
+                haptics.heavyClick()
+                onLongClick?.invoke()
+            },
         )
 
     ListItem(
@@ -116,6 +125,8 @@ fun ExpressiveCheckableListItem(
     subtitle: String? = null,
     enabled: Boolean = true,
 ) {
+    val haptics = rememberExpressiveHaptics()
+
     ListItem(
         headlineContent = {
             Text(
@@ -123,7 +134,14 @@ fun ExpressiveCheckableListItem(
                 style = MaterialTheme.typography.titleMedium,
             )
         },
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .combinedClickable(
+                onClick = {
+                    haptics.lightClick()
+                    onCheckedChange(!checked)
+                }
+            ),
         supportingContent = subtitle?.let {
             {
                 Text(
@@ -136,7 +154,10 @@ fun ExpressiveCheckableListItem(
         leadingContent = {
             Checkbox(
                 checked = checked,
-                onCheckedChange = onCheckedChange,
+                onCheckedChange = { 
+                    haptics.lightClick()
+                    onCheckedChange(it) 
+                },
                 enabled = enabled,
             )
         },
@@ -159,6 +180,8 @@ fun ExpressiveSwitchListItem(
     enabled: Boolean = true,
     leadingIcon: ImageVector? = null,
 ) {
+    val haptics = rememberExpressiveHaptics()
+
     ListItem(
         headlineContent = {
             Text(
@@ -166,7 +189,14 @@ fun ExpressiveSwitchListItem(
                 style = MaterialTheme.typography.titleMedium,
             )
         },
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .combinedClickable(
+                onClick = {
+                    haptics.lightClick()
+                    onCheckedChange(!checked)
+                }
+            ),
         supportingContent = subtitle?.let {
             {
                 Text(
@@ -189,7 +219,10 @@ fun ExpressiveSwitchListItem(
         trailingContent = {
             Switch(
                 checked = checked,
-                onCheckedChange = onCheckedChange,
+                onCheckedChange = {
+                    haptics.lightClick()
+                    onCheckedChange(it)
+                },
                 enabled = enabled,
             )
         },
@@ -211,6 +244,8 @@ fun ExpressiveRadioListItem(
     subtitle: String? = null,
     leadingIcon: ImageVector? = null,
 ) {
+    val haptics = rememberExpressiveHaptics()
+
     ListItem(
         headlineContent = {
             Text(
@@ -222,7 +257,10 @@ fun ExpressiveRadioListItem(
             .fillMaxWidth()
             .selectable(
                 selected = selected,
-                onClick = onSelect,
+                onClick = {
+                    haptics.lightClick()
+                    onSelect()
+                },
                 role = Role.RadioButton,
             ),
         supportingContent = subtitle?.let {
@@ -269,6 +307,8 @@ fun ExpressiveSegmentedListItem(
     isSelected: Boolean = false,
     onClick: () -> Unit = {},
 ) {
+    val haptics = rememberExpressiveHaptics()
+    
     val containerColor = if (isSelected) {
         MaterialTheme.colorScheme.primaryContainer
     } else {
@@ -301,63 +341,26 @@ fun ExpressiveSegmentedListItem(
                 )
             }
         },
-        modifier = modifier
-            .fillMaxWidth()
-            .combinedClickable(onClick = onClick),
         supportingContent = subtitle?.let {
             {
                 Text(
                     text = it,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         },
         colors = ListItemDefaults.colors(
             containerColor = containerColor,
         ),
+        modifier = modifier
+            .fillMaxWidth()
+            .combinedClickable(
+                onClick = {
+                    haptics.lightClick()
+                    onClick()
+                }
+            ),
     )
 }
-
-/**
- * Example usage for library sections with shared list item wrappers.
- */
-@Composable
-fun MediaLibrarySection(
-    sectionTitle: String,
-    items: List<MediaListItemData>,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
-        Text(
-            text = sectionTitle,
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-        )
-
-        items.forEach { item ->
-            ExpressiveMediaListItem(
-                title = item.title,
-                subtitle = item.subtitle,
-                overline = item.overline,
-                leadingIcon = item.icon,
-                onClick = item.onClick,
-            )
-        }
-    }
-}
-
-/**
- * Data class for media list items
- */
-data class MediaListItemData(
-    val title: String,
-    val subtitle: String? = null,
-    val overline: String? = null,
-    val icon: ImageVector? = null,
-    val onClick: () -> Unit = {},
-)

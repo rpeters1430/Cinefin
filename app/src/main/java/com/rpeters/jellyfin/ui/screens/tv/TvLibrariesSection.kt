@@ -69,7 +69,7 @@ fun TvLibraryCard(
 
     Card(
         modifier = modifier
-            .width(200.dp)
+            .width(160.dp)
             .onFocusChanged { isFocused = it.isFocused },
         onClick = { onLibrarySelect(library.id.toString()) },
         scale = CardDefaults.scale(focusedScale = 1.1f),

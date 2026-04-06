@@ -162,8 +162,8 @@ fun TvContentCard(
     modifier: Modifier = Modifier,
     focusRequester: FocusRequester? = null,
     isFocused: Boolean = false,
-    posterWidth: Dp = 200.dp,
-    posterHeight: Dp = 300.dp,
+    posterWidth: Dp = 150.dp,
+    posterHeight: Dp = 225.dp,
 ) {
     val imageUrl = if (item.type == org.jellyfin.sdk.model.api.BaseItemKind.EPISODE) {
         getImageUrl(item) ?: getSeriesImageUrl(item)

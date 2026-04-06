@@ -59,6 +59,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
@@ -186,13 +189,25 @@ private fun ExpressiveTopControls(
         modifier = modifier,
     ) {
         Surface(
-            color = Color.Transparent,
-            modifier = Modifier.fillMaxWidth(),
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.45f),
+            modifier = Modifier
+                .fillMaxWidth()
+                .graphicsLayer {
+                    if (android.os.Build.VERSION.SDK_INT >= 31) {
+                        renderEffect = android.graphics.RenderEffect.createBlurEffect(
+                            16f, 16f, android.graphics.Shader.TileMode.CLAMP
+                        ).let { effect ->
+                            @Suppress("DEPRECATION")
+                            com.rpeters.jellyfin.ui.utils.asComposeRenderEffect(effect)
+                        }
+                    }
+                },
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .statusBarsPadding()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 // Left side - Back button and title
@@ -327,12 +342,24 @@ private fun ExpressiveBottomControls(
         modifier = modifier,
     ) {
         Surface(
-            color = Color.Transparent,
-            modifier = Modifier.fillMaxWidth(),
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.45f),
+            modifier = Modifier
+                .fillMaxWidth()
+                .graphicsLayer {
+                    if (android.os.Build.VERSION.SDK_INT >= 31) {
+                        renderEffect = android.graphics.RenderEffect.createBlurEffect(
+                            16f, 16f, android.graphics.Shader.TileMode.CLAMP
+                        ).let { effect ->
+                            @Suppress("DEPRECATION")
+                            com.rpeters.jellyfin.ui.utils.asComposeRenderEffect(effect)
+                        }
+                    }
+                },
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .navigationBarsPadding()
                     .padding(horizontal = 16.dp, vertical = 12.dp),
             ) {
                 val effectiveDuration = playerState.duration.takeIf { it > 0L }

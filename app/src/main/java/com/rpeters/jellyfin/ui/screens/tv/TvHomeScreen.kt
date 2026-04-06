@@ -146,8 +146,8 @@ fun TvHomeScreen(
                                         getSeriesImageUrl = viewModel::getSeriesImageUrl,
                                         focusRequester = focusRequester,
                                         isFocused = isFocused,
-                                        posterWidth = 320.dp,
-                                        posterHeight = 180.dp
+                                        posterWidth = 260.dp,
+                                        posterHeight = 146.dp
                                     )
                                 }
                             )
@@ -179,8 +179,8 @@ fun TvHomeScreen(
                                         getSeriesImageUrl = viewModel::getSeriesImageUrl,
                                         focusRequester = focusRequester,
                                         isFocused = isFocused,
-                                        posterWidth = 180.dp,
-                                        posterHeight = 270.dp
+                                        posterWidth = 150.dp,
+                                        posterHeight = 225.dp
                                     )
                                 }
                             )
@@ -212,8 +212,8 @@ fun TvHomeScreen(
                                         getSeriesImageUrl = viewModel::getSeriesImageUrl,
                                         focusRequester = focusRequester,
                                         isFocused = isFocused,
-                                        posterWidth = 180.dp,
-                                        posterHeight = 270.dp
+                                        posterWidth = 150.dp,
+                                        posterHeight = 225.dp
                                     )
                                 }
                             )
@@ -245,8 +245,8 @@ fun TvHomeScreen(
                                         getSeriesImageUrl = viewModel::getSeriesImageUrl,
                                         focusRequester = focusRequester,
                                         isFocused = isFocused,
-                                        posterWidth = 280.dp,
-                                        posterHeight = 158.dp
+                                        posterWidth = 240.dp,
+                                        posterHeight = 135.dp
                                     )
                                 }
                             )
@@ -317,7 +317,7 @@ private fun LibraryCard(
     Card(
         onClick = onClick,
         modifier = Modifier
-            .size(200.dp, 100.dp)
+            .size(160.dp, 80.dp)
             .focusRequester(focusRequester),
         colors = CardDefaults.colors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),

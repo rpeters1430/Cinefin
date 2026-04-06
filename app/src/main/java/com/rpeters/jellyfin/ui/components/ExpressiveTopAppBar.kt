@@ -21,6 +21,7 @@ import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -39,12 +40,13 @@ fun ExpressiveTopAppBar(
     modifier: Modifier = Modifier,
     navigationIcon: @Composable (() -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
+    translucent: Boolean = false,
 ) {
     TopAppBar(
         title = {
             Surface(
                 shape = CircleShape,
-                color = MaterialTheme.colorScheme.primaryContainer,
+                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = if (translucent) 0.8f else 1f),
             ) {
                 Text(
                     text = title,
@@ -60,9 +62,22 @@ fun ExpressiveTopAppBar(
         navigationIcon = navigationIcon ?: {},
         actions = actions,
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = Color.Transparent,
+            containerColor = if (translucent) MaterialTheme.colorScheme.surface.copy(alpha = 0.7f) else Color.Transparent,
         ),
-        modifier = modifier,
+        modifier = modifier.then(
+            if (translucent) {
+                Modifier.graphicsLayer {
+                    if (android.os.Build.VERSION.SDK_INT >= 31) {
+                        renderEffect = android.graphics.RenderEffect.createBlurEffect(
+                            12f, 12f, android.graphics.Shader.TileMode.CLAMP
+                        ).let { effect ->
+                            @Suppress("DEPRECATION")
+                            com.rpeters.jellyfin.ui.utils.asComposeRenderEffect(effect)
+                        }
+                    }
+                }
+            } else Modifier
+        ),
     )
 }
 
@@ -76,12 +91,13 @@ fun ExpressiveLargeTopAppBar(
     navigationIcon: @Composable (() -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
     scrollBehavior: TopAppBarScrollBehavior? = null,
+    translucent: Boolean = false,
 ) {
     LargeTopAppBar(
         title = {
             Surface(
                 shape = CircleShape,
-                color = MaterialTheme.colorScheme.primaryContainer,
+                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = if (translucent) 0.8f else 1f),
             ) {
                 Text(
                     text = title,
@@ -98,10 +114,23 @@ fun ExpressiveLargeTopAppBar(
         actions = actions,
         scrollBehavior = scrollBehavior,
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = Color.Transparent,
-            scrolledContainerColor = Color.Transparent,
+            containerColor = if (translucent) MaterialTheme.colorScheme.surface.copy(alpha = 0.7f) else Color.Transparent,
+            scrolledContainerColor = if (translucent) MaterialTheme.colorScheme.surface.copy(alpha = 0.8f) else Color.Transparent,
         ),
-        modifier = modifier,
+        modifier = modifier.then(
+            if (translucent) {
+                Modifier.graphicsLayer {
+                    if (android.os.Build.VERSION.SDK_INT >= 31) {
+                        renderEffect = android.graphics.RenderEffect.createBlurEffect(
+                            12f, 12f, android.graphics.Shader.TileMode.CLAMP
+                        ).let { effect ->
+                            @Suppress("DEPRECATION")
+                            com.rpeters.jellyfin.ui.utils.asComposeRenderEffect(effect)
+                        }
+                    }
+                }
+            } else Modifier
+        ),
     )
 }
 

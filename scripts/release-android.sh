@@ -5,6 +5,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BUILD_FILE="$ROOT_DIR/app/build.gradle.kts"
 BUNDLE_PATH="$ROOT_DIR/app/build/outputs/bundle/release/app-release.aab"
+GRADLE_RELEASE_CMD=("./gradlew" "--no-daemon" "bundleRelease")
 
 SKIP_PUSH=0
 SKIP_RELEASE=0
@@ -225,7 +226,18 @@ git commit -m "$commit_message"
 release_committed=1
 
 echo "Building signed release bundle..."
-./gradlew bundleRelease
+if ! "${GRADLE_RELEASE_CMD[@]}"; then
+  cat >&2 <<EOF
+
+Release build failed after creating the local release commit.
+  Commit: $commit_message
+  Branch: $current_branch
+
+The version bump commit was intentionally kept in place because the release flow commits before building.
+Fix the build issue, then rerun the release or adjust the commit manually if needed.
+EOF
+  exit 1
+fi
 
 if [[ ! -f "$BUNDLE_PATH" ]]; then
   echo "Release bundle not found after build: $BUNDLE_PATH" >&2

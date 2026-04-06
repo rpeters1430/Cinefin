@@ -87,12 +87,17 @@ fun ExpressiveFloatingNavBar(
                             it.route == item.route
                         } == true
                         
+                        val haptics = com.rpeters.jellyfin.ui.utils.rememberExpressiveHaptics()
+                        
                         ExpressiveNavBarButton(
                             icon = item.icon.icon,
                             contentDescription = item.title,
                             label = item.title,
                             selected = isSelected,
-                            onClick = { onNavigate(item) }
+                            onClick = { 
+                                haptics.lightClick()
+                                onNavigate(item) 
+                            }
                         )
                     }
                 }
