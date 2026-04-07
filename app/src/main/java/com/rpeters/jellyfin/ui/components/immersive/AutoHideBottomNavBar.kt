@@ -18,7 +18,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 
 import androidx.compose.animation.animateContentSize
@@ -33,7 +33,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
@@ -74,18 +73,7 @@ fun AutoHideBottomNavBar(
             color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
             tonalElevation = 2.dp,
             modifier = Modifier
-                .padding(bottom = 12.dp, start = 16.dp, end = 16.dp)
-                .graphicsLayer {
-                    // Apply glassmorphism blur on Android 12+ (API 31+)
-                    if (android.os.Build.VERSION.SDK_INT >= 31) {
-                        renderEffect = android.graphics.RenderEffect.createBlurEffect(
-                            12f, 12f, android.graphics.Shader.TileMode.CLAMP
-                        ).let { effect ->
-                            @Suppress("DEPRECATION")
-                            com.rpeters.jellyfin.ui.utils.asComposeRenderEffect(effect)
-                        }
-                    }
-                },
+                .padding(bottom = 12.dp, start = 16.dp, end = 16.dp),
         ) {
             Box(
                 modifier = Modifier

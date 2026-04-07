@@ -21,7 +21,6 @@ import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -64,20 +63,7 @@ fun ExpressiveTopAppBar(
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = if (translucent) MaterialTheme.colorScheme.surface.copy(alpha = 0.7f) else Color.Transparent,
         ),
-        modifier = modifier.then(
-            if (translucent) {
-                Modifier.graphicsLayer {
-                    if (android.os.Build.VERSION.SDK_INT >= 31) {
-                        renderEffect = android.graphics.RenderEffect.createBlurEffect(
-                            12f, 12f, android.graphics.Shader.TileMode.CLAMP
-                        ).let { effect ->
-                            @Suppress("DEPRECATION")
-                            com.rpeters.jellyfin.ui.utils.asComposeRenderEffect(effect)
-                        }
-                    }
-                }
-            } else Modifier
-        ),
+        modifier = modifier,
     )
 }
 
@@ -117,20 +103,7 @@ fun ExpressiveLargeTopAppBar(
             containerColor = if (translucent) MaterialTheme.colorScheme.surface.copy(alpha = 0.7f) else Color.Transparent,
             scrolledContainerColor = if (translucent) MaterialTheme.colorScheme.surface.copy(alpha = 0.8f) else Color.Transparent,
         ),
-        modifier = modifier.then(
-            if (translucent) {
-                Modifier.graphicsLayer {
-                    if (android.os.Build.VERSION.SDK_INT >= 31) {
-                        renderEffect = android.graphics.RenderEffect.createBlurEffect(
-                            12f, 12f, android.graphics.Shader.TileMode.CLAMP
-                        ).let { effect ->
-                            @Suppress("DEPRECATION")
-                            com.rpeters.jellyfin.ui.utils.asComposeRenderEffect(effect)
-                        }
-                    }
-                }
-            } else Modifier
-        ),
+        modifier = modifier,
     )
 }
 

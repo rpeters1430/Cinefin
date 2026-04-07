@@ -71,16 +71,6 @@ fun AutoHideTopAppBar(
                 } else {
                     1f
                 }
-                
-                // Apply glassmorphism blur on Android 12+ (API 31+)
-                if (android.os.Build.VERSION.SDK_INT >= 31 && translucent) {
-                    renderEffect = android.graphics.RenderEffect.createBlurEffect(
-                        12f, 12f, android.graphics.Shader.TileMode.CLAMP
-                    ).let { effect ->
-                        @Suppress("DEPRECATION")
-                        com.rpeters.jellyfin.ui.utils.asComposeRenderEffect(effect)
-                    }
-                }
             },
     ) {
         TopAppBar(
