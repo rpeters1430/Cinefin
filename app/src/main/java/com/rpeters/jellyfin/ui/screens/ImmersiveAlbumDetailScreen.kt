@@ -264,14 +264,30 @@ fun ImmersiveAlbumDetailScreen(
 
                 // Track List Header
                 item(key = "track_list_header", contentType = "header") {
-                    Text(
-                        text = "Tracks",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
+                    Row(
                         modifier = Modifier
+                            .fillMaxWidth()
                             .padding(horizontal = ImmersiveDimens.SpacingContentPadding)
                             .padding(top = 32.dp, bottom = 16.dp),
-                    )
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = "Tracks",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Surface(
+                            shape = RoundedCornerShape(999.dp),
+                            color = MusicGreen.copy(alpha = 0.14f),
+                        ) {
+                            Text(
+                                text = "${state.tracks.size} songs",
+                                style = MaterialTheme.typography.labelLarge,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                            )
+                        }
+                    }
                 }
 
                 // Track List
@@ -349,13 +365,19 @@ private fun ImmersiveTrackItem(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Track Number
-            Text(
-                text = trackNumber.toString(),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.width(32.dp),
-            )
+            Surface(
+                shape = CircleShape,
+                color = MusicGreen.copy(alpha = 0.12f),
+                modifier = Modifier.size(38.dp),
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(
+                        text = trackNumber.toString(),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MusicGreen,
+                    )
+                }
+            }
 
             // Track Info
             Column(
@@ -379,16 +401,20 @@ private fun ImmersiveTrackItem(
                 )
             }
 
-            // Duration
             duration?.let {
-                Text(
-                    text = it,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Surface(
+                    shape = RoundedCornerShape(999.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                ) {
+                    Text(
+                        text = it,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    )
+                }
             }
 
-            // Favorite Button
             IconButton(
                 onClick = onFavoriteClick,
                 modifier = Modifier.size(40.dp),
@@ -415,7 +441,11 @@ private fun ImmersiveAlbumActionButton(
         modifier = modifier,
         shape = RoundedCornerShape(ImmersiveDimens.CornerRadiusCinematic),
         colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            containerColor = if (label == "Download") {
+                MaterialTheme.colorScheme.surfaceContainerHighest
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant
+            },
         ),
         elevation = CardDefaults.elevatedCardElevation(
             defaultElevation = 2.dp,
@@ -432,7 +462,11 @@ private fun ImmersiveAlbumActionButton(
             Icon(
                 imageVector = icon,
                 contentDescription = label,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = if (label == "Favorite" || label == "Favorited") {
+                    MusicGreen
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
                 modifier = Modifier.size(28.dp),
             )
             Text(

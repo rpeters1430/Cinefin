@@ -321,6 +321,7 @@ class AudioServiceConnection @Inject constructor(
         progressUpdateJob = controllerScope.launch {
             while (isActive) {
                 mediaController?.let { controller ->
+                    updatePlaybackState(controller)
                     val position = controller.currentPosition
                     val duration = controller.duration
                     if (duration > 0 && currentTrackingItemId != null) {

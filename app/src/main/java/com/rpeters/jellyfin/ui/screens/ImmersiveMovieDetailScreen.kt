@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.OptIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -41,7 +42,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -62,7 +62,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.annotation.OptIn
 import androidx.media3.common.util.UnstableApi
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.ui.components.AiSummaryCard
@@ -86,7 +85,6 @@ import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.MediaStreamType
 import org.jellyfin.sdk.model.api.PersonKind
-import org.jellyfin.sdk.model.api.UserItemDataDto
 import java.util.UUID
 
 @OptIn(UnstableApi::class)
@@ -159,7 +157,7 @@ fun ImmersiveMovieDetailScreen(
         aiSummary = aiSummary,
         isLoadingAiSummary = isLoadingAiSummary,
         animatedVisibilityScope = animatedVisibilityScope,
-        downloadsViewModel = downloadsViewModel
+        downloadsViewModel = downloadsViewModel,
     )
 }
 
@@ -201,7 +199,7 @@ private fun ImmersiveMovieDetailContent(
     downloadsViewModel: DownloadsViewModel? = null,
 ) {
     androidx.compose.runtime.CompositionLocalProvider(
-        com.rpeters.jellyfin.ui.navigation.LocalAnimatedVisibilityScope provides animatedVisibilityScope
+        com.rpeters.jellyfin.ui.navigation.LocalAnimatedVisibilityScope provides animatedVisibilityScope,
     ) {
         val context = LocalContext.current
         var isFavorite by remember(movie.id) { mutableStateOf(movie.userData?.isFavorite == true) }
@@ -214,7 +212,7 @@ private fun ImmersiveMovieDetailContent(
 
         // Permission launcher for downloads
         val permissionLauncher = rememberLauncherForActivityResult(
-            ActivityResultContracts.RequestPermission()
+            ActivityResultContracts.RequestPermission(),
         ) { isGranted ->
             if (isGranted) {
                 showDownloadQualityDialog = true
@@ -310,20 +308,22 @@ private fun ImmersiveMovieDetailContent(
                                     .padding(horizontal = 16.dp, vertical = 8.dp),
                                 verticalArrangement = Arrangement.spacedBy(16.dp),
                             ) {
-                                WhyYoullLoveThisCard(
-                                    pitch = whyYoullLoveThis,
-                                    isLoading = isLoadingWhyYoullLoveThis,
-                                )
+                                if (isLoadingWhyYoullLoveThis || !whyYoullLoveThis.isNullOrBlank()) {
+                                    WhyYoullLoveThisCard(
+                                        pitch = whyYoullLoveThis,
+                                        isLoading = isLoadingWhyYoullLoveThis,
+                                    )
+                                }
 
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
+                                    verticalAlignment = Alignment.CenterVertically,
                                 ) {
                                     Text(
                                         text = "AI Summary",
                                         style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold
+                                        fontWeight = FontWeight.Bold,
                                     )
                                     TextButton(onClick = onGenerateAiSummary, enabled = !isLoadingAiSummary) {
                                         Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
@@ -332,10 +332,12 @@ private fun ImmersiveMovieDetailContent(
                                     }
                                 }
 
-                                AiSummaryCard(
-                                    summary = aiSummary,
-                                    isLoading = isLoadingAiSummary,
-                                )
+                                if (isLoadingAiSummary || !aiSummary.isNullOrBlank()) {
+                                    AiSummaryCard(
+                                        summary = aiSummary,
+                                        isLoading = isLoadingAiSummary,
+                                    )
+                                }
                             }
                         }
                     }
@@ -452,11 +454,11 @@ private fun ImmersiveMovieDetailContent(
                                         text = "More Like This",
                                         style = MaterialTheme.typography.titleLarge,
                                         fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 16.dp)
+                                        modifier = Modifier.padding(horizontal = 16.dp),
                                     )
                                     androidx.compose.foundation.lazy.LazyRow(
                                         contentPadding = PaddingValues(horizontal = 16.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                                     ) {
                                         items(relatedItems) { relatedMovie ->
                                             com.rpeters.jellyfin.ui.components.immersive.ImmersiveMediaCard(

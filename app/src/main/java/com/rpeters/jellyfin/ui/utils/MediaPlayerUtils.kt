@@ -12,6 +12,7 @@ import androidx.media3.common.MediaMetadata
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.preferences.PlaybackPreferencesRepository
+import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
 import com.rpeters.jellyfin.ui.player.VideoPlayerActivity
 import com.rpeters.jellyfin.ui.player.audio.AudioService
 import com.rpeters.jellyfin.ui.player.audio.AudioServiceConnection
@@ -39,7 +40,7 @@ object MediaPlayerUtils {
         streamUrl: String,
         item: BaseItemDto,
         subtitleIndex: Int? = null,
-        startPosition: Long? = null
+        startPosition: Long? = null,
     ) {
         if (item.type == BaseItemKind.AUDIO || item.type == BaseItemKind.MUSIC_ALBUM || item.type == BaseItemKind.AUDIO_BOOK) {
             playAudio(context, streamUrl, item)
@@ -91,18 +92,29 @@ object MediaPlayerUtils {
     private fun playAudio(context: Context, streamUrl: String, item: BaseItemDto) {
         val applicationContext = context.applicationContext
 
-        val connection = EntryPointAccessors.fromApplication(
+        val entryPoint = EntryPointAccessors.fromApplication(
             applicationContext,
             AudioServiceConnectionEntryPoint::class.java,
-        ).audioServiceConnection()
+        )
+        val connection = entryPoint.audioServiceConnection()
 
-        val mediaItem = buildAudioMediaItem(item, streamUrl)
+        val artworkItemId = when {
+            item.type == BaseItemKind.AUDIO && item.albumId != null -> item.albumId.toString()
+            else -> item.id.toString()
+        }
+        val artworkUrl = entryPoint.jellyfinStreamRepository().getImageUrl(artworkItemId, "Primary", null)
+        val mediaItem = buildAudioMediaItem(item, streamUrl, artworkUrl)
         connection.playNow(mediaItem)
     }
 
-    private fun buildAudioMediaItem(item: BaseItemDto, streamUrl: String): MediaItem {
+    private fun buildAudioMediaItem(
+        item: BaseItemDto,
+        streamUrl: String,
+        artworkUrl: String?,
+    ): MediaItem {
         val extras = Bundle().apply {
             putString(AudioService.EXTRA_STREAM_URL, streamUrl)
+            putString(AudioService.EXTRA_ARTWORK_URI, artworkUrl)
             putString(AudioService.EXTRA_ITEM_ID, item.id.toString())
             putString(AudioService.EXTRA_ITEM_NAME, item.name)
             putString(AudioService.EXTRA_ALBUM_NAME, item.album ?: item.albumId?.toString())
@@ -114,6 +126,8 @@ object MediaPlayerUtils {
             .setTitle(item.name)
             .setArtist(item.albumArtist ?: item.artists?.joinToString(", "))
             .setAlbumTitle(item.album)
+            .setArtworkUri(artworkUrl?.toUri())
+            .setDurationMs((item.runTimeTicks ?: 0L) / 10_000)
             .setExtras(extras)
             .build()
 
@@ -260,6 +274,7 @@ class MediaPlayerException(message: String, cause: Throwable? = null) : Exceptio
 @InstallIn(SingletonComponent::class)
 interface AudioServiceConnectionEntryPoint {
     fun audioServiceConnection(): AudioServiceConnection
+    fun jellyfinStreamRepository(): JellyfinStreamRepository
 }
 
 @EntryPoint

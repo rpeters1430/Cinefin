@@ -1,9 +1,11 @@
 package com.rpeters.jellyfin.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -13,6 +15,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -25,12 +29,12 @@ import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -53,11 +57,15 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.media3.common.Player
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.ui.components.ExpressiveBlurSurface
 import com.rpeters.jellyfin.ui.components.ExpressiveContentCard
 import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBar
 import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBarAction
+import com.rpeters.jellyfin.ui.components.ExpressiveWavyLinearProgress
 import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
 import com.rpeters.jellyfin.ui.image.rememberScreenWidthHeight
+import com.rpeters.jellyfin.ui.theme.JellyfinExpressiveTheme
+import com.rpeters.jellyfin.ui.theme.MusicGreen
 import com.rpeters.jellyfin.ui.viewmodel.AudioPlaybackViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -128,34 +136,47 @@ fun NowPlayingScreen(
                     Brush.verticalGradient(
                         colors = listOf(
                             MaterialTheme.colorScheme.surface,
+                            MaterialTheme.colorScheme.surfaceContainerLow,
                             MaterialTheme.colorScheme.surfaceVariant,
                         ),
                     ),
                 ),
         ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.radialGradient(
+                            colors = listOf(
+                                MusicGreen.copy(alpha = 0.26f),
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
+                                Color.Transparent,
+                            ),
+                            radius = 1100f,
+                        ),
+                    ),
+            )
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(24.dp),
+                    .padding(horizontal = 24.dp, vertical = 20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.SpaceBetween,
             ) {
-                // Album Art
                 AlbumArtSection(
                     currentMediaItem = playbackState.currentMediaItem,
                     modifier = Modifier.weight(1f),
                 )
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(28.dp))
 
-                // Track Information
                 TrackInfoSection(
                     currentMediaItem = playbackState.currentMediaItem,
+                    queueSize = queue.size,
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Progress Bar
                 ProgressSection(
                     currentPosition = if (isSeeking) seekPosition else currentPosition,
                     duration = duration,
@@ -167,9 +188,8 @@ fun NowPlayingScreen(
                     },
                 )
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
-                // Playback Controls
                 PlaybackControlsSection(
                     isPlaying = playbackState.isPlaying,
                     shuffleEnabled = playbackState.shuffleEnabled,
@@ -181,7 +201,7 @@ fun NowPlayingScreen(
                     onRepeatClick = { viewModel.toggleRepeat() },
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
             }
         }
     }
@@ -196,12 +216,32 @@ private fun AlbumArtSection(
         modifier = modifier.fillMaxWidth(),
         contentAlignment = Alignment.Center,
     ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(0.92f)
+                .aspectRatio(1f)
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(
+                            MusicGreen.copy(alpha = 0.32f),
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
+                            Color.Transparent,
+                        ),
+                    ),
+                    shape = CircleShape,
+                ),
+        )
         ExpressiveContentCard(
             modifier = Modifier
-                .fillMaxWidth(0.85f)
-                .aspectRatio(1f),
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-            shape = MaterialTheme.shapes.large,
+                .fillMaxWidth(0.84f)
+                .aspectRatio(1f)
+                .border(
+                    width = 1.dp,
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+                    shape = RoundedCornerShape(36.dp),
+                ),
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.88f),
+            shape = RoundedCornerShape(36.dp),
         ) {
             if (currentMediaItem != null) {
                 JellyfinAsyncImage(
@@ -234,6 +274,7 @@ private fun AlbumArtSection(
 @Composable
 private fun TrackInfoSection(
     currentMediaItem: androidx.media3.common.MediaItem?,
+    queueSize: Int,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -267,6 +308,27 @@ private fun TrackInfoSection(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        FlowRow(
+            horizontalArrangement = Arrangement.Center,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            PlaybackMetaChip(
+                label = currentMediaItem?.mediaMetadata?.artist?.toString()?.takeIf { it.isNotBlank() }
+                    ?: "Unknown artist",
+            )
+            currentMediaItem?.mediaMetadata?.albumTitle?.toString()
+                ?.takeIf { it.isNotBlank() }
+                ?.let { album ->
+                    PlaybackMetaChip(label = album)
+                }
+            PlaybackMetaChip(
+                label = if (queueSize > 0) "$queueSize in queue" else "Single track",
+                accent = MaterialTheme.colorScheme.primary,
+            )
+        }
     }
 }
 
@@ -279,33 +341,60 @@ private fun ProgressSection(
     onSeekEnd: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.fillMaxWidth()) {
-        Slider(
-            value = if (duration > 0) currentPosition.toFloat() else 0f,
-            onValueChange = { onSeekChange(it.toLong()) },
-            valueRange = 0f..duration.toFloat().coerceAtLeast(1f),
-            onValueChangeFinished = { onSeekEnd(currentPosition) },
-            colors = SliderDefaults.colors(
-                thumbColor = MaterialTheme.colorScheme.primary,
-                activeTrackColor = MaterialTheme.colorScheme.primary,
-                inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant,
-            ),
-        )
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+    ExpressiveBlurSurface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(28.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.74f),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 18.dp, vertical = 16.dp),
         ) {
-            Text(
-                text = formatTime(currentPosition),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            val progress = if (duration > 0) {
+                currentPosition.toFloat() / duration.toFloat()
+            } else {
+                0f
+            }
+            ExpressiveWavyLinearProgress(
+                progress = progress.coerceIn(0f, 1f),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp),
+                color = MusicGreen,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
             )
-            Text(
-                text = formatTime(duration),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+
+            Slider(
+                value = if (duration > 0) currentPosition.toFloat() else 0f,
+                onValueChange = {
+                    onSeekStart()
+                    onSeekChange(it.toLong())
+                },
+                valueRange = 0f..duration.toFloat().coerceAtLeast(1f),
+                onValueChangeFinished = { onSeekEnd(currentPosition) },
+                colors = SliderDefaults.colors(
+                    thumbColor = MaterialTheme.colorScheme.primary,
+                    activeTrackColor = Color.Transparent,
+                    inactiveTrackColor = Color.Transparent,
+                ),
             )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    text = formatTime(currentPosition),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = formatTime(duration),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }
@@ -322,101 +411,119 @@ private fun PlaybackControlsSection(
     onRepeatClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
+    ExpressiveBlurSurface(
         modifier = modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
+        shape = RoundedCornerShape(32.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.82f),
     ) {
-        // Main controls
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically,
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            // Shuffle
-            IconButton(
-                onClick = onShuffleClick,
-                colors = IconButtonDefaults.iconButtonColors(
-                    contentColor = if (shuffleEnabled) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
-                ),
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(
-                    Icons.Filled.Shuffle,
+                SecondaryPlaybackButton(
+                    onClick = onShuffleClick,
+                    selected = shuffleEnabled,
+                    icon = Icons.Filled.Shuffle,
                     contentDescription = "Shuffle",
-                    modifier = Modifier.size(28.dp),
                 )
-            }
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            // Skip Previous
-            IconButton(
-                onClick = onSkipPreviousClick,
-                modifier = Modifier.size(56.dp),
-            ) {
-                Icon(
-                    Icons.Filled.SkipPrevious,
+                SecondaryPlaybackButton(
+                    onClick = onSkipPreviousClick,
+                    selected = false,
+                    icon = Icons.Filled.SkipPrevious,
                     contentDescription = "Previous",
-                    modifier = Modifier.size(40.dp),
+                    iconSize = 34.dp,
                 )
-            }
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            // Play/Pause
-            FilledIconButton(
-                onClick = onPlayPauseClick,
-                modifier = Modifier.size(72.dp),
-                colors = IconButtonDefaults.filledIconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                ),
-            ) {
-                Icon(
-                    if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                    contentDescription = if (isPlaying) "Pause" else "Play",
-                    modifier = Modifier.size(48.dp),
-                )
-            }
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            // Skip Next
-            IconButton(
-                onClick = onSkipNextClick,
-                modifier = Modifier.size(56.dp),
-            ) {
-                Icon(
-                    Icons.Filled.SkipNext,
+                FilledIconButton(
+                    onClick = onPlayPauseClick,
+                    modifier = Modifier.size(88.dp),
+                    colors = IconButtonDefaults.filledIconButtonColors(
+                        containerColor = MusicGreen,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                    ),
+                ) {
+                    Icon(
+                        if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                        contentDescription = if (isPlaying) "Pause" else "Play",
+                        modifier = Modifier.size(48.dp),
+                    )
+                }
+                SecondaryPlaybackButton(
+                    onClick = onSkipNextClick,
+                    selected = false,
+                    icon = Icons.Filled.SkipNext,
                     contentDescription = "Next",
-                    modifier = Modifier.size(40.dp),
+                    iconSize = 34.dp,
                 )
-            }
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            // Repeat
-            IconButton(
-                onClick = onRepeatClick,
-                colors = IconButtonDefaults.iconButtonColors(
-                    contentColor = when (repeatMode) {
-                        Player.REPEAT_MODE_OFF -> MaterialTheme.colorScheme.onSurfaceVariant
-                        else -> MaterialTheme.colorScheme.primary
-                    },
-                ),
-            ) {
-                Icon(
-                    when (repeatMode) {
+                SecondaryPlaybackButton(
+                    onClick = onRepeatClick,
+                    selected = repeatMode != Player.REPEAT_MODE_OFF,
+                    icon = when (repeatMode) {
                         Player.REPEAT_MODE_ONE -> Icons.Filled.RepeatOne
                         else -> Icons.Filled.Repeat
                     },
                     contentDescription = "Repeat",
-                    modifier = Modifier.size(28.dp),
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun PlaybackMetaChip(
+    label: String,
+    accent: Color = MusicGreen,
+) {
+    Surface(
+        shape = JellyfinExpressiveTheme.shapes.pill,
+        color = accent.copy(alpha = 0.14f),
+        contentColor = MaterialTheme.colorScheme.onSurface,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+        )
+    }
+}
+
+@Composable
+private fun SecondaryPlaybackButton(
+    onClick: () -> Unit,
+    selected: Boolean,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    contentDescription: String,
+    iconSize: androidx.compose.ui.unit.Dp = 28.dp,
+) {
+    FilledIconButton(
+        onClick = onClick,
+        modifier = Modifier.size(56.dp),
+        colors = IconButtonDefaults.filledIconButtonColors(
+            containerColor = if (selected) {
+                MaterialTheme.colorScheme.primaryContainer
+            } else {
+                MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.9f)
+            },
+            contentColor = if (selected) {
+                MaterialTheme.colorScheme.onPrimaryContainer
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
+        ),
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            modifier = Modifier.size(iconSize),
+        )
     }
 }
 

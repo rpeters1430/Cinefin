@@ -2,9 +2,9 @@ package com.rpeters.jellyfin.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rpeters.jellyfin.data.offline.DownloadStatus
 import com.rpeters.jellyfin.data.offline.OfflineDownload
 import com.rpeters.jellyfin.data.offline.OfflineDownloadManager
-import com.rpeters.jellyfin.data.offline.DownloadStatus
 import com.rpeters.jellyfin.data.repository.GenerativeAiRepository
 import com.rpeters.jellyfin.data.repository.IJellyfinRepository
 import com.rpeters.jellyfin.data.repository.JellyfinMediaRepository
@@ -56,6 +56,7 @@ class MovieDetailViewModel @Inject constructor(
     val state: StateFlow<MovieDetailState> = _state.asStateFlow()
     private var observeDownloadedJob: Job? = null
     private var observeDownloadInfoJob: Job? = null
+    private var whyYoullLoveThisJob: Job? = null
 
     init {
         observePlaybackProgress()
@@ -92,8 +93,15 @@ class MovieDetailViewModel @Inject constructor(
 
     fun loadMovieDetails(movieId: String) {
         analytics.logUiEvent("MovieDetail", "view_movie")
+        whyYoullLoveThisJob?.cancel()
         viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true, errorMessage = null, playbackAnalysis = null)
+            _state.value = _state.value.copy(
+                isLoading = true,
+                errorMessage = null,
+                playbackAnalysis = null,
+                whyYoullLoveThis = null,
+                isLoadingWhyYoullLoveThis = false,
+            )
 
             // Also fetch initial progress from server
             val initialProgress = try {
@@ -161,7 +169,9 @@ class MovieDetailViewModel @Inject constructor(
     }
 
     private fun generateWhyYoullLoveThis(movie: BaseItemDto) {
-        viewModelScope.launch {
+        whyYoullLoveThisJob?.cancel()
+        val movieId = movie.id?.toString() ?: return
+        whyYoullLoveThisJob = viewModelScope.launch {
             _state.value = _state.value.copy(isLoadingWhyYoullLoveThis = true)
             try {
                 // Get viewing history - we'll use recently played items as a proxy
@@ -180,23 +190,34 @@ class MovieDetailViewModel @Inject constructor(
                         item = movie,
                         viewingHistory = viewingHistory,
                     )
-                    _state.value = _state.value.copy(
-                        whyYoullLoveThis = pitch.takeIf { it.isNotBlank() },
-                        isLoadingWhyYoullLoveThis = false,
-                    )
+                    if (_state.value.movie?.id?.toString() == movieId) {
+                        _state.value = _state.value.copy(
+                            whyYoullLoveThis = pitch.takeIf { it.isNotBlank() },
+                            isLoadingWhyYoullLoveThis = false,
+                        )
+                    }
                 } else {
                     // No viewing history, skip
+                    if (_state.value.movie?.id?.toString() == movieId) {
+                        _state.value = _state.value.copy(
+                            whyYoullLoveThis = null,
+                            isLoadingWhyYoullLoveThis = false,
+                        )
+                    }
+                }
+            } catch (e: CancellationException) {
+                if (_state.value.movie?.id?.toString() == movieId) {
+                    _state.value = _state.value.copy(isLoadingWhyYoullLoveThis = false)
+                }
+                throw e
+            } catch (e: Exception) {
+                // Personalized pitch is non-critical
+                if (_state.value.movie?.id?.toString() == movieId) {
                     _state.value = _state.value.copy(
                         whyYoullLoveThis = null,
                         isLoadingWhyYoullLoveThis = false,
                     )
                 }
-            } catch (e: Exception) {
-                // Personalized pitch is non-critical
-                _state.value = _state.value.copy(
-                    whyYoullLoveThis = null,
-                    isLoadingWhyYoullLoveThis = false,
-                )
             }
         }
     }
@@ -221,7 +242,7 @@ class MovieDetailViewModel @Inject constructor(
                 )
                 _state.value = _state.value.copy(
                     downloadInfo = completedInfo,
-                    isDownloaded = completedInfo != null
+                    isDownloaded = completedInfo != null,
                 )
             }
         }

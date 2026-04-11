@@ -110,6 +110,27 @@ class AudioPlaybackViewModelTest {
     }
 
     @Test
+    fun `position and duration mirror playback state`() = runTest(testDispatcher) {
+        // Given
+        val expectedPosition = 42_000L
+        val expectedDuration = 180_000L
+
+        advanceUntilIdle()
+
+        // When
+        testPlaybackState.value = AudioPlaybackState(
+            isConnected = true,
+            currentPosition = expectedPosition,
+            duration = expectedDuration,
+        )
+        advanceUntilIdle()
+
+        // Then
+        assertEquals(expectedPosition, viewModel.currentPosition.value)
+        assertEquals(expectedDuration, viewModel.duration.value)
+    }
+
+    @Test
     fun `togglePlayPause delegates to service connection`() = runTest(testDispatcher) {
         // When
         viewModel.togglePlayPause()

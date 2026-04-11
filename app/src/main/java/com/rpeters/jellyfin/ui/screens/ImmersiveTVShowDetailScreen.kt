@@ -89,7 +89,6 @@ import com.rpeters.jellyfin.ui.components.immersive.ResolutionQuality
 import com.rpeters.jellyfin.ui.components.immersive.StaticHeroSection
 import com.rpeters.jellyfin.ui.components.immersive.VideoInfoCard
 import com.rpeters.jellyfin.ui.components.immersive.rememberImmersivePerformanceConfig
-import com.rpeters.jellyfin.ui.components.sanitizedAiSummary
 import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
 import com.rpeters.jellyfin.ui.theme.Dimens
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
@@ -587,11 +586,12 @@ private fun ShowMetadataSection(
                     }
                 }
 
-                // Show AI summary if available
-                AiSummaryCard(
-                    summary = aiSummary,
-                    isLoading = isLoadingAiSummary
-                )
+                if (isLoadingAiSummary || !aiSummary.isNullOrBlank()) {
+                    AiSummaryCard(
+                        summary = aiSummary,
+                        isLoading = isLoadingAiSummary,
+                    )
+                }
 
                 // App-styled media info cards built from shared card primitives
                 series.mediaSources?.firstOrNull()?.mediaStreams?.let { streams ->
@@ -741,39 +741,39 @@ private fun SeasonItem(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                     )
-                    
+
                     val unwatchedCount = season.userData?.unplayedItemCount ?: 0
                     if (unwatchedCount > 0) {
                         Surface(
                             shape = MaterialTheme.shapes.extraSmall,
                             color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(top = 4.dp)
+                            modifier = Modifier.padding(top = 4.dp),
                         ) {
                             Text(
                                 text = "$unwatchedCount unwatched",
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onPrimary,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                             )
                         }
                     } else if (season.isCompletelyWatched()) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(top = 4.dp)
+                            modifier = Modifier.padding(top = 4.dp),
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Check,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.tertiary,
-                                modifier = Modifier.size(14.dp)
+                                modifier = Modifier.size(14.dp),
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = "Watched",
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.tertiary
+                                color = MaterialTheme.colorScheme.tertiary,
                             )
                         }
                     } else {
@@ -862,7 +862,7 @@ private fun EpisodeRow(
                         .fillMaxWidth()
                         .padding(horizontal = 4.dp, vertical = 2.dp),
                 )
-                
+
                 // Watched checkmark on thumbnail if completely watched
                 if (episode.isWatched()) {
                     Icon(
