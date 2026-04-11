@@ -2,9 +2,9 @@ package com.rpeters.jellyfin.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rpeters.jellyfin.data.offline.DownloadStatus
 import com.rpeters.jellyfin.data.offline.OfflineDownload
 import com.rpeters.jellyfin.data.offline.OfflineDownloadManager
-import com.rpeters.jellyfin.data.offline.DownloadStatus
 import com.rpeters.jellyfin.data.repository.GenerativeAiRepository
 import com.rpeters.jellyfin.data.repository.IJellyfinRepository
 import com.rpeters.jellyfin.data.repository.JellyfinMediaRepository
@@ -242,7 +242,7 @@ class MovieDetailViewModel @Inject constructor(
                 )
                 _state.value = _state.value.copy(
                     downloadInfo = completedInfo,
-                    isDownloaded = completedInfo != null
+                    isDownloaded = completedInfo != null,
                 )
             }
         }

@@ -10,8 +10,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -35,9 +35,9 @@ import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
-import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -69,11 +69,11 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.components.ExpressiveBlurSurface
+import com.rpeters.jellyfin.ui.components.ExpressiveCardType
 import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
 import com.rpeters.jellyfin.ui.components.ExpressiveContentCard
-import com.rpeters.jellyfin.ui.components.ExpressiveCardType
-import com.rpeters.jellyfin.ui.components.ExpressivePullToRefreshBox
 import com.rpeters.jellyfin.ui.components.ExpressiveMediaCard
+import com.rpeters.jellyfin.ui.components.ExpressivePullToRefreshBox
 import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBar
 import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBarAction
 import com.rpeters.jellyfin.ui.components.ExpressiveWavyLinearProgress
@@ -321,150 +321,150 @@ fun MusicScreen(
                         sortOrder = sortOrder,
                     )
 
-                if (playbackState.isConnected && (playbackState.currentMediaItem != null || playbackQueue.isNotEmpty())) {
-                    ActivePlaybackPanel(
-                        modifier = Modifier
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
-                            .fillMaxWidth(),
-                        playbackState = playbackState,
-                        playbackQueue = playbackQueue,
-                        onShuffleClick = audioPlaybackViewModel::toggleShuffle,
-                        onPlayPauseClick = audioPlaybackViewModel::togglePlayPause,
-                        onSkipNextClick = audioPlaybackViewModel::skipToNext,
-                    )
-                }
-
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                ) {
-                    items(
-                        items = MusicFilter.getAllFilters(),
-                        key = { it },
-                        contentType = { "music_filter" },
-                    ) { filter ->
-                        FilterChip(
-                            onClick = { selectedFilter = filter },
-                            label = { Text(stringResource(id = filter.displayNameResId)) },
-                            selected = selectedFilter == filter,
-                            leadingIcon = when (filter) {
-                                MusicFilter.FAVORITES -> {
-                                    {
-                                        Icon(
-                                            imageVector = Icons.Default.Star,
-                                            contentDescription = null,
-                                            modifier = Modifier.padding(2.dp),
-                                        )
-                                    }
-                                }
-                                MusicFilter.ALBUMS -> {
-                                    {
-                                        Icon(
-                                            imageVector = Icons.Default.Album,
-                                            contentDescription = null,
-                                            modifier = Modifier.padding(2.dp),
-                                        )
-                                    }
-                                }
-                                MusicFilter.ARTISTS -> {
-                                    {
-                                        Icon(
-                                            imageVector = Icons.Default.Person,
-                                            contentDescription = null,
-                                            modifier = Modifier.padding(2.dp),
-                                        )
-                                    }
-                                }
-                                else -> null
-                            },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = MusicGreen.copy(alpha = 0.18f),
-                                selectedLabelColor = MusicGreen,
-                                selectedLeadingIconColor = MusicGreen,
-                            ),
+                    if (playbackState.isConnected && (playbackState.currentMediaItem != null || playbackQueue.isNotEmpty())) {
+                        ActivePlaybackPanel(
+                            modifier = Modifier
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                                .fillMaxWidth(),
+                            playbackState = playbackState,
+                            playbackQueue = playbackQueue,
+                            onShuffleClick = audioPlaybackViewModel::toggleShuffle,
+                            onPlayPauseClick = audioPlaybackViewModel::togglePlayPause,
+                            onSkipNextClick = audioPlaybackViewModel::skipToNext,
                         )
                     }
-                }
 
-                when {
-                    appState.isLoading -> {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            ExpressiveCircularLoading(
-                                size = 48.dp,
-                                showPulse = true,
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                    ) {
+                        items(
+                            items = MusicFilter.getAllFilters(),
+                            key = { it },
+                            contentType = { "music_filter" },
+                        ) { filter ->
+                            FilterChip(
+                                onClick = { selectedFilter = filter },
+                                label = { Text(stringResource(id = filter.displayNameResId)) },
+                                selected = selectedFilter == filter,
+                                leadingIcon = when (filter) {
+                                    MusicFilter.FAVORITES -> {
+                                        {
+                                            Icon(
+                                                imageVector = Icons.Default.Star,
+                                                contentDescription = null,
+                                                modifier = Modifier.padding(2.dp),
+                                            )
+                                        }
+                                    }
+                                    MusicFilter.ALBUMS -> {
+                                        {
+                                            Icon(
+                                                imageVector = Icons.Default.Album,
+                                                contentDescription = null,
+                                                modifier = Modifier.padding(2.dp),
+                                            )
+                                        }
+                                    }
+                                    MusicFilter.ARTISTS -> {
+                                        {
+                                            Icon(
+                                                imageVector = Icons.Default.Person,
+                                                contentDescription = null,
+                                                modifier = Modifier.padding(2.dp),
+                                            )
+                                        }
+                                    }
+                                    else -> null
+                                },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = MusicGreen.copy(alpha = 0.18f),
+                                    selectedLabelColor = MusicGreen,
+                                    selectedLeadingIconColor = MusicGreen,
+                                ),
                             )
                         }
                     }
 
-                    appState.errorMessage != null -> {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            ExpressiveContentCard(
-                                containerColor = MaterialTheme.colorScheme.errorContainer,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
+                    when {
+                        appState.isLoading -> {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center,
                             ) {
-                                Text(
-                                    text = appState.errorMessage ?: stringResource(R.string.unknown_error),
-                                    color = MaterialTheme.colorScheme.onErrorContainer,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    modifier = Modifier.padding(16.dp),
-                                    textAlign = TextAlign.Center,
+                                ExpressiveCircularLoading(
+                                    size = 48.dp,
+                                    showPulse = true,
                                 )
                             }
                         }
-                    }
 
-                    filteredAndSortedMusic.isEmpty() -> {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(16.dp),
+                        appState.errorMessage != null -> {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center,
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.MusicNote,
-                                    contentDescription = null,
-                                    modifier = Modifier.padding(32.dp),
-                                    tint = MusicGreen.copy(alpha = 0.6f),
-                                )
-                                Text(
-                                    text = stringResource(id = R.string.no_music_found),
-                                    style = MaterialTheme.typography.headlineSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                                Text(
-                                    text = stringResource(id = R.string.adjust_music_filters_hint),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
+                                ExpressiveContentCard(
+                                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                ) {
+                                    Text(
+                                        text = appState.errorMessage ?: stringResource(R.string.unknown_error),
+                                        color = MaterialTheme.colorScheme.onErrorContainer,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        modifier = Modifier.padding(16.dp),
+                                        textAlign = TextAlign.Center,
+                                    )
+                                }
                             }
                         }
-                    }
 
-                    else -> {
-                        MusicContent(
-                            musicItems = filteredAndSortedMusic,
-                            viewMode = viewMode,
-                            getImageUrl = { item -> viewModel.getImageUrl(item) },
-                            onItemClick = onItemClick,
-                            onFavoriteClick = { item -> viewModel.toggleFavorite(item) },
-                            onMoreClick = { item -> ShareUtils.shareMedia(context, item) },
-                            isLoadingMore = appState.isLoadingMore,
-                            hasMoreItems = appState.hasMoreItems,
-                            onLoadMore = { viewModel.loadMoreItems() },
-                        )
+                        filteredAndSortedMusic.isEmpty() -> {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.MusicNote,
+                                        contentDescription = null,
+                                        modifier = Modifier.padding(32.dp),
+                                        tint = MusicGreen.copy(alpha = 0.6f),
+                                    )
+                                    Text(
+                                        text = stringResource(id = R.string.no_music_found),
+                                        style = MaterialTheme.typography.headlineSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                    Text(
+                                        text = stringResource(id = R.string.adjust_music_filters_hint),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
+                        }
+
+                        else -> {
+                            MusicContent(
+                                musicItems = filteredAndSortedMusic,
+                                viewMode = viewMode,
+                                getImageUrl = { item -> viewModel.getImageUrl(item) },
+                                onItemClick = onItemClick,
+                                onFavoriteClick = { item -> viewModel.toggleFavorite(item) },
+                                onMoreClick = { item -> ShareUtils.shareMedia(context, item) },
+                                isLoadingMore = appState.isLoadingMore,
+                                hasMoreItems = appState.hasMoreItems,
+                                onLoadMore = { viewModel.loadMoreItems() },
+                            )
+                        }
                     }
                 }
-            }
             }
         }
     }

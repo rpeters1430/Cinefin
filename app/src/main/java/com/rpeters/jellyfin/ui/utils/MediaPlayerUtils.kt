@@ -40,7 +40,7 @@ object MediaPlayerUtils {
         streamUrl: String,
         item: BaseItemDto,
         subtitleIndex: Int? = null,
-        startPosition: Long? = null
+        startPosition: Long? = null,
     ) {
         if (item.type == BaseItemKind.AUDIO || item.type == BaseItemKind.MUSIC_ALBUM || item.type == BaseItemKind.AUDIO_BOOK) {
             playAudio(context, streamUrl, item)

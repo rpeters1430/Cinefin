@@ -51,12 +51,10 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.media3.common.MediaItem
 import com.rpeters.jellyfin.OptInAppExperimentalApis
-import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.components.EmptyStateComposable
 import com.rpeters.jellyfin.ui.components.EmptyStateType
 import com.rpeters.jellyfin.ui.components.ExpressiveBackNavigationIcon
 import com.rpeters.jellyfin.ui.components.ExpressiveBlurSurface
-import com.rpeters.jellyfin.ui.components.ExpressiveContentCard
 import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBar
 import com.rpeters.jellyfin.ui.components.ExpressiveWavyLinearProgress
 import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
@@ -104,7 +102,7 @@ fun AudioQueueScreen(
                             Text("Clear")
                         }
                     }
-                }
+                },
             )
         },
         modifier = modifier,
