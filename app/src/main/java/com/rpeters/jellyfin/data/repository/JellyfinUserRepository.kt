@@ -10,6 +10,7 @@ import kotlinx.coroutines.CancellationException
 import org.jellyfin.sdk.api.client.extensions.itemsApi
 import org.jellyfin.sdk.api.client.extensions.libraryApi
 import org.jellyfin.sdk.api.client.extensions.playStateApi
+import org.jellyfin.sdk.api.client.extensions.systemApi
 import org.jellyfin.sdk.api.client.extensions.userApi
 import org.jellyfin.sdk.api.client.extensions.userLibraryApi
 import org.jellyfin.sdk.model.api.BaseItemDto
@@ -153,6 +154,24 @@ class JellyfinUserRepository @Inject constructor(
                 lastLoginDate = user.lastLoginDate?.toString(),
                 isAdministrator = user.policy?.isAdministrator == true,
             )
+        }
+
+    suspend fun refreshLibrary(): ApiResult<Boolean> =
+        withServerClient("refreshLibrary") { _, client ->
+            client.libraryApi.refreshLibrary()
+            true
+        }
+
+    suspend fun restartServer(): ApiResult<Boolean> =
+        withServerClient("restartServer") { _, client ->
+            client.systemApi.restartApplication()
+            true
+        }
+
+    suspend fun shutdownServer(): ApiResult<Boolean> =
+        withServerClient("shutdownServer") { _, client ->
+            client.systemApi.shutdownApplication()
+            true
         }
 
     suspend fun toggleFavorite(itemId: String, isFavorite: Boolean): ApiResult<Boolean> =

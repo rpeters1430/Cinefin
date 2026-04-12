@@ -348,6 +348,7 @@ class VideoPlayerViewModel @Inject constructor(
     }
 
     internal fun seekTo(positionMs: Long) {
+        playbackManager.registerSeek(positionMs)
         exoPlayer?.seekTo(positionMs)
     }
 

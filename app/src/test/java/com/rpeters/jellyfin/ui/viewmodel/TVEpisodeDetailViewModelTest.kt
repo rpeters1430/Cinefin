@@ -1,6 +1,7 @@
 package com.rpeters.jellyfin.ui.viewmodel
 
 import com.rpeters.jellyfin.data.repository.JellyfinMediaRepository
+import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.network.ConnectivityChecker
 import com.rpeters.jellyfin.ui.utils.EnhancedPlaybackUtils
 import com.rpeters.jellyfin.ui.utils.PlaybackCapabilityAnalysis
@@ -55,6 +56,10 @@ class TVEpisodeDetailViewModelTest {
         every { playbackProgressManager.playbackProgress } returns MutableStateFlow(
             com.rpeters.jellyfin.ui.player.PlaybackProgress(),
         )
+        coEvery { mediaRepository.getEpisodeDetails(any()) } returns ApiResult.Error("missing")
+        coEvery { mediaRepository.getEpisodesForSeason(any()) } returns ApiResult.Success(emptyList())
+        coEvery { mediaRepository.getSeriesDetails(any()) } returns ApiResult.Error("missing")
+        every { offlineDownloadManager.observeCurrentDownload(any()) } returns flowOf(null)
     }
 
     @After

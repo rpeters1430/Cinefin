@@ -211,6 +211,7 @@ class JellyfinStreamRepository @Inject constructor(
         audioBitrate: Int? = null,
         allowVideoStreamCopy: Boolean = true,
         allowAudioStreamCopy: Boolean = true,
+        useHls: Boolean = false,
     ): String? {
         val server = authRepository.getCurrentServer() ?: return null
 
@@ -262,9 +263,8 @@ class JellyfinStreamRepository @Inject constructor(
                 ?: params.add("PlaySessionId=${java.util.UUID.randomUUID()}")
             // Auth via header (OkHttp interceptor)
 
-            // Use progressive stream endpoint instead of HLS for better compatibility
-            // HLS (master.m3u8) requires additional manifest parsing and can fail if not ready
-            "${server.url}/Videos/$itemId/stream?${params.joinToString("&")}"
+            val path = if (useHls) "master.m3u8" else "stream"
+            "${server.url}/Videos/$itemId/$path?${params.joinToString("&")}"
         } catch (e: CancellationException) {
             throw e
         }

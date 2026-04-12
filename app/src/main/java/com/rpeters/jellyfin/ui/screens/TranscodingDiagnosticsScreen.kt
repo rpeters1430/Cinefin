@@ -17,6 +17,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.components.ExpressiveBackNavigationIcon
 import com.rpeters.jellyfin.ui.components.ExpressiveContentCard
+import com.rpeters.jellyfin.ui.components.PlaybackBreakdownDetails
 import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBar
 import com.rpeters.jellyfin.ui.components.ExpressiveWavyCircularLoading
 import com.rpeters.jellyfin.ui.viewmodel.TranscodingDiagnosticsViewModel
@@ -217,7 +218,7 @@ private fun VideoAnalysisCard(
                         shape = MaterialTheme.shapes.small,
                     ) {
                         Text(
-                            if (video.needsTranscoding) "TRANSCODE" else "DIRECT PLAY",
+                            video.methodLabel.uppercase(),
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onError,
@@ -269,6 +270,14 @@ private fun VideoAnalysisCard(
                         Text(reason, style = MaterialTheme.typography.bodySmall)
                     }
                 }
+            }
+
+            if (video.breakdown.isNotEmpty()) {
+                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                PlaybackBreakdownDetails(
+                    breakdown = video.breakdown,
+                    modifier = Modifier.fillMaxWidth(),
+                )
             }
         }
     }

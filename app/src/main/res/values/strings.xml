@@ -395,6 +395,17 @@
     <string name="settings_library_management_description">Enable deletion and other power actions from item long-press menus.</string>
     <string name="settings_library_management_toggle">Allow deleting media and showing manage actions</string>
 
+    <string name="settings_server_management_title">Server management</string>
+    <string name="settings_server_management_description">Run admin maintenance tasks for this Jellyfin server.</string>
+    <string name="settings_server_management_rescan">Rescan libraries</string>
+    <string name="settings_server_management_restart">Restart server</string>
+    <string name="settings_server_management_shutdown">Shut down server</string>
+    <string name="settings_server_management_restart_confirm_title">Restart server?</string>
+    <string name="settings_server_management_restart_confirm_message">This will restart the Jellyfin server and disconnect active sessions for a short time.</string>
+    <string name="settings_server_management_shutdown_confirm_title">Shut down server?</string>
+    <string name="settings_server_management_shutdown_confirm_message">This will stop the Jellyfin server until it is started again outside the app.</string>
+    <string name="continue_label">Continue</string>
+
     <string name="settings_accessibility_title">Accessibility</string>
     <string name="settings_accessibility_description">Make the app easier to use for different needs.</string>
     <string name="settings_accessibility_text">Custom text size, contrast boost, and bold text.</string>

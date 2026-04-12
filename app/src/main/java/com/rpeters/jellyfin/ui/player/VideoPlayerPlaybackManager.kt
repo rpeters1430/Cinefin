@@ -31,6 +31,7 @@ import java.io.File
 import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
+import kotlin.math.abs
 
 import dagger.hilt.android.qualifiers.ApplicationContext
 
@@ -65,6 +66,7 @@ class VideoPlayerPlaybackManager @Inject constructor(
     private var positionJob: Job? = null
     private var savedPositionBeforeFlush: Long? = null
     private var wasBufferingBeforeReady: Boolean = false
+    private var pendingSeekPositionMs: Long? = null
     private var positionRestoreAttempts: Int = 0
     private var lastRestoreAttemptTime: Long = 0L
     private val maxRestoreAttempts = 3
@@ -156,6 +158,7 @@ class VideoPlayerPlaybackManager @Inject constructor(
         hasAttemptedOfflineFallback = false
         savedPositionBeforeFlush = null
         wasBufferingBeforeReady = false
+        pendingSeekPositionMs = startPosition.takeIf { it > 0L }
         positionRestoreAttempts = 0
         lastRestoreAttemptTime = 0L
         currentPreparedSubtitleSpecs = sideLoadedSubs
@@ -313,6 +316,7 @@ class VideoPlayerPlaybackManager @Inject constructor(
     ) {
         withContext(Dispatchers.Main) {
             val player = exoPlayer ?: return@withContext
+            pendingSeekPositionMs = startPosition.takeIf { it > 0L }
             val mediaItem = MediaItemFactory.build(
                 videoUrl = url,
                 title = title,
@@ -387,13 +391,20 @@ class VideoPlayerPlaybackManager @Inject constructor(
     fun handlePlaybackStateChanged(playbackState: Int, previousPlaybackState: Int, scope: CoroutineScope) {
         val player = exoPlayer ?: return
         
-        if (playbackState == Player.STATE_BUFFERING && previousPlaybackState == Player.STATE_READY) {
+        if (
+            playbackState == Player.STATE_BUFFERING &&
+            previousPlaybackState == Player.STATE_READY &&
+            pendingSeekPositionMs == null
+        ) {
             savedPositionBeforeFlush = player.currentPosition
             wasBufferingBeforeReady = true
         }
 
-        if (playbackState == Player.STATE_READY && wasBufferingBeforeReady) {
-            restorePositionIfNeeded(player)
+        if (playbackState == Player.STATE_READY) {
+            restoreSeekPositionIfNeeded(player)
+            if (wasBufferingBeforeReady) {
+                restorePositionIfNeeded(player)
+            }
             wasBufferingBeforeReady = false
             savedPositionBeforeFlush = null
         }
@@ -433,6 +444,20 @@ class VideoPlayerPlaybackManager @Inject constructor(
                 player.seekTo(savedPos)
             }
         }
+    }
+
+    private fun restoreSeekPositionIfNeeded(player: ExoPlayer) {
+        val targetPosition = pendingSeekPositionMs ?: return
+        if (abs(player.currentPosition - targetPosition) > 1500L) {
+            player.seekTo(targetPosition)
+        }
+        pendingSeekPositionMs = null
+    }
+
+    fun registerSeek(positionMs: Long) {
+        pendingSeekPositionMs = positionMs
+        savedPositionBeforeFlush = null
+        wasBufferingBeforeReady = false
     }
 
     fun handlePlayerError(error: PlaybackException, scope: CoroutineScope, metadata: BaseItemDto?, itemId: String?) {

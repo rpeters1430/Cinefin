@@ -78,6 +78,7 @@ import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
 import com.rpeters.jellyfin.ui.components.AiSummaryCard
 import com.rpeters.jellyfin.ui.components.ExpressiveFilledButton
+import com.rpeters.jellyfin.ui.components.PlaybackBreakdownDetails
 import com.rpeters.jellyfin.ui.components.PerformanceOptimizedLazyRow
 import com.rpeters.jellyfin.ui.components.PlaybackStatusBadge
 import com.rpeters.jellyfin.ui.components.QualitySelectionDialog
@@ -647,6 +648,39 @@ private fun EpisodeOverviewSection(
 
         // Playback Capability
         playbackAnalysis?.let { PlaybackStatusBadge(analysis = it) }
+
+        if (playbackAnalysis?.transcodeReasons?.isNotEmpty() == true) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = "Needs conversion for",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.78f),
+                )
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp),
+                ) {
+                    items(playbackAnalysis.transcodeReasons.distinct()) { reason ->
+                        AssistChip(
+                            onClick = {},
+                            enabled = false,
+                            label = { Text(reason) },
+                        )
+                    }
+                }
+            }
+        }
+
+        if (playbackAnalysis?.breakdown?.isNotEmpty() == true) {
+            PlaybackBreakdownDetails(
+                breakdown = playbackAnalysis.breakdown,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
 
         // ✅ Enhanced Metadata Section
         Surface(

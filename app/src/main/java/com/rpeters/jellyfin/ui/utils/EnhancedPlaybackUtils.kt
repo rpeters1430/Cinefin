@@ -142,26 +142,44 @@ class EnhancedPlaybackUtils @Inject constructor(
 
                 when (playbackResult) {
                     is PlaybackResult.DirectPlay -> {
+                        val breakdown = buildBreakdown(
+                            reasonCodes = playbackResult.reasonCodes,
+                            decisionTrace = playbackResult.decisionTrace,
+                            methodLabel = "Direct Play",
+                            container = playbackResult.container,
+                        )
                         PlaybackCapabilityAnalysis(
                             canPlay = true,
                             preferredMethod = PlaybackMethod.DIRECT_PLAY,
+                            methodLabel = "Direct Play",
                             expectedQuality = determineQualityFromBitrate(playbackResult.bitrate),
                             details = "Direct Play: ${playbackResult.reason}",
                             codecs = "${playbackResult.videoCodec ?: "N/A"}/${playbackResult.audioCodec ?: "N/A"}",
                             container = playbackResult.container,
                             estimatedBandwidth = playbackResult.bitrate,
+                            transcodeReasons = playbackResult.reasonCodes.mapNotNull(::reasonCodeToLabel),
+                            breakdown = breakdown,
                         )
                     }
 
                     is PlaybackResult.Transcoding -> {
+                        val breakdown = buildBreakdown(
+                            reasonCodes = playbackResult.reasonCodes,
+                            decisionTrace = playbackResult.decisionTrace,
+                            methodLabel = if (playbackResult.isDirectStream) "Direct Stream" else "Transcode",
+                            container = playbackResult.targetContainer,
+                        )
                         PlaybackCapabilityAnalysis(
                             canPlay = true,
                             preferredMethod = PlaybackMethod.TRANSCODING,
+                            methodLabel = if (playbackResult.isDirectStream) "Direct Stream" else "Transcode",
                             expectedQuality = determineQualityFromResolution(playbackResult.targetResolution),
-                            details = "Transcoding: ${playbackResult.reason}",
+                            details = "${if (playbackResult.isDirectStream) "Direct Stream" else "Transcoding"}: ${playbackResult.reason}",
                             codecs = "${playbackResult.targetVideoCodec}/${playbackResult.targetAudioCodec}",
                             container = playbackResult.targetContainer,
                             estimatedBandwidth = playbackResult.targetBitrate,
+                            transcodeReasons = playbackResult.reasonCodes.mapNotNull(::reasonCodeToLabel),
+                            breakdown = breakdown,
                         )
                     }
 
@@ -169,6 +187,7 @@ class EnhancedPlaybackUtils @Inject constructor(
                         PlaybackCapabilityAnalysis(
                             canPlay = false,
                             preferredMethod = PlaybackMethod.UNAVAILABLE,
+                            methodLabel = "Unavailable",
                             expectedQuality = unknownLabel,
                             details = "Error: ${playbackResult.message}",
                             codecs = "N/A",
@@ -263,6 +282,106 @@ class EnhancedPlaybackUtils @Inject constructor(
             else -> "Standard Definition"
         }
     }
+
+    private fun reasonCodeToLabel(reasonCode: String): String? {
+        return when (reasonCode) {
+            "AUDIO_CODEC_UNSUPPORTED" -> "Audio codec"
+            "AUDIO_SURROUND_DOWNMIX_REQUIRED" -> "Audio channels"
+            "VIDEO_CODEC_UNSUPPORTED" -> "Video codec"
+            "VIDEO_RESOLUTION_EXCEEDED" -> "Resolution"
+            "NETWORK_BITRATE_EXCEEDED" -> "Bitrate / network"
+            "CONTAINER_UNSUPPORTED" -> "Container"
+            "DIRECT_STREAM_VIDEO_COPY_OK" -> "Audio only"
+            "FULL_TRANSCODE_REQUIRED" -> "Full conversion"
+            else -> null
+        }
+    }
+
+    private fun buildBreakdown(
+        reasonCodes: List<String>,
+        decisionTrace: com.rpeters.jellyfin.data.playback.PlaybackDecisionTrace?,
+        methodLabel: String,
+        container: String,
+    ): List<PlaybackBreakdownItem> {
+        val items = mutableListOf<PlaybackBreakdownItem>()
+
+        decisionTrace?.video?.let { video ->
+            items += PlaybackBreakdownItem(
+                component = "Video",
+                action = video.strategy.toUiAction(),
+                reason = buildVideoReason(video, reasonCodes, methodLabel),
+            )
+        }
+
+        decisionTrace?.audio?.let { audio ->
+            items += PlaybackBreakdownItem(
+                component = "Audio",
+                action = audio.strategy.toUiAction(),
+                reason = buildAudioReason(audio, reasonCodes, methodLabel),
+            )
+        }
+
+        val containerReason = when {
+            "CONTAINER_UNSUPPORTED" in reasonCodes -> "Source container is not directly supported on this device"
+            methodLabel == "Direct Play" -> "Original container can be played as-is"
+            methodLabel == "Direct Stream" -> "Server remuxes into $container for playback compatibility"
+            else -> "Server packages the transcode as $container"
+        }
+        items += PlaybackBreakdownItem(
+            component = "Container",
+            action = when {
+                "CONTAINER_UNSUPPORTED" in reasonCodes -> "Remux"
+                methodLabel == "Direct Play" -> "Keep"
+                else -> "Package"
+            },
+            reason = containerReason,
+        )
+
+        if ("NETWORK_BITRATE_EXCEEDED" in reasonCodes) {
+            items += PlaybackBreakdownItem(
+                component = "Network",
+                action = "Limit",
+                reason = "Bitrate exceeds the current network or playback preference threshold",
+            )
+        }
+
+        return items.distinct()
+    }
+
+    private fun buildVideoReason(
+        video: com.rpeters.jellyfin.data.playback.VideoDecision,
+        reasonCodes: List<String>,
+        methodLabel: String,
+    ): String {
+        return when {
+            "VIDEO_CODEC_UNSUPPORTED" in reasonCodes -> "Codec ${video.sourceCodec ?: "unknown"} is not directly supported"
+            "VIDEO_RESOLUTION_EXCEEDED" in reasonCodes -> "Source resolution exceeds the device direct-play limit"
+            methodLabel == "Direct Stream" -> "Video stays in the original codec and is copied through"
+            methodLabel == "Direct Play" -> "Video can be decoded directly on this device"
+            else -> "Video is converted to ${video.targetCodec} at ${video.targetResolution}"
+        }
+    }
+
+    private fun buildAudioReason(
+        audio: com.rpeters.jellyfin.data.playback.AudioDecision,
+        reasonCodes: List<String>,
+        methodLabel: String,
+    ): String {
+        return when {
+            "AUDIO_CODEC_UNSUPPORTED" in reasonCodes -> "Codec ${audio.sourceCodec ?: "unknown"} is not directly supported"
+            "AUDIO_SURROUND_DOWNMIX_REQUIRED" in reasonCodes -> "Source channel layout needs downmixing for this device"
+            methodLabel == "Direct Play" -> "Audio can be decoded directly on this device"
+            else -> "Audio is converted to ${audio.targetCodec.uppercase()} ${audio.targetChannels}ch"
+        }
+    }
+
+    private fun String.toUiAction(): String {
+        return when (this) {
+            "copy" -> "Copy"
+            "transcode" -> "Transcode"
+            else -> replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+        }
+    }
 }
 
 /**
@@ -284,11 +403,20 @@ data class PlaybackInfo(
 data class PlaybackCapabilityAnalysis(
     val canPlay: Boolean,
     val preferredMethod: PlaybackMethod,
+    val methodLabel: String = "Unknown",
     val expectedQuality: String,
     val details: String,
     val codecs: String,
     val container: String,
     val estimatedBandwidth: Int,
+    val transcodeReasons: List<String> = emptyList(),
+    val breakdown: List<PlaybackBreakdownItem> = emptyList(),
+)
+
+data class PlaybackBreakdownItem(
+    val component: String,
+    val action: String,
+    val reason: String,
 )
 
 /**

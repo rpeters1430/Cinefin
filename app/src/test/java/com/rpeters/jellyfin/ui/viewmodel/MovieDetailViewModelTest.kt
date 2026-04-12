@@ -5,6 +5,8 @@ import com.rpeters.jellyfin.data.repository.JellyfinMediaRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.network.ConnectivityChecker
 import com.rpeters.jellyfin.ui.utils.EnhancedPlaybackUtils
+import com.rpeters.jellyfin.ui.utils.PlaybackCapabilityAnalysis
+import com.rpeters.jellyfin.ui.utils.PlaybackMethod
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -71,7 +73,7 @@ class MovieDetailViewModelTest {
     fun `loadMovieDetails updates state on success`() = runTest {
         val movie = BaseItemDto(id = UUID.randomUUID(), name = "Test", type = BaseItemKind.MOVIE)
         coEvery { repository.getMovieDetails(movie.id.toString()) } returns ApiResult.Success(movie)
-        coEvery { playbackUtils.analyzePlaybackCapabilities(movie) } returns mockk()
+        coEvery { playbackUtils.analyzePlaybackCapabilities(movie) } returns playbackAnalysis()
         coEvery { mediaRepository.getSimilarMovies(movie.id.toString(), limit = 10) } returns ApiResult.Success(emptyList())
 
         viewModel.loadMovieDetails(movie.id.toString())
@@ -104,8 +106,8 @@ class MovieDetailViewModelTest {
 
         coEvery { repository.getMovieDetails(firstMovie.id.toString()) } returns ApiResult.Success(firstMovie)
         coEvery { repository.getMovieDetails(secondMovie.id.toString()) } returns ApiResult.Success(secondMovie)
-        coEvery { playbackUtils.analyzePlaybackCapabilities(firstMovie) } returns mockk()
-        coEvery { playbackUtils.analyzePlaybackCapabilities(secondMovie) } returns mockk()
+        coEvery { playbackUtils.analyzePlaybackCapabilities(firstMovie) } returns playbackAnalysis()
+        coEvery { playbackUtils.analyzePlaybackCapabilities(secondMovie) } returns playbackAnalysis()
         coEvery { mediaRepository.getSimilarMovies(any(), limit = 10) } returns ApiResult.Success(emptyList())
         coEvery { mediaRepository.getContinueWatching(limit = 20) } returns ApiResult.Success(history)
         coEvery { generativeAiRepository.generateWhyYoullLoveThis(firstMovie, history) } returns "First pitch"
@@ -133,7 +135,7 @@ class MovieDetailViewModelTest {
         val history = listOf(BaseItemDto(id = UUID.randomUUID(), name = "History", type = BaseItemKind.MOVIE))
 
         coEvery { repository.getMovieDetails(movie.id.toString()) } returns ApiResult.Success(movie)
-        coEvery { playbackUtils.analyzePlaybackCapabilities(movie) } returns mockk()
+        coEvery { playbackUtils.analyzePlaybackCapabilities(movie) } returns playbackAnalysis()
         coEvery { mediaRepository.getSimilarMovies(movie.id.toString(), limit = 10) } returns ApiResult.Success(emptyList())
         coEvery { mediaRepository.getContinueWatching(limit = 20) } returns ApiResult.Success(history)
         coEvery { generativeAiRepository.generateWhyYoullLoveThis(movie, history) } returns "   "
@@ -144,4 +146,15 @@ class MovieDetailViewModelTest {
         assertNull(viewModel.state.value.whyYoullLoveThis)
         assertFalse(viewModel.state.value.isLoadingWhyYoullLoveThis)
     }
+
+    private fun playbackAnalysis() = PlaybackCapabilityAnalysis(
+        canPlay = true,
+        preferredMethod = PlaybackMethod.DIRECT_PLAY,
+        methodLabel = "Direct Play",
+        expectedQuality = "1080p/High",
+        details = "Direct Play",
+        codecs = "H264/AAC",
+        container = "MP4",
+        estimatedBandwidth = 8_000_000,
+    )
 }

@@ -512,6 +512,7 @@ class EnhancedPlaybackManager @Inject constructor(
             audioStreamIndex = audioStreamIndex,
             subtitleStreamIndex = subtitleStreamIndex,
             audioChannels = maxAudioChannels,
+            useHls = true,
         )
 
         if (directStreamUrl.isNullOrBlank()) {
@@ -641,6 +642,7 @@ class EnhancedPlaybackManager @Inject constructor(
             audioStreamIndex = audioStreamIndex,
             subtitleStreamIndex = subtitleStreamIndex,
             audioChannels = maxAudioChannels,
+            useHls = true,
         )
 
         // Return error if no valid URL could be generated

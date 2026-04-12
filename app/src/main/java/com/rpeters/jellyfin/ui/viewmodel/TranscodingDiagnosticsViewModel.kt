@@ -2,9 +2,10 @@ package com.rpeters.jellyfin.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.rpeters.jellyfin.data.DeviceCapabilities
 import com.rpeters.jellyfin.data.repository.IJellyfinRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
+import com.rpeters.jellyfin.ui.utils.EnhancedPlaybackUtils
+import com.rpeters.jellyfin.ui.utils.PlaybackBreakdownItem
 import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,7 +21,7 @@ import javax.inject.Inject
 @HiltViewModel
 class TranscodingDiagnosticsViewModel @Inject constructor(
     private val jellyfinRepository: IJellyfinRepository,
-    private val deviceCapabilities: DeviceCapabilities,
+    private val enhancedPlaybackUtils: EnhancedPlaybackUtils,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<UiState>(UiState.Loading)
@@ -40,7 +41,9 @@ class TranscodingDiagnosticsViewModel @Inject constructor(
         val container: String,
         val resolution: String,
         val needsTranscoding: Boolean,
+        val methodLabel: String,
         val transcodingReasons: List<String>,
+        val breakdown: List<PlaybackBreakdownItem>,
         val item: BaseItemDto, // Full item for navigation
         val itemType: String, // "Movie" or "Episode"
     )
@@ -105,7 +108,7 @@ class TranscodingDiagnosticsViewModel @Inject constructor(
         }
     }
 
-    private fun analyzeVideo(item: BaseItemDto): VideoAnalysis? {
+    private suspend fun analyzeVideo(item: BaseItemDto): VideoAnalysis? {
         val name = item.name ?: "Unknown"
         val id = item.id.toString()
         val itemType = item.type.name
@@ -113,33 +116,24 @@ class TranscodingDiagnosticsViewModel @Inject constructor(
         val mediaSource = item.mediaSources?.firstOrNull()
         val videoStream = mediaSource?.mediaStreams?.find { it.type == MediaStreamType.VIDEO }
         val audioStream = mediaSource?.mediaStreams?.find { it.type == MediaStreamType.AUDIO }
+        val analysis = runCatching { enhancedPlaybackUtils.analyzePlaybackCapabilities(item) }.getOrElse { error ->
+            SecureLogger.e("TranscodingDiagnostics", "Failed to analyze item $id", error)
+            return null
+        }
 
         val container = mediaSource?.container
-        val videoCodec = videoStream?.codec
-        val audioCodec = audioStream?.codec
-        val width = videoStream?.width ?: 0
-        val height = videoStream?.height ?: 0
-        val bitrate = mediaSource?.bitrate ?: 0
-
-        // Use the central DeviceCapabilities for analysis
-        val analysis = deviceCapabilities.analyzeDirectPlayCompatibility(
-            container = container,
-            videoCodec = videoCodec,
-            audioCodec = audioCodec,
-            width = width,
-            height = height,
-            bitrate = bitrate,
-        )
 
         return VideoAnalysis(
             id = id,
             name = name,
-            videoCodec = videoCodec?.uppercase() ?: "UNKNOWN",
-            audioCodec = audioCodec?.uppercase() ?: "UNKNOWN",
+            videoCodec = videoStream?.codec?.uppercase() ?: "UNKNOWN",
+            audioCodec = audioStream?.codec?.uppercase() ?: "UNKNOWN",
             container = container?.uppercase() ?: "UNKNOWN",
             resolution = buildResolutionString(videoStream),
-            needsTranscoding = !analysis.canDirectPlay,
-            transcodingReasons = analysis.issues,
+            needsTranscoding = analysis.preferredMethod != com.rpeters.jellyfin.ui.utils.PlaybackMethod.DIRECT_PLAY,
+            methodLabel = analysis.methodLabel,
+            transcodingReasons = analysis.transcodeReasons,
+            breakdown = analysis.breakdown,
             item = item,
             itemType = itemType,
         )

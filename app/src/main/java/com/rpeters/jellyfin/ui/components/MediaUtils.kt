@@ -21,6 +21,7 @@ import com.rpeters.jellyfin.ui.theme.QualityHD
 import com.rpeters.jellyfin.ui.theme.QualitySD
 import com.rpeters.jellyfin.ui.utils.EnhancedPlaybackUtils
 import com.rpeters.jellyfin.ui.utils.PlaybackCapabilityAnalysis
+import com.rpeters.jellyfin.ui.utils.PlaybackBreakdownItem
 import com.rpeters.jellyfin.ui.utils.PlaybackMethod
 import com.rpeters.jellyfin.ui.utils.findDefaultVideoStream
 import kotlinx.coroutines.CancellationException
@@ -87,17 +88,17 @@ fun PlaybackStatusBadge(
 ) {
     val (statusText, statusColor, statusIcon) = when (analysis.preferredMethod) {
         PlaybackMethod.DIRECT_PLAY -> Triple(
-            "Direct Play",
+            analysis.methodLabel,
             Color(0xFF4CAF50), // Green
             Icons.Filled.PlayCircle,
         )
         PlaybackMethod.TRANSCODING -> Triple(
-            "Transcode",
+            analysis.methodLabel,
             Color(0xFFFF9800), // Orange
             Icons.Filled.Transform,
         )
         PlaybackMethod.UNAVAILABLE -> Triple(
-            "Unavailable",
+            analysis.methodLabel,
             Color(0xFFF44336), // Red
             Icons.Filled.Error,
         )
@@ -173,6 +174,13 @@ fun PlaybackCapabilityDetails(
                 )
             }
 
+            if (analysis.breakdown.isNotEmpty()) {
+                PlaybackBreakdownDetails(
+                    breakdown = analysis.breakdown,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -211,6 +219,59 @@ fun PlaybackCapabilityDetails(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+            }
+        }
+    }
+}
+
+@Composable
+fun PlaybackBreakdownDetails(
+    breakdown: List<PlaybackBreakdownItem>,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(
+            text = "Transcoding Breakdown",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        breakdown.forEach { item ->
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.55f),
+                ),
+                shape = RoundedCornerShape(12.dp),
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text(
+                            text = item.component,
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Text(
+                            text = item.action,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                    Text(
+                        text = item.reason,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
     }

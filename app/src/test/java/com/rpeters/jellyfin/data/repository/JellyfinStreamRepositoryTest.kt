@@ -119,7 +119,7 @@ class JellyfinStreamRepositoryTest {
     }
 
     @Test
-    fun `getTranscodedStreamUrl returns progressive URL with parameters`() {
+    fun `getTranscodedStreamUrl returns progressive URL with parameters by default`() {
         // Given
         val itemId = UUID.randomUUID().toString()
         every { authRepository.getCurrentServer() } returns testServer
@@ -146,6 +146,24 @@ class JellyfinStreamRepositoryTest {
         assertTrue("URL should contain video codec", result.contains("VideoCodec=h264"))
         assertTrue("URL should contain audio codec", result.contains("AudioCodec=aac"))
         assertTrue("URL should contain container", result.contains("Container=mp4"))
+    }
+
+    @Test
+    fun `getTranscodedStreamUrl returns HLS URL when requested`() {
+        val itemId = UUID.randomUUID().toString()
+        every { authRepository.getCurrentServer() } returns testServer
+
+        val result = streamRepository.getTranscodedStreamUrl(
+            itemId = itemId,
+            maxBitrate = 8_000_000,
+            videoCodec = "h264",
+            audioCodec = "aac",
+            container = "mp4",
+            useHls = true,
+        )
+
+        assertNotNull("Transcoded HLS URL should not be null", result)
+        assertTrue("URL should target HLS endpoint", result!!.contains("/Videos/$itemId/master.m3u8"))
     }
 
     @Test

@@ -206,6 +206,7 @@ class EnhancedPlaybackManagerTest {
                 audioBitrate = any(),
                 allowVideoStreamCopy = any(),
                 allowAudioStreamCopy = any(),
+                useHls = any(),
             )
         } returns "https://server/transcode"
 
@@ -256,6 +257,7 @@ class EnhancedPlaybackManagerTest {
                 audioBitrate = any(),
                 allowVideoStreamCopy = any(),
                 allowAudioStreamCopy = any(),
+                useHls = any(),
             )
         } returns "https://server/transcode"
 
@@ -335,6 +337,7 @@ class EnhancedPlaybackManagerTest {
                 audioBitrate = any(),
                 allowVideoStreamCopy = any(),
                 allowAudioStreamCopy = any(),
+                useHls = any(),
             )
         } returns "https://server/transcode"
 
@@ -417,6 +420,7 @@ class EnhancedPlaybackManagerTest {
                 audioBitrate = any(),
                 allowVideoStreamCopy = any(),
                 allowAudioStreamCopy = any(),
+                useHls = any(),
             )
         } returns "https://server/transcode"
 
@@ -591,6 +595,7 @@ class EnhancedPlaybackManagerTest {
                 audioBitrate = any(),
                 allowVideoStreamCopy = any(),
                 allowAudioStreamCopy = any(),
+                useHls = any(),
             )
         } returns "https://server/transcode"
 

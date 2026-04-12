@@ -27,17 +27,29 @@ import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PlayCircle
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -68,6 +80,8 @@ import com.rpeters.jellyfin.ui.theme.JellyfinExpressiveTheme
 import com.rpeters.jellyfin.ui.theme.ShapeTokens
 import com.rpeters.jellyfin.ui.viewmodel.LibraryActionsPreferencesViewModel
 import com.rpeters.jellyfin.ui.viewmodel.RemoteConfigViewModel
+import com.rpeters.jellyfin.ui.viewmodel.ServerManagementAction
+import com.rpeters.jellyfin.ui.viewmodel.SettingsServerManagementViewModel
 
 @OptInAppExperimentalApis
 @Composable
@@ -92,13 +106,23 @@ fun SettingsScreen(
     onAiDiagnosticsClick: () -> Unit = {},
     libraryActionsPreferencesViewModel: LibraryActionsPreferencesViewModel = hiltViewModel(),
     remoteConfigViewModel: RemoteConfigViewModel = hiltViewModel(),
+    serverManagementViewModel: SettingsServerManagementViewModel = hiltViewModel(),
 ) {
     val libraryActionPrefs by libraryActionsPreferencesViewModel.preferences.collectAsStateWithLifecycle()
     val showTranscodingDiagnostics = remoteConfigViewModel.getBoolean(FeatureFlags.Experimental.SHOW_TRANSCODING_DIAGNOSTICS)
+    val serverManagementState by serverManagementViewModel.state.collectAsStateWithLifecycle()
+    val canManageServer = currentUser?.isAdministrator == true
 
     SettingsScreenContent(
         enableManagementActions = libraryActionPrefs.enableManagementActions,
         onToggleManagementActions = libraryActionsPreferencesViewModel::setManagementActionsEnabled,
+        canManageServer = canManageServer,
+        serverManagementState = serverManagementState,
+        onRescanLibraries = serverManagementViewModel::rescanLibraries,
+        onRestartServer = serverManagementViewModel::restartServer,
+        onShutdownServer = serverManagementViewModel::shutdownServer,
+        onServerManagementSuccessConsumed = serverManagementViewModel::clearSuccessMessage,
+        onServerManagementErrorConsumed = serverManagementViewModel::clearErrorMessage,
         onBackClick = onBackClick,
         modifier = modifier,
         currentServer = currentServer,
@@ -126,6 +150,13 @@ fun SettingsScreen(
 private fun SettingsScreenContent(
     enableManagementActions: Boolean,
     onToggleManagementActions: (Boolean) -> Unit,
+    canManageServer: Boolean,
+    serverManagementState: com.rpeters.jellyfin.ui.viewmodel.SettingsServerManagementState,
+    onRescanLibraries: () -> Unit,
+    onRestartServer: () -> Unit,
+    onShutdownServer: () -> Unit,
+    onServerManagementSuccessConsumed: () -> Unit,
+    onServerManagementErrorConsumed: () -> Unit,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
     currentServer: JellyfinServer? = null,
@@ -156,6 +187,19 @@ private fun SettingsScreenContent(
     val sectionSpacing = adaptiveConfig?.sectionSpacing ?: 16.dp
 
     val haptics = com.rpeters.jellyfin.ui.utils.rememberExpressiveHaptics()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(serverManagementState.successMessage) {
+        val message = serverManagementState.successMessage ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(message)
+        onServerManagementSuccessConsumed()
+    }
+
+    LaunchedEffect(serverManagementState.errorMessage) {
+        val message = serverManagementState.errorMessage ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(message)
+        onServerManagementErrorConsumed()
+    }
 
     Scaffold(
         topBar = {
@@ -180,6 +224,9 @@ private fun SettingsScreenContent(
                 },
                 translucent = true,
             )
+        },
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState)
         },
         modifier = modifier,
     ) { paddingValues ->
@@ -221,6 +268,14 @@ private fun SettingsScreenContent(
                                 enabled = enableManagementActions,
                                 onToggle = onToggleManagementActions,
                             )
+                            if (canManageServer) {
+                                ServerManagementCard(
+                                    state = serverManagementState,
+                                    onRescanLibraries = onRescanLibraries,
+                                    onRestartServer = onRestartServer,
+                                    onShutdownServer = onShutdownServer,
+                                )
+                            }
                             PinningManagementCard(onManagePinsClick = onManagePinsClick)
                         }
 
@@ -267,6 +322,17 @@ private fun SettingsScreenContent(
                         enabled = enableManagementActions,
                         onToggle = onToggleManagementActions,
                     )
+                }
+
+                if (canManageServer) {
+                    item {
+                        ServerManagementCard(
+                            state = serverManagementState,
+                            onRescanLibraries = onRescanLibraries,
+                            onRestartServer = onRestartServer,
+                            onShutdownServer = onShutdownServer,
+                        )
+                    }
                 }
 
                 item {
@@ -472,6 +538,147 @@ private fun PinningManagementCard(
     }
 }
 
+@Composable
+private fun ServerManagementCard(
+    state: com.rpeters.jellyfin.ui.viewmodel.SettingsServerManagementState,
+    onRescanLibraries: () -> Unit,
+    onRestartServer: () -> Unit,
+    onShutdownServer: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var pendingAction by remember { mutableStateOf<ServerManagementAction?>(null) }
+    val haptics = com.rpeters.jellyfin.ui.utils.rememberExpressiveHaptics()
+
+    ExpressiveContentCard(
+        modifier = modifier.fillMaxWidth(),
+        containerColor = JellyfinExpressiveTheme.colors.sectionContainer,
+        shape = ShapeTokens.Large,
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = stringResource(id = R.string.settings_server_management_title),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = stringResource(id = R.string.settings_server_management_description),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            if (state.isRunning) {
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            }
+
+            ExpressiveFilledButton(
+                onClick = {
+                    haptics.lightClick()
+                    onRescanLibraries()
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !state.isRunning,
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Refresh,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(text = stringResource(id = R.string.settings_server_management_rescan))
+            }
+
+            ExpressiveTextButton(
+                onClick = {
+                    haptics.lightClick()
+                    pendingAction = ServerManagementAction.RESTART_SERVER
+                },
+                enabled = !state.isRunning,
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Storage,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(text = stringResource(id = R.string.settings_server_management_restart))
+            }
+
+            ExpressiveTextButton(
+                onClick = {
+                    haptics.lightClick()
+                    pendingAction = ServerManagementAction.SHUTDOWN_SERVER
+                },
+                enabled = !state.isRunning,
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Security,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(text = stringResource(id = R.string.settings_server_management_shutdown))
+            }
+        }
+    }
+
+    if (pendingAction != null) {
+        val action = pendingAction
+        AlertDialog(
+            onDismissRequest = { pendingAction = null },
+            title = {
+                Text(
+                    text = stringResource(
+                        id = if (action == ServerManagementAction.RESTART_SERVER) {
+                            R.string.settings_server_management_restart_confirm_title
+                        } else {
+                            R.string.settings_server_management_shutdown_confirm_title
+                        },
+                    ),
+                )
+            },
+            text = {
+                Text(
+                    text = stringResource(
+                        id = if (action == ServerManagementAction.RESTART_SERVER) {
+                            R.string.settings_server_management_restart_confirm_message
+                        } else {
+                            R.string.settings_server_management_shutdown_confirm_message
+                        },
+                    ),
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        pendingAction = null
+                        when (action) {
+                            ServerManagementAction.RESTART_SERVER -> onRestartServer()
+                            ServerManagementAction.SHUTDOWN_SERVER -> onShutdownServer()
+                            ServerManagementAction.RESCAN_LIBRARIES,
+                            null,
+                            -> Unit
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError,
+                    ),
+                ) {
+                    Text(text = stringResource(id = R.string.continue_label))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingAction = null }) {
+                    Text(text = stringResource(id = R.string.cancel))
+                }
+            },
+        )
+    }
+}
+
 @OptInAppExperimentalApis
 @Preview(showBackground = true)
 @Composable
@@ -480,6 +687,13 @@ private fun SettingsScreenPreview() {
         SettingsScreenContent(
             enableManagementActions = true,
             onToggleManagementActions = {},
+            canManageServer = true,
+            serverManagementState = com.rpeters.jellyfin.ui.viewmodel.SettingsServerManagementState(),
+            onRescanLibraries = {},
+            onRestartServer = {},
+            onShutdownServer = {},
+            onServerManagementSuccessConsumed = {},
+            onServerManagementErrorConsumed = {},
             onBackClick = {},
         )
     }

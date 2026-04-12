@@ -65,6 +65,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.ui.components.AiSummaryCard
+import com.rpeters.jellyfin.ui.components.PlaybackBreakdownDetails
+import com.rpeters.jellyfin.ui.components.PlaybackStatusBadge
 import com.rpeters.jellyfin.ui.components.QualitySelectionDialog
 import com.rpeters.jellyfin.ui.components.immersive.StaticHeroSection
 import com.rpeters.jellyfin.ui.downloads.DownloadsViewModel
@@ -366,6 +368,35 @@ private fun ImmersiveMovieDetailContent(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     lineHeight = MaterialTheme.typography.bodyLarge.lineHeight.times(1.4f),
                                 )
+
+                                playbackAnalysis?.let { analysis ->
+                                    Column(
+                                        modifier = Modifier.padding(top = 12.dp),
+                                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                                    ) {
+                                        PlaybackStatusBadge(analysis = analysis)
+                                        if (analysis.transcodeReasons.isNotEmpty()) {
+                                            FlowRow(
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                            ) {
+                                                analysis.transcodeReasons.distinct().forEach { reason ->
+                                                    AssistChip(
+                                                        onClick = {},
+                                                        enabled = false,
+                                                        label = { Text(reason) },
+                                                    )
+                                                }
+                                            }
+                                        }
+                                        if (analysis.breakdown.isNotEmpty()) {
+                                            PlaybackBreakdownDetails(
+                                                breakdown = analysis.breakdown,
+                                                modifier = Modifier.fillMaxWidth(),
+                                            )
+                                        }
+                                    }
+                                }
 
                                 movie.genres?.let { genres ->
                                     FlowRow(
