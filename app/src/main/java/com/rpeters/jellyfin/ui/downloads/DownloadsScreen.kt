@@ -32,10 +32,9 @@ import com.rpeters.jellyfin.data.offline.VideoQuality
 import com.rpeters.jellyfin.ui.components.ExpressiveBackNavigationIcon
 import com.rpeters.jellyfin.ui.components.ExpressiveContentCard
 import com.rpeters.jellyfin.ui.components.ExpressiveFilledButton
+import com.rpeters.jellyfin.ui.components.ExpressiveSwitchListItem
 import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBar
 import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBarAction
-import com.rpeters.jellyfin.ui.components.ExpressiveSwitchListItem
-import com.rpeters.jellyfin.ui.components.ExpressiveWavyLinearLoading
 import com.rpeters.jellyfin.ui.components.ExpressiveWavyLinearProgress
 import com.rpeters.jellyfin.ui.theme.JellyfinExpressiveTheme
 import kotlin.math.roundToInt
@@ -188,7 +187,7 @@ fun DownloadsScreen(
                         onClick = { },
                         enabled = downloads.isNotEmpty(),
                     )
-                }
+                },
             )
         },
     ) { paddingValues ->

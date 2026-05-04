@@ -133,7 +133,7 @@ private fun ConnectivityStatusCard(
     isOnline: Boolean,
     networkType: NetworkType,
     modifier: Modifier = Modifier,
- ) {
+) {
     var deleteTarget by remember { mutableStateOf<BaseItemDto?>(null) }
 
     Card(
@@ -350,7 +350,6 @@ private fun OfflineContentSection(
             },
         )
     }
-
 }
 
 @Composable
