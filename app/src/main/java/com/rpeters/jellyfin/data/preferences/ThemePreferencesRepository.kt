@@ -66,6 +66,10 @@ open class ThemePreferencesRepository(
                     value = preferences[PreferencesKeys.CONTRAST_LEVEL],
                     default = defaults.contrastLevel,
                 ),
+                appFont = parseEnum(
+                    value = preferences[PreferencesKeys.APP_FONT],
+                    default = defaults.appFont,
+                ),
                 useThemedIcon = preferences[PreferencesKeys.USE_THEMED_ICON]
                     ?: defaults.useThemedIcon,
                 enableEdgeToEdge = preferences[PreferencesKeys.ENABLE_EDGE_TO_EDGE]
