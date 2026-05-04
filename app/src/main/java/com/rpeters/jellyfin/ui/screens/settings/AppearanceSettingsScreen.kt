@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ColorLens
 import androidx.compose.material.icons.filled.Contrast
 import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.FontDownload
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Refresh
@@ -201,6 +202,21 @@ fun AppearanceSettingsScreen(
                     AccentColorRow(
                         selectedColor = themePreferences.accentColor,
                         onColorSelect = { viewModel.setAccentColor(it) }
+                    )
+                }
+            }
+
+            // Typography Section
+            ExpressiveSettingsCard(
+                title = "Typography",
+                icon = Icons.Default.FontDownload,
+            ) {
+                com.rpeters.jellyfin.data.preferences.AppFont.entries.forEach { font ->
+                    ExpressiveRadioListItem(
+                        title = getAppFontName(font),
+                        subtitle = getAppFontDescription(font),
+                        selected = themePreferences.appFont == font,
+                        onSelect = { viewModel.setAppFont(font) },
                     )
                 }
             }
@@ -628,5 +644,23 @@ private fun ExpressiveSettingsCard(
             }
             content()
         }
+    }
+}
+
+private fun getAppFontName(font: com.rpeters.jellyfin.data.preferences.AppFont): String {
+    return when (font) {
+        com.rpeters.jellyfin.data.preferences.AppFont.DEFAULT -> "Default"
+        com.rpeters.jellyfin.data.preferences.AppFont.SANS_SERIF -> "Sans-Serif"
+        com.rpeters.jellyfin.data.preferences.AppFont.SERIF -> "Serif"
+        com.rpeters.jellyfin.data.preferences.AppFont.MONOSPACE -> "Monospace"
+    }
+}
+
+private fun getAppFontDescription(font: com.rpeters.jellyfin.data.preferences.AppFont): String {
+    return when (font) {
+        com.rpeters.jellyfin.data.preferences.AppFont.DEFAULT -> "System default font"
+        com.rpeters.jellyfin.data.preferences.AppFont.SANS_SERIF -> "Clean and modern"
+        com.rpeters.jellyfin.data.preferences.AppFont.SERIF -> "Classic and elegant"
+        com.rpeters.jellyfin.data.preferences.AppFont.MONOSPACE -> "Fixed-width coding font"
     }
 }

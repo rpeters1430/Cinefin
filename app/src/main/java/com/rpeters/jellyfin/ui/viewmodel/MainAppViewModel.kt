@@ -463,7 +463,6 @@ constructor(
 
                         _appState.value = _appState.value.copy(
                             libraries = libraries,
-                            isLoading = false,
                             errorMessage = null,
                         )
 
@@ -476,6 +475,7 @@ constructor(
                                 continueWatching = supplementalData.continueWatching ?: state.continueWatching,
                                 nextUp = supplementalData.nextUp ?: state.nextUp,
                                 currentUser = supplementalData.currentUser ?: state.currentUser,
+                                isLoading = false,
                                 errorMessage = state.errorMessage ?: supplementalData.errors.firstOrNull(),
                             )
                         }

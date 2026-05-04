@@ -112,6 +112,15 @@ open class ThemePreferencesRepository(
     }
 
     /**
+     * Update the application font.
+     */
+    open suspend fun setAppFont(appFont: AppFont) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.APP_FONT] = appFont.name
+        }
+    }
+
+    /**
      * Update themed icon setting.
      */
     open suspend fun setUseThemedIcon(useThemedIcon: Boolean) {
@@ -179,6 +188,7 @@ open class ThemePreferencesRepository(
         val USE_DYNAMIC_COLORS = booleanPreferencesKey("use_dynamic_colors")
         val ACCENT_COLOR = stringPreferencesKey("accent_color")
         val CONTRAST_LEVEL = stringPreferencesKey("contrast_level")
+        val APP_FONT = stringPreferencesKey("app_font")
         val USE_THEMED_ICON = booleanPreferencesKey("use_themed_icon")
         val ENABLE_EDGE_TO_EDGE = booleanPreferencesKey("enable_edge_to_edge")
         val RESPECT_REDUCE_MOTION = booleanPreferencesKey("respect_reduce_motion")

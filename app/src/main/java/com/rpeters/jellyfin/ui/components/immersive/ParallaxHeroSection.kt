@@ -13,6 +13,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
+import androidx.compose.material3.MaterialTheme
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
@@ -80,6 +81,7 @@ fun ParallaxHeroSection(
 
         // Gradient overlay for text readability
         if (showGradient) {
+            val backgroundColor = MaterialTheme.colorScheme.background
             Box(
                 modifier = Modifier
                     .matchParentSize()
@@ -90,8 +92,8 @@ fun ParallaxHeroSection(
                                 colors = listOf(
                                     Color.Transparent,
                                     Color.Black.copy(alpha = 0.3f),
-                                    Color.Black.copy(alpha = 0.7f),
-                                    Color.Black.copy(alpha = 0.9f),
+                                    backgroundColor.copy(alpha = 0.8f),
+                                    backgroundColor,
                                 ),
                                 startY = 0f,
                                 endY = size.height,

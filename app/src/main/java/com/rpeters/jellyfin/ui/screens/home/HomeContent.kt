@@ -199,32 +199,41 @@ fun HomeContent(
                 verticalArrangement = Arrangement.spacedBy(adaptiveConfig.sectionSpacing),
                 userScrollEnabled = true,
             ) {
-                if (contentLists.featuredItems.isNotEmpty()) {
+                if (contentLists.featuredItems.isNotEmpty() || appState.isLoading) {
                     item(key = "featured", contentType = "carousel") {
-                        val featured = remember(contentLists.featuredItems, unknownText) {
-                            contentLists.featuredItems.map {
-                                it.toCarouselItem(
-                                    titleOverride = it.name ?: unknownText,
-                                    subtitleOverride = itemSubtitle(it),
-                                    imageUrl = getBackdropUrl(it) ?: getSeriesImageUrl(it)
-                                        ?: getImageUrl(it) ?: "",
-                                )
+                        if (contentLists.featuredItems.isNotEmpty()) {
+                            val featured = remember(contentLists.featuredItems, unknownText) {
+                                contentLists.featuredItems.map {
+                                    it.toCarouselItem(
+                                        titleOverride = it.name ?: unknownText,
+                                        subtitleOverride = itemSubtitle(it),
+                                        imageUrl = getBackdropUrl(it) ?: getSeriesImageUrl(it)
+                                            ?: getImageUrl(it) ?: "",
+                                    )
+                                }
                             }
+                            ExpressiveHeroCarousel(
+                                items = featured,
+                                onItemClick = { selected ->
+                                    contentLists.featuredItems.firstOrNull { it.id.toString() == selected.id }
+                                        ?.let(stableOnItemClick)
+                                },
+                                onPlayClick = { selected ->
+                                    contentLists.featuredItems.firstOrNull { it.id.toString() == selected.id }
+                                        ?.let(stableOnItemClick)
+                                },
+                                heroHeight = adaptiveConfig.heroHeight,
+                                horizontalPadding = adaptiveConfig.heroHorizontalPadding,
+                                pageSpacing = adaptiveConfig.heroPageSpacing,
+                            )
+                        } else {
+                            // Reserve space while loading to prevent jumps
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(adaptiveConfig.heroHeight),
+                            )
                         }
-                        ExpressiveHeroCarousel(
-                            items = featured,
-                            onItemClick = { selected ->
-                                contentLists.featuredItems.firstOrNull { it.id.toString() == selected.id }
-                                    ?.let(stableOnItemClick)
-                            },
-                            onPlayClick = { selected ->
-                                contentLists.featuredItems.firstOrNull { it.id.toString() == selected.id }
-                                    ?.let(stableOnItemClick)
-                            },
-                            heroHeight = adaptiveConfig.heroHeight,
-                            horizontalPadding = adaptiveConfig.heroHorizontalPadding,
-                            pageSpacing = adaptiveConfig.heroPageSpacing,
-                        )
                     }
                 }
 

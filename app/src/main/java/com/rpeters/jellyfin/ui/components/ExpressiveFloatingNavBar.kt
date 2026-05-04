@@ -52,17 +52,17 @@ fun ExpressiveFloatingNavBar(
         Box(
             modifier = Modifier
                 .wrapContentWidth()
-                .padding(horizontal = 24.dp, vertical = 12.dp),
+                .padding(horizontal = 12.dp, vertical = 10.dp),
         ) {
             ExpressiveBlurSurface(
                 shape = MaterialTheme.shapes.extraLarge,
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.75f),
                 modifier = Modifier
                     .wrapContentWidth(),
             ) {
                 Row(
                     modifier = Modifier
-                        .padding(horizontal = 8.dp, vertical = 6.dp)
+                        .padding(horizontal = 6.dp, vertical = 4.dp)
                         .animateContentSize(
                             animationSpec = spring(
                                 dampingRatio = Spring.DampingRatioLowBouncy,
@@ -110,12 +110,12 @@ private fun ExpressiveNavBarButton(
         color = if (selected) {
             MaterialTheme.colorScheme.primaryContainer
         } else {
-            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
         },
-        modifier = Modifier.size(height = 48.dp, width = if (selected) 130.dp else 48.dp),
+        modifier = Modifier.size(height = 48.dp, width = if (selected) 116.dp else 48.dp),
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 12.dp),
+            modifier = Modifier.padding(horizontal = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center,
         ) {
@@ -123,14 +123,14 @@ private fun ExpressiveNavBarButton(
                 imageVector = icon,
                 contentDescription = contentDescription,
                 tint = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(24.dp),
+                modifier = Modifier.size(26.dp),
             )
             if (selected) {
                 Text(
                     text = label,
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.ExtraBold,
-                    modifier = Modifier.padding(start = 8.dp),
+                    modifier = Modifier.padding(start = 6.dp),
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,

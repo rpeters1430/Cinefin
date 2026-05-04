@@ -107,6 +107,7 @@ private fun CarouselMovieCard(
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             val scrimColor = MaterialTheme.colorScheme.scrim
+            val backgroundColor = MaterialTheme.colorScheme.background
             // Use white text over dark scrim gradient (Material Design pattern for media overlays)
             val overlayTextColor = Color.White
             OptimizedImage(
@@ -125,7 +126,9 @@ private fun CarouselMovieCard(
                         val gradient = Brush.verticalGradient(
                             colors = listOf(
                                 Color.Transparent,
-                                scrimColor.copy(alpha = 0.75f),
+                                scrimColor.copy(alpha = 0.45f),
+                                backgroundColor.copy(alpha = 0.9f),
+                                backgroundColor,
                             ),
                             startY = size.height * 0.40f,
                             endY = size.height,
@@ -273,6 +276,7 @@ private fun CarouselContentCard(
                 else -> getBackdropUrl(item) ?: getImageUrl(item)
             }
             val scrimColor = MaterialTheme.colorScheme.scrim
+            val backgroundColor = MaterialTheme.colorScheme.background
             // Use white text over dark scrim gradient (Material Design pattern for media overlays)
             val overlayTextColor = Color.White
 
@@ -292,7 +296,9 @@ private fun CarouselContentCard(
                         val gradient = Brush.verticalGradient(
                             colors = listOf(
                                 Color.Transparent,
-                                scrimColor.copy(alpha = 0.75f),
+                                scrimColor.copy(alpha = 0.45f),
+                                backgroundColor.copy(alpha = 0.9f),
+                                backgroundColor,
                             ),
                             startY = size.height * 0.40f,
                             endY = size.height,

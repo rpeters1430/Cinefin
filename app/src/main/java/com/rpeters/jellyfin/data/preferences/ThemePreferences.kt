@@ -61,6 +61,23 @@ enum class AccentColor {
 }
 
 /**
+ * Font options for the application.
+ */
+enum class AppFont {
+    /** System default font */
+    DEFAULT,
+
+    /** Sans-serif font */
+    SANS_SERIF,
+
+    /** Serif font */
+    SERIF,
+
+    /** Monospace font */
+    MONOSPACE,
+}
+
+/**
  * Data class representing user theme preferences.
  */
 data class ThemePreferences(
@@ -84,6 +101,11 @@ data class ThemePreferences(
      * Contrast level for theme colors.
      */
     val contrastLevel: ContrastLevel = ContrastLevel.STANDARD,
+    
+    /**
+     * Application font family.
+     */
+    val appFont: AppFont = AppFont.DEFAULT,
 
     /**
      * Whether to use themed app icon on Android 13+.

@@ -213,6 +213,7 @@ private fun ImmersiveHeroCard(
 
         // Strong gradient overlay for text readability
         val scrimColor = MaterialTheme.colorScheme.scrim
+        val backgroundColor = MaterialTheme.colorScheme.background
         val overlayTextColor = Color.White
         Box(
             modifier = Modifier
@@ -221,9 +222,9 @@ private fun ImmersiveHeroCard(
                     val gradientBrush = Brush.verticalGradient(
                         colors = listOf(
                             Color.Transparent,
-                            scrimColor.copy(alpha = 0.3f),
-                            scrimColor.copy(alpha = 0.7f),
-                            scrimColor.copy(alpha = 0.9f),
+                            scrimColor.copy(alpha = 0.4f),
+                            backgroundColor.copy(alpha = 0.8f),
+                            backgroundColor,
                         ),
                         startY = size.height * 0.3f,
                         endY = size.height,

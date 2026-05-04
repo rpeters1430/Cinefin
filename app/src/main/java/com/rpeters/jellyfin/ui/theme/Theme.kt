@@ -10,7 +10,9 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
 import com.rpeters.jellyfin.OptInAppExperimentalApis
+import com.rpeters.jellyfin.data.preferences.AppFont
 import com.rpeters.jellyfin.data.preferences.ContrastLevel
 import com.rpeters.jellyfin.data.preferences.ThemeMode
 import com.rpeters.jellyfin.data.preferences.ThemePreferences
@@ -105,9 +107,16 @@ fun JellyfinAndroidTheme(
 
     val tunedColorScheme = applyLightModeTextContrast(adjustedColorScheme, darkTheme)
 
+    val fontFamily = when (themePreferences.appFont) {
+        AppFont.DEFAULT -> FontFamily.Default
+        AppFont.SANS_SERIF -> FontFamily.SansSerif
+        AppFont.SERIF -> FontFamily.Serif
+        AppFont.MONOSPACE -> FontFamily.Monospace
+    }
+
     MaterialTheme(
         colorScheme = tunedColorScheme,
-        typography = Typography,
+        typography = getTypography(fontFamily),
         shapes = JellyfinShapes,
     ) {
         ProvideJellyfinExpressiveTheme(content = content)

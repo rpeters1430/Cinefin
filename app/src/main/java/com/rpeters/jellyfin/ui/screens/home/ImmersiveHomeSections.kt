@@ -79,11 +79,7 @@ internal fun MobileExpressiveHomeContent(
         ),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
-        val heroItems = if (contentLists.recentMovies.isNotEmpty()) {
-            contentLists.recentMovies.take(5)
-        } else {
-            contentLists.recentTVShows.take(5)
-        }
+        val heroItems = contentLists.featuredItems
         if (heroItems.isNotEmpty() || appState.isLoading) {
             item(key = "recently_added_hero", contentType = "hero_row") {
                 if (heroItems.isNotEmpty()) {
@@ -110,6 +106,7 @@ internal fun MobileExpressiveHomeContent(
                         modifier = Modifier.fillMaxWidth(),
                     )
                 } else {
+                    // Placeholder while loading
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()

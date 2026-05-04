@@ -99,6 +99,20 @@ class ThemePreferencesViewModel @Inject constructor(
     }
 
     /**
+     * Update the application font.
+     */
+    fun setAppFont(appFont: com.rpeters.jellyfin.data.preferences.AppFont) {
+        viewModelScope.launch {
+            try {
+                themePreferencesRepository.setAppFont(appFont)
+                SecureLogger.d(TAG, "App font updated to: $appFont")
+            } catch (e: CancellationException) {
+                throw e
+            }
+        }
+    }
+
+    /**
      * Toggle themed icon on/off.
      */
     fun setUseThemedIcon(useThemedIcon: Boolean) {
