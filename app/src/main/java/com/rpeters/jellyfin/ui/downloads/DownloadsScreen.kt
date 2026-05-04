@@ -56,6 +56,7 @@ fun DownloadsScreen(
     var showDeleteAllConfirmation by remember { mutableStateOf(false) }
     var showClearWatchedConfirmation by remember { mutableStateOf(false) }
     var redownloadTarget by remember { mutableStateOf<OfflineDownload?>(null) }
+    var deleteTarget by remember { mutableStateOf<OfflineDownload?>(null) }
 
     if (showDeleteAllConfirmation) {
         AlertDialog(
@@ -95,6 +96,36 @@ fun DownloadsScreen(
             },
             dismissButton = {
                 TextButton(onClick = { }) {
+                    Text(stringResource(id = R.string.cancel))
+                }
+            },
+        )
+    }
+
+    deleteTarget?.let { target ->
+        AlertDialog(
+            onDismissRequest = { deleteTarget = null },
+            title = { Text(stringResource(id = R.string.library_actions_delete_confirm_title)) },
+            text = {
+                Text(
+                    stringResource(
+                        id = R.string.library_actions_delete_confirm_message,
+                        target.itemName,
+                    ),
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        downloadsViewModel.deleteDownload(target.id)
+                        deleteTarget = null
+                    },
+                ) {
+                    Text(stringResource(id = R.string.delete))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { deleteTarget = null }) {
                     Text(stringResource(id = R.string.cancel))
                 }
             },
@@ -216,7 +247,7 @@ fun DownloadsScreen(
                     onPause = { downloadsViewModel.pauseDownload(download.id) },
                     onResume = { downloadsViewModel.resumeDownload(download.id) },
                     onCancel = { downloadsViewModel.cancelDownload(download.id) },
-                    onDelete = { downloadsViewModel.deleteDownload(download.id) },
+                    onDelete = { deleteTarget = download },
                     onRedownload = { },
                     onOpenDetail = { onOpenItemDetail(download) },
                     onPlay = { downloadsViewModel.playOfflineContent(download.jellyfinItemId) },
