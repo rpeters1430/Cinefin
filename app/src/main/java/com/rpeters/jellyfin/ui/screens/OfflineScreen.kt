@@ -134,6 +134,8 @@ private fun ConnectivityStatusCard(
     networkType: NetworkType,
     modifier: Modifier = Modifier,
 ) {
+    var deleteTarget by remember { mutableStateOf<BaseItemDto?>(null) }
+
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -253,6 +255,7 @@ private fun OfflineContentSection(
     onDeleteContent: (BaseItemDto) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var deleteTarget by remember { mutableStateOf<BaseItemDto?>(null) }
     Card(
         modifier = modifier.fillMaxWidth(),
     ) {
@@ -310,12 +313,42 @@ private fun OfflineContentSection(
                         OfflineContentItem(
                             libraryItem = libraryItem,
                             onPlay = { onPlayContent(libraryItem.item) },
-                            onDelete = { onDeleteContent(libraryItem.item) },
+                            onDelete = { deleteTarget = libraryItem.item },
                         )
                     }
                 }
             }
         }
+    }
+
+    deleteTarget?.let { item ->
+        AlertDialog(
+            onDismissRequest = { deleteTarget = null },
+            title = { Text(stringResource(id = R.string.library_actions_delete_confirm_title)) },
+            text = {
+                Text(
+                    stringResource(
+                        id = R.string.library_actions_delete_confirm_message,
+                        item.name ?: stringResource(id = R.string.unknown),
+                    ),
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onDeleteContent(item)
+                        deleteTarget = null
+                    },
+                ) {
+                    Text(stringResource(id = R.string.delete))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { deleteTarget = null }) {
+                    Text(stringResource(id = R.string.cancel))
+                }
+            },
+        )
     }
 }
 
