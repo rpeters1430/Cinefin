@@ -41,6 +41,9 @@ ProGuard_Rules_Implementation.md
 .idea/misc.xml
 .idea/vcs.xml
 
+# Claude worktrees (should not be tracked as submodules)
+.claude/worktrees/
+
 # Visual Studio Code
 .vscode/
 *.code-workspace
