@@ -23,7 +23,7 @@
     },
     "ai_pro_model_name": {
       "defaultValue": {
-        "value": "gemini-3-pro-preview"
+        "value": "gemini-3.1-pro-preview"
       },
       "description": "Pro AI model name.",
       "valueType": "STRING"
