@@ -15,7 +15,7 @@ composeBom = "2026.05.00"
 # Pin all core Compose libraries to this version to work around BOM internal mismatches.
 # When bumping the BOM, check: ./gradlew :app:dependencies | grep "compose.ui:ui:" to find what
 # version the BOM resolves UI to, then set this to match.
-composeCore = "1.11.0-beta01"
+composeCore = "1.12.0-alpha02"
 jellyfinSdk = "1.8.8"
 # Stable-first dependency policy:
 # - Prefer stable for all dependencies.

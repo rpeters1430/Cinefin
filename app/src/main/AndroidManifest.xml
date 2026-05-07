@@ -15,6 +15,7 @@
     
     <!-- Video player permissions -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.VIBRATE" />
     
     <!-- Offline download permissions -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
