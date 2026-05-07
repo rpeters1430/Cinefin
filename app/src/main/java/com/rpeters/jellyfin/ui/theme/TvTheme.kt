@@ -12,6 +12,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.rpeters.jellyfin.data.preferences.AccentColor
+import com.rpeters.jellyfin.data.preferences.AppFont
 import androidx.tv.material3.Border
 import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.darkColorScheme as tvDarkColorScheme
@@ -104,10 +106,14 @@ fun standardTvFocusBorder() = Border(
 
 @Composable
 fun CinefinTvTheme(
-    accentColor: com.rpeters.jellyfin.data.preferences.AccentColor = com.rpeters.jellyfin.data.preferences.AccentColor.JELLYFIN_PURPLE,
+    accentColor: AccentColor = AccentColor.JELLYFIN_PURPLE,
+    appFont: AppFont = AppFont.DEFAULT,
     content: @Composable () -> Unit,
 ) {
-    TvMaterialTheme(colorScheme = cinefinTvColorScheme(accentColor = accentColor)) {
+    TvMaterialTheme(
+        colorScheme = cinefinTvColorScheme(accentColor = accentColor),
+        typography = getTvTypography(appFont.toFontFamily()),
+    ) {
         CompositionLocalProvider(
             LocalCinefinTvLayoutTokens provides CinefinTvLayoutTokens(),
             content = content,
@@ -124,7 +130,7 @@ fun CinefinTvTheme(
  */
 @Composable
 fun cinefinTvColorScheme(
-    accentColor: com.rpeters.jellyfin.data.preferences.AccentColor = com.rpeters.jellyfin.data.preferences.AccentColor.JELLYFIN_PURPLE
+    accentColor: AccentColor = AccentColor.JELLYFIN_PURPLE
 ): androidx.tv.material3.ColorScheme {
     // Get the base color scheme from our standard M3 schemes
     val baseScheme = getDarkColorScheme(accentColor)

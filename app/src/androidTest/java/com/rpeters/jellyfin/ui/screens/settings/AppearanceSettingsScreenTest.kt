@@ -9,6 +9,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.rpeters.jellyfin.data.preferences.AppFont
 import com.rpeters.jellyfin.data.preferences.ContrastLevel
 import com.rpeters.jellyfin.data.preferences.ThemeMode
 import com.rpeters.jellyfin.data.preferences.ThemePreferences
@@ -55,6 +56,7 @@ class AppearanceSettingsScreenTest {
         coEvery { mockViewModel.setUseDynamicColors(any()) } returns Unit
         coEvery { mockViewModel.setAccentColor(any()) } returns Unit
         coEvery { mockViewModel.setContrastLevel(any()) } returns Unit
+        every { mockViewModel.setAppFont(any()) } returns Unit
         coEvery { mockViewModel.setUseThemedIcon(any()) } returns Unit
         coEvery { mockViewModel.setEnableEdgeToEdge(any()) } returns Unit
         coEvery { mockViewModel.setRespectReduceMotion(any()) } returns Unit
@@ -75,7 +77,8 @@ class AppearanceSettingsScreenTest {
 
         composeTestRule.onNodeWithText("Appearance").assertIsDisplayed()
         composeTestRule.onNodeWithText("Theme Mode").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Material You").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Color System").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Typography").assertIsDisplayed()
         composeTestRule.onNodeWithText("Contrast").assertIsDisplayed()
         composeTestRule.onNodeWithText("Accessibility").assertIsDisplayed()
     }
@@ -126,7 +129,7 @@ class AppearanceSettingsScreenTest {
         }
 
         composeTestRule.onNodeWithText("Dynamic Colors").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Use colors from your wallpaper").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Colors extracted from your wallpaper").assertIsDisplayed()
     }
 
     @Test
@@ -227,6 +230,40 @@ class AppearanceSettingsScreenTest {
         composeTestRule.onNodeWithText("Standard").performClick()
 
         verify { mockViewModel.setContrastLevel(ContrastLevel.STANDARD) }
+    }
+
+    @Test
+    fun screenDisplaysAllAppFontOptions() {
+        composeTestRule.setContent {
+            JellyfinAndroidTheme {
+                AppearanceSettingsScreen(
+                    onNavigateBack = { navigateBackCalled = true },
+                    viewModel = mockViewModel,
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("Cinefin app font preview").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Default").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Sans-Serif").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Serif").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Monospace").assertIsDisplayed()
+    }
+
+    @Test
+    fun selectingSerifAppFontCallsViewModel() {
+        composeTestRule.setContent {
+            JellyfinAndroidTheme {
+                AppearanceSettingsScreen(
+                    onNavigateBack = { navigateBackCalled = true },
+                    viewModel = mockViewModel,
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("Serif").performClick()
+
+        verify { mockViewModel.setAppFont(AppFont.SERIF) }
     }
 
     @Test
@@ -345,7 +382,7 @@ class AppearanceSettingsScreenTest {
 
         composeTestRule.onNodeWithText("Accessibility").assertIsDisplayed()
         composeTestRule.onNodeWithText("Respect Reduce Motion").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Follow system animation preferences").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Disable heavy animations if system set to reduce motion").assertIsDisplayed()
     }
 
     @Test

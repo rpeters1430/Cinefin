@@ -60,7 +60,10 @@ fun TvJellyfinApp(
     val themePreferences by themeViewModel.themePreferences.collectAsStateWithLifecycle()
 
     JellyfinAndroidTheme(themePreferences = themePreferences) {
-        CinefinTvTheme(accentColor = themePreferences.accentColor) {
+        CinefinTvTheme(
+            accentColor = themePreferences.accentColor,
+            appFont = themePreferences.appFont,
+        ) {
             TvSurface(modifier = modifier.fillMaxSize()) {
                 val navController = rememberNavController()
                 val tvFocusManager = remember { TvFocusManager() }

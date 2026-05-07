@@ -5,7 +5,9 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.text.font.FontFamily
 import com.rpeters.jellyfin.data.preferences.AccentColor
+import com.rpeters.jellyfin.data.preferences.AppFont
 import com.rpeters.jellyfin.data.preferences.ContrastLevel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -58,6 +60,34 @@ class ThemeTest {
 
         // Then - Primary colors should be different
         assertNotEquals(purpleScheme.primary, blueScheme.primary)
+    }
+
+    @Test
+    fun `app font preferences map to compose font families`() {
+        assertEquals(FontFamily.Default, AppFont.DEFAULT.toFontFamily())
+        assertEquals(FontFamily.SansSerif, AppFont.SANS_SERIF.toFontFamily())
+        assertEquals(FontFamily.Serif, AppFont.SERIF.toFontFamily())
+        assertEquals(FontFamily.Monospace, AppFont.MONOSPACE.toFontFamily())
+    }
+
+    @Test
+    fun `phone typography uses selected app font family`() {
+        val typography = getTypography(AppFont.SERIF.toFontFamily())
+
+        assertEquals(FontFamily.Serif, typography.displayLarge.fontFamily)
+        assertEquals(FontFamily.Serif, typography.titleMedium.fontFamily)
+        assertEquals(FontFamily.Serif, typography.bodyLarge.fontFamily)
+        assertEquals(FontFamily.Serif, typography.labelSmall.fontFamily)
+    }
+
+    @Test
+    fun `tv typography uses selected app font family`() {
+        val typography = getTvTypography(AppFont.MONOSPACE.toFontFamily())
+
+        assertEquals(FontFamily.Monospace, typography.displayLarge.fontFamily)
+        assertEquals(FontFamily.Monospace, typography.titleMedium.fontFamily)
+        assertEquals(FontFamily.Monospace, typography.bodyLarge.fontFamily)
+        assertEquals(FontFamily.Monospace, typography.labelSmall.fontFamily)
     }
 
     // ========================================================================

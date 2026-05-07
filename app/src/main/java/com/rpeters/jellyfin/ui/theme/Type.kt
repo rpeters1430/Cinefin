@@ -6,8 +6,18 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import com.rpeters.jellyfin.data.preferences.AppFont
 
 // Material 3 Expressive typography system for Jellyfin
+fun AppFont.toFontFamily(): FontFamily {
+    return when (this) {
+        AppFont.DEFAULT -> FontFamily.Default
+        AppFont.SANS_SERIF -> FontFamily.SansSerif
+        AppFont.SERIF -> FontFamily.Serif
+        AppFont.MONOSPACE -> FontFamily.Monospace
+    }
+}
+
 fun getTypography(fontFamily: FontFamily = FontFamily.Default): Typography {
     return Typography(
         // Display styles - for large, prominent text with expressive personality
@@ -130,6 +140,27 @@ fun getTypography(fontFamily: FontFamily = FontFamily.Default): Typography {
             letterSpacing = 0.5.sp,
             platformStyle = PlatformTextStyle(includeFontPadding = false)
         ),
+    )
+}
+
+fun getTvTypography(fontFamily: FontFamily = FontFamily.Default): androidx.tv.material3.Typography {
+    val typography = getTypography(fontFamily)
+    return androidx.tv.material3.Typography(
+        displayLarge = typography.displayLarge,
+        displayMedium = typography.displayMedium,
+        displaySmall = typography.displaySmall,
+        headlineLarge = typography.headlineLarge,
+        headlineMedium = typography.headlineMedium,
+        headlineSmall = typography.headlineSmall,
+        titleLarge = typography.titleLarge,
+        titleMedium = typography.titleMedium,
+        titleSmall = typography.titleSmall,
+        bodyLarge = typography.bodyLarge,
+        bodyMedium = typography.bodyMedium,
+        bodySmall = typography.bodySmall,
+        labelLarge = typography.labelLarge,
+        labelMedium = typography.labelMedium,
+        labelSmall = typography.labelSmall,
     )
 }
 

@@ -61,6 +61,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -70,6 +71,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.preferences.AccentColor
+import com.rpeters.jellyfin.data.preferences.AppFont
 import com.rpeters.jellyfin.data.preferences.ContrastLevel
 import com.rpeters.jellyfin.data.preferences.ThemeMode
 import com.rpeters.jellyfin.ui.components.ExpressiveBackNavigationIcon
@@ -84,6 +86,7 @@ import com.rpeters.jellyfin.ui.theme.getAccentColorName
 import com.rpeters.jellyfin.ui.theme.getContrastLevelDescription
 import com.rpeters.jellyfin.ui.theme.getContrastLevelName
 import com.rpeters.jellyfin.ui.theme.getThemeModeName
+import com.rpeters.jellyfin.ui.theme.toFontFamily
 import com.rpeters.jellyfin.ui.viewmodel.ThemePreferencesViewModel
 
 /**
@@ -128,7 +131,7 @@ fun AppearanceSettingsScreen(
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             // Theme Preview Card
-            ThemePreviewCard()
+            ThemePreviewCard(appFont = themePreferences.appFont)
 
             // Theme Mode Section
             ExpressiveSettingsCard(
@@ -211,7 +214,8 @@ fun AppearanceSettingsScreen(
                 title = "Typography",
                 icon = Icons.Default.FontDownload,
             ) {
-                com.rpeters.jellyfin.data.preferences.AppFont.entries.forEach { font ->
+                FontPreview(fontFamily = themePreferences.appFont.toFontFamily())
+                AppFont.entries.forEach { font ->
                     ExpressiveRadioListItem(
                         title = getAppFontName(font),
                         subtitle = getAppFontDescription(font),
@@ -270,6 +274,7 @@ fun AppearanceSettingsScreen(
 
 @Composable
 private fun ThemePreviewCard(
+    appFont: AppFont,
     modifier: Modifier = Modifier
 ) {
     ExpressiveContentCard(
@@ -423,11 +428,45 @@ private fun ThemePreviewCard(
             ) {
                 Text(
                     text = "LIVE PREVIEW",
-                    style = MaterialTheme.typography.labelSmall,
+                    style = MaterialTheme.typography.labelSmall.copy(fontFamily = appFont.toFontFamily()),
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun FontPreview(
+    fontFamily: FontFamily,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        shape = MaterialTheme.shapes.medium,
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Text(
+                text = "Aa",
+                style = MaterialTheme.typography.headlineMedium.copy(
+                    fontFamily = fontFamily,
+                    fontWeight = FontWeight.Bold,
+                ),
+            )
+            Text(
+                text = "Cinefin app font preview",
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.bodyLarge.copy(fontFamily = fontFamily),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+            )
         }
     }
 }
@@ -647,20 +686,20 @@ private fun ExpressiveSettingsCard(
     }
 }
 
-private fun getAppFontName(font: com.rpeters.jellyfin.data.preferences.AppFont): String {
+private fun getAppFontName(font: AppFont): String {
     return when (font) {
-        com.rpeters.jellyfin.data.preferences.AppFont.DEFAULT -> "Default"
-        com.rpeters.jellyfin.data.preferences.AppFont.SANS_SERIF -> "Sans-Serif"
-        com.rpeters.jellyfin.data.preferences.AppFont.SERIF -> "Serif"
-        com.rpeters.jellyfin.data.preferences.AppFont.MONOSPACE -> "Monospace"
+        AppFont.DEFAULT -> "Default"
+        AppFont.SANS_SERIF -> "Sans-Serif"
+        AppFont.SERIF -> "Serif"
+        AppFont.MONOSPACE -> "Monospace"
     }
 }
 
-private fun getAppFontDescription(font: com.rpeters.jellyfin.data.preferences.AppFont): String {
+private fun getAppFontDescription(font: AppFont): String {
     return when (font) {
-        com.rpeters.jellyfin.data.preferences.AppFont.DEFAULT -> "System default font"
-        com.rpeters.jellyfin.data.preferences.AppFont.SANS_SERIF -> "Clean and modern"
-        com.rpeters.jellyfin.data.preferences.AppFont.SERIF -> "Classic and elegant"
-        com.rpeters.jellyfin.data.preferences.AppFont.MONOSPACE -> "Fixed-width coding font"
+        AppFont.DEFAULT -> "System default font"
+        AppFont.SANS_SERIF -> "Clean and modern"
+        AppFont.SERIF -> "Classic and elegant"
+        AppFont.MONOSPACE -> "Fixed-width coding font"
     }
 }
