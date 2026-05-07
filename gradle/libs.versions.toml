@@ -47,7 +47,7 @@ mockk = "1.14.9"
 kotlinxCoroutinesTest = "1.10.2"
 androidxArchCoreTest = "2.2.0"
 androidxTvMaterial = "1.1.0-rc01"
-androidxTvFoundation = "1.0.0-rc01"
+androidxTvFoundation = "1.0.0"
 # Paging is temporarily pre-release and must follow explicit entry/exit rules in
 # docs/plans/UPGRADE_PATH.md before any version change.
 paging = "3.5.0-rc01"
