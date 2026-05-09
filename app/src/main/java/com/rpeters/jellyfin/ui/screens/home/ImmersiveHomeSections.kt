@@ -67,13 +67,19 @@ internal fun MobileExpressiveHomeContent(
             if (items.isEmpty()) null else library to items
         }
     }
+    val hasHeroSlot = contentLists.featuredItems.isNotEmpty() || appState.isLoading
+    val topPadding = if (hasHeroSlot) {
+        contentPadding.calculateTopPadding()
+    } else {
+        WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 16.dp
+    }
 
     LazyColumn(
         state = listState,
         modifier = modifier,
         contentPadding = PaddingValues(
             start = 0.dp,
-            top = contentPadding.calculateTopPadding(),
+            top = topPadding,
             end = 0.dp,
             bottom = contentPadding.calculateBottomPadding() + bottomSpacing,
         ),
