@@ -2,11 +2,13 @@
 
 package com.rpeters.jellyfin.ui.navigation
 
+import androidx.annotation.OptIn
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import com.rpeters.jellyfin.R
@@ -21,6 +23,7 @@ import com.rpeters.jellyfin.ui.screens.TranscodingDiagnosticsScreen
 import com.rpeters.jellyfin.ui.screens.settings.AppearanceSettingsScreen
 import com.rpeters.jellyfin.ui.screens.settings.PinningSettingsScreen
 import com.rpeters.jellyfin.ui.screens.settings.PrivacySettingsScreen
+import com.rpeters.jellyfin.ui.screens.settings.SeerrSettingsScreen
 import com.rpeters.jellyfin.ui.screens.settings.SettingsSectionScreen
 import com.rpeters.jellyfin.ui.screens.settings.SubtitleSettingsScreen
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
@@ -28,6 +31,7 @@ import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 /**
  * Profile, search, favorites, and settings routes.
  */
+@OptIn(UnstableApi::class)
 fun androidx.navigation.NavGraphBuilder.profileNavGraph(
     navController: NavHostController,
     onLogout: () -> Unit,
@@ -66,6 +70,9 @@ fun androidx.navigation.NavGraphBuilder.profileNavGraph(
             getImageUrl = { item -> viewModel.getImageUrl(item) },
             onBackClick = { navController.popBackStack() },
             onNowPlayingClick = { navController.navigate(Screen.NowPlaying.route) },
+            onSearchRequests = { query ->
+                navController.navigate(Screen.Requests.createRoute(query))
+            },
             onItemClick = { item ->
                 when (item.type) {
                     org.jellyfin.sdk.model.api.BaseItemKind.MOVIE -> {
@@ -242,8 +249,15 @@ fun androidx.navigation.NavGraphBuilder.profileNavGraph(
             onNotificationsSettingsClick = { navController.navigate(Screen.NotificationsSettings.route) },
             onPrivacySettingsClick = { navController.navigate(Screen.PrivacySettings.route) },
             onAccessibilitySettingsClick = { navController.navigate(Screen.AccessibilitySettings.route) },
+            onSeerrSettingsClick = { navController.navigate(Screen.SeerrSettings.route) },
             onTranscodingDiagnosticsClick = { navController.navigate(Screen.TranscodingDiagnostics.route) },
             onAiDiagnosticsClick = { navController.navigate(Screen.AiDiagnostics.route) },
+        )
+    }
+
+    composable(Screen.SeerrSettings.route) {
+        SeerrSettingsScreen(
+            onNavigateBack = { navController.popBackStack() },
         )
     }
 

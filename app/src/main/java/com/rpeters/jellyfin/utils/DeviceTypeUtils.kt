@@ -35,11 +35,15 @@ object DeviceTypeUtils {
             Build.PRODUCT.contains("simulator")
     }
 
+    private var cachedDeviceType: DeviceType? = null
+
     fun getDeviceType(context: Context): DeviceType {
+        cachedDeviceType?.let { return it }
+
         // Check if running on Android TV
         val uiMode = context.resources.configuration.uiMode
         if (uiMode and Configuration.UI_MODE_TYPE_MASK == Configuration.UI_MODE_TYPE_TELEVISION) {
-            return DeviceType.TV
+            return DeviceType.TV.also { cachedDeviceType = it }
         }
 
         // Check if touchscreen is available (TVs typically don't have touchscreens)
@@ -47,7 +51,7 @@ object DeviceTypeUtils {
         val hasLeanback = context.packageManager.hasSystemFeature("android.software.leanback")
 
         if (!hasTouchscreen && hasLeanback) {
-            return DeviceType.TV
+            return DeviceType.TV.also { cachedDeviceType = it }
         }
 
         // Check screen size for tablet detection
@@ -55,10 +59,10 @@ object DeviceTypeUtils {
         if (screenSize == Configuration.SCREENLAYOUT_SIZE_LARGE ||
             screenSize == Configuration.SCREENLAYOUT_SIZE_XLARGE
         ) {
-            return DeviceType.TABLET
+            return DeviceType.TABLET.also { cachedDeviceType = it }
         }
 
-        return DeviceType.MOBILE
+        return DeviceType.MOBILE.also { cachedDeviceType = it }
     }
 
     fun isTvDevice(context: Context): Boolean {

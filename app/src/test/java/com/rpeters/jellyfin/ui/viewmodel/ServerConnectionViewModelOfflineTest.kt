@@ -22,6 +22,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import javax.inject.Provider
 
 /**
  * Tests for ServerConnectionViewModel offline startup behavior.
@@ -35,6 +36,7 @@ class ServerConnectionViewModelOfflineTest {
     private lateinit var certificatePinningManager: CertificatePinningManager
     private lateinit var connectivityChecker: ConnectivityChecker
     private lateinit var offlineDownloadManager: com.rpeters.jellyfin.data.offline.OfflineDownloadManager
+    private lateinit var offlineDownloadManagerProvider: Provider<com.rpeters.jellyfin.data.offline.OfflineDownloadManager>
     private lateinit var context: Context
     private lateinit var viewModel: ServerConnectionViewModel
 
@@ -50,6 +52,7 @@ class ServerConnectionViewModelOfflineTest {
         certificatePinningManager = mockk(relaxed = true)
         connectivityChecker = mockk(relaxed = true)
         offlineDownloadManager = mockk(relaxed = true)
+        offlineDownloadManagerProvider = Provider { offlineDownloadManager }
         context = mockk(relaxed = true)
 
         // Setup default mocks
@@ -84,7 +87,7 @@ class ServerConnectionViewModelOfflineTest {
             secureCredentialManager,
             certificatePinningManager,
             connectivityChecker,
-            offlineDownloadManager,
+            offlineDownloadManagerProvider,
             context,
         )
         advanceUntilIdle()
@@ -127,7 +130,7 @@ class ServerConnectionViewModelOfflineTest {
             secureCredentialManager,
             certificatePinningManager,
             connectivityChecker,
-            offlineDownloadManager,
+            offlineDownloadManagerProvider,
             context,
         )
         advanceUntilIdle()
@@ -174,7 +177,7 @@ class ServerConnectionViewModelOfflineTest {
             secureCredentialManager,
             certificatePinningManager,
             connectivityChecker,
-            offlineDownloadManager,
+            offlineDownloadManagerProvider,
             context,
         )
         advanceUntilIdle()
@@ -201,7 +204,7 @@ class ServerConnectionViewModelOfflineTest {
             secureCredentialManager,
             certificatePinningManager,
             connectivityChecker,
-            offlineDownloadManager,
+            offlineDownloadManagerProvider,
             context,
         )
         advanceUntilIdle()

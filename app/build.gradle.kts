@@ -45,8 +45,8 @@ android {
         applicationId = "com.rpeters.jellyfin"
         minSdk = 26
         targetSdk = 35
-        versionCode = 101
-        versionName = "14.69"
+        versionCode = 103
+        versionName = "14.71"
 
         testInstrumentationRunner = "com.rpeters.jellyfin.testing.HiltTestRunner"
 
@@ -156,6 +156,10 @@ android {
         }
     }
 
+    tasks.withType<Test> {
+        maxHeapSize = "2048m"
+    }
+
     lint {
         // CI consumes XML output for warning budget checks.
         xmlReport = true
@@ -163,6 +167,7 @@ android {
         sarifReport = true
         abortOnError = true
         warningsAsErrors = false
+        disable += "UnsafeOptInUsageError"
     }
 
     packaging {

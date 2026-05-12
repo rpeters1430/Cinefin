@@ -32,7 +32,7 @@ class HomeViewModelTest {
     @get:Rule
     val instantTaskExecutorRule = InstantTaskExecutorRule()
 
-    @MockK
+    @MockK(relaxed = true)
     private lateinit var mediaRepository: JellyfinMediaRepository
 
     private lateinit var viewModel: HomeViewModel
@@ -52,6 +52,7 @@ class HomeViewModelTest {
 
     @Test
     fun `initial state is correct`() = runTest {
+        viewModel = HomeViewModel(mediaRepository)
         // When
         val state = viewModel.homeState.first()
 
@@ -80,8 +81,9 @@ class HomeViewModelTest {
             },
         )
 
-        coEvery { mediaRepository.getUserLibraries() } returns ApiResult.Success(mockLibraries)
+        coEvery { mediaRepository.getUserLibraries(any()) } returns ApiResult.Success(mockLibraries)
 
+        viewModel = HomeViewModel(mediaRepository)
         // When
         viewModel.loadLibraries()
 
@@ -98,11 +100,12 @@ class HomeViewModelTest {
     fun `loadLibraries handles error correctly`() = runTest {
         // Given
         val errorMessage = "Failed to load libraries"
-        coEvery { mediaRepository.getUserLibraries() } returns ApiResult.Error(
+        coEvery { mediaRepository.getUserLibraries(any()) } returns ApiResult.Error(
             errorMessage,
             errorType = ErrorType.NETWORK,
         )
 
+        viewModel = HomeViewModel(mediaRepository)
         // When
         viewModel.loadLibraries()
 
@@ -131,6 +134,7 @@ class HomeViewModelTest {
 
         coEvery { mediaRepository.getRecentlyAdded(50) } returns ApiResult.Success(mockRecentItems)
 
+        viewModel = HomeViewModel(mediaRepository)
         // When
         viewModel.loadRecentlyAdded()
 
@@ -181,6 +185,7 @@ class HomeViewModelTest {
             )
         } returns ApiResult.Success(emptyList())
 
+        viewModel = HomeViewModel(mediaRepository)
         // When
         viewModel.loadRecentlyAddedByTypes()
 
@@ -233,7 +238,9 @@ class HomeViewModelTest {
                 20,
             )
         } returns ApiResult.Success(mockSeries)
+        viewModel = HomeViewModel(mediaRepository)
 
+        viewModel = HomeViewModel(mediaRepository)
         // When
         viewModel.loadRecentlyAddedByTypes()
 
@@ -264,9 +271,10 @@ class HomeViewModelTest {
             },
         )
 
-        coEvery { mediaRepository.getUserLibraries() } returns ApiResult.Success(mockLibraries)
+        coEvery { mediaRepository.getUserLibraries(any()) } returns ApiResult.Success(mockLibraries)
         coEvery { mediaRepository.getRecentlyAdded(50) } returns ApiResult.Success(mockRecentItems)
 
+        viewModel = HomeViewModel(mediaRepository)
         // When
         viewModel.refreshAll()
 
@@ -282,7 +290,7 @@ class HomeViewModelTest {
     @Test
     fun `clearError removes error message`() = runTest {
         // Given - set an error first
-        coEvery { mediaRepository.getUserLibraries() } returns ApiResult.Error(
+        coEvery { mediaRepository.getUserLibraries(any()) } returns ApiResult.Error(
             "Error",
             errorType = ErrorType.NETWORK,
         )
@@ -292,6 +300,7 @@ class HomeViewModelTest {
         val stateWithError = viewModel.homeState.first()
         assertEquals("Error", stateWithError.errorMessage)
 
+        viewModel = HomeViewModel(mediaRepository)
         // When
         viewModel.clearError()
 
@@ -303,8 +312,9 @@ class HomeViewModelTest {
     @Test
     fun `loading state is managed correctly`() = runTest {
         // Given
-        coEvery { mediaRepository.getUserLibraries() } returns ApiResult.Success(emptyList())
+        coEvery { mediaRepository.getUserLibraries(any()) } returns ApiResult.Success(emptyList())
 
+        viewModel = HomeViewModel(mediaRepository)
         // When
         viewModel.loadLibraries()
 
@@ -316,9 +326,10 @@ class HomeViewModelTest {
     @Test
     fun `refreshing state is managed correctly`() = runTest {
         // Given
-        coEvery { mediaRepository.getUserLibraries() } returns ApiResult.Success(emptyList())
+        coEvery { mediaRepository.getUserLibraries(any()) } returns ApiResult.Success(emptyList())
         coEvery { mediaRepository.getRecentlyAdded(50) } returns ApiResult.Success(emptyList())
 
+        viewModel = HomeViewModel(mediaRepository)
         // When
         viewModel.refreshAll()
 
@@ -333,7 +344,7 @@ class HomeViewModelTest {
         val libraryError = "Library error"
         val recentError = "Recent items error"
 
-        coEvery { mediaRepository.getUserLibraries() } returns ApiResult.Error(
+        coEvery { mediaRepository.getUserLibraries(any()) } returns ApiResult.Error(
             libraryError,
             errorType = ErrorType.NETWORK,
         )
@@ -342,6 +353,7 @@ class HomeViewModelTest {
             errorType = ErrorType.SERVER_ERROR,
         )
 
+        viewModel = HomeViewModel(mediaRepository)
         // When
         viewModel.loadLibraries()
         viewModel.loadRecentlyAdded()

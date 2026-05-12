@@ -57,7 +57,8 @@ class JellyfinAuthRepositoryTest {
         quickConnectApi = mockk(relaxed = true)
         userApi = mockk(relaxed = true)
 
-        mockkStatic("org.jellyfin.sdk.api.client.extensions.ApiClientExtensionsKt")
+        mockkStatic("org.jellyfin.sdk.api.client.extensions.QuickConnectApiKt")
+        mockkStatic("org.jellyfin.sdk.api.client.extensions.UserApiKt")
         mockkStatic(android.util.Log::class)
         every { android.util.Log.d(any<String>(), any<String>()) } returns 0
         every { android.util.Log.w(any<String>(), any<String>()) } returns 0

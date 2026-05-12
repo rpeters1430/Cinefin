@@ -394,6 +394,7 @@ private fun ImmersiveHomeContent(
     val contentLists by remember(
         appState.allItems,
         appState.continueWatching,
+        appState.nextUp,
         appState.recentlyAddedByTypes,
         adaptiveConfig.continueWatchingLimit,
         adaptiveConfig.rowItemLimit,
@@ -401,6 +402,9 @@ private fun ImmersiveHomeContent(
     ) {
         derivedStateOf {
             val continueWatching = getContinueWatchingItems(appState, adaptiveConfig.continueWatchingLimit)
+            val nextUp = appState.nextUp
+                .filter { it.type == BaseItemKind.EPISODE }
+                .take(adaptiveConfig.rowItemLimit)
             val movies = appState.recentlyAddedByTypes[BaseItemKind.MOVIE.name]
                 ?.take(adaptiveConfig.rowItemLimit) ?: emptyList()
             val tvShows = appState.recentlyAddedByTypes[BaseItemKind.SERIES.name]
@@ -415,6 +419,7 @@ private fun ImmersiveHomeContent(
 
             HomeContentLists(
                 continueWatching = continueWatching,
+                nextUp = nextUp,
                 recentMovies = movies,
                 recentTVShows = tvShows,
                 featuredItems = featured,

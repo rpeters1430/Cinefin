@@ -40,6 +40,8 @@ class AuthenticationViewModelTest {
         credentialManager = mockk(relaxed = true)
 
         every { authRepository.isAuthenticating } returns isAuthenticatingFlow
+        every { authRepository.currentServer } returns MutableStateFlow(null)
+        every { authRepository.isConnected } returns MutableStateFlow(false)
         every { authRepository.isUserAuthenticated() } returns false
 
         viewModel = AuthenticationViewModel(authRepository, userRepository, credentialManager)

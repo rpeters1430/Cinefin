@@ -34,11 +34,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Tv
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SuggestionChip
@@ -129,6 +131,7 @@ fun ImmersiveTVShowDetailScreen(
     onSeriesClick: (String) -> Unit,
     onEpisodeClick: (BaseItemDto) -> Unit,
     onPlayEpisode: (BaseItemDto) -> Unit,
+    onSearchRequests: (String) -> Unit = {},
     onPersonClick: (String, String) -> Unit = { _, _ -> },
     onGenreClick: (String) -> Unit = {},
     modifier: Modifier = Modifier,
@@ -193,6 +196,7 @@ fun ImmersiveTVShowDetailScreen(
                         onSeasonExpand = viewModel::loadSeasonEpisodes,
                         onEpisodeClick = onEpisodeClick,
                         onPlayEpisode = onPlayEpisode,
+                        onSearchRequests = onSearchRequests,
                         onRefresh = { viewModel.refresh() },
                         onPersonClick = onPersonClick,
                         onGenreClick = onGenreClick,
@@ -239,6 +243,7 @@ private fun ImmersiveShowDetailContent(
     onSeasonExpand: (String) -> Unit,
     onEpisodeClick: (BaseItemDto) -> Unit,
     onPlayEpisode: (BaseItemDto) -> Unit,
+    onSearchRequests: (String) -> Unit = {},
     onRefresh: () -> Unit,
     onPersonClick: (String, String) -> Unit,
     onGenreClick: (String) -> Unit,
@@ -278,6 +283,7 @@ private fun ImmersiveShowDetailContent(
                         getLogoUrl = getLogoUrl,
                         nextEpisode = state.nextEpisode,
                         onPlayEpisode = onPlayEpisode,
+                        onSearchRequests = onSearchRequests,
                     )
                 }
             }
@@ -405,6 +411,7 @@ private fun ShowHeroContent(
     getLogoUrl: (BaseItemDto) -> String?,
     nextEpisode: BaseItemDto?,
     onPlayEpisode: (BaseItemDto) -> Unit,
+    onSearchRequests: (String) -> Unit,
 ) {
     val logoUrl = getLogoUrl(series)
 
@@ -490,6 +497,16 @@ private fun ShowHeroContent(
                         else -> "Start Watching Series"
                     },
                 )
+            }
+
+            TextButton(
+                onClick = { series.name?.takeIf { it.isNotBlank() }?.let(onSearchRequests) },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.textButtonColors(contentColor = Color.White),
+            ) {
+                Icon(Icons.Default.AddCircle, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Request missing seasons")
             }
         }
     }

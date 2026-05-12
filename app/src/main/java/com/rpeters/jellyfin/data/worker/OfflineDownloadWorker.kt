@@ -250,7 +250,15 @@ class OfflineDownloadWorker @AssistedInject constructor(
             TAG,
             "cid=${cid(downloadId)} posting completion notification: downloadId=$downloadId, success=$success, notificationId=$notificationId",
         )
-        NotificationManagerCompat.from(applicationContext).notify(notificationId, notification)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (androidx.core.content.ContextCompat.checkSelfPermission(applicationContext, android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                NotificationManagerCompat.from(applicationContext).notify(notificationId, notification)
+            } else {
+                SecureLogger.w(TAG, "Missing POST_NOTIFICATIONS permission, cannot show completion notification.")
+            }
+        } else {
+            NotificationManagerCompat.from(applicationContext).notify(notificationId, notification)
+        }
     }
 
     private fun ensureNotificationChannel() {

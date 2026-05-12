@@ -10,6 +10,9 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import java.util.Collections
 
 /**
@@ -22,6 +25,8 @@ import java.util.Collections
  * - Concurrent encryption safety
  * - Edge cases (empty strings, null values)
  */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [33])
 class EncryptedPreferencesTest {
 
     private lateinit var context: Context

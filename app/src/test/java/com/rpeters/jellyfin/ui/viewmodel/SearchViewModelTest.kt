@@ -26,13 +26,13 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class SearchViewModelTest {
 
-    @MockK
+    @MockK(relaxed = true)
     private lateinit var searchRepository: JellyfinSearchRepository
 
-    @MockK
+    @MockK(relaxed = true)
     private lateinit var generativeAiRepository: com.rpeters.jellyfin.data.repository.GenerativeAiRepository
 
-    @MockK
+    @MockK(relaxed = true)
     private lateinit var analyticsHelper: com.rpeters.jellyfin.utils.AnalyticsHelper
 
     private lateinit var viewModel: SearchViewModel

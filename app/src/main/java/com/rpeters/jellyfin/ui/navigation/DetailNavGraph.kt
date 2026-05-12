@@ -307,7 +307,6 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
 
         val lifecycleOwner = LocalLifecycleOwner.current
         val appState by mainViewModel.appState.collectAsStateWithLifecycle(
-            initialValue = mainViewModel.appState.value,
             lifecycleOwner = lifecycleOwner,
             minActiveState = androidx.lifecycle.Lifecycle.State.STARTED,
         )
@@ -318,7 +317,6 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
 
         val movie = appState.allItems.find { it.id.toString() == movieId }
         val detailState by detailViewModel.state.collectAsStateWithLifecycle(
-            initialValue = detailViewModel.state.value,
             lifecycleOwner = lifecycleOwner,
         )
 
@@ -375,6 +373,9 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                 onMarkWatchedClick = { mainViewModel.toggleWatchedStatus(resolvedMovie) },
                 onDownloadClick = { movieItem, quality ->
                     downloadsViewModel.startDownload(movieItem, quality)
+                },
+                onSearchRequests = { query ->
+                    navController.navigate(Screen.Requests.createRoute(query))
                 },
                 isDownloaded = detailState.isDownloaded,
                 isOffline = detailState.isOffline,
@@ -437,12 +438,10 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
         val downloadsViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<DownloadsViewModel>()
         val lifecycleOwner = LocalLifecycleOwner.current
         val appState by mainViewModel.appState.collectAsStateWithLifecycle(
-            initialValue = mainViewModel.appState.value,
             lifecycleOwner = lifecycleOwner,
             minActiveState = androidx.lifecycle.Lifecycle.State.STARTED,
         )
         val detailState by viewModel.state.collectAsStateWithLifecycle(
-            initialValue = viewModel.state.value,
             lifecycleOwner = lifecycleOwner,
         )
 

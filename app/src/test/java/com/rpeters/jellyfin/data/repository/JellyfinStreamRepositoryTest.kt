@@ -22,13 +22,13 @@ import java.util.UUID
  */
 class JellyfinStreamRepositoryTest {
 
-    @MockK
+    @MockK(relaxed = true)
     private lateinit var authRepository: JellyfinAuthRepository
 
-    @MockK
+    @MockK(relaxed = true)
     private lateinit var deviceCapabilities: DeviceCapabilities
 
-    @MockK
+    @MockK(relaxed = true)
     private lateinit var connectivityChecker: com.rpeters.jellyfin.network.ConnectivityChecker
 
     private lateinit var streamRepository: JellyfinStreamRepository
@@ -300,10 +300,10 @@ class JellyfinStreamRepositoryTest {
     @Test
     fun `getSeriesImageUrl returns episode series poster URL`() {
         // Given
-        val seriesId = UUID.randomUUID()
+        val testSeriesId = UUID.randomUUID()
         val episodeItem = mockk<BaseItemDto> {
             every { type } returns BaseItemKind.EPISODE
-            every { seriesId } returns seriesId
+            every { seriesId } returns testSeriesId
             every { id } returns UUID.randomUUID()
         }
         every { authRepository.getCurrentServer() } returns testServer
@@ -314,17 +314,17 @@ class JellyfinStreamRepositoryTest {
         // Then
         assertNotNull("Series image URL should not be null", result)
         assertTrue("URL should contain server URL", result!!.contains(testServer.url))
-        assertTrue("URL should contain series ID", result.contains(seriesId.toString()))
+        assertTrue("URL should contain series ID", result.contains(testSeriesId.toString()))
         assertTrue("URL should be Primary image", result.contains("/Images/Primary"))
     }
 
     @Test
     fun `getSeriesImageUrl returns item image URL for non-episode`() {
         // Given
-        val itemId = UUID.randomUUID()
+        val testItemId = UUID.randomUUID()
         val movieItem = mockk<BaseItemDto> {
             every { type } returns BaseItemKind.MOVIE
-            every { id } returns itemId
+            every { id } returns testItemId
         }
         every { authRepository.getCurrentServer() } returns testServer
 
@@ -334,7 +334,7 @@ class JellyfinStreamRepositoryTest {
         // Then
         assertNotNull("Series image URL should not be null", result)
         assertTrue("URL should contain server URL", result!!.contains(testServer.url))
-        assertTrue("URL should contain item ID", result.contains(itemId.toString()))
+        assertTrue("URL should contain item ID", result.contains(testItemId.toString()))
         assertTrue("URL should be Primary image", result.contains("/Images/Primary"))
     }
 

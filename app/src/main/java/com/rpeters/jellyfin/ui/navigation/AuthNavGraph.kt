@@ -11,6 +11,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
+import androidx.compose.ui.res.stringResource
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.screens.OfflineLibraryScreen
 import com.rpeters.jellyfin.ui.screens.QuickConnectScreen
@@ -69,6 +70,8 @@ fun androidx.navigation.NavGraphBuilder.authNavGraph(
             viewModel.autoLoginWithBiometric(activity)
         }
 
+        val biometricErrorMsg = stringResource(R.string.biometric_activity_error)
+
         ServerConnectionScreen(
             onConnect = { serverUrl, username, password ->
                 viewModel.connectToServer(serverUrl, username, password)
@@ -93,7 +96,7 @@ fun androidx.navigation.NavGraphBuilder.authNavGraph(
                 if (activity != null) {
                     viewModel.autoLoginWithBiometric(activity)
                 } else {
-                    viewModel.showError(context.getString(R.string.biometric_activity_error))
+                    viewModel.showError(biometricErrorMsg)
                 }
             },
             onTemporarilyTrustPin = { viewModel.temporarilyTrustPin() },

@@ -139,7 +139,7 @@ fun MovieHeroContent(
                     modifier = Modifier.size(18.dp),
                 )
                 Text(
-                    text = String.format(Locale.getDefault(), "%.1f", rating),
+                    text = String.format(java.util.Locale.US, "%.1f", rating),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = RatingGold,

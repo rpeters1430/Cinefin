@@ -26,6 +26,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.rounded.AddCircle
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Favorite
@@ -103,6 +104,7 @@ fun ImmersiveMovieDetailScreen(
     onDeleteClick: (BaseItemDto) -> Unit,
     onMarkWatchedClick: (BaseItemDto) -> Unit,
     onDownloadClick: (BaseItemDto, com.rpeters.jellyfin.data.offline.VideoQuality) -> Unit,
+    onSearchRequests: (String) -> Unit = {},
     isDownloaded: Boolean,
     isOffline: Boolean,
     downloadInfo: com.rpeters.jellyfin.data.offline.OfflineDownload? = null,
@@ -138,6 +140,7 @@ fun ImmersiveMovieDetailScreen(
         onDeleteClick = onDeleteClick,
         onMarkWatchedClick = onMarkWatchedClick,
         onDownloadClick = onDownloadClick,
+        onSearchRequests = onSearchRequests,
         isDownloaded = isDownloaded,
         isOffline = isOffline,
         downloadInfo = downloadInfo,
@@ -177,6 +180,7 @@ private fun ImmersiveMovieDetailContent(
     onDeleteClick: (BaseItemDto) -> Unit,
     onMarkWatchedClick: (BaseItemDto) -> Unit,
     onDownloadClick: (BaseItemDto, com.rpeters.jellyfin.data.offline.VideoQuality) -> Unit,
+    onSearchRequests: (String) -> Unit = {},
     isDownloaded: Boolean,
     isOffline: Boolean,
     downloadInfo: com.rpeters.jellyfin.data.offline.OfflineDownload? = null,
@@ -292,6 +296,9 @@ private fun ImmersiveMovieDetailContent(
                                     }
                                 },
                                 onShareClick = { onShareClick(movie) },
+                                onRequestClick = {
+                                    movie.name?.takeIf { it.isNotBlank() }?.let(onSearchRequests)
+                                },
                                 onMoreClick = { showMoreOptions = true },
                             )
                         }
@@ -635,6 +642,7 @@ private fun MovieActionRow(
     onMarkWatchedClick: () -> Unit,
     onDownloadClick: () -> Unit,
     onShareClick: () -> Unit,
+    onRequestClick: () -> Unit,
     onMoreClick: () -> Unit,
 ) {
     Column(
@@ -695,6 +703,13 @@ private fun MovieActionRow(
                 icon = Icons.Rounded.FileDownload,
                 label = "Save",
                 onClick = onDownloadClick,
+                modifier = Modifier.weight(1f),
+            )
+
+            ActionButton(
+                icon = Icons.Rounded.AddCircle,
+                label = "Request",
+                onClick = onRequestClick,
                 modifier = Modifier.weight(1f),
             )
         }
@@ -783,6 +798,7 @@ private fun MovieActionRowPreview() {
             onMarkWatchedClick = {},
             onDownloadClick = {},
             onShareClick = {},
+            onRequestClick = {},
             onMoreClick = {},
         )
     }

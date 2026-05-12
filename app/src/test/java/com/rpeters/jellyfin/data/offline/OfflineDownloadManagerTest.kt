@@ -75,7 +75,7 @@ class OfflineDownloadManagerTest {
         // Create a real in-memory DataStore using test scope
         dataStore = PreferenceDataStoreFactory.create(
             scope = kotlinx.coroutines.CoroutineScope(testDispatcher + kotlinx.coroutines.SupervisorJob()),
-            produceFile = { File(tempDir, "test.preferences_pb") }
+            produceFile = { File(tempDir, "test_${UUID.randomUUID()}.preferences_pb") }
         )
 
         val mockEncryptedPreferences = mockk<com.rpeters.jellyfin.data.security.EncryptedPreferences>(relaxed = true)

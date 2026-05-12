@@ -30,6 +30,7 @@ fun shouldShowNavigation(route: String?): Boolean {
         Screen.Home.route,
         Screen.Library.route,
         Screen.Search.route,
+        Screen.Requests.route,
         Screen.Favorites.route,
         Screen.Settings.route,
         Screen.Movies.route,

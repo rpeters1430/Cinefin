@@ -44,6 +44,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import javax.inject.Provider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -58,6 +59,7 @@ class ServerConnectionViewModelTest {
     private lateinit var certificatePinningManager: CertificatePinningManager
     private lateinit var connectivityChecker: com.rpeters.jellyfin.network.ConnectivityChecker
     private lateinit var offlineDownloadManager: com.rpeters.jellyfin.data.offline.OfflineDownloadManager
+    private lateinit var offlineDownloadManagerProvider: Provider<com.rpeters.jellyfin.data.offline.OfflineDownloadManager>
     private lateinit var context: Context
 
     @Before
@@ -72,6 +74,7 @@ class ServerConnectionViewModelTest {
         certificatePinningManager = mockk(relaxed = true)
         connectivityChecker = mockk(relaxed = true)
         offlineDownloadManager = mockk(relaxed = true)
+        offlineDownloadManagerProvider = Provider { offlineDownloadManager }
 
         every { repository.isConnectedFlow } returns MutableStateFlow(false)
         val mockServer = mockk<com.rpeters.jellyfin.data.JellyfinServer>(relaxed = true)
@@ -130,7 +133,7 @@ class ServerConnectionViewModelTest {
                 secureCredentialManager,
                 certificatePinningManager,
                 connectivityChecker,
-                offlineDownloadManager,
+                offlineDownloadManagerProvider,
                 context,
             )
 
@@ -167,7 +170,7 @@ class ServerConnectionViewModelTest {
             secureCredentialManager,
             certificatePinningManager,
             connectivityChecker,
-            offlineDownloadManager,
+            offlineDownloadManagerProvider,
             context,
         )
 
@@ -199,7 +202,7 @@ class ServerConnectionViewModelTest {
             secureCredentialManager,
             certificatePinningManager,
             connectivityChecker,
-            offlineDownloadManager,
+            offlineDownloadManagerProvider,
             context,
         )
 
@@ -244,7 +247,7 @@ class ServerConnectionViewModelTest {
                 secureCredentialManager,
                 certificatePinningManager,
                 connectivityChecker,
-                offlineDownloadManager,
+                offlineDownloadManagerProvider,
                 context,
             )
 
@@ -289,7 +292,7 @@ class ServerConnectionViewModelTest {
             secureCredentialManager,
             certificatePinningManager,
             connectivityChecker,
-            offlineDownloadManager,
+            offlineDownloadManagerProvider,
             context,
         )
 
@@ -314,7 +317,7 @@ class ServerConnectionViewModelTest {
             secureCredentialManager,
             certificatePinningManager,
             connectivityChecker,
-            offlineDownloadManager,
+            offlineDownloadManagerProvider,
             context,
         )
         advanceUntilIdle()
@@ -347,7 +350,7 @@ class ServerConnectionViewModelTest {
             secureCredentialManager,
             certificatePinningManager,
             connectivityChecker,
-            offlineDownloadManager,
+            offlineDownloadManagerProvider,
             context,
         )
         advanceUntilIdle()

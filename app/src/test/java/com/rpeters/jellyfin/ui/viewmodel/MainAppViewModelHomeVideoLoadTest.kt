@@ -47,34 +47,34 @@ class MainAppViewModelHomeVideoLoadTest {
 
     private lateinit var repository: JellyfinRepository
 
-    @MockK
+    @MockK(relaxed = true)
     private lateinit var authRepository: JellyfinAuthRepository
 
-    @MockK
+    @MockK(relaxed = true)
     private lateinit var mediaRepository: JellyfinMediaRepository
 
-    @MockK
+    @MockK(relaxed = true)
     private lateinit var userRepository: JellyfinUserRepository
 
-    @MockK
+    @MockK(relaxed = true)
     private lateinit var streamRepository: JellyfinStreamRepository
 
-    @MockK
+    @MockK(relaxed = true)
     private lateinit var searchRepository: JellyfinSearchRepository
 
-    @MockK
+    @MockK(relaxed = true)
     private lateinit var credentialManager: SecureCredentialManager
 
-    @MockK
+    @MockK(relaxed = true)
     private lateinit var castManager: CastManager
 
-    @MockK
+    @MockK(relaxed = true)
     private lateinit var generativeAiRepository: com.rpeters.jellyfin.data.repository.GenerativeAiRepository
 
-    @MockK
+    @MockK(relaxed = true)
     private lateinit var analyticsHelper: com.rpeters.jellyfin.utils.AnalyticsHelper
 
-    @MockK
+    @MockK(relaxed = true)
     private lateinit var context: Context
 
     private lateinit var viewModel: MainAppViewModel

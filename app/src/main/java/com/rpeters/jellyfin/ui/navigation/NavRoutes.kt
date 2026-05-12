@@ -39,6 +39,10 @@ sealed class Screen(val route: String) {
         fun createRoute(query: String) = "search?query=${Uri.encode(query)}"
     }
     object AiAssistant : Screen("ai_assistant")
+    object Requests : Screen("requests?query={query}") {
+        fun createRoute(query: String? = null): String =
+            query?.takeIf { it.isNotBlank() }?.let { "requests?query=${Uri.encode(it)}" } ?: "requests"
+    }
     object Favorites : Screen("favorites")
     object Profile : Screen("profile")
     object Settings : Screen("settings")
@@ -50,6 +54,7 @@ sealed class Screen(val route: String) {
     object AccessibilitySettings : Screen("accessibility_settings")
     object PinSettings : Screen("pin_settings")
     object SubtitleSettings : Screen("subtitle_settings")
+    object SeerrSettings : Screen("seerr_settings")
     object TranscodingDiagnostics : Screen("transcoding_diagnostics")
     object AiDiagnostics : Screen("ai_diagnostics")
     object PrivacyPolicy : Screen("privacy_policy")
@@ -128,6 +133,13 @@ sealed class BottomNavItem(
         navigateTo = "search",             // base route — lets defaultValue = null apply
     )
 
+    object Requests : BottomNavItem(
+        route = Screen.Requests.route,
+        title = "Requests",
+        icon = AppDestinations.REQUESTS,
+        navigateTo = Screen.Requests.createRoute(),
+    )
+
     object Favorites : BottomNavItem(
         route = Screen.Favorites.route,
         title = "Favorites",
@@ -141,6 +153,9 @@ sealed class BottomNavItem(
     )
 
     companion object {
-        val bottomNavItems = listOf(Home, Library, Search, Favorites, SettingsItem)
+        private val allNavItems = listOf(Home, Library, Search, Requests, Favorites, SettingsItem)
+
+        fun bottomNavItems(seerrEnabled: Boolean): List<BottomNavItem> =
+            if (seerrEnabled) allNavItems else allNavItems.filter { it != Requests }
     }
 }

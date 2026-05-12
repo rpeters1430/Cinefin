@@ -249,4 +249,20 @@ fun androidx.navigation.NavGraphBuilder.homeLibraryNavGraph(
             },
         )
     }
+
+    composable(
+        route = Screen.Requests.route,
+        arguments = listOf(
+            androidx.navigation.navArgument("query") {
+                type = androidx.navigation.NavType.StringType
+                nullable = true
+                defaultValue = null
+            },
+        ),
+    ) { backStackEntry ->
+        com.rpeters.jellyfin.ui.screens.RequestsScreen(
+            initialQuery = backStackEntry.arguments?.getString("query"),
+            onNavigateToSettings = { navController.navigate(Screen.SeerrSettings.route) },
+        )
+    }
 }

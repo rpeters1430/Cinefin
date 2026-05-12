@@ -99,6 +99,7 @@ fun ImmersiveSearchScreen(
     getImageUrl: (BaseItemDto) -> String?,
     onBackClick: () -> Unit = {},
     onNowPlayingClick: () -> Unit = {},
+    onSearchRequests: (String) -> Unit = {},
     onItemClick: (BaseItemDto) -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: SearchViewModel = hiltViewModel(),
@@ -409,10 +410,21 @@ fun ImmersiveSearchScreen(
                             textAlign = TextAlign.Center,
                         )
                         Text(
-                            text = "Try a different search term or adjust filters",
+                            text = "Try a different search term or check the request catalog",
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center,
+                        )
+                        SuggestionChip(
+                            onClick = { onSearchRequests(searchQuery.trim()) },
+                            label = { Text("Search request catalog") },
+                            icon = {
+                                Icon(
+                                    imageVector = Icons.Default.Search,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                            },
                         )
                     }
                 }

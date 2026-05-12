@@ -20,6 +20,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Accessibility
 import androidx.compose.material.icons.filled.AccountBox
+import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.ClosedCaption
@@ -102,6 +103,7 @@ fun SettingsScreen(
     onNotificationsSettingsClick: () -> Unit = {},
     onPrivacySettingsClick: () -> Unit = {},
     onAccessibilitySettingsClick: () -> Unit = {},
+    onSeerrSettingsClick: () -> Unit = {},
     onTranscodingDiagnosticsClick: () -> Unit = {},
     onAiDiagnosticsClick: () -> Unit = {},
     libraryActionsPreferencesViewModel: LibraryActionsPreferencesViewModel = hiltViewModel(),
@@ -139,6 +141,7 @@ fun SettingsScreen(
         onNotificationsSettingsClick = onNotificationsSettingsClick,
         onPrivacySettingsClick = onPrivacySettingsClick,
         onAccessibilitySettingsClick = onAccessibilitySettingsClick,
+        onSeerrSettingsClick = onSeerrSettingsClick,
         onTranscodingDiagnosticsClick = onTranscodingDiagnosticsClick,
         onAiDiagnosticsClick = onAiDiagnosticsClick,
         showTranscodingDiagnostics = showTranscodingDiagnostics,
@@ -173,6 +176,7 @@ private fun SettingsScreenContent(
     onNotificationsSettingsClick: () -> Unit = {},
     onPrivacySettingsClick: () -> Unit = {},
     onAccessibilitySettingsClick: () -> Unit = {},
+    onSeerrSettingsClick: () -> Unit = {},
     onTranscodingDiagnosticsClick: () -> Unit = {},
     onAiDiagnosticsClick: () -> Unit = {},
     showTranscodingDiagnostics: Boolean = true,
@@ -288,6 +292,7 @@ private fun SettingsScreenContent(
                             onNotificationsSettingsClick = onNotificationsSettingsClick,
                             onPrivacySettingsClick = onPrivacySettingsClick,
                             onAccessibilitySettingsClick = onAccessibilitySettingsClick,
+                            onSeerrSettingsClick = onSeerrSettingsClick,
                             onPrivacyPolicyClick = onPrivacyPolicyClick,
                             onTranscodingDiagnosticsClick = onTranscodingDiagnosticsClick,
                             onAiDiagnosticsClick = onAiDiagnosticsClick,
@@ -348,6 +353,7 @@ private fun SettingsScreenContent(
                         onNotificationsSettingsClick = onNotificationsSettingsClick,
                         onPrivacySettingsClick = onPrivacySettingsClick,
                         onAccessibilitySettingsClick = onAccessibilitySettingsClick,
+                        onSeerrSettingsClick = onSeerrSettingsClick,
                         onPrivacyPolicyClick = onPrivacyPolicyClick,
                         onTranscodingDiagnosticsClick = onTranscodingDiagnosticsClick,
                         onAiDiagnosticsClick = onAiDiagnosticsClick,
@@ -392,6 +398,7 @@ private fun SettingsDestinationsSection(
     onNotificationsSettingsClick: () -> Unit,
     onPrivacySettingsClick: () -> Unit,
     onAccessibilitySettingsClick: () -> Unit,
+    onSeerrSettingsClick: () -> Unit,
     onPrivacyPolicyClick: () -> Unit,
     onTranscodingDiagnosticsClick: () -> Unit,
     onAiDiagnosticsClick: () -> Unit,
@@ -431,6 +438,12 @@ private fun SettingsDestinationsSection(
             subtitle = "Check cloud API status and troubleshoot AI features",
             leadingIcon = Icons.Default.AutoAwesome,
             onClick = onAiDiagnosticsClick,
+        )
+        ExpressiveMediaListItem(
+            title = "Seerr Integration",
+            subtitle = "Configure Overseerr/Jellyseerr for media requests",
+            leadingIcon = Icons.Default.AddCircle,
+            onClick = onSeerrSettingsClick,
         )
         ExpressiveMediaListItem(
             title = stringResource(id = R.string.settings_downloads_title),

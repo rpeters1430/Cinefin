@@ -80,10 +80,21 @@ fun ExpressiveBentoGrid(
             }
 
             // 2. Action Tiles (Next Up / Continue Watching)
-            contentLists.continueWatching.take(2).forEach { item ->
+            contentLists.nextUp.take(2).forEach { item ->
                 add(
                     BentoGridItem(
                         id = "action_nextup_${item.id}",
+                        type = BentoItemType.Action,
+                        item = item,
+                        onClick = { onItemClick(item) },
+                    ),
+                )
+            }
+
+            contentLists.continueWatching.take(2).forEach { item ->
+                add(
+                    BentoGridItem(
+                        id = "action_continue_${item.id}",
                         type = BentoItemType.Action,
                         item = item,
                         onClick = { onItemClick(item) },

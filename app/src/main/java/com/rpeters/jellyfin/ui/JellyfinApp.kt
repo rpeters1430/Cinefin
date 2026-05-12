@@ -57,6 +57,7 @@ import com.rpeters.jellyfin.ui.navigation.shouldShowNavigation
 import com.rpeters.jellyfin.ui.shortcuts.DynamicShortcutManager
 import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
 import com.rpeters.jellyfin.ui.viewmodel.AudioPlaybackViewModel
+import com.rpeters.jellyfin.ui.viewmodel.SeerrSettingsViewModel
 import com.rpeters.jellyfin.ui.viewmodel.ServerConnectionViewModel
 import com.rpeters.jellyfin.ui.viewmodel.ThemePreferencesViewModel
 import com.rpeters.jellyfin.utils.SecureLogger
@@ -96,6 +97,11 @@ fun JellyfinApp(
     // Audio playback ViewModel for MiniPlayer visibility tracking
     val audioPlaybackViewModel: AudioPlaybackViewModel = hiltViewModel()
     val audioPlaybackState by audioPlaybackViewModel.playbackState.collectAsStateWithLifecycle()
+
+    // Seerr enabled state drives Requests tab visibility
+    val seerrViewModel: SeerrSettingsViewModel = hiltViewModel()
+    val seerrPreferences by seerrViewModel.seerrPreferences.collectAsStateWithLifecycle()
+    val activeNavItems = BottomNavItem.bottomNavItems(seerrPreferences.isEnabled)
     val isMiniPlayerVisible = audioPlaybackState.currentMediaItem != null
 
     // Main app ViewModel for global state and sync tasks
@@ -259,7 +265,7 @@ fun JellyfinApp(
             NavigationSuiteScaffold(
                 navigationSuiteItems = {
                     // Destination items first so the toggle never interrupts keyboard/D-pad flow
-                    BottomNavItem.bottomNavItems.forEach { item ->
+                    activeNavItems.forEach { item ->
                         item(
                             selected = currentDestination?.hierarchy?.any {
                                 it.route == item.route
@@ -360,7 +366,7 @@ fun JellyfinApp(
                         // Expressive Floating Navigation Bar for phones
                         if (isCompactWidth) {
                             ExpressiveFloatingNavBar(
-                                items = BottomNavItem.bottomNavItems,
+                                items = activeNavItems,
                                 currentDestination = currentDestination,
                                 onNavigate = { item ->
                                     navController.navigateToMainDestination(item.navigateTo)

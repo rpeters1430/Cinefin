@@ -350,12 +350,13 @@ class VideoPlayerActivity : FragmentActivity() {
             builder.setActions(actions)
             pipSourceRect?.let { builder.setSourceRectHint(it) }
 
-            // Add title and metadata for Android 12+ (API 31)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                builder.setTitle(currentItemName)
-                builder.setSubtitle(formatDuration(playerState.currentPosition) + " / " + formatDuration(playerState.duration))
                 builder.setAutoEnterEnabled(true) // Auto-enter when user presses home
                 builder.setSeamlessResizeEnabled(true) // Smooth resize transitions
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                builder.setTitle(currentItemName)
+                builder.setSubtitle(formatDuration(playerState.currentPosition) + " / " + formatDuration(playerState.duration))
             }
 
             try {
@@ -505,7 +506,7 @@ class VideoPlayerActivity : FragmentActivity() {
                 val builder = PictureInPictureParams.Builder()
                     .setActions(actions)
 
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     builder.setSubtitle(
                         formatDuration(playerState.currentPosition) + " / " +
                             formatDuration(playerState.duration),

@@ -13,6 +13,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.jellyfin.sdk.model.api.UserItemDataDto
 import org.junit.After
@@ -54,21 +55,21 @@ class PlaybackProgressManagerTest {
         coEvery { repository.reportPlaybackStopped(any(), any(), any(), any(), any()) } returns ApiResult.Success(Unit)
 
         manager.startTracking(itemId, this, sessionId)
-        advanceUntilIdle()
+        runCurrent()
 
         manager.updateProgress(positionMs = 6_000L, durationMs = 20_000L)
-        advanceUntilIdle()
+        runCurrent()
 
         val expectedTicks = 6_000L * 10_000L
         coVerify { repository.reportPlaybackStart(itemId, sessionId, expectedTicks, null, org.jellyfin.sdk.model.api.PlayMethod.DIRECT_PLAY, false, false, true) }
         coVerify { repository.reportPlaybackProgress(itemId, sessionId, expectedTicks, null, org.jellyfin.sdk.model.api.PlayMethod.DIRECT_PLAY, false, false, true) }
 
         advanceTimeBy(10_000L)
-        advanceUntilIdle()
+        runCurrent()
         coVerify(exactly = 2) { repository.reportPlaybackProgress(itemId, sessionId, any(), any(), any(), any(), any()) }
 
         manager.stopTracking()
-        advanceUntilIdle()
+        runCurrent()
         coVerify { repository.reportPlaybackStopped(itemId, sessionId, any(), null, false) }
     }
 
@@ -81,14 +82,14 @@ class PlaybackProgressManagerTest {
         coEvery { repository.reportPlaybackStopped(any(), any(), any(), any(), any()) } returns ApiResult.Success(Unit)
 
         manager.startTracking(itemId, this, "session")
-        advanceUntilIdle()
+        runCurrent()
 
         manager.updateProgress(positionMs = 6_000L, durationMs = 20_000L)
-        advanceUntilIdle()
+        runCurrent()
 
         assertEquals(0L, manager.playbackProgress.value.lastSyncTime)
         manager.stopTracking()
-        advanceUntilIdle()
+        runCurrent()
     }
 
     @Test
@@ -101,14 +102,14 @@ class PlaybackProgressManagerTest {
         coEvery { repository.markAsWatched(itemId) } returns ApiResult.Success(true)
 
         manager.startTracking(itemId, this, "session")
-        advanceUntilIdle()
+        runCurrent()
 
         manager.markAsWatched()
-        advanceUntilIdle()
+        runCurrent()
 
         assertTrue(manager.playbackProgress.value.isWatched)
         manager.stopTracking()
-        advanceUntilIdle()
+        runCurrent()
     }
 
     @Test
@@ -122,18 +123,18 @@ class PlaybackProgressManagerTest {
         coEvery { repository.markAsUnwatched(itemId) } returns ApiResult.Success(true)
 
         manager.startTracking(itemId, this, "session")
-        advanceUntilIdle()
+        runCurrent()
 
         manager.markAsWatched()
-        advanceUntilIdle()
+        runCurrent()
         assertTrue(manager.playbackProgress.value.isWatched)
 
         manager.markAsUnwatched()
-        advanceUntilIdle()
+        runCurrent()
         assertFalse(manager.playbackProgress.value.isWatched)
 
         manager.stopTracking()
-        advanceUntilIdle()
+        runCurrent()
     }
 
     private fun userData(

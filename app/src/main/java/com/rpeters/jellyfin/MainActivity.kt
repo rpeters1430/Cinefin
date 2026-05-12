@@ -8,6 +8,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import com.rpeters.jellyfin.ui.JellyfinApp
 import com.rpeters.jellyfin.ui.tv.TvJellyfinApp
 import com.rpeters.jellyfin.utils.DeviceTypeUtils
@@ -121,20 +124,22 @@ class MainActivity : FragmentActivity() {
      * even though they report API 31+. This proactively checks and logs the issue.
      */
     private fun applyComposeFontWeightAdjustmentWorkaround() {
-        try {
-            // Try to access the field via reflection to check if it exists
-            val configClass = android.content.res.Configuration::class.java
-            configClass.getField("fontWeightAdjustment")
-            SecureLogger.d(TAG, "fontWeightAdjustment field is available on this device")
-        } catch (e: NoSuchFieldException) {
-            // Field doesn't exist - this is the problematic device
-            SecureLogger.w(TAG, "fontWeightAdjustment field NOT available - Compose may crash. Device: ${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL}, API: ${android.os.Build.VERSION.SDK_INT}")
-            SecureLogger.w(TAG, "This is a known issue with some OEM implementations of Android 12+")
+        lifecycleScope.launch(Dispatchers.Default) {
+            try {
+                // Try to access the field via reflection to check if it exists
+                val configClass = android.content.res.Configuration::class.java
+                configClass.getField("fontWeightAdjustment")
+                SecureLogger.d(TAG, "fontWeightAdjustment field is available on this device")
+            } catch (e: NoSuchFieldException) {
+                // Field doesn't exist - this is the problematic device
+                SecureLogger.w(TAG, "fontWeightAdjustment field NOT available - Compose may crash. Device: ${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL}, API: ${android.os.Build.VERSION.SDK_INT}")
+                SecureLogger.w(TAG, "This is a known issue with some OEM implementations of Android 12+")
 
-            // Unfortunately, we can't prevent the crash at this point since Compose
-            // initializes the font system during setContent(). The crash will still happen,
-            // but at least we're logging it clearly for debugging.
-            // The real fix requires Compose library update or device-specific workarounds.
+                // Unfortunately, we can't prevent the crash at this point since Compose
+                // initializes the font system during setContent(). The crash will still happen,
+                // but at least we're logging it clearly for debugging.
+                // The real fix requires Compose library update or device-specific workarounds.
+            }
         }
     }
 

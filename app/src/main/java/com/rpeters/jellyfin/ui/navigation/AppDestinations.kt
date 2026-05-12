@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material.icons.filled.Widgets
+import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.ui.graphics.vector.ImageVector
 
 enum class AppDestinations(
@@ -24,9 +25,11 @@ enum class AppDestinations(
     MOVIES("Movies", Icons.Default.Movie, false), // Hidden from bottom nav
     TV_SHOWS("TV Shows", Icons.Default.Tv, false), // Hidden from bottom nav
     TV_EPISODES("Episodes", Icons.Default.Tv, false), // Hidden from bottom nav
+    TV_EPISODES_DETAIL("Episode Detail", Icons.Default.Tv, false), // Hidden from bottom nav
     MUSIC("Music", Icons.Default.MusicNote, false), // Hidden from bottom nav
     STUFF("Stuff", Icons.Default.Widgets, false), // Hidden from bottom nav
     SEARCH("Search", Icons.Default.Search),
+    REQUESTS("Requests", Icons.Default.AddCircle),
     FAVORITES("Favorites", Icons.Default.Favorite),
     PROFILE("Profile", Icons.Default.AccountBox),
     SETTINGS("Settings", Icons.Default.Settings),

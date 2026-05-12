@@ -241,6 +241,7 @@ object MediaDownloadManager {
     // Helper methods
 
     private fun sumMediaStoreDownloads(context: Context): Long {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return 0L
         val resolver = context.contentResolver
         val projection = arrayOf(
             MediaStore.Downloads._ID,
@@ -270,6 +271,7 @@ object MediaDownloadManager {
     }
 
     private fun deleteMediaStoreDownloads(context: Context): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return true
         val resolver = context.contentResolver
         val selection = "${MediaStore.Downloads.RELATIVE_PATH} LIKE ?"
         val selectionArgs = arrayOf("${buildRelativePath("")}%")

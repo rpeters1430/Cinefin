@@ -1,5 +1,7 @@
 package com.rpeters.jellyfin.ui.screens
 
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -31,9 +33,10 @@ class ServerConnectionScreenTest {
         every { viewModel.connectionState } returns connectionState
 
         composeTestRule.setContent {
+            val state by connectionState.collectAsState()
             JellyfinAndroidTheme {
                 ServerConnectionScreen(
-                    connectionState = connectionState.value,
+                    connectionState = state,
                     onConnect = { url, user, pass -> 
                         viewModel.connectToServer(url, user, pass)
                     }
@@ -57,9 +60,10 @@ class ServerConnectionScreenTest {
         every { viewModel.connectionState } returns connectionState
 
         composeTestRule.setContent {
+            val state by connectionState.collectAsState()
             JellyfinAndroidTheme {
                 ServerConnectionScreen(
-                    connectionState = connectionState.value
+                    connectionState = state
                 )
             }
         }
@@ -73,9 +77,10 @@ class ServerConnectionScreenTest {
         every { viewModel.connectionState } returns connectionState
 
         composeTestRule.setContent {
+            val state by connectionState.collectAsState()
             JellyfinAndroidTheme {
                 ServerConnectionScreen(
-                    connectionState = connectionState.value
+                    connectionState = state
                 )
             }
         }

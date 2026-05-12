@@ -29,10 +29,6 @@ class AudioPlaybackViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            audioServiceConnection.ensureController()
-            audioServiceConnection.refreshState()
-        }
-        viewModelScope.launch {
             playbackState.collectLatest { state ->
                 _currentPosition.value = state.currentPosition
                 _duration.value = state.duration

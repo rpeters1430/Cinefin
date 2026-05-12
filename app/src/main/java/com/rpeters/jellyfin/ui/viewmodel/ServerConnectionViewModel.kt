@@ -47,6 +47,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import javax.inject.Inject
+import javax.inject.Provider
 
 // Use the enhanced ConnectionState from ConnectionProgress.kt
 // This data class is now defined in the ConnectionProgress.kt file
@@ -73,7 +74,7 @@ class ServerConnectionViewModel @Inject constructor(
     private val secureCredentialManager: SecureCredentialManager,
     private val certificatePinningManager: CertificatePinningManager,
     private val connectivityChecker: ConnectivityChecker,
-    private val offlineDownloadManager: OfflineDownloadManager,
+    private val offlineDownloadManagerProvider: Provider<OfflineDownloadManager>,
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
@@ -744,6 +745,7 @@ class ServerConnectionViewModel @Inject constructor(
     }
 
     private suspend fun hasPlayableOfflineMedia(): Boolean = withContext(Dispatchers.IO) {
+        val offlineDownloadManager = offlineDownloadManagerProvider.get()
         offlineDownloadManager.downloads.value.any { download ->
             if (download.status != DownloadStatus.COMPLETED) return@any false
             val file = runCatching { File(download.localFilePath) }.getOrNull() ?: return@any false

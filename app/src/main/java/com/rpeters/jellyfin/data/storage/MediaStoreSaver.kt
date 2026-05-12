@@ -8,10 +8,13 @@ import android.os.Build
 import android.provider.MediaStore
 import java.io.IOException
 
+import androidx.annotation.RequiresApi
+
 /**
  * Utility helpers for creating and finalising MediaStore entries without relying on
  * legacy external storage permissions.
  */
+@RequiresApi(Build.VERSION_CODES.Q)
 object MediaStoreSaver {
 
     /**

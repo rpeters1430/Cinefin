@@ -10,11 +10,11 @@ import com.google.firebase.FirebaseApp
 import com.google.firebase.appcheck.FirebaseAppCheck
 import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory
 import com.rpeters.jellyfin.core.Logger
-import com.rpeters.jellyfin.data.offline.OfflineDownloadManager
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
 import com.rpeters.jellyfin.data.utils.RepositoryUtils
 import com.rpeters.jellyfin.ui.surface.ModernSurfaceCoordinator
 import com.rpeters.jellyfin.utils.AppResources
+import com.rpeters.jellyfin.utils.DeviceTypeUtils
 import com.rpeters.jellyfin.utils.NetworkOptimizer
 import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.HiltAndroidApp
@@ -26,6 +26,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
+import javax.inject.Provider
 
 @HiltAndroidApp
 class CinefinApplication : Application(), SingletonImageLoader.Factory, Configuration.Provider {
@@ -34,22 +35,19 @@ class CinefinApplication : Application(), SingletonImageLoader.Factory, Configur
     lateinit var workerFactory: HiltWorkerFactory
 
     @Inject
-    lateinit var offlineDownloadManager: OfflineDownloadManager
+    lateinit var imageLoaderProvider: Provider<ImageLoader>
 
     @Inject
-    lateinit var imageLoader: ImageLoader
+    lateinit var modernSurfaceCoordinatorProvider: Provider<ModernSurfaceCoordinator>
 
     @Inject
-    lateinit var modernSurfaceCoordinator: ModernSurfaceCoordinator
+    lateinit var authRepositoryProvider: Provider<JellyfinAuthRepository>
 
     @Inject
-    lateinit var authRepository: JellyfinAuthRepository
+    lateinit var generativeAiRepositoryProvider: Provider<com.rpeters.jellyfin.data.repository.GenerativeAiRepository>
 
     @Inject
-    lateinit var generativeAiRepository: com.rpeters.jellyfin.data.repository.GenerativeAiRepository
-
-    @Inject
-    lateinit var remoteConfigRepository: com.rpeters.jellyfin.data.repository.RemoteConfigRepository
+    lateinit var remoteConfigRepositoryProvider: Provider<com.rpeters.jellyfin.data.repository.RemoteConfigRepository>
 
     private val applicationJob = SupervisorJob()
     private val applicationScope = CoroutineScope(applicationJob + Dispatchers.Default)
@@ -72,9 +70,14 @@ class CinefinApplication : Application(), SingletonImageLoader.Factory, Configur
         // Set to true to enable detailed debug logging (codec detection, playback decisions, etc.)
         SecureLogger.enableVerboseLogging = BuildConfig.DEBUG && true // Enabled for debugging transcoding issues
 
-        // Initialize Firebase App Check (debug mode for testing without Play Store)
-        initializeAppCheck()
-        validateAiApiKeyConfiguration()
+        // Initialize Firebase and AI config in background to avoid blocking main thread
+        applicationScope.launch(Dispatchers.IO) {
+            // Pre-fetch device type to avoid blocking MainActivity's UI thread with IPC calls later
+            DeviceTypeUtils.getDeviceType(this@CinefinApplication)
+            
+            initializeAppCheck()
+            validateAiApiKeyConfiguration()
+        }
 
         // Fetch latest remote configuration early
         initializeRemoteConfig()
@@ -82,7 +85,7 @@ class CinefinApplication : Application(), SingletonImageLoader.Factory, Configur
         // Configure performance optimizations first
         initializePerformanceOptimizations()
 
-        modernSurfaceCoordinator.initialize()
+        initializeModernSurfaces()
 
         // Initialize AI in background to check Nano availability early
         initializeAiBackend()
@@ -95,7 +98,7 @@ class CinefinApplication : Application(), SingletonImageLoader.Factory, Configur
         applicationScope.launch {
             try {
                 SecureLogger.i(TAG, "Fetching latest remote configuration...")
-                val updated = remoteConfigRepository.fetchAndActivate()
+                val updated = remoteConfigRepositoryProvider.get().fetchAndActivate()
                 if (updated) {
                     SecureLogger.i(TAG, "Remote Config activated successfully")
                 } else {
@@ -196,6 +199,18 @@ class CinefinApplication : Application(), SingletonImageLoader.Factory, Configur
         }
     }
 
+    private fun initializeModernSurfaces() {
+        applicationScope.launch {
+            try {
+                modernSurfaceCoordinatorProvider.get().initialize()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                SecureLogger.e(TAG, "Failed to initialize modern surfaces", e)
+            }
+        }
+    }
+
     /**
      * Validates API key wiring for Firebase AI Logic.
      * If GOOGLE_AI_API_KEY is set, AiModule can initialize a dedicated Firebase app
@@ -245,7 +260,7 @@ class CinefinApplication : Application(), SingletonImageLoader.Factory, Configur
         applicationScope.launch {
             try {
                 SecureLogger.i(TAG, "Initializing AI backend in background")
-                generativeAiRepository.initialize()
+                generativeAiRepositoryProvider.get().initialize()
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -280,9 +295,6 @@ class CinefinApplication : Application(), SingletonImageLoader.Factory, Configur
             // Cancel application scope to prevent leaks
             applicationScope.cancel()
 
-            if (::offlineDownloadManager.isInitialized) {
-                offlineDownloadManager.cleanup()
-            }
             applicationJob.cancel()
         } catch (e: CancellationException) {
             throw e
@@ -317,7 +329,6 @@ class CinefinApplication : Application(), SingletonImageLoader.Factory, Configur
     }
 
     private fun scheduleAuthRecovery() {
-        if (!::authRepository.isInitialized) return
         val now = SystemClock.elapsedRealtime()
         synchronized(authRecoveryLock) {
             if (now - lastAuthRecoveryAttemptMs < AUTH_RECOVERY_COOLDOWN_MS) return
@@ -327,7 +338,7 @@ class CinefinApplication : Application(), SingletonImageLoader.Factory, Configur
         applicationScope.launch(Dispatchers.IO) {
             try {
                 SecureLogger.w(TAG, "Global 401 handler: forcing re-authentication")
-                val success = authRepository.forceReAuthenticate()
+                val success = authRepositoryProvider.get().forceReAuthenticate()
                 if (success) {
                     SecureLogger.i(TAG, "Global 401 handler: re-authentication successful")
                 } else {
@@ -339,7 +350,7 @@ class CinefinApplication : Application(), SingletonImageLoader.Factory, Configur
         }
     }
 
-    override fun newImageLoader(context: android.content.Context): ImageLoader = imageLoader
+    override fun newImageLoader(context: android.content.Context): ImageLoader = imageLoaderProvider.get()
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()

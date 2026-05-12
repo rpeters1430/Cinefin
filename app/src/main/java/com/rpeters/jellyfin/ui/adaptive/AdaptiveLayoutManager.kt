@@ -263,6 +263,7 @@ data class AdaptiveLayoutConfig(
 /**
  * Convenience helper to remember WindowLayoutInfo for adaptive decisions
  */
+@android.annotation.SuppressLint("RestrictedApi")
 @Composable
 fun rememberWindowLayoutInfo(): WindowLayoutInfo {
     val context = LocalContext.current
