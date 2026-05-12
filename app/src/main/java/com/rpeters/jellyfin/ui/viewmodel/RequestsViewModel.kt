@@ -34,7 +34,7 @@ data class TvEpisodeAvailability(
     val seasonNumber: Int,
     val episodeNumber: Int,
     val title: String,
-    val isAvailable: Boolean
+    val isAvailable: Boolean,
 )
 
 data class TvSeasonAvailability(
@@ -44,7 +44,7 @@ data class TvSeasonAvailability(
     val totalCount: Int,
     val isRequestableInSeerr: Boolean,
     val isPendingRequest: Boolean = false,
-    val episodes: List<TvEpisodeAvailability>
+    val episodes: List<TvEpisodeAvailability>,
 ) {
     val missingCount: Int get() = totalCount - availableCount
     val hasMissingEpisodes: Boolean get() = missingCount > 0
@@ -53,7 +53,7 @@ data class TvSeasonAvailability(
 
 data class TvAvailability(
     val localSeriesTitle: String,
-    val seasons: List<TvSeasonAvailability>
+    val seasons: List<TvSeasonAvailability>,
 ) {
     val totalAvailableEpisodes: Int get() = seasons.sumOf { it.availableCount }
     val totalEpisodes: Int get() = seasons.sumOf { it.totalCount }
@@ -71,7 +71,7 @@ data class RequestsUiState(
     val requestingMediaId: Int? = null,
     val requestingSeasonKey: String? = null,
     val tvAvailabilityByMediaId: Map<Int, TvAvailability> = emptyMap(),
-    val successMessage: String? = null
+    val successMessage: String? = null,
 )
 
 @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
@@ -80,7 +80,7 @@ class RequestsViewModel @Inject constructor(
     private val seerrRepository: SeerrRepository,
     private val jellyfinSearchRepository: JellyfinSearchRepository,
     private val jellyfinMediaRepository: JellyfinMediaRepository,
-    private val preferencesRepository: SeerrPreferencesRepository
+    private val preferencesRepository: SeerrPreferencesRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(RequestsUiState())
@@ -95,7 +95,7 @@ class RequestsViewModel @Inject constructor(
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = SeerrPreferences.DEFAULT
+            initialValue = SeerrPreferences.DEFAULT,
         )
 
     init {
@@ -170,14 +170,14 @@ class RequestsViewModel @Inject constructor(
                 val seasons = loadRequestableSeasons(
                     mediaId = mediaId,
                     title = item.displayTitle,
-                    requestedSeasons = requestedSeasons
+                    requestedSeasons = requestedSeasons,
                 ) ?: return@launch
 
                 if (seasons.isEmpty()) {
                     _uiState.update {
                         it.copy(
                             requestingMediaId = null,
-                            errorMessage = "No requestable seasons found for ${item.displayTitle}. Jellyseerr may already mark them available or requested."
+                            errorMessage = "No requestable seasons found for ${item.displayTitle}. Jellyseerr may already mark them available or requested.",
                         )
                     }
                     return@launch
@@ -186,12 +186,12 @@ class RequestsViewModel @Inject constructor(
                 SeerrRequestRequest(
                     mediaType = item.mediaType,
                     mediaId = mediaId,
-                    seasons = seasons
+                    seasons = seasons,
                 )
             } else {
                 SeerrRequestRequest(
                     mediaType = item.mediaType,
-                    mediaId = mediaId
+                    mediaId = mediaId,
                 )
             }
 
@@ -206,14 +206,14 @@ class RequestsViewModel @Inject constructor(
                             requestingMediaId = null,
                             requestingSeasonKey = null,
                             successMessage = "Request submitted for ${item.displayTitle}",
-                            results = updatedResults
+                            results = updatedResults,
                         )
                     }
                     is ApiResult.Error -> {
                         state.copy(
                             requestingMediaId = null,
                             requestingSeasonKey = null,
-                            errorMessage = result.message
+                            errorMessage = result.message,
                         )
                     }
                     else -> state.copy(requestingMediaId = null, requestingSeasonKey = null)
@@ -225,11 +225,11 @@ class RequestsViewModel @Inject constructor(
     private suspend fun loadRequestableSeasons(
         mediaId: Int,
         title: String,
-        requestedSeasons: List<Int>?
+        requestedSeasons: List<Int>?,
     ): List<Int>? {
         return when (val detailsResult = seerrRepository.getTvDetails(mediaId)) {
             is ApiResult.Success -> detailsResult.data.requestableSeasons(
-                requestedSeasons ?: detailsResult.data.seasons.map { it.seasonNumber }
+                requestedSeasons ?: detailsResult.data.seasons.map { it.seasonNumber },
             )
                 .distinct()
                 .sorted()
@@ -238,7 +238,7 @@ class RequestsViewModel @Inject constructor(
                     it.copy(
                         requestingMediaId = null,
                         requestingSeasonKey = null,
-                        errorMessage = detailsResult.message.ifBlank { "Unable to load seasons for $title" }
+                        errorMessage = detailsResult.message.ifBlank { "Unable to load seasons for $title" },
                     )
                 }
                 null
@@ -263,7 +263,7 @@ class RequestsViewModel @Inject constructor(
             .toMap()
 
         val requestableSeasonNumbers = seerrDetails.requestableSeasons(
-            seerrDetails.seasons.map { it.seasonNumber }
+            seerrDetails.seasons.map { it.seasonNumber },
         ).toSet()
 
         val activeRequestedSeasonNumbers = seerrDetails.mediaInfo?.requests.orEmpty()
@@ -290,13 +290,13 @@ class RequestsViewModel @Inject constructor(
                     seerrSeason = seerrSeasonWithEpisodes,
                     localEpisodes = localEpisodes,
                     isRequestableInSeerr = seerrSeason.seasonNumber in requestableSeasonNumbers,
-                    isPendingRequest = seerrSeason.seasonNumber in activeRequestedSeasonNumbers
+                    isPendingRequest = seerrSeason.seasonNumber in activeRequestedSeasonNumbers,
                 )
             }
 
         return TvAvailability(
             localSeriesTitle = localSeries.name ?: item.displayTitle,
-            seasons = seasons
+            seasons = seasons,
         )
     }
 
@@ -304,7 +304,7 @@ class RequestsViewModel @Inject constructor(
         seerrSeason: SeerrSeason,
         localEpisodes: List<BaseItemDto>,
         isRequestableInSeerr: Boolean,
-        isPendingRequest: Boolean = false
+        isPendingRequest: Boolean = false,
     ): TvSeasonAvailability? {
         val localEpisodeByNumber = localEpisodes
             .mapNotNull { episode -> episode.indexNumber?.let { it to episode } }
@@ -332,7 +332,7 @@ class RequestsViewModel @Inject constructor(
                 seasonNumber = seerrSeason.seasonNumber,
                 episodeNumber = episodeNumber,
                 title = titleByNumber[episodeNumber] ?: localEpisode?.name ?: "Episode $episodeNumber",
-                isAvailable = localEpisode != null
+                isAvailable = localEpisode != null,
             )
         }
 
@@ -343,12 +343,12 @@ class RequestsViewModel @Inject constructor(
             totalCount = episodes.size,
             isRequestableInSeerr = isRequestableInSeerr,
             isPendingRequest = isPendingRequest,
-            episodes = episodes
+            episodes = episodes,
         )
     }
 
     private fun com.rpeters.jellyfin.data.model.SeerrTvDetails.requestableSeasons(
-        requestedSeasonNumbers: List<Int>
+        requestedSeasonNumbers: List<Int>,
     ): List<Int> {
         val activeRequestedSeasons = mediaInfo?.requests.orEmpty()
             .filter { request -> request.status in ACTIVE_REQUEST_STATUSES && !request.is4k }
@@ -364,8 +364,8 @@ class RequestsViewModel @Inject constructor(
             .filter { seasonNumber ->
                 val status = mediaInfoSeasonStatusByNumber[seasonNumber]
                     ?: seerrSeasonByNumber[seasonNumber]?.status
-                status == null || status == SEERR_STATUS_UNKNOWN || status == SEERR_STATUS_DELETED
-                    || status == SEERR_STATUS_PARTIALLY_AVAILABLE
+                status == null || status == SEERR_STATUS_UNKNOWN || status == SEERR_STATUS_DELETED ||
+                    status == SEERR_STATUS_PARTIALLY_AVAILABLE
             }
     }
 
