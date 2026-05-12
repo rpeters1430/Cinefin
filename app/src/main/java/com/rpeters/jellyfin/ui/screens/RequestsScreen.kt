@@ -35,7 +35,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -43,7 +42,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
-import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.model.SeerrMediaItem
 import com.rpeters.jellyfin.ui.components.ExpressiveContentCard
@@ -60,7 +58,7 @@ import com.rpeters.jellyfin.ui.viewmodel.TvSeasonAvailability
 fun RequestsScreen(
     initialQuery: String? = null,
     onNavigateToSettings: () -> Unit,
-    viewModel: RequestsViewModel = hiltViewModel()
+    viewModel: RequestsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val seerrPrefs by viewModel.seerrPreferences.collectAsStateWithLifecycle()
@@ -96,22 +94,22 @@ fun RequestsScreen(
                         Spacer(modifier = Modifier.width(8.dp))
                         Text("Config")
                     }
-                }
+                },
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { paddingValues ->
         if (!uiState.isConfigured) {
             UnconfiguredState(
                 onNavigateToSettings = onNavigateToSettings,
-                modifier = Modifier.padding(paddingValues)
+                modifier = Modifier.padding(paddingValues),
             )
         } else {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
-                    .padding(horizontal = 16.dp)
+                    .padding(horizontal = 16.dp),
             ) {
                 OutlinedTextField(
                     value = uiState.query,
@@ -121,7 +119,7 @@ fun RequestsScreen(
                         .padding(vertical = 8.dp),
                     placeholder = { Text("Search movies or shows to request...") },
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                    singleLine = true
+                    singleLine = true,
                 )
 
                 if (uiState.isLoading && uiState.results.isEmpty()) {
@@ -133,7 +131,7 @@ fun RequestsScreen(
                 } else {
                     LazyColumn(
                         verticalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxSize(),
                     ) {
                         if (uiState.query.isBlank() && uiState.results.isNotEmpty()) {
                             item {
@@ -141,7 +139,7 @@ fun RequestsScreen(
                                     text = "Trending",
                                     style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(bottom = 8.dp)
+                                    modifier = Modifier.padding(bottom = 8.dp),
                                 )
                             }
                         }
@@ -187,7 +185,7 @@ private fun RequestMediaItem(
         // Here we assume we can build the TMDB URL or Seerr proxy
         "https://image.tmdb.org/t/p/w500$path"
     }
-    
+
     val status = item.mediaInfo?.status ?: 1
     val isAvailable = status == 5
     val isPending = status == 2 || status == 3
@@ -195,16 +193,16 @@ private fun RequestMediaItem(
     ExpressiveContentCard(
         modifier = Modifier.fillMaxWidth(),
         containerColor = JellyfinExpressiveTheme.colors.sectionContainer,
-        shape = JellyfinExpressiveTheme.shapes.section
+        shape = JellyfinExpressiveTheme.shapes.section,
     ) {
         Column(
             modifier = Modifier
                 .padding(12.dp)
-                .fillMaxWidth()
+                .fillMaxWidth(),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 AsyncImage(
                     model = posterUrl,
@@ -212,24 +210,24 @@ private fun RequestMediaItem(
                     modifier = Modifier
                         .size(width = 80.dp, height = 120.dp)
                         .clip(JellyfinExpressiveTheme.shapes.control),
-                    contentScale = ContentScale.Crop
+                    contentScale = ContentScale.Crop,
                 )
-                
+
                 Spacer(modifier = Modifier.width(16.dp))
-                
+
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = item.displayTitle,
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
                     )
                     Text(
                         text = "${item.mediaType.uppercase()} • ${item.displayDate.take(4)}",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    
+
                     if (isAvailable) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
@@ -242,7 +240,7 @@ private fun RequestMediaItem(
                         ExpressiveFilledButton(
                             onClick = onRequest,
                             enabled = !isRequesting,
-                            modifier = Modifier.height(36.dp)
+                            modifier = Modifier.height(36.dp),
                         ) {
                             if (isRequesting && requestingSeasonKey == null) {
                                 CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
@@ -268,7 +266,7 @@ private fun RequestMediaItem(
                             Text(
                                 "Checking server episodes…",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
@@ -279,20 +277,20 @@ private fun RequestMediaItem(
                             requestingSeasonKey = requestingSeasonKey,
                             mediaId = item.id,
                             onRequestSeason = onRequestSeason,
-                            onRequestMissingSeasons = onRequestMissingSeasons
+                            onRequestMissingSeasons = onRequestMissingSeasons,
                         )
                     }
                     isTvChecked -> {
                         Text(
                             "Not found on your server",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                     else -> {
                         ExpressiveTextButton(
                             onClick = onCheckAvailability,
-                            modifier = Modifier.height(34.dp)
+                            modifier = Modifier.height(34.dp),
                         ) {
                             Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(4.dp))
@@ -312,7 +310,7 @@ private fun TvAvailabilitySection(
     requestingSeasonKey: String?,
     mediaId: Int,
     onRequestSeason: (Int) -> Unit,
-    onRequestMissingSeasons: () -> Unit
+    onRequestMissingSeasons: () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -321,7 +319,7 @@ private fun TvAvailabilitySection(
             Text(
                 "${availability.totalAvailableEpisodes}/${availability.totalEpisodes} episodes on server",
                 style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
             )
         }
 
@@ -329,7 +327,7 @@ private fun TvAvailabilitySection(
             ExpressiveFilledButton(
                 onClick = onRequestMissingSeasons,
                 enabled = !isRequesting,
-                modifier = Modifier.height(36.dp)
+                modifier = Modifier.height(36.dp),
             ) {
                 if (isRequesting && requestingSeasonKey?.startsWith("$mediaId:") == true) {
                     CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
@@ -347,7 +345,7 @@ private fun TvAvailabilitySection(
                 isRequesting = isRequesting,
                 requestingSeasonKey = requestingSeasonKey,
                 mediaId = mediaId,
-                onRequestSeason = onRequestSeason
+                onRequestSeason = onRequestSeason,
             )
         }
     }
@@ -359,23 +357,23 @@ private fun TvSeasonAvailabilityBlock(
     isRequesting: Boolean,
     requestingSeasonKey: String?,
     mediaId: Int,
-    onRequestSeason: (Int) -> Unit
+    onRequestSeason: (Int) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     season.title,
                     style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
                 )
                 Text(
                     "${season.availableCount}/${season.totalCount} episodes available",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             if (season.canRequestMissingEpisodes) {
@@ -383,7 +381,7 @@ private fun TvSeasonAvailabilityBlock(
                 ExpressiveTextButton(
                     onClick = { onRequestSeason(season.seasonNumber) },
                     enabled = !isRequesting,
-                    modifier = Modifier.height(34.dp)
+                    modifier = Modifier.height(34.dp),
                 ) {
                     if (isRequesting && requestingSeasonKey == seasonKey) {
                         CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
@@ -397,7 +395,7 @@ private fun TvSeasonAvailabilityBlock(
                 Text(
                     stringResource(if (season.isPendingRequest) R.string.seerr_request_pending else R.string.seerr_not_requestable),
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -407,7 +405,7 @@ private fun TvSeasonAvailabilityBlock(
                 episode = episode,
                 canRequestSeason = season.canRequestMissingEpisodes,
                 isRequesting = isRequesting && requestingSeasonKey == "$mediaId:${season.seasonNumber}",
-                onRequestSeason = { onRequestSeason(season.seasonNumber) }
+                onRequestSeason = { onRequestSeason(season.seasonNumber) },
             )
         }
     }
@@ -418,40 +416,40 @@ private fun TvEpisodeAvailabilityRow(
     episode: TvEpisodeAvailability,
     canRequestSeason: Boolean,
     isRequesting: Boolean,
-    onRequestSeason: () -> Unit
+    onRequestSeason: () -> Unit,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(start = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
             imageVector = if (episode.isAvailable) Icons.Default.Check else Icons.Default.Info,
             contentDescription = null,
             modifier = Modifier.size(14.dp),
-            tint = if (episode.isAvailable) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+            tint = if (episode.isAvailable) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
             "E${episode.episodeNumber}. ${episode.title}",
             modifier = Modifier.weight(1f),
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface
+            color = MaterialTheme.colorScheme.onSurface,
         )
         when {
             episode.isAvailable -> {
                 Text(
                     "On server",
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.primary,
                 )
             }
             canRequestSeason -> {
                 ExpressiveTextButton(
                     onClick = onRequestSeason,
                     enabled = !isRequesting,
-                    modifier = Modifier.height(32.dp)
+                    modifier = Modifier.height(32.dp),
                 ) {
                     if (isRequesting) {
                         CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
@@ -466,7 +464,7 @@ private fun TvEpisodeAvailabilityRow(
                 Text(
                     "Missing",
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.error
+                    color = MaterialTheme.colorScheme.error,
                 )
             }
         }
@@ -476,33 +474,33 @@ private fun TvEpisodeAvailabilityRow(
 @Composable
 private fun UnconfiguredState(
     onNavigateToSettings: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier
             .fillMaxSize()
             .padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
     ) {
         Icon(
             Icons.Default.Info,
             contentDescription = null,
             modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.primary
+            tint = MaterialTheme.colorScheme.primary,
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
             "Seerr Not Configured",
             style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             "To request new media, please configure your Seerr, Overseerr, or Jellyseerr instance in settings.",
             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(modifier = Modifier.height(24.dp))
         ExpressiveFilledButton(onClick = onNavigateToSettings) {
@@ -517,7 +515,7 @@ private fun EmptyState(query: String) {
         Text(
             "No results for \"$query\"",
             style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
