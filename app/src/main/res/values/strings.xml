@@ -541,4 +541,8 @@
     <string name="connecting_dots">Connecting...</string>
     <string name="quick_connect">Quick Connect</string>
 
+    <!-- Media Requests / Seerr -->
+    <string name="seerr_request_pending">Request pending in Seerr</string>
+    <string name="seerr_not_requestable">Not requestable in Seerr</string>
+
 </resources>
