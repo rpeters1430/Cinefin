@@ -37,12 +37,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.rpeters.jellyfin.OptInAppExperimentalApis
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.model.SeerrMediaItem
 import com.rpeters.jellyfin.ui.components.ExpressiveContentCard
 import com.rpeters.jellyfin.ui.components.ExpressiveFilledButton
@@ -393,7 +395,7 @@ private fun TvSeasonAvailabilityBlock(
                 }
             } else if (season.hasMissingEpisodes) {
                 Text(
-                    "Not requestable in Jellyseerr",
+                    stringResource(if (season.isPendingRequest) R.string.seerr_request_pending else R.string.seerr_not_requestable),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

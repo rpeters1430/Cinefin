@@ -2,6 +2,7 @@ package com.rpeters.jellyfin.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rpeters.jellyfin.data.model.SeerrMediaInfo
 import com.rpeters.jellyfin.data.model.SeerrMediaItem
 import com.rpeters.jellyfin.data.model.SeerrRequestRequest
 import com.rpeters.jellyfin.data.model.SeerrSeason
@@ -42,6 +43,7 @@ data class TvSeasonAvailability(
     val availableCount: Int,
     val totalCount: Int,
     val isRequestableInSeerr: Boolean,
+    val isPendingRequest: Boolean = false,
     val episodes: List<TvEpisodeAvailability>
 ) {
     val missingCount: Int get() = totalCount - availableCount
@@ -197,10 +199,14 @@ class RequestsViewModel @Inject constructor(
             _uiState.update { state ->
                 when (result) {
                     is ApiResult.Success -> {
+                        val updatedResults = state.results.map { r ->
+                            if (r.id == item.id) r.copy(mediaInfo = updatedMediaInfo(r, result.data.media)) else r
+                        }
                         state.copy(
                             requestingMediaId = null,
                             requestingSeasonKey = null,
-                            successMessage = "Request submitted for ${item.displayTitle}"
+                            successMessage = "Request submitted for ${item.displayTitle}",
+                            results = updatedResults
                         )
                     }
                     is ApiResult.Error -> {
@@ -260,6 +266,11 @@ class RequestsViewModel @Inject constructor(
             seerrDetails.seasons.map { it.seasonNumber }
         ).toSet()
 
+        val activeRequestedSeasonNumbers = seerrDetails.mediaInfo?.requests.orEmpty()
+            .filter { request -> request.status in ACTIVE_REQUEST_STATUSES && !request.is4k }
+            .flatMap { request -> request.seasons.map { it.seasonNumber } }
+            .toSet()
+
         val seasons = seerrDetails.seasons
             .filter { it.seasonNumber > 0 }
             .sortedBy { it.seasonNumber }
@@ -278,7 +289,8 @@ class RequestsViewModel @Inject constructor(
                 buildSeasonAvailability(
                     seerrSeason = seerrSeasonWithEpisodes,
                     localEpisodes = localEpisodes,
-                    isRequestableInSeerr = seerrSeason.seasonNumber in requestableSeasonNumbers
+                    isRequestableInSeerr = seerrSeason.seasonNumber in requestableSeasonNumbers,
+                    isPendingRequest = seerrSeason.seasonNumber in activeRequestedSeasonNumbers
                 )
             }
 
@@ -291,7 +303,8 @@ class RequestsViewModel @Inject constructor(
     private fun buildSeasonAvailability(
         seerrSeason: SeerrSeason,
         localEpisodes: List<BaseItemDto>,
-        isRequestableInSeerr: Boolean
+        isRequestableInSeerr: Boolean,
+        isPendingRequest: Boolean = false
     ): TvSeasonAvailability? {
         val localEpisodeByNumber = localEpisodes
             .mapNotNull { episode -> episode.indexNumber?.let { it to episode } }
@@ -329,6 +342,7 @@ class RequestsViewModel @Inject constructor(
             availableCount = episodes.count { it.isAvailable },
             totalCount = episodes.size,
             isRequestableInSeerr = isRequestableInSeerr,
+            isPendingRequest = isPendingRequest,
             episodes = episodes
         )
     }
@@ -351,6 +365,7 @@ class RequestsViewModel @Inject constructor(
                 val status = mediaInfoSeasonStatusByNumber[seasonNumber]
                     ?: seerrSeasonByNumber[seasonNumber]?.status
                 status == null || status == SEERR_STATUS_UNKNOWN || status == SEERR_STATUS_DELETED
+                    || status == SEERR_STATUS_PARTIALLY_AVAILABLE
             }
     }
 
@@ -405,8 +420,23 @@ class RequestsViewModel @Inject constructor(
         _uiState.update { it.copy(errorMessage = null, successMessage = null) }
     }
 
+    /**
+     * Returns the best available media info to reflect that a request has been submitted.
+     * Precedence: API response media > optimistic pending update of existing media > new pending media.
+     */
+    private fun updatedMediaInfo(item: SeerrMediaItem, responseMedia: SeerrMediaInfo?): SeerrMediaInfo {
+        return responseMedia
+            ?: item.mediaInfo?.let { existing ->
+                if (existing.status != SEERR_STATUS_AVAILABLE) existing.copy(status = SEERR_STATUS_PENDING) else existing
+            }
+            ?: SeerrMediaInfo(status = SEERR_STATUS_PENDING, requests = null, seasons = emptyList())
+    }
+
     companion object {
         private const val SEERR_STATUS_UNKNOWN = 1
+        private const val SEERR_STATUS_PENDING = 2
+        private const val SEERR_STATUS_PARTIALLY_AVAILABLE = 4
+        private const val SEERR_STATUS_AVAILABLE = 5
         private const val SEERR_STATUS_DELETED = 6
         private val ACTIVE_REQUEST_STATUSES = setOf(1, 2)
     }
