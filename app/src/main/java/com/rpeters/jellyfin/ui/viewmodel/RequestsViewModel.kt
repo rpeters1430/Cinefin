@@ -364,8 +364,7 @@ class RequestsViewModel @Inject constructor(
             .filter { seasonNumber ->
                 val status = mediaInfoSeasonStatusByNumber[seasonNumber]
                     ?: seerrSeasonByNumber[seasonNumber]?.status
-                status == null || status == SEERR_STATUS_UNKNOWN || status == SEERR_STATUS_DELETED
-                    || status == SEERR_STATUS_PARTIALLY_AVAILABLE
+                status == null || status in REQUESTABLE_STATUSES
             }
     }
 
@@ -438,6 +437,8 @@ class RequestsViewModel @Inject constructor(
         private const val SEERR_STATUS_PARTIALLY_AVAILABLE = 4
         private const val SEERR_STATUS_AVAILABLE = 5
         private const val SEERR_STATUS_DELETED = 6
+        // Statuses that allow a season to be requested (not yet fully in-progress or available)
+        private val REQUESTABLE_STATUSES = setOf(SEERR_STATUS_UNKNOWN, SEERR_STATUS_PARTIALLY_AVAILABLE, SEERR_STATUS_DELETED)
         private val ACTIVE_REQUEST_STATUSES = setOf(1, 2)
     }
 }
