@@ -437,6 +437,7 @@ class RequestsViewModel @Inject constructor(
         private const val SEERR_STATUS_PARTIALLY_AVAILABLE = 4
         private const val SEERR_STATUS_AVAILABLE = 5
         private const val SEERR_STATUS_DELETED = 6
+
         // Statuses that allow a season to be requested (not yet fully in-progress or available)
         private val REQUESTABLE_STATUSES = setOf(SEERR_STATUS_UNKNOWN, SEERR_STATUS_PARTIALLY_AVAILABLE, SEERR_STATUS_DELETED)
         private val ACTIVE_REQUEST_STATUSES = setOf(1, 2)
