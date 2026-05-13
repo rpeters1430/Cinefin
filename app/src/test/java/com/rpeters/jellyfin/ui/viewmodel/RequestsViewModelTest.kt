@@ -78,7 +78,7 @@ class RequestsViewModelTest {
     }
 
     @Test
-    fun `requestSeason when plugin configured uses tmdb id and forwards season list`() = runTest(testDispatcher) {
+    fun requestSeason_pluginConfiguredWithTmdbId_forwardsSeasonListAndShowsSuccess() = runTest(testDispatcher) {
         val item = SeerrMediaItem(
             id = 101,
             mediaType = "tv",
@@ -99,7 +99,7 @@ class RequestsViewModelTest {
     }
 
     @Test
-    fun `requestSeason when plugin returns success false shows error message`() = runTest(testDispatcher) {
+    fun requestSeason_pluginReturnsSuccessFalse_showsErrorMessage() = runTest(testDispatcher) {
         val item = SeerrMediaItem(
             id = 101,
             mediaType = "tv",
