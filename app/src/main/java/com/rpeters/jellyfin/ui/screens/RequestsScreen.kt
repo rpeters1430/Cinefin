@@ -152,8 +152,11 @@ fun RequestsScreen(
                                 isTvChecked = item.id in uiState.checkedTvItemIds,
                                 isRequesting = uiState.requestingMediaId == item.id,
                                 requestingSeasonKey = uiState.requestingSeasonKey,
+                                isPluginConfigured = uiState.isPluginConfigured,
+                                pluginCapabilities = uiState.pluginCapabilities,
                                 onRequest = { viewModel.requestMedia(item) },
                                 onRequestSeason = { seasonNumber -> viewModel.requestSeason(item, seasonNumber) },
+                                onRequestEpisode = { seasonNumber, episodeNumber -> viewModel.requestMissingEpisode(item, seasonNumber, episodeNumber) },
                                 onRequestMissingSeasons = { viewModel.requestMissingSeasons(item) },
                                 onCheckAvailability = { viewModel.checkTvAvailability(item) },
                             )
@@ -175,8 +178,11 @@ private fun RequestMediaItem(
     isTvChecked: Boolean,
     isRequesting: Boolean,
     requestingSeasonKey: String?,
+    isPluginConfigured: Boolean,
+    pluginCapabilities: List<String>,
     onRequest: () -> Unit,
     onRequestSeason: (Int) -> Unit,
+    onRequestEpisode: (Int, Int) -> Unit,
     onRequestMissingSeasons: () -> Unit,
     onCheckAvailability: () -> Unit,
 ) {
@@ -276,7 +282,10 @@ private fun RequestMediaItem(
                             isRequesting = isRequesting,
                             requestingSeasonKey = requestingSeasonKey,
                             mediaId = item.id,
+                            isPluginConfigured = isPluginConfigured,
+                            pluginCapabilities = pluginCapabilities,
                             onRequestSeason = onRequestSeason,
+                            onRequestEpisode = onRequestEpisode,
                             onRequestMissingSeasons = onRequestMissingSeasons,
                         )
                     }
@@ -309,7 +318,10 @@ private fun TvAvailabilitySection(
     isRequesting: Boolean,
     requestingSeasonKey: String?,
     mediaId: Int,
+    isPluginConfigured: Boolean,
+    pluginCapabilities: List<String>,
     onRequestSeason: (Int) -> Unit,
+    onRequestEpisode: (Int, Int) -> Unit,
     onRequestMissingSeasons: () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -345,7 +357,10 @@ private fun TvAvailabilitySection(
                 isRequesting = isRequesting,
                 requestingSeasonKey = requestingSeasonKey,
                 mediaId = mediaId,
+                isPluginConfigured = isPluginConfigured,
+                pluginCapabilities = pluginCapabilities,
                 onRequestSeason = onRequestSeason,
+                onRequestEpisode = onRequestEpisode,
             )
         }
     }
@@ -357,7 +372,10 @@ private fun TvSeasonAvailabilityBlock(
     isRequesting: Boolean,
     requestingSeasonKey: String?,
     mediaId: Int,
+    isPluginConfigured: Boolean,
+    pluginCapabilities: List<String>,
     onRequestSeason: (Int) -> Unit,
+    onRequestEpisode: (Int, Int) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(
@@ -404,8 +422,11 @@ private fun TvSeasonAvailabilityBlock(
             TvEpisodeAvailabilityRow(
                 episode = episode,
                 canRequestSeason = season.canRequestMissingEpisodes,
+                canRequestEpisode = isPluginConfigured && pluginCapabilities.contains("Sonarr") && !episode.isAvailable,
                 isRequesting = isRequesting && requestingSeasonKey == "$mediaId:${season.seasonNumber}",
+                isRequestingEpisode = isRequesting && requestingSeasonKey == "$mediaId:${season.seasonNumber}:${episode.episodeNumber}",
                 onRequestSeason = { onRequestSeason(season.seasonNumber) },
+                onRequestEpisode = { onRequestEpisode(season.seasonNumber, episode.episodeNumber) }
             )
         }
     }
@@ -415,8 +436,11 @@ private fun TvSeasonAvailabilityBlock(
 private fun TvEpisodeAvailabilityRow(
     episode: TvEpisodeAvailability,
     canRequestSeason: Boolean,
+    canRequestEpisode: Boolean,
     isRequesting: Boolean,
+    isRequestingEpisode: Boolean,
     onRequestSeason: () -> Unit,
+    onRequestEpisode: () -> Unit,
 ) {
     Row(
         modifier = Modifier
@@ -444,6 +468,21 @@ private fun TvEpisodeAvailabilityRow(
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary,
                 )
+            }
+            canRequestEpisode -> {
+                ExpressiveTextButton(
+                    onClick = onRequestEpisode,
+                    enabled = !isRequestingEpisode && !isRequesting,
+                    modifier = Modifier.height(32.dp),
+                ) {
+                    if (isRequestingEpisode) {
+                        CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
+                    } else {
+                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(14.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Request Episode", style = MaterialTheme.typography.labelSmall)
+                    }
+                }
             }
             canRequestSeason -> {
                 ExpressiveTextButton(

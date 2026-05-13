@@ -47,4 +47,17 @@ object SeerrModule {
         }
         return SeerrRepository(okHttpClient, preferencesRepository, json)
     }
+
+    @Provides
+    @Singleton
+    fun provideCinefinPluginRepository(
+        okHttpClient: OkHttpClient,
+        authRepository: com.rpeters.jellyfin.data.repository.IJellyfinAuthRepository
+    ): com.rpeters.jellyfin.data.repository.CinefinPluginRepository {
+        val json = Json {
+            ignoreUnknownKeys = true
+            coerceInputValues = true
+        }
+        return com.rpeters.jellyfin.data.repository.CinefinPluginRepository(okHttpClient, authRepository, json)
+    }
 }

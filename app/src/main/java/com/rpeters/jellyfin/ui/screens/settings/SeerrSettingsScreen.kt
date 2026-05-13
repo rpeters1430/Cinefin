@@ -55,6 +55,7 @@ fun SeerrSettingsScreen(
 ) {
     val seerrPreferences by viewModel.seerrPreferences.collectAsStateWithLifecycle()
     val connectionTestState by viewModel.connectionTestState.collectAsStateWithLifecycle()
+    val isPluginConfigured by viewModel.isPluginConfigured.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -87,19 +88,34 @@ fun SeerrSettingsScreen(
                 )
             }
 
-            ExpressiveSettingsCard(
-                title = "Connection",
-                icon = Icons.Default.Link,
-                description = "Configure your Seerr, Overseerr, or Jellyseerr instance"
-            ) {
-                OutlinedTextField(
-                    value = seerrPreferences.baseUrl,
-                    onValueChange = { viewModel.updateBaseUrl(it) },
-                    label = { Text("Seerr URL") },
-                    placeholder = { Text("https://seerr.example.com") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
+            if (isPluginConfigured) {
+                ExpressiveSettingsCard(
+                    title = "Cinefin Server Plugin",
+                    icon = Icons.Default.Check,
+                    description = "Media requests are securely managed by your Jellyfin server."
+                ) {
+                    Text(
+                        text = "The Cinefin Server Plugin is installed and configured on your Jellyfin server. " +
+                                "All Overseerr, Sonarr, and Radarr requests are routed automatically. " +
+                                "No local configuration is necessary.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            } else {
+                ExpressiveSettingsCard(
+                    title = "Connection",
+                    icon = Icons.Default.Link,
+                    description = "Configure your Seerr, Overseerr, or Jellyseerr instance"
+                ) {
+                    OutlinedTextField(
+                        value = seerrPreferences.baseUrl,
+                        onValueChange = { viewModel.updateBaseUrl(it) },
+                        label = { Text("Seerr URL") },
+                        placeholder = { Text("https://seerr.example.com") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
 
                 OutlinedTextField(
                     value = seerrPreferences.apiKey,
@@ -170,6 +186,7 @@ fun SeerrSettingsScreen(
                         else -> Unit
                     }
                 }
+            }
             }
         }
     }

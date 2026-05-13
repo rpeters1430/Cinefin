@@ -26,6 +26,7 @@ sealed class ConnectionTestState {
 class SeerrSettingsViewModel @Inject constructor(
     private val preferencesRepository: SeerrPreferencesRepository,
     private val seerrRepository: SeerrRepository,
+    private val cinefinPluginRepository: com.rpeters.jellyfin.data.repository.CinefinPluginRepository,
 ) : ViewModel() {
 
     val seerrPreferences: StateFlow<SeerrPreferences> = preferencesRepository.seerrPreferencesFlow
@@ -35,8 +36,24 @@ class SeerrSettingsViewModel @Inject constructor(
             initialValue = SeerrPreferences.DEFAULT
         )
 
+    private val _isPluginConfigured = MutableStateFlow(false)
+    val isPluginConfigured: StateFlow<Boolean> = _isPluginConfigured.asStateFlow()
+
     private val _connectionTestState = MutableStateFlow<ConnectionTestState>(ConnectionTestState.Idle)
     val connectionTestState: StateFlow<ConnectionTestState> = _connectionTestState.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            when (val infoResult = cinefinPluginRepository.getPluginInfo()) {
+                is ApiResult.Success -> {
+                    _isPluginConfigured.value = infoResult.data.isConfigured
+                }
+                else -> {
+                    _isPluginConfigured.value = false
+                }
+            }
+        }
+    }
 
     fun updateBaseUrl(url: String) {
         viewModelScope.launch {
