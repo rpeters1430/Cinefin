@@ -7,7 +7,6 @@ import com.rpeters.jellyfin.data.model.CinefinPluginRequestResponse
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.data.repository.common.ErrorType
 import com.rpeters.jellyfin.utils.SecureLogger
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
@@ -18,14 +17,13 @@ import okhttp3.OkHttpClient
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
-import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class CinefinPluginRepository(
     private val okHttpClient: OkHttpClient, // Provided by NetworkModule (already has auth interceptor)
     private val authRepository: IJellyfinAuthRepository,
-    private val json: Json
+    private val json: Json,
 ) {
     private var cachedApiService: CinefinPluginApiService? = null
     private var cachedBaseUrl: String? = null
@@ -68,9 +66,13 @@ class CinefinPluginRepository(
         }
     }
 
-    suspend fun requestMedia(externalId: String, mediaType: String): ApiResult<CinefinPluginRequestResponse> {
+    suspend fun requestMedia(
+        externalId: String,
+        mediaType: String,
+        seasons: List<Int>? = null,
+    ): ApiResult<CinefinPluginRequestResponse> {
         val service = getApiService() ?: return notConfiguredError()
-        val request = CinefinPluginMediaRequest(externalId, mediaType)
+        val request = CinefinPluginMediaRequest(externalId, mediaType, seasons)
         return try {
             handleResponse(service.requestMedia(request))
         } catch (e: Exception) {
@@ -85,7 +87,7 @@ class CinefinPluginRepository(
         return try {
             handleResponse(service.requestEpisode(request))
         } catch (e: Exception) {
-            SecureLogger.e(TAG, "Failed to request episode: S${seasonNumber}E${episodeNumber} for series: $seriesId", e)
+            SecureLogger.e(TAG, "Failed to request episode: S${seasonNumber}E$episodeNumber for series: $seriesId", e)
             ApiResult.Error("Network error requesting episode", e, ErrorType.NETWORK)
         }
     }
@@ -113,7 +115,7 @@ class CinefinPluginRepository(
             }
             ApiResult.Error(
                 message = readErrorMessage(response) ?: "Plugin API error: ${response.code()}",
-                errorType = errorType
+                errorType = errorType,
             )
         }
     }
