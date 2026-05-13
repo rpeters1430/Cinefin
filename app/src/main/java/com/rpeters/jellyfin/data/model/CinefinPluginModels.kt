@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 data class CinefinPluginInfoResponse(
     val version: String,
     val capabilities: List<String>,
-    val isConfigured: Boolean
+    val isConfigured: Boolean,
 )
 
 @Serializable
@@ -20,11 +20,11 @@ data class CinefinPluginMediaRequest(
 data class CinefinPluginEpisodeRequest(
     val seriesId: String,
     val seasonNumber: Int,
-    val episodeNumber: Int
+    val episodeNumber: Int,
 )
 
 @Serializable
 data class CinefinPluginRequestResponse(
     val success: Boolean,
-    val message: String
+    val message: String,
 )

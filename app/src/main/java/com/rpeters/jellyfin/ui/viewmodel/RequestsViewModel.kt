@@ -105,11 +105,11 @@ class RequestsViewModel @Inject constructor(
         viewModelScope.launch {
             when (val infoResult = cinefinPluginRepository.getPluginInfo()) {
                 is ApiResult.Success -> {
-                    _uiState.update { 
+                    _uiState.update {
                         it.copy(
                             isPluginConfigured = infoResult.data.isConfigured,
                             pluginCapabilities = infoResult.data.capabilities,
-                            isConfigured = infoResult.data.isConfigured || (seerrPreferences.value.isValid && seerrPreferences.value.isEnabled)
+                            isConfigured = infoResult.data.isConfigured || (seerrPreferences.value.isValid && seerrPreferences.value.isEnabled),
                         )
                     }
                 }
@@ -182,28 +182,28 @@ class RequestsViewModel @Inject constructor(
 
     fun requestMissingEpisode(item: SeerrMediaItem, seasonNumber: Int, episodeNumber: Int) {
         if (!_uiState.value.isPluginConfigured) return
-        
+
         viewModelScope.launch {
             val episodeKey = "${item.id}:$seasonNumber:$episodeNumber"
             _uiState.update { it.copy(requestingMediaId = item.id, requestingSeasonKey = episodeKey) }
-            
+
             val seriesId = item.tvdbId?.toString() ?: item.tmdbId?.toString() ?: item.id.toString()
             val result = cinefinPluginRepository.requestEpisode(seriesId, seasonNumber, episodeNumber)
-            
+
             _uiState.update { state ->
                 when (result) {
                     is ApiResult.Success -> {
                         state.copy(
                             requestingMediaId = null,
                             requestingSeasonKey = null,
-                            successMessage = "Request submitted for S${seasonNumber}E${episodeNumber} of ${item.displayTitle}"
+                            successMessage = "Request submitted for S${seasonNumber}E$episodeNumber of ${item.displayTitle}",
                         )
                     }
                     is ApiResult.Error -> {
                         state.copy(
                             requestingMediaId = null,
                             requestingSeasonKey = null,
-                            errorMessage = result.message
+                            errorMessage = result.message,
                         )
                     }
                     else -> state.copy(requestingMediaId = null, requestingSeasonKey = null)
@@ -217,12 +217,12 @@ class RequestsViewModel @Inject constructor(
             val seasonKey = requestedSeasons?.joinToString(prefix = "${item.id}:", separator = ",")
             _uiState.update { it.copy(requestingMediaId = item.id, requestingSeasonKey = seasonKey) }
             val mediaId = item.tmdbId ?: item.id
-            
+
             if (_uiState.value.isPluginConfigured) {
                 // Route through the secure Cinefin Server Plugin
                 val externalId = mediaId.toString()
                 val result = cinefinPluginRepository.requestMedia(externalId, item.mediaType, requestedSeasons)
-                
+
                 _uiState.update { state ->
                     when (result) {
                         is ApiResult.Success -> {
