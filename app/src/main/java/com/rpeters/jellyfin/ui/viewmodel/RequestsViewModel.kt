@@ -220,21 +220,29 @@ class RequestsViewModel @Inject constructor(
             
             if (_uiState.value.isPluginConfigured) {
                 // Route through the secure Cinefin Server Plugin
-                val externalId = if (item.mediaType == "tv") item.tvdbId?.toString() ?: mediaId.toString() else mediaId.toString()
-                val result = cinefinPluginRepository.requestMedia(externalId, item.mediaType)
+                val externalId = mediaId.toString()
+                val result = cinefinPluginRepository.requestMedia(externalId, item.mediaType, requestedSeasons)
                 
                 _uiState.update { state ->
                     when (result) {
                         is ApiResult.Success -> {
-                            val updatedResults = state.results.map { r ->
-                                if (r.id == item.id) r.copy(mediaInfo = updatedMediaInfo(r, null)) else r
+                            if (result.data.success) {
+                                val updatedResults = state.results.map { r ->
+                                    if (r.id == item.id) r.copy(mediaInfo = updatedMediaInfo(r, null)) else r
+                                }
+                                state.copy(
+                                    requestingMediaId = null,
+                                    requestingSeasonKey = null,
+                                    successMessage = "Request submitted for ${item.displayTitle} via Cinefin Plugin",
+                                    results = updatedResults,
+                                )
+                            } else {
+                                state.copy(
+                                    requestingMediaId = null,
+                                    requestingSeasonKey = null,
+                                    errorMessage = result.data.message.ifBlank { "Failed to request ${item.displayTitle}" },
+                                )
                             }
-                            state.copy(
-                                requestingMediaId = null,
-                                requestingSeasonKey = null,
-                                successMessage = "Request submitted for ${item.displayTitle} via Cinefin Plugin",
-                                results = updatedResults,
-                            )
                         }
                         is ApiResult.Error -> {
                             state.copy(

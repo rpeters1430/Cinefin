@@ -68,9 +68,13 @@ class CinefinPluginRepository(
         }
     }
 
-    suspend fun requestMedia(externalId: String, mediaType: String): ApiResult<CinefinPluginRequestResponse> {
+    suspend fun requestMedia(
+        externalId: String,
+        mediaType: String,
+        seasons: List<Int>? = null,
+    ): ApiResult<CinefinPluginRequestResponse> {
         val service = getApiService() ?: return notConfiguredError()
-        val request = CinefinPluginMediaRequest(externalId, mediaType)
+        val request = CinefinPluginMediaRequest(externalId, mediaType, seasons)
         return try {
             handleResponse(service.requestMedia(request))
         } catch (e: Exception) {

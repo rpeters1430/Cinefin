@@ -12,7 +12,8 @@ data class CinefinPluginInfoResponse(
 @Serializable
 data class CinefinPluginMediaRequest(
     val externalId: String,
-    val mediaType: String
+    val mediaType: String,
+    val seasons: List<Int>? = null,
 )
 
 @Serializable
