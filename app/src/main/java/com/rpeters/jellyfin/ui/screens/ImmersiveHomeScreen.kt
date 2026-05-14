@@ -459,16 +459,20 @@ private fun ImmersiveHomeContent(
     val haptics = com.rpeters.jellyfin.ui.utils.rememberExpressiveHaptics()
     var hadFeaturedItems by remember { mutableStateOf(contentLists.featuredItems.isNotEmpty()) }
 
-    LaunchedEffect(contentLists.featuredItems.isNotEmpty(), adaptiveConfig.isTablet) {
+    LaunchedEffect(contentLists.featuredItems.isNotEmpty()) {
         val hasFeaturedItems = contentLists.featuredItems.isNotEmpty()
         val shouldResetScroll = shouldResetHomeScrollForLateHero(
             previousHasHero = hadFeaturedItems,
             currentHasHero = hasFeaturedItems,
             firstVisibleItemIndex = listState.firstVisibleItemIndex,
         )
+        // Update after evaluating transition so we can detect "hero appeared now" correctly.
         hadFeaturedItems = hasFeaturedItems
 
-        if (!adaptiveConfig.isTablet && shouldResetScroll) {
+        if (!adaptiveConfig.isTablet &&
+            shouldResetScroll &&
+            listState.layoutInfo.totalItemsCount > 0
+        ) {
             listState.scrollToItem(0)
         }
     }
