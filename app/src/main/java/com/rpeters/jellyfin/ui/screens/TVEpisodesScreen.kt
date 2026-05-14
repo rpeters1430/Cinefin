@@ -63,7 +63,6 @@ import com.rpeters.jellyfin.core.Logger
 import com.rpeters.jellyfin.ui.components.ExpressiveBackNavigationIcon
 import com.rpeters.jellyfin.ui.components.ExpressiveEmptyState
 import com.rpeters.jellyfin.ui.components.ExpressiveErrorState
-import com.rpeters.jellyfin.ui.components.ExpressiveFilledButton
 import com.rpeters.jellyfin.ui.components.ExpressiveFullScreenLoading
 import com.rpeters.jellyfin.ui.components.ExpressiveLoadingCard
 import com.rpeters.jellyfin.ui.components.ExpressiveMediaListItem
