@@ -187,9 +187,13 @@ private fun RequestMediaItem(
     onCheckAvailability: () -> Unit,
 ) {
     val posterUrl = item.posterPath?.let { path ->
-        // Standard Seerr/Overseerr proxy for posters or TMDB direct if configured
-        // Here we assume we can build the TMDB URL or Seerr proxy
-        "https://image.tmdb.org/t/p/w500$path"
+        // Prefer the Seerr image proxy (works even when TMDB CDN is unreachable).
+        // Fall back to direct TMDB CDN in plugin-only mode where no Seerr base URL is set.
+        if (seerrBaseUrl.isNotBlank()) {
+            "${seerrBaseUrl.trimEnd('/')}/imageproxy/t/p/w600_and_h900_bestv2$path"
+        } else {
+            "https://image.tmdb.org/t/p/w500$path"
+        }
     }
 
     val status = item.mediaInfo?.status ?: 1
@@ -422,7 +426,7 @@ private fun TvSeasonAvailabilityBlock(
             TvEpisodeAvailabilityRow(
                 episode = episode,
                 canRequestSeason = season.canRequestMissingEpisodes,
-                canRequestEpisode = isPluginConfigured && pluginCapabilities.contains("Sonarr") && !episode.isAvailable,
+                canRequestEpisode = isPluginConfigured && pluginCapabilities.contains("sonarr") && !episode.isAvailable,
                 isRequesting = isRequesting && requestingSeasonKey == "$mediaId:${season.seasonNumber}",
                 isRequestingEpisode = isRequesting && requestingSeasonKey == "$mediaId:${season.seasonNumber}:${episode.episodeNumber}",
                 onRequestSeason = { onRequestSeason(season.seasonNumber) },
@@ -530,13 +534,13 @@ private fun UnconfiguredState(
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            "Seerr Not Configured",
+            "Requests Not Configured",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            "To request new media, please configure your Seerr, Overseerr, or Jellyseerr instance in settings.",
+            "Configure your Seerr, Overseerr, or Jellyseerr instance — or install the Cinefin server plugin — to start requesting media.",
             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,

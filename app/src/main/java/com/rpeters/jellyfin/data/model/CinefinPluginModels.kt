@@ -28,3 +28,11 @@ data class CinefinPluginRequestResponse(
     val success: Boolean,
     val message: String,
 )
+
+@Serializable
+data class CinefinPluginTestRequest(
+    val url: String,
+    val apiKey: String,
+    val proxyUsername: String = "",
+    val proxyPassword: String = "",
+)

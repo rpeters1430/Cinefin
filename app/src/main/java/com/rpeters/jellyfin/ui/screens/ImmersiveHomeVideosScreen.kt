@@ -4,7 +4,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Photo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -40,7 +40,7 @@ fun ImmersiveHomeVideosScreenContainer(
     modifier: Modifier = Modifier,
     viewModel: MainAppViewModel = hiltViewModel(),
 ) {
-    val appState by viewModel.appState.collectAsState()
+    val appState by viewModel.appState.collectAsStateWithLifecycle()
 
     val homeVideosLibraries = remember(appState.libraries) {
         appState.libraries.filter { it.collectionType == CollectionType.HOMEVIDEOS }

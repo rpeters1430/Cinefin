@@ -10,7 +10,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
@@ -110,7 +110,7 @@ fun ItemDetailScreen(
     val itemState = viewModel.item
     val errorState = viewModel.error
     val playbackAnalysis = viewModel.playbackAnalysis
-    val recommendations by recommendationViewModel.recommendations.collectAsState()
+    val recommendations by recommendationViewModel.recommendations.collectAsStateWithLifecycle()
 
     LaunchedEffect(itemId) {
         viewModel.load(itemId)

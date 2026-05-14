@@ -98,10 +98,11 @@ fun JellyfinApp(
     val audioPlaybackViewModel: AudioPlaybackViewModel = hiltViewModel()
     val audioPlaybackState by audioPlaybackViewModel.playbackState.collectAsStateWithLifecycle()
 
-    // Seerr enabled state drives Requests tab visibility
+    // Seerr enabled state drives Requests tab visibility — also show if Cinefin plugin is configured
     val seerrViewModel: SeerrSettingsViewModel = hiltViewModel()
     val seerrPreferences by seerrViewModel.seerrPreferences.collectAsStateWithLifecycle()
-    val activeNavItems = BottomNavItem.bottomNavItems(seerrPreferences.isEnabled)
+    val isPluginConfigured by seerrViewModel.isPluginConfigured.collectAsStateWithLifecycle()
+    val activeNavItems = BottomNavItem.bottomNavItems(seerrPreferences.isEnabled, isPluginConfigured)
     val isMiniPlayerVisible = audioPlaybackState.currentMediaItem != null
 
     // Main app ViewModel for global state and sync tasks

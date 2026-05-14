@@ -4,7 +4,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -32,7 +32,7 @@ fun ImmersiveMoviesScreenContainer(
     modifier: Modifier = Modifier,
     viewModel: MainAppViewModel = hiltViewModel(),
 ) {
-    val appState by viewModel.appState.collectAsState()
+    val appState by viewModel.appState.collectAsStateWithLifecycle()
     val movies = viewModel.getLibraryTypeData(LibraryType.MOVIES)
     val libraryId = viewModel.getLibraryIdForType(LibraryType.MOVIES)
     val paginationState = libraryId?.let { appState.libraryPaginationState[it] }

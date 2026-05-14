@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -47,11 +48,11 @@ fun DownloadsScreen(
     onOpenItemDetail: (OfflineDownload) -> Unit = {},
     downloadsViewModel: DownloadsViewModel = hiltViewModel(),
 ) {
-    val downloads by downloadsViewModel.downloads.collectAsState()
-    val downloadProgress by downloadsViewModel.downloadProgress.collectAsState()
-    val storageInfo by downloadsViewModel.storageInfo.collectAsState()
-    val downloadPreferences by downloadsViewModel.downloadPreferences.collectAsState()
-    val pendingOfflineSyncCount by downloadsViewModel.pendingOfflineSyncCount.collectAsState()
+    val downloads by downloadsViewModel.downloads.collectAsStateWithLifecycle()
+    val downloadProgress by downloadsViewModel.downloadProgress.collectAsStateWithLifecycle()
+    val storageInfo by downloadsViewModel.storageInfo.collectAsStateWithLifecycle()
+    val downloadPreferences by downloadsViewModel.downloadPreferences.collectAsStateWithLifecycle()
+    val pendingOfflineSyncCount by downloadsViewModel.pendingOfflineSyncCount.collectAsStateWithLifecycle()
     var showDeleteAllConfirmation by remember { mutableStateOf(false) }
     var showClearWatchedConfirmation by remember { mutableStateOf(false) }
     var redownloadTarget by remember { mutableStateOf<OfflineDownload?>(null) }

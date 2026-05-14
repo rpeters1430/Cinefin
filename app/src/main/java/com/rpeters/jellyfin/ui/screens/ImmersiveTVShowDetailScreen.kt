@@ -50,7 +50,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -137,7 +137,7 @@ fun ImmersiveTVShowDetailScreen(
     modifier: Modifier = Modifier,
     viewModel: TVSeasonViewModel = hiltViewModel(),
 ) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
 
     PerformanceMetricsTracker(
         enabled = com.rpeters.jellyfin.BuildConfig.DEBUG,
@@ -493,7 +493,7 @@ private fun ShowHeroContent(
                 Text(
                     text = when {
                         series.isCompletelyWatched() -> "Rewatch"
-                        userData?.playedPercentage != null && userData.playedPercentage!! > 0 -> "Watch Next"
+                        (userData?.playedPercentage ?: 0.0) > 0 -> "Watch Next"
                         else -> "Start Watching Series"
                     },
                 )

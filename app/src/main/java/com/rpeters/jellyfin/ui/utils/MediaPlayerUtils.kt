@@ -21,6 +21,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.jellyfin.sdk.model.api.BaseItemDto
@@ -53,7 +54,7 @@ object MediaPlayerUtils {
             PlaybackPreferencesEntryPoint::class.java,
         ).playbackPreferencesRepository()
 
-        val useExternal = runBlocking { preferencesRepository.preferences.first().useExternalPlayer }
+        val useExternal = runBlocking(Dispatchers.IO) { preferencesRepository.preferences.first().useExternalPlayer }
 
         if (useExternal) {
             playMediaExternal(context, streamUrl, item)
@@ -187,7 +188,7 @@ object MediaPlayerUtils {
             PlaybackPreferencesEntryPoint::class.java,
         ).playbackPreferencesRepository()
 
-        val useExternal = runBlocking { preferencesRepository.preferences.first().useExternalPlayer }
+        val useExternal = runBlocking(Dispatchers.IO) { preferencesRepository.preferences.first().useExternalPlayer }
 
         if (useExternal) {
             playMediaExternal(context, streamUrl, item)

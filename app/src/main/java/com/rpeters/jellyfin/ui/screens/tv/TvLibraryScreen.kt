@@ -15,7 +15,7 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -77,7 +77,7 @@ fun TvLibraryScreen(
     val configuration = LocalConfiguration.current
     val localFocusManager = LocalFocusManager.current
     val focusManager = rememberTvFocusManager()
-    val appState by viewModel.appState.collectAsState()
+    val appState by viewModel.appState.collectAsStateWithLifecycle()
     val library = appState.libraries.firstOrNull { it.id.toString() == libraryId }
         ?: when (libraryId) {
             "movies" -> appState.libraries.firstOrNull {

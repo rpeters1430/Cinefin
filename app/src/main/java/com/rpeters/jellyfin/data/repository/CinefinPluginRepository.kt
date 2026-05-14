@@ -4,6 +4,7 @@ import com.rpeters.jellyfin.data.model.CinefinPluginEpisodeRequest
 import com.rpeters.jellyfin.data.model.CinefinPluginInfoResponse
 import com.rpeters.jellyfin.data.model.CinefinPluginMediaRequest
 import com.rpeters.jellyfin.data.model.CinefinPluginRequestResponse
+import com.rpeters.jellyfin.data.model.CinefinPluginTestRequest
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.data.repository.common.ErrorType
 import com.rpeters.jellyfin.utils.SecureLogger
@@ -58,11 +59,13 @@ class CinefinPluginRepository(
 
     suspend fun getPluginInfo(): ApiResult<CinefinPluginInfoResponse> {
         val service = getApiService() ?: return notConfiguredError()
-        return try {
-            handleResponse(service.getPluginInfo())
-        } catch (e: Exception) {
-            SecureLogger.e(TAG, "Failed to get plugin info", e)
-            ApiResult.Error("Network error checking plugin info", e, ErrorType.NETWORK)
+        return retryNetworkCall {
+            try {
+                handleResponse(service.getPluginInfo())
+            } catch (e: Exception) {
+                SecureLogger.e(TAG, "Failed to get plugin info", e)
+                ApiResult.Error("Network error checking plugin info", e, ErrorType.NETWORK)
+            }
         }
     }
 
@@ -73,23 +76,81 @@ class CinefinPluginRepository(
     ): ApiResult<CinefinPluginRequestResponse> {
         val service = getApiService() ?: return notConfiguredError()
         val request = CinefinPluginMediaRequest(externalId, mediaType, seasons)
-        return try {
-            handleResponse(service.requestMedia(request))
-        } catch (e: Exception) {
-            SecureLogger.e(TAG, "Failed to request media: $externalId", e)
-            ApiResult.Error("Network error requesting media", e, ErrorType.NETWORK)
+        return retryNetworkCall {
+            try {
+                handleResponse(service.requestMedia(request))
+            } catch (e: Exception) {
+                SecureLogger.e(TAG, "Failed to request media: $externalId", e)
+                ApiResult.Error("Network error requesting media", e, ErrorType.NETWORK)
+            }
         }
     }
 
     suspend fun requestEpisode(seriesId: String, seasonNumber: Int, episodeNumber: Int): ApiResult<CinefinPluginRequestResponse> {
         val service = getApiService() ?: return notConfiguredError()
         val request = CinefinPluginEpisodeRequest(seriesId, seasonNumber, episodeNumber)
-        return try {
-            handleResponse(service.requestEpisode(request))
-        } catch (e: Exception) {
-            SecureLogger.e(TAG, "Failed to request episode: S${seasonNumber}E$episodeNumber for series: $seriesId", e)
-            ApiResult.Error("Network error requesting episode", e, ErrorType.NETWORK)
+        return retryNetworkCall {
+            try {
+                handleResponse(service.requestEpisode(request))
+            } catch (e: Exception) {
+                SecureLogger.e(TAG, "Failed to request episode: S${seasonNumber}E$episodeNumber for series: $seriesId", e)
+                ApiResult.Error("Network error requesting episode", e, ErrorType.NETWORK)
+            }
         }
+    }
+
+    suspend fun testSonarr(url: String, apiKey: String): ApiResult<CinefinPluginRequestResponse> {
+        val service = getApiService() ?: return notConfiguredError()
+        return try {
+            handleResponse(service.testSonarr(CinefinPluginTestRequest(url, apiKey)))
+        } catch (e: Exception) {
+            SecureLogger.e(TAG, "Failed to test Sonarr connection", e)
+            ApiResult.Error("Network error testing Sonarr: ${e.message}", e, ErrorType.NETWORK)
+        }
+    }
+
+    suspend fun testRadarr(url: String, apiKey: String): ApiResult<CinefinPluginRequestResponse> {
+        val service = getApiService() ?: return notConfiguredError()
+        return try {
+            handleResponse(service.testRadarr(CinefinPluginTestRequest(url, apiKey)))
+        } catch (e: Exception) {
+            SecureLogger.e(TAG, "Failed to test Radarr connection", e)
+            ApiResult.Error("Network error testing Radarr: ${e.message}", e, ErrorType.NETWORK)
+        }
+    }
+
+    suspend fun testOverseerr(url: String, apiKey: String): ApiResult<CinefinPluginRequestResponse> {
+        val service = getApiService() ?: return notConfiguredError()
+        return try {
+            handleResponse(service.testOverseerr(CinefinPluginTestRequest(url, apiKey)))
+        } catch (e: Exception) {
+            SecureLogger.e(TAG, "Failed to test Overseerr connection", e)
+            ApiResult.Error("Network error testing Overseerr: ${e.message}", e, ErrorType.NETWORK)
+        }
+    }
+
+    private suspend fun <T> retryNetworkCall(
+        times: Int = 3,
+        initialDelay: Long = 500,
+        factor: Double = 2.0,
+        block: suspend () -> ApiResult<T>,
+    ): ApiResult<T> {
+        var currentDelay = initialDelay
+        for (i in 1..times) {
+            when (val result = block()) {
+                is ApiResult.Success -> return result
+                is ApiResult.Error -> {
+                    if (result.errorType == ErrorType.NETWORK && i < times) {
+                        kotlinx.coroutines.delay(currentDelay)
+                        currentDelay = (currentDelay * factor).toLong()
+                    } else {
+                        return result
+                    }
+                }
+                else -> return result
+            }
+        }
+        return ApiResult.Error("Max retries reached", errorType = ErrorType.NETWORK)
     }
 
     private fun <T> notConfiguredError(): ApiResult<T> =

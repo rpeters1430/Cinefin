@@ -38,7 +38,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -85,8 +85,8 @@ fun NowPlayingScreen(
     viewModel: AudioPlaybackViewModel = hiltViewModel(),
     modifier: Modifier = Modifier,
 ) {
-    val playbackState by viewModel.playbackState.collectAsState()
-    val queue by viewModel.queue.collectAsState()
+    val playbackState by viewModel.playbackState.collectAsStateWithLifecycle()
+    val queue by viewModel.queue.collectAsStateWithLifecycle()
 
     // Local state for smooth seeking
     var isSeeking by remember { mutableStateOf(false) }

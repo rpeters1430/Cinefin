@@ -4,7 +4,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -34,7 +34,7 @@ fun ImmersiveTVShowsScreenContainer(
     modifier: Modifier = Modifier,
     viewModel: MainAppViewModel = hiltViewModel(),
 ) {
-    val appState by viewModel.appState.collectAsState()
+    val appState by viewModel.appState.collectAsStateWithLifecycle()
     val tvShows = viewModel.getLibraryTypeData(LibraryType.TV_SHOWS)
     val recentEpisodes = appState.recentlyAddedByTypes[BaseItemKind.EPISODE.name] ?: emptyList()
     val libraryId = viewModel.getLibraryIdForType(LibraryType.TV_SHOWS)

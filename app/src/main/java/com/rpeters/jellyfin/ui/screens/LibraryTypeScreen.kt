@@ -43,7 +43,6 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -87,7 +86,7 @@ fun LibraryTypeScreen(
     libraryActionsPreferencesViewModel: LibraryActionsPreferencesViewModel = hiltViewModel(),
     downloadsViewModel: DownloadsViewModel = hiltViewModel(),
 ) {
-    val appState by viewModel.appState.collectAsState()
+    val appState by viewModel.appState.collectAsStateWithLifecycle()
     val libraryActionPrefs by libraryActionsPreferencesViewModel.preferences.collectAsStateWithLifecycle()
     var viewMode by remember(libraryType) {
         mutableStateOf(if (libraryType == LibraryType.STUFF) ViewMode.LIST else ViewMode.GRID)

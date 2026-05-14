@@ -524,14 +524,21 @@ class RequestsViewModel @Inject constructor(
     }
 
     companion object {
+        // Seerr *media* status codes (mediaInfo.status / season.status)
         private const val SEERR_STATUS_UNKNOWN = 1
         private const val SEERR_STATUS_PENDING = 2
         private const val SEERR_STATUS_PARTIALLY_AVAILABLE = 4
         private const val SEERR_STATUS_AVAILABLE = 5
         private const val SEERR_STATUS_DELETED = 6
 
-        // Statuses that allow a season to be requested (not yet fully in-progress or available)
+        // Seerr *request* status codes (request.status) — distinct from media status codes above
+        private const val SEERR_REQUEST_STATUS_PENDING = 1   // awaiting approval
+        private const val SEERR_REQUEST_STATUS_APPROVED = 2  // approved, download queued
+
+        // Media statuses that allow a new request to be submitted for the season
         private val REQUESTABLE_STATUSES = setOf(SEERR_STATUS_UNKNOWN, SEERR_STATUS_DELETED)
-        private val ACTIVE_REQUEST_STATUSES = setOf(1, 2)
+
+        // Request statuses that mean a season is already actively being processed
+        private val ACTIVE_REQUEST_STATUSES = setOf(SEERR_REQUEST_STATUS_PENDING, SEERR_REQUEST_STATUS_APPROVED)
     }
 }

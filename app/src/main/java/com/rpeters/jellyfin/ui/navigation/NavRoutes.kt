@@ -155,7 +155,7 @@ sealed class BottomNavItem(
     companion object {
         private val allNavItems = listOf(Home, Library, Search, Requests, Favorites, SettingsItem)
 
-        fun bottomNavItems(seerrEnabled: Boolean): List<BottomNavItem> =
-            if (seerrEnabled) allNavItems else allNavItems.filter { it != Requests }
+        fun bottomNavItems(seerrEnabled: Boolean, pluginConfigured: Boolean = false): List<BottomNavItem> =
+            if (seerrEnabled || pluginConfigured) allNavItems else allNavItems.filter { it != Requests }
     }
 }

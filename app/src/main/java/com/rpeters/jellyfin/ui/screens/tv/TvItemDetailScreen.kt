@@ -33,7 +33,7 @@ import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -104,8 +104,8 @@ fun TvItemDetailScreen(
     onBack: (() -> Unit)? = null,
     onSearch: (() -> Unit)? = null,
 ) {
-    val appState by viewModel.appState.collectAsState()
-    val seasonState by seasonViewModel.state.collectAsState()
+    val appState by viewModel.appState.collectAsStateWithLifecycle()
+    val seasonState by seasonViewModel.state.collectAsStateWithLifecycle()
     val userPrefs: UserPreferencesViewModel = hiltViewModel()
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current

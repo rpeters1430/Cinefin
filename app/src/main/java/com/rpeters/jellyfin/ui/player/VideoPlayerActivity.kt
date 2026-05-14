@@ -24,7 +24,6 @@ import androidx.annotation.VisibleForTesting
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
@@ -215,7 +214,7 @@ class VideoPlayerActivity : FragmentActivity() {
                         modifier = Modifier.fillMaxSize(),
                         color = MaterialTheme.colorScheme.background,
                     ) {
-                        val playerState by playerViewModel.playerState.collectAsState()
+                        val playerState by playerViewModel.playerState.collectAsStateWithLifecycle()
                         val subtitleAppearance by subtitlePreferencesViewModel.preferences.collectAsStateWithLifecycle()
 
                         // Auto-finish when video ends without next episode

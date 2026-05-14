@@ -26,7 +26,7 @@ import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -67,8 +67,8 @@ fun TvAudioPlayerScreen(
     viewModel: AudioPlaybackViewModel = hiltViewModel(),
 ) {
     val focusManager = rememberTvFocusManager()
-    val playbackState by viewModel.playbackState.collectAsState()
-    val queue by viewModel.queue.collectAsState()
+    val playbackState by viewModel.playbackState.collectAsStateWithLifecycle()
+    val queue by viewModel.queue.collectAsStateWithLifecycle()
 
     var currentPosition by remember { mutableLongStateOf(0L) }
     var duration by remember { mutableLongStateOf(0L) }

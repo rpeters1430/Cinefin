@@ -21,7 +21,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -77,7 +77,7 @@ fun TvSearchScreen(
     viewModel: SearchViewModel = hiltViewModel(),
     mainViewModel: MainAppViewModel = hiltViewModel(),
 ) {
-    val searchState by viewModel.searchState.collectAsState()
+    val searchState by viewModel.searchState.collectAsStateWithLifecycle()
     val focusManager = LocalFocusManager.current
     val tvFocusManager = rememberTvFocusManager()
     val context = LocalContext.current

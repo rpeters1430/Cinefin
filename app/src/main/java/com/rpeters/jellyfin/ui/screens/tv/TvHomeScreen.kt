@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
@@ -46,7 +47,7 @@ fun TvHomeScreen(
     viewModel: MainAppViewModel = hiltViewModel(),
     screenKey: String = "tv_home",
 ) {
-    val appState by viewModel.appState.collectAsState()
+    val appState by viewModel.appState.collectAsStateWithLifecycle()
     var focusedBackdrop by remember { mutableStateOf<String?>(null) }
     val focusManager = rememberTvFocusManager()
     val localFocusManager = LocalFocusManager.current

@@ -50,7 +50,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -137,9 +137,9 @@ fun MusicScreen(
     onItemClick: (BaseItemDto) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    val appState by viewModel.appState.collectAsState()
-    val playbackState by audioPlaybackViewModel.playbackState.collectAsState()
-    val playbackQueue by audioPlaybackViewModel.queue.collectAsState()
+    val appState by viewModel.appState.collectAsStateWithLifecycle()
+    val playbackState by audioPlaybackViewModel.playbackState.collectAsStateWithLifecycle()
+    val playbackQueue by audioPlaybackViewModel.queue.collectAsStateWithLifecycle()
 
     var selectedFilter by remember { mutableStateOf(MusicFilter.ALL) }
     var sortOrder by remember { mutableStateOf(MusicSortOrder.TITLE_ASC) }
