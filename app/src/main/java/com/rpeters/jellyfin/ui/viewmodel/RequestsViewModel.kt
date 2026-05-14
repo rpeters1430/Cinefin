@@ -74,6 +74,7 @@ data class RequestsUiState(
     val isConfigured: Boolean = false,
     val isPluginConfigured: Boolean = false,
     val pluginCapabilities: List<String> = emptyList(),
+    val isSonarrConfigured: Boolean = false,
     val requestingMediaId: Int? = null,
     val requestingSeasonKey: String? = null,
     val tvAvailabilityByMediaId: Map<Int, TvAvailability> = emptyMap(),
@@ -106,19 +107,21 @@ class RequestsViewModel @Inject constructor(
         )
 
     init {
-        // Keep isConfigured in sync with any of the three services being configured & enabled.
+        // Keep isConfigured and isSonarrConfigured in sync with any of the three services being configured & enabled.
         viewModelScope.launch {
             combine(
                 preferencesRepository.seerrPreferencesFlow,
                 arrPreferencesRepository.sonarrPreferencesFlow,
                 arrPreferencesRepository.radarrPreferencesFlow,
             ) { seerr, sonarr, radarr ->
-                (seerr.isValid && seerr.isEnabled) ||
+                val configured = (seerr.isValid && seerr.isEnabled) ||
                     (sonarr.isValid && sonarr.isEnabled) ||
                     (radarr.isValid && radarr.isEnabled) ||
                     _uiState.value.isPluginConfigured
-            }.collect { configured ->
-                _uiState.update { it.copy(isConfigured = configured) }
+                val sonarrConfigured = sonarr.isValid && sonarr.isEnabled
+                Pair(configured, sonarrConfigured)
+            }.collect { (configured, sonarrConfigured) ->
+                _uiState.update { it.copy(isConfigured = configured, isSonarrConfigured = sonarrConfigured) }
             }
         }
     }
@@ -201,7 +204,7 @@ class RequestsViewModel @Inject constructor(
     fun requestMissingEpisode(item: SeerrMediaItem, seasonNumber: Int, episodeNumber: Int) {
         val tvdbId = item.tvdbId
         val canRequest = _uiState.value.isPluginConfigured ||
-            (tvdbId != null && sonarrRepository.run { true }) // Sonarr always available if configured
+            (tvdbId != null && _uiState.value.isSonarrConfigured)
         if (!canRequest) return
 
         viewModelScope.launch {
