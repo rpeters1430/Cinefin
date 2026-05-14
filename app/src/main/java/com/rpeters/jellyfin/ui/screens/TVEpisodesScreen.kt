@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -23,9 +24,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Tv
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -61,6 +66,7 @@ import com.rpeters.jellyfin.ui.components.ExpressiveErrorState
 import com.rpeters.jellyfin.ui.components.ExpressiveFullScreenLoading
 import com.rpeters.jellyfin.ui.components.ExpressiveLoadingCard
 import com.rpeters.jellyfin.ui.components.ExpressiveMediaListItem
+import com.rpeters.jellyfin.ui.components.ExpressiveTextButton
 import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBar
 import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBarRefreshAction
 import com.rpeters.jellyfin.ui.components.MediaItemActionsSheet
@@ -71,6 +77,7 @@ import com.rpeters.jellyfin.ui.theme.MusicGreen
 import com.rpeters.jellyfin.ui.utils.MediaPlayerUtils
 import com.rpeters.jellyfin.ui.viewmodel.LibraryActionsPreferencesViewModel
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
+import com.rpeters.jellyfin.ui.viewmodel.MissingEpisode
 import com.rpeters.jellyfin.ui.viewmodel.SeasonEpisodesViewModel
 import com.rpeters.jellyfin.utils.getItemKey
 import com.rpeters.jellyfin.utils.isPartiallyWatched
@@ -131,6 +138,15 @@ fun TVEpisodesScreen(
     LaunchedEffect(state.errorMessage) {
         state.errorMessage?.let { error ->
             Logger.e(LogCategory.UI, "TVEpisodesScreen", error)
+            snackbarHostState.showSnackbar(error)
+            viewModel.clearMessages()
+        }
+    }
+
+    LaunchedEffect(state.successMessage) {
+        state.successMessage?.let { msg ->
+            snackbarHostState.showSnackbar(msg)
+            viewModel.clearMessages()
         }
     }
 
@@ -197,9 +213,16 @@ fun TVEpisodesScreen(
                 EpisodeScreenState.CONTENT -> {
                     EpisodeList(
                         episodes = state.episodes,
+                        missingEpisodes = state.missingEpisodes,
+                        isSonarrConfigured = state.isSonarrConfigured,
+                        isLoadingMissing = state.isLoadingMissing,
+                        requestingEpisodeKey = state.requestingEpisodeKey,
                         getImageUrl = getImageUrl,
                         onEpisodeClick = onEpisodeClick,
                         onEpisodeLongPress = handleItemLongPress,
+                        onRequestEpisode = { seasonNumber, episodeNumber ->
+                            viewModel.requestMissingEpisode(seasonNumber, episodeNumber)
+                        },
                         modifier = Modifier.padding(innerPadding),
                     )
                 }
@@ -262,8 +285,13 @@ fun TVEpisodesScreen(
 @Composable
 private fun EpisodeList(
     episodes: List<BaseItemDto>,
+    missingEpisodes: List<MissingEpisode>,
+    isSonarrConfigured: Boolean,
+    isLoadingMissing: Boolean,
+    requestingEpisodeKey: String?,
     getImageUrl: (BaseItemDto) -> String?,
     onEpisodeClick: (BaseItemDto) -> Unit,
+    onRequestEpisode: (seasonNumber: Int, episodeNumber: Int) -> Unit,
     onEpisodeLongPress: (BaseItemDto) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
@@ -282,6 +310,109 @@ private fun EpisodeList(
                 onClick = onEpisodeClick,
                 onLongClick = onEpisodeLongPress,
             )
+        }
+
+        if (isLoadingMissing) {
+            item(key = "missing_loading") {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                    Text(
+                        "Checking for missing episodes…",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+
+        if (missingEpisodes.isNotEmpty()) {
+            item(key = "missing_header") {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Download,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                        Text(
+                            "${missingEpisodes.size} episode${if (missingEpisodes.size == 1) "" else "s"} not on server",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
+                    if (!isSonarrConfigured) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            "Connect Sonarr in Settings → Media Requests to request missing episodes.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+
+            items(
+                items = missingEpisodes,
+                key = { "missing_${it.seasonNumber}_${it.episodeNumber}" },
+            ) { missing ->
+                MissingEpisodeRow(
+                    missing = missing,
+                    isSonarrConfigured = isSonarrConfigured,
+                    isRequesting = requestingEpisodeKey == "${missing.seasonNumber}:${missing.episodeNumber}",
+                    onRequest = { onRequestEpisode(missing.seasonNumber, missing.episodeNumber) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MissingEpisodeRow(
+    missing: MissingEpisode,
+    isSonarrConfigured: Boolean,
+    isRequesting: Boolean,
+    onRequest: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                "E${missing.episodeNumber}. ${missing.title}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        if (isSonarrConfigured) {
+            ExpressiveTextButton(
+                onClick = onRequest,
+                enabled = !isRequesting,
+                modifier = Modifier.height(36.dp),
+            ) {
+                if (isRequesting) {
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                } else {
+                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Request", style = MaterialTheme.typography.labelMedium)
+                }
+            }
         }
     }
 }

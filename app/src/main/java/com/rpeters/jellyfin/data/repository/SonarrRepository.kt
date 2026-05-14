@@ -45,7 +45,10 @@ class SonarrRepository @Inject constructor(
                     .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
                     .build()
                     .create(SonarrApiService::class.java)
-                    .also { cachedService = it; cachedBaseUrl = baseUrl }
+                    .also {
+                        cachedService = it
+                        cachedBaseUrl = baseUrl
+                    }
             } catch (e: Exception) {
                 SecureLogger.e(TAG, "Failed to create SonarrApiService", e)
                 return@withLock null
@@ -58,8 +61,11 @@ class SonarrRepository @Inject constructor(
         val (service, apiKey) = getService() ?: return@retryNetworkCall notConfiguredError()
         try {
             val response = service.getSystemStatus(apiKey)
-            if (response.isSuccessful) ApiResult.Success(Unit)
-            else ApiResult.Error("HTTP ${response.code()}", errorType = errorType(response.code()))
+            if (response.isSuccessful) {
+                ApiResult.Success(Unit)
+            } else {
+                ApiResult.Error("HTTP ${response.code()}", errorType = errorType(response.code()))
+            }
         } catch (e: Exception) {
             SecureLogger.e(TAG, "Sonarr test connection failed", e)
             ApiResult.Error(e.message ?: "Connection failed", e, ErrorType.NETWORK)
@@ -70,8 +76,9 @@ class SonarrRepository @Inject constructor(
         val (service, apiKey) = getService() ?: return@retryNetworkCall notConfiguredError()
         try {
             val lookupResponse = service.lookupSeriesByTvdb(apiKey, "tvdb:$tvdbId")
-            if (!lookupResponse.isSuccessful || lookupResponse.body().isNullOrEmpty())
+            if (!lookupResponse.isSuccessful || lookupResponse.body().isNullOrEmpty()) {
                 return@retryNetworkCall ApiResult.Error("Series TVDB:$tvdbId not found in Sonarr", errorType = ErrorType.NOT_FOUND)
+            }
 
             val series = lookupResponse.body()!![0]
             val rootFolderPath = series.rootFolderPath?.takeIf { it.isNotBlank() }
@@ -84,9 +91,11 @@ class SonarrRepository @Inject constructor(
             val seasons = series.seasons.map { s ->
                 SonarrSeasonItem(
                     seasonNumber = s.seasonNumber,
-                    monitored = if (requestedSeasons != null)
+                    monitored = if (requestedSeasons != null) {
                         s.seasonNumber in requestedSeasons && s.seasonNumber > 0
-                    else s.seasonNumber > 0,
+                    } else {
+                        s.seasonNumber > 0
+                    },
                 )
             }
 
@@ -104,8 +113,11 @@ class SonarrRepository @Inject constructor(
             )
 
             val addResponse = service.addSeries(apiKey, addRequest)
-            if (addResponse.isSuccessful) ApiResult.Success(Unit)
-            else ApiResult.Error("Sonarr rejected add: HTTP ${addResponse.code()}", errorType = errorType(addResponse.code()))
+            if (addResponse.isSuccessful) {
+                ApiResult.Success(Unit)
+            } else {
+                ApiResult.Error("Sonarr rejected add: HTTP ${addResponse.code()}", errorType = errorType(addResponse.code()))
+            }
         } catch (e: Exception) {
             SecureLogger.e(TAG, "Sonarr addSeries failed", e)
             ApiResult.Error(e.message ?: "Failed to add series", e, ErrorType.NETWORK)
@@ -116,10 +128,24 @@ class SonarrRepository @Inject constructor(
         val (service, apiKey) = getService() ?: return@retryNetworkCall notConfiguredError()
         try {
             val seriesResponse = service.getSeriesByTvdbId(apiKey, tvdbId)
-            if (!seriesResponse.isSuccessful || seriesResponse.body().isNullOrEmpty())
-                return@retryNetworkCall ApiResult.Error("Series TVDB:$tvdbId not in Sonarr — add it first", errorType = ErrorType.NOT_FOUND)
 
-            val seriesId = seriesResponse.body()!![0].id
+            // If the series isn't in Sonarr yet, auto-add it with just the requested season
+            // monitored so Sonarr knows about it before we trigger the episode search.
+            val seriesId = if (!seriesResponse.isSuccessful || seriesResponse.body().isNullOrEmpty()) {
+                val addResult = addSeries(tvdbId, listOf(seasonNumber))
+                if (addResult is ApiResult.Error) return@retryNetworkCall addResult
+
+                val refetch = service.getSeriesByTvdbId(apiKey, tvdbId)
+                if (!refetch.isSuccessful || refetch.body().isNullOrEmpty()) {
+                    return@retryNetworkCall ApiResult.Error(
+                        "Could not find TVDB:$tvdbId in Sonarr after adding it",
+                        errorType = ErrorType.NOT_FOUND,
+                    )
+                }
+                refetch.body()!![0].id
+            } else {
+                seriesResponse.body()!![0].id
+            }
             val episodesResponse = service.getEpisodes(apiKey, seriesId, seasonNumber)
             val episode = episodesResponse.body()?.firstOrNull { it.episodeNumber == episodeNumber }
                 ?: return@retryNetworkCall ApiResult.Error(
@@ -128,8 +154,11 @@ class SonarrRepository @Inject constructor(
                 )
 
             val cmdResponse = service.sendCommand(apiKey, SonarrCommand(name = "EpisodeSearch", episodeIds = listOf(episode.id)))
-            if (cmdResponse.isSuccessful) ApiResult.Success(Unit)
-            else ApiResult.Error("Sonarr command failed: HTTP ${cmdResponse.code()}", errorType = errorType(cmdResponse.code()))
+            if (cmdResponse.isSuccessful) {
+                ApiResult.Success(Unit)
+            } else {
+                ApiResult.Error("Sonarr command failed: HTTP ${cmdResponse.code()}", errorType = errorType(cmdResponse.code()))
+            }
         } catch (e: Exception) {
             SecureLogger.e(TAG, "Sonarr requestEpisode failed", e)
             ApiResult.Error(e.message ?: "Failed to request episode", e, ErrorType.NETWORK)
