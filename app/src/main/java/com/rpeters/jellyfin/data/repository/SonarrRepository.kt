@@ -116,10 +116,23 @@ class SonarrRepository @Inject constructor(
         val (service, apiKey) = getService() ?: return@retryNetworkCall notConfiguredError()
         try {
             val seriesResponse = service.getSeriesByTvdbId(apiKey, tvdbId)
-            if (!seriesResponse.isSuccessful || seriesResponse.body().isNullOrEmpty())
-                return@retryNetworkCall ApiResult.Error("Series TVDB:$tvdbId not in Sonarr — add it first", errorType = ErrorType.NOT_FOUND)
 
-            val seriesId = seriesResponse.body()!![0].id
+            // If the series isn't in Sonarr yet, auto-add it with just the requested season
+            // monitored so Sonarr knows about it before we trigger the episode search.
+            val seriesId = if (!seriesResponse.isSuccessful || seriesResponse.body().isNullOrEmpty()) {
+                val addResult = addSeries(tvdbId, listOf(seasonNumber))
+                if (addResult is ApiResult.Error) return@retryNetworkCall addResult
+
+                val refetch = service.getSeriesByTvdbId(apiKey, tvdbId)
+                if (!refetch.isSuccessful || refetch.body().isNullOrEmpty())
+                    return@retryNetworkCall ApiResult.Error(
+                        "Could not find TVDB:$tvdbId in Sonarr after adding it",
+                        errorType = ErrorType.NOT_FOUND,
+                    )
+                refetch.body()!![0].id
+            } else {
+                seriesResponse.body()!![0].id
+            }
             val episodesResponse = service.getEpisodes(apiKey, seriesId, seasonNumber)
             val episode = episodesResponse.body()?.firstOrNull { it.episodeNumber == episodeNumber }
                 ?: return@retryNetworkCall ApiResult.Error(

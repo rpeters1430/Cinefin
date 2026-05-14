@@ -18,6 +18,8 @@ import com.rpeters.jellyfin.data.repository.common.ApiResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -398,28 +400,34 @@ class RequestsViewModel @Inject constructor(
             .flatMap { request -> request.seasons.map { it.seasonNumber } }
             .toSet()
 
-        val seasons = seerrDetails.seasons
-            .filter { it.seasonNumber > 0 }
-            .sortedBy { it.seasonNumber }
-            .mapNotNull { seerrSeason ->
-                val localSeason = localSeasonByNumber[seerrSeason.seasonNumber]
-                val localEpisodes = localSeason?.let { season ->
-                    when (val result = jellyfinMediaRepository.getEpisodesForSeason(season.id.toString())) {
-                        is ApiResult.Success -> result.data
-                        else -> emptyList()
+        val seasons = coroutineScope {
+            seerrDetails.seasons
+                .filter { it.seasonNumber > 0 }
+                .sortedBy { it.seasonNumber }
+                .map { seerrSeason ->
+                    async {
+                        val localSeason = localSeasonByNumber[seerrSeason.seasonNumber]
+                        val localEpisodes = localSeason?.let { season ->
+                            when (val result = jellyfinMediaRepository.getEpisodesForSeason(season.id.toString())) {
+                                is ApiResult.Success -> result.data
+                                else -> emptyList()
+                            }
+                        }.orEmpty()
+                        val seerrSeasonWithEpisodes = when (val result = seerrRepository.getTvSeasonDetails(mediaId, seerrSeason.seasonNumber)) {
+                            is ApiResult.Success -> result.data
+                            else -> seerrSeason
+                        }
+                        buildSeasonAvailability(
+                            seerrSeason = seerrSeasonWithEpisodes,
+                            localEpisodes = localEpisodes,
+                            isRequestableInSeerr = seerrSeason.seasonNumber in requestableSeasonNumbers,
+                            isPendingRequest = seerrSeason.seasonNumber in activeRequestedSeasonNumbers,
+                        )
                     }
-                }.orEmpty()
-                val seerrSeasonWithEpisodes = when (val result = seerrRepository.getTvSeasonDetails(mediaId, seerrSeason.seasonNumber)) {
-                    is ApiResult.Success -> result.data
-                    else -> seerrSeason
                 }
-                buildSeasonAvailability(
-                    seerrSeason = seerrSeasonWithEpisodes,
-                    localEpisodes = localEpisodes,
-                    isRequestableInSeerr = seerrSeason.seasonNumber in requestableSeasonNumbers,
-                    isPendingRequest = seerrSeason.seasonNumber in activeRequestedSeasonNumbers,
-                )
-            }
+                .map { it.await() }
+                .filterNotNull()
+        }
 
         return TvAvailability(
             localSeriesTitle = localSeries.name ?: item.displayTitle,
