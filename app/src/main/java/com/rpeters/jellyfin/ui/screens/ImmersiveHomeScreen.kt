@@ -2,6 +2,7 @@ package com.rpeters.jellyfin.ui.screens
 
 import android.app.Activity
 import androidx.annotation.OptIn
+import androidx.annotation.VisibleForTesting
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
@@ -456,6 +457,21 @@ private fun ImmersiveHomeContent(
     )
 
     val haptics = com.rpeters.jellyfin.ui.utils.rememberExpressiveHaptics()
+    var hadFeaturedItems by remember { mutableStateOf(contentLists.featuredItems.isNotEmpty()) }
+
+    LaunchedEffect(contentLists.featuredItems.isNotEmpty(), adaptiveConfig.isTablet) {
+        val hasFeaturedItems = contentLists.featuredItems.isNotEmpty()
+        val shouldResetScroll = shouldResetHomeScrollForLateHero(
+            previousHasHero = hadFeaturedItems,
+            currentHasHero = hasFeaturedItems,
+            firstVisibleItemIndex = listState.firstVisibleItemIndex,
+        )
+        hadFeaturedItems = hasFeaturedItems
+
+        if (!adaptiveConfig.isTablet && shouldResetScroll) {
+            listState.scrollToItem(0)
+        }
+    }
 
     ExpressivePullToRefreshBox(
         isRefreshing = appState.isLoading,
@@ -497,3 +513,10 @@ private fun ImmersiveHomeContent(
         }
     }
 }
+
+@VisibleForTesting
+internal fun shouldResetHomeScrollForLateHero(
+    previousHasHero: Boolean,
+    currentHasHero: Boolean,
+    firstVisibleItemIndex: Int,
+): Boolean = !previousHasHero && currentHasHero && firstVisibleItemIndex <= 1
