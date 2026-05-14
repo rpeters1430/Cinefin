@@ -2,6 +2,7 @@ package com.rpeters.jellyfin.ui.screens
 
 import android.app.Activity
 import androidx.annotation.OptIn
+import androidx.annotation.VisibleForTesting
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
@@ -456,6 +457,28 @@ private fun ImmersiveHomeContent(
     )
 
     val haptics = com.rpeters.jellyfin.ui.utils.rememberExpressiveHaptics()
+    var previousHadFeaturedItems by remember { mutableStateOf(contentLists.featuredItems.isNotEmpty()) }
+    val featuredItemsCount = contentLists.featuredItems.size
+
+    LaunchedEffect(featuredItemsCount) {
+        val hasFeaturedItems = featuredItemsCount > 0
+        val shouldResetScroll = shouldResetHomeScrollForLateHero(
+            previousHasHero = previousHadFeaturedItems,
+            currentHasHero = hasFeaturedItems,
+            firstVisibleItemIndex = listState.firstVisibleItemIndex,
+        )
+        // Update after evaluating transition so we can detect "hero appeared now" correctly.
+        previousHadFeaturedItems = hasFeaturedItems
+
+        if (!adaptiveConfig.isTablet &&
+            shouldResetScroll &&
+            // Defensive guard in case this effect runs during intermediate list recomposition.
+            listState.layoutInfo.totalItemsCount > 0
+        ) {
+            // Use immediate scroll to avoid showing a visible "bounce" while delayed hero inserts.
+            listState.scrollToItem(0)
+        }
+    }
 
     ExpressivePullToRefreshBox(
         isRefreshing = appState.isLoading,
@@ -497,3 +520,10 @@ private fun ImmersiveHomeContent(
         }
     }
 }
+
+@VisibleForTesting
+internal fun shouldResetHomeScrollForLateHero(
+    previousHasHero: Boolean,
+    currentHasHero: Boolean,
+    firstVisibleItemIndex: Int,
+): Boolean = !previousHasHero && currentHasHero && firstVisibleItemIndex <= 1
