@@ -440,8 +440,8 @@ private fun SettingsDestinationsSection(
             onClick = onAiDiagnosticsClick,
         )
         ExpressiveMediaListItem(
-            title = "Seerr Integration",
-            subtitle = "Configure Overseerr/Jellyseerr for media requests",
+            title = "Media Requests",
+            subtitle = "Configure Seerr, Sonarr, and Radarr",
             leadingIcon = Icons.Default.AddCircle,
             onClick = onSeerrSettingsClick,
         )

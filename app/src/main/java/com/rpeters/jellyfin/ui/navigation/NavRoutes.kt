@@ -54,7 +54,8 @@ sealed class Screen(val route: String) {
     object AccessibilitySettings : Screen("accessibility_settings")
     object PinSettings : Screen("pin_settings")
     object SubtitleSettings : Screen("subtitle_settings")
-    object SeerrSettings : Screen("seerr_settings")
+    object SeerrSettings : Screen("seerr_settings")   // kept for back-compat nav references
+    object MediaRequestSettings : Screen("media_request_settings")
     object TranscodingDiagnostics : Screen("transcoding_diagnostics")
     object AiDiagnostics : Screen("ai_diagnostics")
     object PrivacyPolicy : Screen("privacy_policy")

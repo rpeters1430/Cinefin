@@ -6,11 +6,14 @@ import com.rpeters.jellyfin.data.model.SeerrMediaInfo
 import com.rpeters.jellyfin.data.model.SeerrMediaItem
 import com.rpeters.jellyfin.data.model.SeerrRequestRequest
 import com.rpeters.jellyfin.data.model.SeerrSeason
+import com.rpeters.jellyfin.data.preferences.ArrPreferencesRepository
 import com.rpeters.jellyfin.data.preferences.SeerrPreferences
 import com.rpeters.jellyfin.data.preferences.SeerrPreferencesRepository
 import com.rpeters.jellyfin.data.repository.JellyfinMediaRepository
 import com.rpeters.jellyfin.data.repository.JellyfinSearchRepository
+import com.rpeters.jellyfin.data.repository.RadarrRepository
 import com.rpeters.jellyfin.data.repository.SeerrRepository
+import com.rpeters.jellyfin.data.repository.SonarrRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -19,6 +22,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
@@ -80,9 +84,12 @@ data class RequestsUiState(
 @HiltViewModel
 class RequestsViewModel @Inject constructor(
     private val seerrRepository: SeerrRepository,
+    private val sonarrRepository: SonarrRepository,
+    private val radarrRepository: RadarrRepository,
     private val jellyfinSearchRepository: JellyfinSearchRepository,
     private val jellyfinMediaRepository: JellyfinMediaRepository,
     private val preferencesRepository: SeerrPreferencesRepository,
+    private val arrPreferencesRepository: ArrPreferencesRepository,
     private val cinefinPluginRepository: com.rpeters.jellyfin.data.repository.CinefinPluginRepository,
 ) : ViewModel() {
 
@@ -92,9 +99,6 @@ class RequestsViewModel @Inject constructor(
     private val _searchQuery = MutableStateFlow("")
 
     val seerrPreferences: StateFlow<SeerrPreferences> = preferencesRepository.seerrPreferencesFlow
-        .onEach { prefs ->
-            _uiState.update { it.copy(isConfigured = (prefs.isValid && prefs.isEnabled) || it.isPluginConfigured) }
-        }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -102,20 +106,34 @@ class RequestsViewModel @Inject constructor(
         )
 
     init {
+        // Keep isConfigured in sync with any of the three services being configured & enabled.
+        viewModelScope.launch {
+            combine(
+                preferencesRepository.seerrPreferencesFlow,
+                arrPreferencesRepository.sonarrPreferencesFlow,
+                arrPreferencesRepository.radarrPreferencesFlow,
+            ) { seerr, sonarr, radarr ->
+                (seerr.isValid && seerr.isEnabled) ||
+                    (sonarr.isValid && sonarr.isEnabled) ||
+                    (radarr.isValid && radarr.isEnabled) ||
+                    _uiState.value.isPluginConfigured
+            }.collect { configured ->
+                _uiState.update { it.copy(isConfigured = configured) }
+            }
+        }
+    }
+
+    init {
+        // Check plugin availability (optional — plugin is no longer required)
         viewModelScope.launch {
             when (val infoResult = cinefinPluginRepository.getPluginInfo()) {
-                is ApiResult.Success -> {
-                    _uiState.update {
-                        it.copy(
-                            isPluginConfigured = infoResult.data.isConfigured,
-                            pluginCapabilities = infoResult.data.capabilities,
-                            isConfigured = infoResult.data.isConfigured || (seerrPreferences.value.isValid && seerrPreferences.value.isEnabled),
-                        )
-                    }
+                is ApiResult.Success -> _uiState.update {
+                    it.copy(
+                        isPluginConfigured = infoResult.data.isConfigured,
+                        pluginCapabilities = infoResult.data.capabilities,
+                    )
                 }
-                else -> {
-                    _uiState.update { it.copy(isPluginConfigured = false) }
-                }
+                else -> _uiState.update { it.copy(isPluginConfigured = false) }
             }
         }
         viewModelScope.launch {
@@ -181,31 +199,35 @@ class RequestsViewModel @Inject constructor(
     }
 
     fun requestMissingEpisode(item: SeerrMediaItem, seasonNumber: Int, episodeNumber: Int) {
-        if (!_uiState.value.isPluginConfigured) return
+        val tvdbId = item.tvdbId
+        val canRequest = _uiState.value.isPluginConfigured ||
+            (tvdbId != null && sonarrRepository.run { true }) // Sonarr always available if configured
+        if (!canRequest) return
 
         viewModelScope.launch {
             val episodeKey = "${item.id}:$seasonNumber:$episodeNumber"
             _uiState.update { it.copy(requestingMediaId = item.id, requestingSeasonKey = episodeKey) }
 
-            val seriesId = item.tvdbId?.toString() ?: item.tmdbId?.toString() ?: item.id.toString()
-            val result = cinefinPluginRepository.requestEpisode(seriesId, seasonNumber, episodeNumber)
+            // Prefer plugin, fall back to direct Sonarr
+            val result: ApiResult<*> = if (_uiState.value.isPluginConfigured) {
+                val seriesId = item.tvdbId?.toString() ?: item.tmdbId?.toString() ?: item.id.toString()
+                cinefinPluginRepository.requestEpisode(seriesId, seasonNumber, episodeNumber)
+            } else if (tvdbId != null) {
+                sonarrRepository.requestEpisode(tvdbId, seasonNumber, episodeNumber)
+            } else {
+                ApiResult.Error("TVDB ID missing — cannot request individual episode")
+            }
 
             _uiState.update { state ->
                 when (result) {
-                    is ApiResult.Success -> {
-                        state.copy(
-                            requestingMediaId = null,
-                            requestingSeasonKey = null,
-                            successMessage = "Request submitted for S${seasonNumber}E$episodeNumber of ${item.displayTitle}",
-                        )
-                    }
-                    is ApiResult.Error -> {
-                        state.copy(
-                            requestingMediaId = null,
-                            requestingSeasonKey = null,
-                            errorMessage = result.message,
-                        )
-                    }
+                    is ApiResult.Success -> state.copy(
+                        requestingMediaId = null, requestingSeasonKey = null,
+                        successMessage = "Request submitted for S${seasonNumber}E$episodeNumber of ${item.displayTitle}",
+                    )
+                    is ApiResult.Error -> state.copy(
+                        requestingMediaId = null, requestingSeasonKey = null,
+                        errorMessage = result.message,
+                    )
                     else -> state.copy(requestingMediaId = null, requestingSeasonKey = null)
                 }
             }
@@ -217,48 +239,35 @@ class RequestsViewModel @Inject constructor(
             val seasonKey = requestedSeasons?.joinToString(prefix = "${item.id}:", separator = ",")
             _uiState.update { it.copy(requestingMediaId = item.id, requestingSeasonKey = seasonKey) }
             val mediaId = item.tmdbId ?: item.id
+            val seerr = seerrPreferences.value
 
+            // 1. Plugin route (if installed and configured on the server)
             if (_uiState.value.isPluginConfigured) {
-                // Route through the secure Cinefin Server Plugin
-                val externalId = mediaId.toString()
-                val result = cinefinPluginRepository.requestMedia(externalId, item.mediaType, requestedSeasons)
-
+                val result = cinefinPluginRepository.requestMedia(mediaId.toString(), item.mediaType, requestedSeasons)
                 _uiState.update { state ->
                     when (result) {
-                        is ApiResult.Success -> {
-                            if (result.data.success) {
-                                val updatedResults = state.results.map { r ->
-                                    if (r.id == item.id) r.copy(mediaInfo = updatedMediaInfo(r, null)) else r
-                                }
-                                state.copy(
-                                    requestingMediaId = null,
-                                    requestingSeasonKey = null,
-                                    successMessage = "Request submitted for ${item.displayTitle} via Cinefin Plugin",
-                                    results = updatedResults,
-                                )
-                            } else {
-                                state.copy(
-                                    requestingMediaId = null,
-                                    requestingSeasonKey = null,
-                                    errorMessage = result.data.message.ifBlank { "Failed to request ${item.displayTitle}" },
-                                )
-                            }
-                        }
-                        is ApiResult.Error -> {
+                        is ApiResult.Success -> if (result.data.success) {
                             state.copy(
-                                requestingMediaId = null,
-                                requestingSeasonKey = null,
-                                errorMessage = result.message,
+                                requestingMediaId = null, requestingSeasonKey = null,
+                                successMessage = "Request submitted for ${item.displayTitle}",
+                                results = state.results.map { r ->
+                                    if (r.id == item.id) r.copy(mediaInfo = updatedMediaInfo(r, null)) else r
+                                },
                             )
+                        } else {
+                            state.copy(requestingMediaId = null, requestingSeasonKey = null,
+                                errorMessage = result.data.message.ifBlank { "Failed to request ${item.displayTitle}" })
                         }
+                        is ApiResult.Error -> state.copy(requestingMediaId = null, requestingSeasonKey = null, errorMessage = result.message)
                         else -> state.copy(requestingMediaId = null, requestingSeasonKey = null)
                     }
                 }
                 return@launch
             }
 
-            // Fallback to legacy direct Overseerr API
-            val request = if (item.mediaType == "tv") {
+            // 2. Seerr/Overseerr direct (preferred when no plugin)
+            if (seerr.isValid && seerr.isEnabled) {
+                val request = if (item.mediaType == "tv") {
                 val seasons = loadRequestableSeasons(
                     mediaId = mediaId,
                     title = item.displayTitle,
@@ -287,27 +296,41 @@ class RequestsViewModel @Inject constructor(
                 )
             }
 
-            val result = seerrRepository.request(request)
-            _uiState.update { state ->
-                when (result) {
-                    is ApiResult.Success -> {
-                        val updatedResults = state.results.map { r ->
-                            if (r.id == item.id) r.copy(mediaInfo = updatedMediaInfo(r, result.data.media)) else r
-                        }
-                        state.copy(
-                            requestingMediaId = null,
-                            requestingSeasonKey = null,
+                val result = seerrRepository.request(request)
+                _uiState.update { state ->
+                    when (result) {
+                        is ApiResult.Success -> state.copy(
+                            requestingMediaId = null, requestingSeasonKey = null,
                             successMessage = "Request submitted for ${item.displayTitle}",
-                            results = updatedResults,
+                            results = state.results.map { r ->
+                                if (r.id == item.id) r.copy(mediaInfo = updatedMediaInfo(r, result.data.media)) else r
+                            },
                         )
+                        is ApiResult.Error -> state.copy(requestingMediaId = null, requestingSeasonKey = null, errorMessage = result.message)
+                        else -> state.copy(requestingMediaId = null, requestingSeasonKey = null)
                     }
-                    is ApiResult.Error -> {
-                        state.copy(
-                            requestingMediaId = null,
-                            requestingSeasonKey = null,
-                            errorMessage = result.message,
-                        )
-                    }
+                }
+                return@launch
+            }
+
+            // 3. Direct Radarr (movies) or Sonarr (TV) — no Seerr required
+            val tvdbId = item.tvdbId
+            val directResult: ApiResult<Unit> = when {
+                item.mediaType == "movie" -> radarrRepository.addMovie(mediaId)
+                item.mediaType == "tv" && tvdbId != null -> sonarrRepository.addSeries(tvdbId, requestedSeasons)
+                else -> ApiResult.Error("No request service configured. Enable Seerr, Sonarr, or Radarr in Settings → Media Requests.")
+            }
+
+            _uiState.update { state ->
+                when (directResult) {
+                    is ApiResult.Success -> state.copy(
+                        requestingMediaId = null, requestingSeasonKey = null,
+                        successMessage = "Request submitted for ${item.displayTitle}",
+                    )
+                    is ApiResult.Error -> state.copy(
+                        requestingMediaId = null, requestingSeasonKey = null,
+                        errorMessage = directResult.message,
+                    )
                     else -> state.copy(requestingMediaId = null, requestingSeasonKey = null)
                 }
             }

@@ -23,6 +23,7 @@ import com.rpeters.jellyfin.ui.screens.TranscodingDiagnosticsScreen
 import com.rpeters.jellyfin.ui.screens.settings.AppearanceSettingsScreen
 import com.rpeters.jellyfin.ui.screens.settings.PinningSettingsScreen
 import com.rpeters.jellyfin.ui.screens.settings.PrivacySettingsScreen
+import com.rpeters.jellyfin.ui.screens.settings.MediaRequestSettingsScreen
 import com.rpeters.jellyfin.ui.screens.settings.SeerrSettingsScreen
 import com.rpeters.jellyfin.ui.screens.settings.SettingsSectionScreen
 import com.rpeters.jellyfin.ui.screens.settings.SubtitleSettingsScreen
@@ -249,16 +250,19 @@ fun androidx.navigation.NavGraphBuilder.profileNavGraph(
             onNotificationsSettingsClick = { navController.navigate(Screen.NotificationsSettings.route) },
             onPrivacySettingsClick = { navController.navigate(Screen.PrivacySettings.route) },
             onAccessibilitySettingsClick = { navController.navigate(Screen.AccessibilitySettings.route) },
-            onSeerrSettingsClick = { navController.navigate(Screen.SeerrSettings.route) },
+            onSeerrSettingsClick = { navController.navigate(Screen.MediaRequestSettings.route) },
             onTranscodingDiagnosticsClick = { navController.navigate(Screen.TranscodingDiagnostics.route) },
             onAiDiagnosticsClick = { navController.navigate(Screen.AiDiagnostics.route) },
         )
     }
 
     composable(Screen.SeerrSettings.route) {
-        SeerrSettingsScreen(
-            onNavigateBack = { navController.popBackStack() },
-        )
+        // Legacy route — redirect to new unified screen
+        MediaRequestSettingsScreen(onNavigateBack = { navController.popBackStack() })
+    }
+
+    composable(Screen.MediaRequestSettings.route) {
+        MediaRequestSettingsScreen(onNavigateBack = { navController.popBackStack() })
     }
 
     composable(Screen.AppearanceSettings.route) {
