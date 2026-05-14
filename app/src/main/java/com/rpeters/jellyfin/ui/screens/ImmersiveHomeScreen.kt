@@ -457,22 +457,25 @@ private fun ImmersiveHomeContent(
     )
 
     val haptics = com.rpeters.jellyfin.ui.utils.rememberExpressiveHaptics()
-    var hadFeaturedItems by remember { mutableStateOf(contentLists.featuredItems.isNotEmpty()) }
+    var previousHadFeaturedItems by remember { mutableStateOf(contentLists.featuredItems.isNotEmpty()) }
+    val featuredItemsCount = contentLists.featuredItems.size
 
-    LaunchedEffect(contentLists.featuredItems.isNotEmpty()) {
-        val hasFeaturedItems = contentLists.featuredItems.isNotEmpty()
+    LaunchedEffect(featuredItemsCount) {
+        val hasFeaturedItems = featuredItemsCount > 0
         val shouldResetScroll = shouldResetHomeScrollForLateHero(
-            previousHasHero = hadFeaturedItems,
+            previousHasHero = previousHadFeaturedItems,
             currentHasHero = hasFeaturedItems,
             firstVisibleItemIndex = listState.firstVisibleItemIndex,
         )
         // Update after evaluating transition so we can detect "hero appeared now" correctly.
-        hadFeaturedItems = hasFeaturedItems
+        previousHadFeaturedItems = hasFeaturedItems
 
         if (!adaptiveConfig.isTablet &&
             shouldResetScroll &&
+            // Defensive guard in case this effect runs during intermediate list recomposition.
             listState.layoutInfo.totalItemsCount > 0
         ) {
+            // Use immediate scroll to avoid showing a visible "bounce" while delayed hero inserts.
             listState.scrollToItem(0)
         }
     }
