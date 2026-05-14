@@ -224,11 +224,13 @@ class RequestsViewModel @Inject constructor(
             _uiState.update { state ->
                 when (result) {
                     is ApiResult.Success -> state.copy(
-                        requestingMediaId = null, requestingSeasonKey = null,
+                        requestingMediaId = null,
+                        requestingSeasonKey = null,
                         successMessage = "Request submitted for S${seasonNumber}E$episodeNumber of ${item.displayTitle}",
                     )
                     is ApiResult.Error -> state.copy(
-                        requestingMediaId = null, requestingSeasonKey = null,
+                        requestingMediaId = null,
+                        requestingSeasonKey = null,
                         errorMessage = result.message,
                     )
                     else -> state.copy(requestingMediaId = null, requestingSeasonKey = null)
@@ -251,15 +253,19 @@ class RequestsViewModel @Inject constructor(
                     when (result) {
                         is ApiResult.Success -> if (result.data.success) {
                             state.copy(
-                                requestingMediaId = null, requestingSeasonKey = null,
+                                requestingMediaId = null,
+                                requestingSeasonKey = null,
                                 successMessage = "Request submitted for ${item.displayTitle}",
                                 results = state.results.map { r ->
                                     if (r.id == item.id) r.copy(mediaInfo = updatedMediaInfo(r, null)) else r
                                 },
                             )
                         } else {
-                            state.copy(requestingMediaId = null, requestingSeasonKey = null,
-                                errorMessage = result.data.message.ifBlank { "Failed to request ${item.displayTitle}" })
+                            state.copy(
+                                requestingMediaId = null,
+                                requestingSeasonKey = null,
+                                errorMessage = result.data.message.ifBlank { "Failed to request ${item.displayTitle}" },
+                            )
                         }
                         is ApiResult.Error -> state.copy(requestingMediaId = null, requestingSeasonKey = null, errorMessage = result.message)
                         else -> state.copy(requestingMediaId = null, requestingSeasonKey = null)
@@ -271,39 +277,40 @@ class RequestsViewModel @Inject constructor(
             // 2. Seerr/Overseerr direct (preferred when no plugin)
             if (seerr.isValid && seerr.isEnabled) {
                 val request = if (item.mediaType == "tv") {
-                val seasons = loadRequestableSeasons(
-                    mediaId = mediaId,
-                    title = item.displayTitle,
-                    requestedSeasons = requestedSeasons,
-                ) ?: return@launch
+                    val seasons = loadRequestableSeasons(
+                        mediaId = mediaId,
+                        title = item.displayTitle,
+                        requestedSeasons = requestedSeasons,
+                    ) ?: return@launch
 
-                if (seasons.isEmpty()) {
-                    _uiState.update {
-                        it.copy(
-                            requestingMediaId = null,
-                            errorMessage = "No requestable seasons found for ${item.displayTitle}. Jellyseerr may already mark them available or requested.",
-                        )
+                    if (seasons.isEmpty()) {
+                        _uiState.update {
+                            it.copy(
+                                requestingMediaId = null,
+                                errorMessage = "No requestable seasons found for ${item.displayTitle}. Jellyseerr may already mark them available or requested.",
+                            )
+                        }
+                        return@launch
                     }
-                    return@launch
-                }
 
-                SeerrRequestRequest(
-                    mediaType = item.mediaType,
-                    mediaId = mediaId,
-                    seasons = seasons,
-                )
-            } else {
-                SeerrRequestRequest(
-                    mediaType = item.mediaType,
-                    mediaId = mediaId,
-                )
-            }
+                    SeerrRequestRequest(
+                        mediaType = item.mediaType,
+                        mediaId = mediaId,
+                        seasons = seasons,
+                    )
+                } else {
+                    SeerrRequestRequest(
+                        mediaType = item.mediaType,
+                        mediaId = mediaId,
+                    )
+                }
 
                 val result = seerrRepository.request(request)
                 _uiState.update { state ->
                     when (result) {
                         is ApiResult.Success -> state.copy(
-                            requestingMediaId = null, requestingSeasonKey = null,
+                            requestingMediaId = null,
+                            requestingSeasonKey = null,
                             successMessage = "Request submitted for ${item.displayTitle}",
                             results = state.results.map { r ->
                                 if (r.id == item.id) r.copy(mediaInfo = updatedMediaInfo(r, result.data.media)) else r
@@ -327,11 +334,13 @@ class RequestsViewModel @Inject constructor(
             _uiState.update { state ->
                 when (directResult) {
                     is ApiResult.Success -> state.copy(
-                        requestingMediaId = null, requestingSeasonKey = null,
+                        requestingMediaId = null,
+                        requestingSeasonKey = null,
                         successMessage = "Request submitted for ${item.displayTitle}",
                     )
                     is ApiResult.Error -> state.copy(
-                        requestingMediaId = null, requestingSeasonKey = null,
+                        requestingMediaId = null,
+                        requestingSeasonKey = null,
                         errorMessage = directResult.message,
                     )
                     else -> state.copy(requestingMediaId = null, requestingSeasonKey = null)
@@ -558,8 +567,8 @@ class RequestsViewModel @Inject constructor(
         private const val SEERR_STATUS_DELETED = 6
 
         // Seerr *request* status codes (request.status) — distinct from media status codes above
-        private const val SEERR_REQUEST_STATUS_PENDING = 1   // awaiting approval
-        private const val SEERR_REQUEST_STATUS_APPROVED = 2  // approved, download queued
+        private const val SEERR_REQUEST_STATUS_PENDING = 1 // awaiting approval
+        private const val SEERR_REQUEST_STATUS_APPROVED = 2 // approved, download queued
 
         // Media statuses that allow a new request to be submitted for the season
         private val REQUESTABLE_STATUSES = setOf(SEERR_STATUS_UNKNOWN, SEERR_STATUS_DELETED)

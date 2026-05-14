@@ -436,7 +436,7 @@ private fun TvSeasonAvailabilityBlock(
                 isRequesting = isRequesting && requestingSeasonKey == "$mediaId:${season.seasonNumber}",
                 isRequestingEpisode = isRequesting && requestingSeasonKey == "$mediaId:${season.seasonNumber}:${episode.episodeNumber}",
                 onRequestSeason = { onRequestSeason(season.seasonNumber) },
-                onRequestEpisode = { onRequestEpisode(season.seasonNumber, episode.episodeNumber) }
+                onRequestEpisode = { onRequestEpisode(season.seasonNumber, episode.episodeNumber) },
             )
         }
     }
