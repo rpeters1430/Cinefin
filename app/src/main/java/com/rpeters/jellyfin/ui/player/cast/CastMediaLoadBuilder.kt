@@ -103,12 +103,12 @@ class CastMediaLoadBuilder @Inject constructor(
         return MediaMetadata(MediaMetadata.MEDIA_TYPE_MOVIE).apply {
             putString(MediaMetadata.KEY_TITLE, item.name ?: AppResources.getString(R.string.unknown))
             putString(MediaMetadata.KEY_SUBTITLE, item.overview ?: "")
-            
-            // Attach Artwork
-            val token = authRepository.getCurrentServer()?.accessToken
-            
-            val backdropUrl = buildImageUrl(item, ImageType.BACKDROP, token)
-            val primaryUrl = buildImageUrl(item, ImageType.PRIMARY, token)
+
+            // Image endpoints on Jellyfin are publicly accessible when an image tag is present,
+            // so we deliberately omit the access token here to avoid exposing it in Cast
+            // metadata, which may be cached by the receiver or logged by the Cast framework.
+            val backdropUrl = buildImageUrl(item, ImageType.BACKDROP)
+            val primaryUrl = buildImageUrl(item, ImageType.PRIMARY)
 
             backdropUrl?.let { addImage(WebImage(it.toUri())) }
             primaryUrl?.let { addImage(WebImage(it.toUri())) }
@@ -181,9 +181,9 @@ class CastMediaLoadBuilder @Inject constructor(
         }
     }
 
-    private fun buildImageUrl(item: BaseItemDto, imageType: ImageType, token: String?): String? {
+    private fun buildImageUrl(item: BaseItemDto, imageType: ImageType): String? {
         val itemId = item.id.toString()
-        val url = when (imageType) {
+        return when (imageType) {
             ImageType.BACKDROP -> streamRepository.getBackdropUrl(item)
             else -> {
                 if (imageType == ImageType.PRIMARY && item.type == BaseItemKind.EPISODE) {
@@ -193,13 +193,6 @@ class CastMediaLoadBuilder @Inject constructor(
                     streamRepository.getImageUrl(itemId, imageType.name, tag)
                 }
             }
-        } ?: return null
-
-        return if (!token.isNullOrBlank()) {
-            val separator = if (url.contains("?")) "&" else "?"
-            "$url${separator}api_key=$token"
-        } else {
-            url
         }
     }
 }

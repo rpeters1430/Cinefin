@@ -28,6 +28,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import com.rpeters.jellyfin.utils.SecureLogger
 import okhttp3.ConnectionSpec
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
@@ -82,12 +83,18 @@ object NetworkModule {
             // SECURITY: Add certificate pinning
             .sslSocketFactory(sslSocketFactory, pinningTrustManager)
             .hostnameVerifier(hostnameVerifier)
-            // Configure TLS versions to avoid handshake failures
-            .connectionSpecs(listOf(modernTls, compatibleTls, ConnectionSpec.CLEARTEXT))
+            // Release builds: TLS only. Debug builds also allow cleartext for local dev servers.
+            .connectionSpecs(
+                if (BuildConfig.DEBUG) listOf(modernTls, compatibleTls, ConnectionSpec.CLEARTEXT)
+                else listOf(modernTls, compatibleTls)
+            )
 
         if (BuildConfig.DEBUG) {
-            val loggingInterceptor = HttpLoggingInterceptor().apply {
-                // Keep header visibility for debugging, but redact sensitive auth data.
+            // Route all OkHttp log output through SecureLogger so its URL sanitisation
+            // (api_key, token, password query params) applies before anything hits logcat.
+            val loggingInterceptor = HttpLoggingInterceptor { message ->
+                SecureLogger.d("OkHttp", message)
+            }.apply {
                 level = HttpLoggingInterceptor.Level.HEADERS
                 redactHeader("Authorization")
                 redactHeader("X-Emby-Token")
@@ -95,9 +102,7 @@ object NetworkModule {
                 redactHeader("Cookie")
                 redactHeader("Set-Cookie")
             }
-            builder.addInterceptor(
-                loggingInterceptor,
-            )
+            builder.addInterceptor(loggingInterceptor)
         }
 
         return builder

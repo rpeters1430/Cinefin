@@ -1,29 +1,52 @@
+@file:OptIn(ExperimentalLayoutApi::class)
+
 package com.rpeters.jellyfin.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.InputChip
+import androidx.compose.material3.InputChipDefaults
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -31,29 +54,40 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.model.SeerrMediaItem
 import com.rpeters.jellyfin.ui.components.ExpressiveContentCard
 import com.rpeters.jellyfin.ui.components.ExpressiveFilledButton
 import com.rpeters.jellyfin.ui.components.ExpressiveTextButton
+import com.rpeters.jellyfin.ui.components.ExpressiveTonalButton
 import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBar
+import com.rpeters.jellyfin.ui.components.ShimmerBox
+import com.rpeters.jellyfin.ui.components.expressiveGlow
 import com.rpeters.jellyfin.ui.theme.JellyfinExpressiveTheme
 import com.rpeters.jellyfin.ui.viewmodel.RequestsViewModel
 import com.rpeters.jellyfin.ui.viewmodel.TvAvailability
 import com.rpeters.jellyfin.ui.viewmodel.TvEpisodeAvailability
 import com.rpeters.jellyfin.ui.viewmodel.TvSeasonAvailability
 
+@OptInAppExperimentalApis
 @Composable
 fun RequestsScreen(
     initialQuery: String? = null,
@@ -105,64 +139,148 @@ fun RequestsScreen(
                 modifier = Modifier.padding(paddingValues),
             )
         } else {
-            Column(
+            LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(horizontal = 16.dp),
+                    .padding(paddingValues),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                OutlinedTextField(
-                    value = uiState.query,
-                    onValueChange = viewModel::onQueryChange,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    placeholder = { Text("Search movies or shows to request...") },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                    singleLine = true,
-                )
+                // Search bar
+                item(key = "search_bar") {
+                    SearchSection(
+                        query = uiState.query,
+                        recentSearches = uiState.recentSearches,
+                        onQueryChange = viewModel::onQueryChange,
+                        onDismissRecent = viewModel::dismissRecentSearch,
+                        modifier = Modifier.padding(horizontal = 16.dp).padding(top = 8.dp),
+                    )
+                }
 
+                // Loading shimmer (initial load only)
                 if (uiState.isLoading && uiState.results.isEmpty()) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+                    items(3, key = { "shimmer_$it" }) {
+                        RequestShimmerCard(modifier = Modifier.padding(horizontal = 16.dp))
                     }
-                } else if (uiState.results.isEmpty() && uiState.query.isNotBlank()) {
-                    EmptyState(query = uiState.query)
-                } else {
-                    LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.fillMaxSize(),
-                    ) {
-                        if (uiState.query.isBlank() && uiState.results.isNotEmpty()) {
-                            item {
-                                Text(
-                                    text = "Trending",
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(bottom = 8.dp),
+                }
+
+                // Section header
+                if (uiState.results.isNotEmpty() && !uiState.isLoading) {
+                    item(key = "section_header") {
+                        Text(
+                            text = if (uiState.query.isBlank()) "Trending" else "Results",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                        )
+                    }
+                }
+
+                // Results
+                items(uiState.results, key = { it.id }) { item ->
+                    RequestMediaHeroCard(
+                        item = item,
+                        seerrBaseUrl = seerrPrefs.baseUrl,
+                        tvAvailability = uiState.tvAvailabilityByMediaId[item.id],
+                        isLoadingAvailability = item.id in uiState.loadingAvailabilityIds,
+                        isTvChecked = item.id in uiState.checkedTvItemIds,
+                        isRequesting = uiState.requestingMediaId == item.id,
+                        requestingSeasonKey = uiState.requestingSeasonKey,
+                        isPluginConfigured = uiState.isPluginConfigured,
+                        pluginCapabilities = uiState.pluginCapabilities,
+                        isSonarrConfigured = uiState.isSonarrConfigured,
+                        onRequest = { viewModel.requestMedia(item) },
+                        onRequestSeason = { seasonNumber -> viewModel.requestSeason(item, seasonNumber) },
+                        onRequestEpisode = { seasonNumber, episodeNumber ->
+                            viewModel.requestMissingEpisode(item, seasonNumber, episodeNumber)
+                        },
+                        onRequestMissingSeasons = { viewModel.requestMissingSeasons(item) },
+                        onCheckAvailability = { viewModel.checkTvAvailability(item) },
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                    )
+                }
+
+                // Empty search state
+                if (uiState.results.isEmpty() && uiState.query.isNotBlank() && !uiState.isLoading) {
+                    item(key = "empty_state") {
+                        EmptySearchState(query = uiState.query)
+                    }
+                }
+
+                item(key = "bottom_spacer") { Spacer(modifier = Modifier.height(88.dp)) }
+            }
+        }
+    }
+}
+
+// ─── Search Section ────────────────────────────────────────────────────────────
+
+@OptInAppExperimentalApis
+@Composable
+private fun SearchSection(
+    query: String,
+    recentSearches: List<String>,
+    onQueryChange: (String) -> Unit,
+    onDismissRecent: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier) {
+        OutlinedTextField(
+            value = query,
+            onValueChange = onQueryChange,
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = { Text("Search movies or shows to request…") },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+            trailingIcon = {
+                if (query.isNotBlank()) {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = "Clear",
+                        modifier = Modifier
+                            .size(20.dp)
+                            .clickable { onQueryChange("") },
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            },
+            singleLine = true,
+            shape = RoundedCornerShape(16.dp),
+        )
+
+        AnimatedVisibility(
+            visible = query.isBlank() && recentSearches.isNotEmpty(),
+            enter = fadeIn(tween(160)) + expandVertically(tween(200)),
+            exit = fadeOut(tween(120)) + shrinkVertically(tween(160)),
+        ) {
+            Column(modifier = Modifier.padding(top = 10.dp)) {
+                Text(
+                    "Recent",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 6.dp),
+                )
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(recentSearches) { recent ->
+                        InputChip(
+                            selected = false,
+                            onClick = { onQueryChange(recent) },
+                            label = { Text(recent, style = MaterialTheme.typography.labelMedium) },
+                            leadingIcon = {
+                                Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(14.dp))
+                            },
+                            trailingIcon = {
+                                Icon(
+                                    Icons.Default.Close,
+                                    contentDescription = "Dismiss",
+                                    modifier = Modifier
+                                        .size(14.dp)
+                                        .clickable { onDismissRecent(recent) },
                                 )
-                            }
-                        }
-                        items(uiState.results) { item ->
-                            RequestMediaItem(
-                                item = item,
-                                seerrBaseUrl = seerrPrefs.baseUrl,
-                                tvAvailability = uiState.tvAvailabilityByMediaId[item.id],
-                                isLoadingAvailability = item.id in uiState.loadingAvailabilityIds,
-                                isTvChecked = item.id in uiState.checkedTvItemIds,
-                                isRequesting = uiState.requestingMediaId == item.id,
-                                requestingSeasonKey = uiState.requestingSeasonKey,
-                                isPluginConfigured = uiState.isPluginConfigured,
-                                pluginCapabilities = uiState.pluginCapabilities,
-                                isSonarrConfigured = uiState.isSonarrConfigured,
-                                onRequest = { viewModel.requestMedia(item) },
-                                onRequestSeason = { seasonNumber -> viewModel.requestSeason(item, seasonNumber) },
-                                onRequestEpisode = { seasonNumber, episodeNumber -> viewModel.requestMissingEpisode(item, seasonNumber, episodeNumber) },
-                                onRequestMissingSeasons = { viewModel.requestMissingSeasons(item) },
-                                onCheckAvailability = { viewModel.checkTvAvailability(item) },
-                            )
-                        }
-                        item { Spacer(modifier = Modifier.height(80.dp)) }
+                            },
+                            colors = InputChipDefaults.inputChipColors(
+                                containerColor = JellyfinExpressiveTheme.colors.sectionContainerHigh,
+                            ),
+                        )
                     }
                 }
             }
@@ -170,8 +288,11 @@ fun RequestsScreen(
     }
 }
 
+// ─── Hero Backdrop Card ────────────────────────────────────────────────────────
+
+@OptInAppExperimentalApis
 @Composable
-private fun RequestMediaItem(
+private fun RequestMediaHeroCard(
     item: SeerrMediaItem,
     seerrBaseUrl: String,
     tvAvailability: TvAvailability?,
@@ -187,339 +308,556 @@ private fun RequestMediaItem(
     onRequestEpisode: (Int, Int) -> Unit,
     onRequestMissingSeasons: () -> Unit,
     onCheckAvailability: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    val posterUrl = item.posterPath?.let { path ->
-        // Prefer the Seerr image proxy (works even when TMDB CDN is unreachable).
-        // Fall back to direct TMDB CDN in plugin-only mode where no Seerr base URL is set.
+    val backdropUrl = item.backdropPath?.let { path ->
         if (seerrBaseUrl.isNotBlank()) {
-            "${seerrBaseUrl.trimEnd('/')}/imageproxy/t/p/w600_and_h900_bestv2$path"
+            "${seerrBaseUrl.trimEnd('/')}/imageproxy/t/p/w1280$path"
         } else {
-            "https://image.tmdb.org/t/p/w500$path"
+            "https://image.tmdb.org/t/p/w1280$path"
+        }
+    }
+    val posterUrl = item.posterPath?.let { path ->
+        if (seerrBaseUrl.isNotBlank()) {
+            "${seerrBaseUrl.trimEnd('/')}/imageproxy/t/p/w342$path"
+        } else {
+            "https://image.tmdb.org/t/p/w342$path"
         }
     }
 
-    val status = item.mediaInfo?.status ?: 1
-    val isAvailable = status == 5
-    val isPending = status == 2 || status == 3
+    val mediaStatus = item.mediaInfo?.status ?: 1
+    val isAvailable = mediaStatus == 5
+    val isPending = mediaStatus in 2..3
+    val isPartial = mediaStatus == 4
 
     ExpressiveContentCard(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .expressiveGlow(
+                color = MaterialTheme.colorScheme.primary,
+                alpha = 0.06f,
+                borderRadius = 28.dp,
+            ),
         containerColor = JellyfinExpressiveTheme.colors.sectionContainer,
         shape = JellyfinExpressiveTheme.shapes.section,
+        elevation = androidx.compose.material3.CardDefaults.elevatedCardElevation(defaultElevation = 4.dp),
     ) {
-        Column(
+        // ── Hero image with gradient overlay ──────────────────────────────────
+        Box(
             modifier = Modifier
-                .padding(12.dp)
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .height(200.dp)
+                .clip(
+                    RoundedCornerShape(
+                        topStart = 28.dp,
+                        topEnd = 28.dp,
+                        bottomStart = 0.dp,
+                        bottomEnd = 0.dp,
+                    ),
+                ),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
+            if (backdropUrl != null) {
                 AsyncImage(
-                    model = posterUrl,
+                    model = backdropUrl,
                     contentDescription = null,
-                    modifier = Modifier
-                        .size(width = 80.dp, height = 120.dp)
-                        .clip(JellyfinExpressiveTheme.shapes.control),
+                    modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
                 )
-
-                Spacer(modifier = Modifier.width(16.dp))
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = item.displayTitle,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
+            } else if (posterUrl != null) {
+                // No backdrop — center the poster on a tinted background
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    AsyncImage(
+                        model = posterUrl,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .clip(RoundedCornerShape(4.dp)),
+                        contentScale = ContentScale.Fit,
                     )
+                }
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                )
+            }
+
+            // Gradient scrim from bottom
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            0f to Color.Transparent,
+                            0.35f to Color.Transparent,
+                            1f to Color.Black.copy(alpha = 0.88f),
+                        ),
+                    ),
+            )
+
+            // Info overlay — bottom-aligned
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(start = 14.dp, end = 14.dp, bottom = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                // Badges row
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    MediaTypeBadge(mediaType = item.mediaType, year = item.displayDate.take(4))
+                    if (isAvailable || isPending || isPartial) {
+                        MediaStatusBadge(status = mediaStatus, isRequesting = isRequesting)
+                    }
+                }
+                // Title
+                Text(
+                    text = item.displayTitle,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                // Overview
+                if (!item.overview.isNullOrBlank()) {
                     Text(
-                        text = "${item.mediaType.uppercase()} • ${item.displayDate.take(4)}",
+                        text = item.overview,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = Color.White.copy(alpha = 0.75f),
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                }
+            }
+        }
 
-                    if (isAvailable) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+        // ── Action row ────────────────────────────────────────────────────────
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            when {
+                isAvailable -> {
+                    MediaStatusBadge(status = 5, isRequesting = false)
+                }
+                isPending -> {
+                    MediaStatusBadge(status = mediaStatus, isRequesting = false)
+                }
+                else -> {
+                    ExpressiveFilledButton(
+                        onClick = onRequest,
+                        enabled = !isRequesting,
+                        modifier = Modifier.height(36.dp),
+                    ) {
+                        if (isRequesting && requestingSeasonKey == null) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.onPrimary,
+                            )
+                        } else {
+                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Available", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
-                        }
-                    } else if (isPending) {
-                        Text("Request Pending", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
-                    } else {
-                        ExpressiveFilledButton(
-                            onClick = onRequest,
-                            enabled = !isRequesting,
-                            modifier = Modifier.height(36.dp),
-                        ) {
-                            if (isRequesting && requestingSeasonKey == null) {
-                                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
-                            } else {
-                                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("Request", style = MaterialTheme.typography.labelLarge)
-                            }
+                            Text("Request", style = MaterialTheme.typography.labelLarge)
                         }
                     }
                 }
             }
 
+            Spacer(modifier = Modifier.weight(1f))
+
+            // TV availability summary chip
             if (item.mediaType == "tv") {
-                Spacer(modifier = Modifier.height(12.dp))
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                Spacer(modifier = Modifier.height(12.dp))
                 when {
                     isLoadingAvailability -> {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                            Spacer(modifier = Modifier.width(8.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
                             Text(
-                                "Checking server episodes…",
-                                style = MaterialTheme.typography.bodySmall,
+                                "Checking…",
+                                style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
                     isTvChecked && tvAvailability != null -> {
-                        TvAvailabilitySection(
-                            availability = tvAvailability,
-                            isRequesting = isRequesting,
-                            requestingSeasonKey = requestingSeasonKey,
-                            mediaId = item.id,
-                            isPluginConfigured = isPluginConfigured,
-                            pluginCapabilities = pluginCapabilities,
-                            isSonarrConfigured = isSonarrConfigured,
-                            onRequestSeason = onRequestSeason,
-                            onRequestEpisode = onRequestEpisode,
-                            onRequestMissingSeasons = onRequestMissingSeasons,
-                        )
+                        AvailabilitySummaryChip(tvAvailability)
                     }
                     isTvChecked -> {
                         Text(
-                            "Not found on your server",
-                            style = MaterialTheme.typography.bodySmall,
+                            "Not on server",
+                            style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                     else -> {
-                        ExpressiveTextButton(
+                        ExpressiveTonalButton(
                             onClick = onCheckAvailability,
                             modifier = Modifier.height(34.dp),
                         ) {
-                            Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(14.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Check on server", style = MaterialTheme.typography.labelLarge)
+                            Text("Check library", style = MaterialTheme.typography.labelMedium)
                         }
                     }
                 }
             }
         }
-    }
-}
 
-@Composable
-private fun TvAvailabilitySection(
-    availability: TvAvailability,
-    isRequesting: Boolean,
-    requestingSeasonKey: String?,
-    mediaId: Int,
-    isPluginConfigured: Boolean,
-    pluginCapabilities: List<String>,
-    isSonarrConfigured: Boolean,
-    onRequestSeason: (Int) -> Unit,
-    onRequestEpisode: (Int, Int) -> Unit,
-    onRequestMissingSeasons: () -> Unit,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                "${availability.totalAvailableEpisodes}/${availability.totalEpisodes} episodes on server",
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
+        // ── TV availability detail ────────────────────────────────────────────
+        if (item.mediaType == "tv" && isTvChecked && tvAvailability != null) {
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = 14.dp),
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
             )
-        }
 
-        if (availability.missingSeasons.isNotEmpty()) {
-            ExpressiveFilledButton(
-                onClick = onRequestMissingSeasons,
-                enabled = !isRequesting,
-                modifier = Modifier.height(36.dp),
+            val canRequestEpisode = (isPluginConfigured && pluginCapabilities.contains("sonarr")) || isSonarrConfigured
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                if (isRequesting && requestingSeasonKey?.startsWith("$mediaId:") == true) {
-                    CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
-                } else {
-                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Request Missing Seasons", style = MaterialTheme.typography.labelLarge)
+                if (tvAvailability.missingSeasons.isNotEmpty()) {
+                    ExpressiveTonalButton(
+                        onClick = onRequestMissingSeasons,
+                        enabled = !isRequesting,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(38.dp),
+                    ) {
+                        if (isRequesting && requestingSeasonKey?.startsWith("${item.id}:") == true) {
+                            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                        } else {
+                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Request Missing Seasons", style = MaterialTheme.typography.labelLarge)
+                        }
+                    }
+                }
+
+                tvAvailability.seasons.forEach { season ->
+                    SeasonGridBlock(
+                        season = season,
+                        mediaId = item.id,
+                        isRequesting = isRequesting,
+                        requestingSeasonKey = requestingSeasonKey,
+                        canRequestEpisode = canRequestEpisode,
+                        onRequestSeason = { onRequestSeason(season.seasonNumber) },
+                        onRequestEpisode = onRequestEpisode,
+                    )
                 }
             }
         }
+    }
+}
 
-        availability.seasons.forEach { season ->
-            TvSeasonAvailabilityBlock(
-                season = season,
-                isRequesting = isRequesting,
-                requestingSeasonKey = requestingSeasonKey,
-                mediaId = mediaId,
-                isPluginConfigured = isPluginConfigured,
-                pluginCapabilities = pluginCapabilities,
-                isSonarrConfigured = isSonarrConfigured,
-                onRequestSeason = onRequestSeason,
-                onRequestEpisode = onRequestEpisode,
-            )
+// ─── Media Badges ─────────────────────────────────────────────────────────────
+
+@Composable
+private fun MediaTypeBadge(mediaType: String, year: String) {
+    val label = buildString {
+        append(if (mediaType == "tv") "TV" else "Movie")
+        if (year.isNotBlank()) {
+            append(" • ")
+            append(year)
         }
+    }
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(6.dp))
+            .background(Color.Black.copy(alpha = 0.55f))
+            .padding(horizontal = 7.dp, vertical = 3.dp),
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = Color.White.copy(alpha = 0.9f),
+            fontWeight = FontWeight.Medium,
+        )
     }
 }
 
 @Composable
-private fun TvSeasonAvailabilityBlock(
+private fun MediaStatusBadge(status: Int, isRequesting: Boolean) {
+    if (isRequesting) {
+        Row(
+            modifier = Modifier
+                .clip(RoundedCornerShape(6.dp))
+                .background(Color(0xFF1565C0))
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            CircularProgressIndicator(modifier = Modifier.size(10.dp), strokeWidth = 1.5.dp, color = Color.White)
+            Text("Requesting", style = MaterialTheme.typography.labelSmall, color = Color.White)
+        }
+        return
+    }
+    val (bgColor, label) = when (status) {
+        5 -> Color(0xFF1B5E20) to "Available"
+        4 -> Color(0xFF0D47A1) to "Partial"
+        3 -> Color(0xFFE65100) to "Processing"
+        2 -> Color(0xFFE65100) to "Pending"
+        else -> return
+    }
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(6.dp))
+            .background(bgColor)
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        if (status == 5) {
+            Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(11.dp), tint = Color.White)
+        }
+        Text(label, style = MaterialTheme.typography.labelSmall, color = Color.White, fontWeight = FontWeight.SemiBold)
+    }
+}
+
+@Composable
+private fun AvailabilitySummaryChip(availability: TvAvailability) {
+    val total = availability.totalEpisodes
+    val available = availability.totalAvailableEpisodes
+    val allAvailable = available == total
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(
+                if (allAvailable) MaterialTheme.colorScheme.primaryContainer
+                else MaterialTheme.colorScheme.surfaceContainerHigh,
+            )
+            .padding(horizontal = 10.dp, vertical = 5.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Icon(
+            Icons.Default.Check,
+            contentDescription = null,
+            modifier = Modifier.size(12.dp),
+            tint = if (allAvailable) MaterialTheme.colorScheme.onPrimaryContainer
+            else MaterialTheme.colorScheme.primary,
+        )
+        Text(
+            "$available/$total eps",
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = if (allAvailable) MaterialTheme.colorScheme.onPrimaryContainer
+            else MaterialTheme.colorScheme.onSurface,
+        )
+    }
+}
+
+// ─── Season Grid Block ────────────────────────────────────────────────────────
+
+@OptInAppExperimentalApis
+@Composable
+private fun SeasonGridBlock(
     season: TvSeasonAvailability,
+    mediaId: Int,
     isRequesting: Boolean,
     requestingSeasonKey: String?,
-    mediaId: Int,
-    isPluginConfigured: Boolean,
-    pluginCapabilities: List<String>,
-    isSonarrConfigured: Boolean,
-    onRequestSeason: (Int) -> Unit,
+    canRequestEpisode: Boolean,
+    onRequestSeason: () -> Unit,
     onRequestEpisode: (Int, Int) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    var expanded by rememberSaveable(mediaId, season.seasonNumber) { mutableStateOf(false) }
+    val progress = if (season.totalCount > 0) season.availableCount.toFloat() / season.totalCount else 0f
+    val seasonKey = "$mediaId:${season.seasonNumber}"
+    val isRequestingSeason = isRequesting && requestingSeasonKey == seasonKey
+
+    Column {
+        // Season header row
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(10.dp))
+                .clickable { expanded = !expanded }
+                .padding(vertical = 8.dp, horizontal = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            Icon(
+                imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                contentDescription = if (expanded) "Collapse" else "Expand",
+                modifier = Modifier.size(18.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.width(6.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     season.title,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                 )
+                Spacer(modifier = Modifier.height(4.dp))
+                LinearProgressIndicator(
+                    progress = { progress },
+                    modifier = Modifier
+                        .fillMaxWidth(0.65f)
+                        .height(4.dp)
+                        .clip(RoundedCornerShape(2.dp)),
+                    color = when {
+                        progress >= 1f -> MaterialTheme.colorScheme.primary
+                        progress > 0f -> MaterialTheme.colorScheme.secondary
+                        else -> MaterialTheme.colorScheme.error
+                    },
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                )
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    "${season.availableCount}/${season.totalCount} episodes available",
+                    "${season.availableCount}/${season.totalCount} episodes",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            if (season.canRequestMissingEpisodes) {
-                val seasonKey = "$mediaId:${season.seasonNumber}"
-                ExpressiveTextButton(
-                    onClick = { onRequestSeason(season.seasonNumber) },
-                    enabled = !isRequesting,
-                    modifier = Modifier.height(34.dp),
-                ) {
-                    if (isRequesting && requestingSeasonKey == seasonKey) {
-                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                    } else {
-                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Request Season")
+
+            when {
+                season.canRequestMissingEpisodes -> {
+                    ExpressiveTextButton(
+                        onClick = onRequestSeason,
+                        enabled = !isRequesting,
+                        modifier = Modifier.height(34.dp),
+                    ) {
+                        if (isRequestingSeason) {
+                            CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
+                        } else {
+                            Icon(Icons.Default.Add, null, modifier = Modifier.size(13.dp))
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Text("Season", style = MaterialTheme.typography.labelSmall)
+                        }
                     }
                 }
-            } else if (season.hasMissingEpisodes) {
-                Text(
-                    stringResource(if (season.isPendingRequest) R.string.seerr_request_pending else R.string.seerr_not_requestable),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                season.hasMissingEpisodes -> {
+                    Text(
+                        text = if (season.isPendingRequest) "Pending" else stringResource(R.string.seerr_not_requestable),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
 
-        season.episodes.forEach { episode ->
-            TvEpisodeAvailabilityRow(
-                episode = episode,
-                canRequestSeason = season.canRequestMissingEpisodes,
-                canRequestEpisode = (isPluginConfigured && pluginCapabilities.contains("sonarr") || isSonarrConfigured) && !episode.isAvailable,
-                isRequesting = isRequesting && requestingSeasonKey == "$mediaId:${season.seasonNumber}",
-                isRequestingEpisode = isRequesting && requestingSeasonKey == "$mediaId:${season.seasonNumber}:${episode.episodeNumber}",
-                onRequestSeason = { onRequestSeason(season.seasonNumber) },
-                onRequestEpisode = { onRequestEpisode(season.seasonNumber, episode.episodeNumber) },
+        // Animated episode grid
+        AnimatedVisibility(
+            visible = expanded,
+            enter = fadeIn(tween(180)) + expandVertically(tween(220)),
+            exit = fadeOut(tween(140)) + shrinkVertically(tween(180)),
+        ) {
+            FlowRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 28.dp, bottom = 10.dp, top = 2.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                season.episodes.forEach { episode ->
+                    val episodeKey = "$mediaId:${season.seasonNumber}:${episode.episodeNumber}"
+                    EpisodePill(
+                        episode = episode,
+                        canRequestEpisode = canRequestEpisode && !episode.isAvailable,
+                        isRequestingEpisode = isRequesting && requestingSeasonKey == episodeKey,
+                        isRequestingAny = isRequesting,
+                        onClick = { onRequestEpisode(episode.seasonNumber, episode.episodeNumber) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ─── Episode Pill ─────────────────────────────────────────────────────────────
+
+@Composable
+private fun EpisodePill(
+    episode: TvEpisodeAvailability,
+    canRequestEpisode: Boolean,
+    isRequestingEpisode: Boolean,
+    isRequestingAny: Boolean,
+    onClick: () -> Unit,
+) {
+    val containerColor = when {
+        episode.isAvailable -> MaterialTheme.colorScheme.primaryContainer
+        canRequestEpisode -> MaterialTheme.colorScheme.errorContainer
+        else -> MaterialTheme.colorScheme.surfaceVariant
+    }
+    val contentColor = when {
+        episode.isAvailable -> MaterialTheme.colorScheme.onPrimaryContainer
+        canRequestEpisode -> MaterialTheme.colorScheme.onErrorContainer
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    val clickable = canRequestEpisode && !isRequestingAny && !episode.isAvailable
+
+    Box(
+        modifier = Modifier
+            .height(32.dp)
+            .defaultMinSize(minWidth = 38.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(containerColor)
+            .then(if (clickable) Modifier.clickable(onClick = onClick) else Modifier)
+            .padding(horizontal = 8.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (isRequestingEpisode) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(14.dp),
+                strokeWidth = 2.dp,
+                color = contentColor,
+            )
+        } else {
+            Text(
+                text = episode.episodeNumber.toString(),
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = contentColor,
             )
         }
     }
 }
 
+// ─── Shimmer Loading ──────────────────────────────────────────────────────────
+
 @Composable
-private fun TvEpisodeAvailabilityRow(
-    episode: TvEpisodeAvailability,
-    canRequestSeason: Boolean,
-    canRequestEpisode: Boolean,
-    isRequesting: Boolean,
-    isRequestingEpisode: Boolean,
-    onRequestSeason: () -> Unit,
-    onRequestEpisode: () -> Unit,
-) {
-    Row(
-        modifier = Modifier
+private fun RequestShimmerCard(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
             .fillMaxWidth()
-            .padding(start = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
+            .height(240.dp)
+            .clip(RoundedCornerShape(28.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainer),
     ) {
-        Icon(
-            imageVector = if (episode.isAvailable) Icons.Default.Check else Icons.Default.Info,
-            contentDescription = null,
-            modifier = Modifier.size(14.dp),
-            tint = if (episode.isAvailable) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            "E${episode.episodeNumber}. ${episode.title}",
-            modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-        when {
-            episode.isAvailable -> {
-                Text(
-                    "On server",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            }
-            canRequestEpisode -> {
-                ExpressiveTextButton(
-                    onClick = onRequestEpisode,
-                    enabled = !isRequestingEpisode && !isRequesting,
-                    modifier = Modifier.height(32.dp),
-                ) {
-                    if (isRequestingEpisode) {
-                        CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
-                    } else {
-                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(14.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Request Episode", style = MaterialTheme.typography.labelSmall)
-                    }
-                }
-            }
-            canRequestSeason -> {
-                ExpressiveTextButton(
-                    onClick = onRequestSeason,
-                    enabled = !isRequesting,
-                    modifier = Modifier.height(32.dp),
-                ) {
-                    if (isRequesting) {
-                        CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
-                    } else {
-                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(14.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Request Season", style = MaterialTheme.typography.labelSmall)
-                    }
-                }
-            }
-            else -> {
-                Text(
-                    "Missing",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.error,
-                )
-            }
+        ShimmerBox(modifier = Modifier.fillMaxSize(), cornerRadius = 28)
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            ShimmerBox(modifier = Modifier.width(60.dp).height(18.dp), cornerRadius = 6)
+            ShimmerBox(modifier = Modifier.fillMaxWidth(0.7f).height(22.dp), cornerRadius = 6)
+            ShimmerBox(modifier = Modifier.fillMaxWidth(0.9f).height(14.dp), cornerRadius = 4)
         }
     }
 }
 
+// ─── Empty & Unconfigured States ──────────────────────────────────────────────
+
+@OptInAppExperimentalApis
 @Composable
 private fun UnconfiguredState(
     onNavigateToSettings: () -> Unit,
@@ -532,39 +870,63 @@ private fun UnconfiguredState(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        Icon(
-            Icons.Default.Info,
-            contentDescription = null,
-            modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.primary,
-        )
-        Spacer(modifier = Modifier.height(16.dp))
+        Box(
+            modifier = Modifier
+                .size(80.dp)
+                .clip(RoundedCornerShape(24.dp))
+                .background(MaterialTheme.colorScheme.primaryContainer),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                Icons.Default.Info,
+                contentDescription = null,
+                modifier = Modifier.size(40.dp),
+                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+            )
+        }
+        Spacer(modifier = Modifier.height(20.dp))
         Text(
             "Requests Not Configured",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
         )
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(10.dp))
         Text(
-            "Configure your Seerr, Overseerr, or Jellyseerr instance — or install the Cinefin server plugin — to start requesting media.",
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            "Connect Seerr, Overseerr, or Jellyseerr — or install the Cinefin server plugin — to start requesting media.",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
         )
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(28.dp))
         ExpressiveFilledButton(onClick = onNavigateToSettings) {
-            Text("Go to Settings")
+            Text("Open Settings")
         }
     }
 }
 
 @Composable
-private fun EmptyState(query: String) {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(
-            "No results for \"$query\"",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+private fun EmptySearchState(query: String) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 48.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Icon(
+                Icons.Default.Search,
+                contentDescription = null,
+                modifier = Modifier.size(40.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+            )
+            Text(
+                "No results for \"$query\"",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }

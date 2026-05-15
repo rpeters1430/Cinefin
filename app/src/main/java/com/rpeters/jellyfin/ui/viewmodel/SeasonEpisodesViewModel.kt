@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
 import javax.inject.Inject
@@ -54,22 +55,16 @@ class SeasonEpisodesViewModel @Inject constructor(
         loadInProgressFor = seasonId
 
         viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true, errorMessage = null)
+            _state.update { it.copy(isLoading = true, errorMessage = null) }
             currentSeasonId = seasonId
 
             when (val result = repository.getEpisodesForSeason(seasonId)) {
                 is ApiResult.Success -> {
-                    _state.value = _state.value.copy(
-                        episodes = result.data,
-                        isLoading = false,
-                    )
+                    _state.update { it.copy(episodes = result.data, isLoading = false) }
                     loadMissingEpisodes(seasonId, result.data)
                 }
                 is ApiResult.Error -> {
-                    _state.value = _state.value.copy(
-                        isLoading = false,
-                        errorMessage = "Failed to load episodes: ${result.message}",
-                    )
+                    _state.update { it.copy(isLoading = false, errorMessage = "Failed to load episodes: ${result.message}") }
                 }
                 is ApiResult.Loading -> Unit
             }
@@ -83,19 +78,19 @@ class SeasonEpisodesViewModel @Inject constructor(
         val sonarrConfigured = sonarrPrefs.isValid && sonarrPrefs.isEnabled
         val seerrConfigured = seerrPrefs.isValid && seerrPrefs.isEnabled
 
-        _state.value = _state.value.copy(isSonarrConfigured = sonarrConfigured)
+        _state.update { it.copy(isSonarrConfigured = sonarrConfigured) }
 
         if (!seerrConfigured || localEpisodes.isEmpty()) return
 
         val seasonNumber = localEpisodes.first().parentIndexNumber ?: return
         val seriesJellyfinId = localEpisodes.first().seriesId?.toString() ?: return
 
-        _state.value = _state.value.copy(isLoadingMissing = true)
+        _state.update { it.copy(isLoadingMissing = true) }
 
         val seriesItem = when (val r = repository.getItemDetails(seriesJellyfinId)) {
             is ApiResult.Success -> r.data
             else -> {
-                _state.value = _state.value.copy(isLoadingMissing = false)
+                _state.update { it.copy(isLoadingMissing = false) }
                 return
             }
         }
@@ -103,18 +98,18 @@ class SeasonEpisodesViewModel @Inject constructor(
         val tmdbId = seriesItem.providerIds?.get("Tmdb")?.toIntOrNull()
         val tvdbId = seriesItem.providerIds?.get("Tvdb")?.toIntOrNull()
 
-        // Store TVDB ID for use during episode requests
+        // Store TVDB ID for use during episode requests.
         storedTvdbId = tvdbId
 
         if (tmdbId == null) {
-            _state.value = _state.value.copy(isLoadingMissing = false)
+            _state.update { it.copy(isLoadingMissing = false) }
             return
         }
 
         val seerrSeason = when (val r = seerrRepository.getTvSeasonDetails(tmdbId, seasonNumber)) {
             is ApiResult.Success -> r.data
             else -> {
-                _state.value = _state.value.copy(isLoadingMissing = false)
+                _state.update { it.copy(isLoadingMissing = false) }
                 return
             }
         }
@@ -132,44 +127,45 @@ class SeasonEpisodesViewModel @Inject constructor(
             }
             .sortedBy { it.episodeNumber }
 
-        _state.value = _state.value.copy(
-            missingEpisodes = missing,
-            isLoadingMissing = false,
-        )
+        _state.update { it.copy(missingEpisodes = missing, isLoadingMissing = false) }
     }
 
     // Cached during loadMissingEpisodes so requestEpisode can use it without re-fetching.
     private var storedTvdbId: Int? = null
 
     fun requestMissingEpisode(seasonNumber: Int, episodeNumber: Int) {
-        val tvdbId = storedTvdbId ?: return
+        val tvdbId = storedTvdbId ?: run {
+            _state.update { it.copy(errorMessage = "Series data not loaded yet — wait for the episode list to finish loading, then try again") }
+            return
+        }
         val key = "$seasonNumber:$episodeNumber"
 
         viewModelScope.launch {
-            _state.value = _state.value.copy(requestingEpisodeKey = key, successMessage = null, errorMessage = null)
+            _state.update { it.copy(requestingEpisodeKey = key, successMessage = null, errorMessage = null) }
 
             val result = sonarrRepository.requestEpisode(tvdbId, seasonNumber, episodeNumber)
 
-            _state.value = when (result) {
-                is ApiResult.Success -> _state.value.copy(
-                    requestingEpisodeKey = null,
-                    successMessage = "Request submitted for S${seasonNumber.toString().padStart(2, '0')}E${episodeNumber.toString().padStart(2, '0')}",
-                    // Optimistically remove from missing list once requested.
-                    missingEpisodes = _state.value.missingEpisodes.filterNot {
-                        it.seasonNumber == seasonNumber && it.episodeNumber == episodeNumber
-                    },
-                )
-                is ApiResult.Error -> _state.value.copy(
-                    requestingEpisodeKey = null,
-                    errorMessage = result.message,
-                )
-                else -> _state.value.copy(requestingEpisodeKey = null)
+            _state.update { current ->
+                when (result) {
+                    is ApiResult.Success -> current.copy(
+                        requestingEpisodeKey = null,
+                        successMessage = "Request submitted for S${seasonNumber.toString().padStart(2, '0')}E${episodeNumber.toString().padStart(2, '0')}",
+                        missingEpisodes = current.missingEpisodes.filterNot {
+                            it.seasonNumber == seasonNumber && it.episodeNumber == episodeNumber
+                        },
+                    )
+                    is ApiResult.Error -> current.copy(
+                        requestingEpisodeKey = null,
+                        errorMessage = result.message,
+                    )
+                    else -> current.copy(requestingEpisodeKey = null)
+                }
             }
         }
     }
 
     fun clearMessages() {
-        _state.value = _state.value.copy(successMessage = null, errorMessage = null)
+        _state.update { it.copy(successMessage = null, errorMessage = null) }
     }
 
     fun refresh() {

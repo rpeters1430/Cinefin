@@ -21,9 +21,6 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 
@@ -49,12 +46,10 @@ object MediaPlayerUtils {
         }
 
         val applicationContext = context.applicationContext
-        val preferencesRepository = EntryPointAccessors.fromApplication(
+        val useExternal = EntryPointAccessors.fromApplication(
             applicationContext,
             PlaybackPreferencesEntryPoint::class.java,
-        ).playbackPreferencesRepository()
-
-        val useExternal = runBlocking(Dispatchers.IO) { preferencesRepository.preferences.first().useExternalPlayer }
+        ).playbackPreferencesCache().useExternalPlayer
 
         if (useExternal) {
             playMediaExternal(context, streamUrl, item)
@@ -183,12 +178,10 @@ object MediaPlayerUtils {
         startPosition: Long = 0L,
     ) {
         val applicationContext = context.applicationContext
-        val preferencesRepository = EntryPointAccessors.fromApplication(
+        val useExternal = EntryPointAccessors.fromApplication(
             applicationContext,
             PlaybackPreferencesEntryPoint::class.java,
-        ).playbackPreferencesRepository()
-
-        val useExternal = runBlocking(Dispatchers.IO) { preferencesRepository.preferences.first().useExternalPlayer }
+        ).playbackPreferencesCache().useExternalPlayer
 
         if (useExternal) {
             playMediaExternal(context, streamUrl, item)
@@ -282,4 +275,5 @@ interface AudioServiceConnectionEntryPoint {
 @InstallIn(SingletonComponent::class)
 interface PlaybackPreferencesEntryPoint {
     fun playbackPreferencesRepository(): PlaybackPreferencesRepository
+    fun playbackPreferencesCache(): com.rpeters.jellyfin.data.preferences.PlaybackPreferencesCache
 }

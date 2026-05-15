@@ -76,11 +76,18 @@ data class SeerrRequestResponse(
 )
 
 @Serializable
+data class SeerrExternalIds(
+    val tvdbId: Int? = null,
+    val imdbId: String? = null,
+)
+
+@Serializable
 data class SeerrTvDetails(
     val id: Int? = null,
     val name: String? = null,
     val mediaInfo: SeerrMediaInfo? = null,
-    val seasons: List<SeerrSeason> = emptyList()
+    val seasons: List<SeerrSeason> = emptyList(),
+    val externalIds: SeerrExternalIds? = null,
 )
 
 @Serializable

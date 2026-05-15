@@ -3,6 +3,7 @@ package com.rpeters.jellyfin.data.ai
 import android.os.Build
 import android.util.Log
 import com.rpeters.jellyfin.data.repository.RemoteConfigRepository
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -39,6 +40,7 @@ class HybridAiTextModel(
                 nanoModel.initialize()
                 updateActiveState()
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 Log.e("HybridAi", "[$label] Nano initialization failed: ${e.message}")
             }
         } else {
@@ -105,6 +107,7 @@ class HybridAiTextModel(
             if (isNano) failureCount.set(0) // Reset on success
             result
         } catch (e: Exception) {
+            if (e is CancellationException) throw e
             if (isNano) {
                 val currentFailures = failureCount.incrementAndGet()
                 Log.w("HybridAi", "[$label] Nano failed ($currentFailures/3), falling back to cloud", e)

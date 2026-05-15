@@ -60,6 +60,7 @@ data class TvSeasonAvailability(
 data class TvAvailability(
     val localSeriesTitle: String,
     val seasons: List<TvSeasonAvailability>,
+    val tvdbId: Int? = null,
 ) {
     val totalAvailableEpisodes: Int get() = seasons.sumOf { it.availableCount }
     val totalEpisodes: Int get() = seasons.sumOf { it.totalCount }
@@ -81,6 +82,7 @@ data class RequestsUiState(
     val requestingSeasonKey: String? = null,
     val tvAvailabilityByMediaId: Map<Int, TvAvailability> = emptyMap(),
     val successMessage: String? = null,
+    val recentSearches: List<String> = emptyList(),
 )
 
 @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
@@ -158,10 +160,17 @@ class RequestsViewModel @Inject constructor(
                     when (result) {
                         is ApiResult.Success<*> -> {
                             val searchResult = result.data as com.rpeters.jellyfin.data.model.SeerrSearchResult
-                            _uiState.update {
-                                it.copy(
+                            _uiState.update { state ->
+                                val q = state.query.trim()
+                                val newRecent = if (q.isNotBlank()) {
+                                    (listOf(q) + state.recentSearches.filter { it != q }).take(6)
+                                } else {
+                                    state.recentSearches
+                                }
+                                state.copy(
                                     results = searchResult.results,
                                     isLoading = false,
+                                    recentSearches = newRecent,
                                     tvAvailabilityByMediaId = emptyMap(),
                                     loadingAvailabilityIds = emptySet(),
                                     checkedTvItemIds = emptySet(),
@@ -205,9 +214,20 @@ class RequestsViewModel @Inject constructor(
 
     fun requestMissingEpisode(item: SeerrMediaItem, seasonNumber: Int, episodeNumber: Int) {
         val tvdbId = item.tvdbId
-        val canRequest = _uiState.value.isPluginConfigured ||
-            (tvdbId != null && _uiState.value.isSonarrConfigured)
-        if (!canRequest) return
+            ?: _uiState.value.tvAvailabilityByMediaId[item.id]?.tvdbId
+        val state = _uiState.value
+        val canRequest = state.isPluginConfigured || (tvdbId != null && state.isSonarrConfigured)
+        if (!canRequest) {
+            val reason = when {
+                !state.isSonarrConfigured && !state.isPluginConfigured ->
+                    "Configure Sonarr or the Cinefin plugin in Settings to request individual episodes"
+                tvdbId == null ->
+                    "TVDB ID unavailable for ${item.displayTitle} — try requesting the full season instead"
+                else -> "Individual episode requests require Sonarr or the Cinefin plugin"
+            }
+            _uiState.update { it.copy(errorMessage = reason) }
+            return
+        }
 
         viewModelScope.launch {
             val episodeKey = "${item.id}:$seasonNumber:$episodeNumber"
@@ -432,6 +452,7 @@ class RequestsViewModel @Inject constructor(
         return TvAvailability(
             localSeriesTitle = localSeries.name ?: item.displayTitle,
             seasons = seasons,
+            tvdbId = seerrDetails.externalIds?.tvdbId ?: item.tvdbId,
         )
     }
 
@@ -552,6 +573,10 @@ class RequestsViewModel @Inject constructor(
 
     fun clearMessages() {
         _uiState.update { it.copy(errorMessage = null, successMessage = null) }
+    }
+
+    fun dismissRecentSearch(query: String) {
+        _uiState.update { it.copy(recentSearches = it.recentSearches.filter { q -> q != query }) }
     }
 
     /**
