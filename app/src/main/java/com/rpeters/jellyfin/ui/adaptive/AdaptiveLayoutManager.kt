@@ -18,6 +18,18 @@ import androidx.window.layout.FoldingFeature
 import androidx.window.layout.WindowInfoTracker
 import androidx.window.layout.WindowLayoutInfo
 import com.rpeters.jellyfin.utils.DeviceTypeUtils
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
+import androidx.compose.ui.unit.DpSize
+
+@OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
+val LocalWindowSizeClass = staticCompositionLocalOf<WindowSizeClass> {
+    WindowSizeClass.calculateFromSize(DpSize(400.dp, 800.dp)) // Default fallback
+}
+
+val LocalAdaptiveLayoutConfig = staticCompositionLocalOf<AdaptiveLayoutConfig> {
+    error("No AdaptiveLayoutConfig provided")
+}
 
 /**
  * Device form factor detection and adaptive layout management

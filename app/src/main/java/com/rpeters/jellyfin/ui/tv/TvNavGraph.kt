@@ -38,6 +38,7 @@ private object TvRoutes {
     const val LegacyHomeVideos = "tv_homevideos"
     const val Search = "tv_search"
     const val Favorites = "tv_favorites"
+    const val Requests = "tv_requests?query={query}"
     const val Settings = "tv_settings"
     const val Library = "tv_library/{libraryId}"
     const val Item = "tv_item/{itemId}"
@@ -47,6 +48,10 @@ private object TvRoutes {
     fun playerRoute(itemId: String, itemName: String, startPosition: Long = 0L): String {
         val encodedName = Uri.encode(itemName)
         return "tv_player/$itemId?itemName=$encodedName&startPosition=$startPosition"
+    }
+
+    fun requestsRoute(query: String? = null): String {
+        return if (query != null) "tv_requests?query=${Uri.encode(query)}" else "tv_requests"
     }
 
     fun audioPlayerRoute(): String = AudioPlayer
@@ -156,6 +161,23 @@ fun TvNavGraph(
             )
         }
 
+        composable(
+            route = TvRoutes.Requests,
+            arguments = listOf(
+                navArgument("query") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
+            ),
+        ) { backStackEntry ->
+            val query = backStackEntry.arguments?.getString("query")
+            com.rpeters.jellyfin.ui.screens.tv.TvRequestsScreen(
+                initialQuery = query,
+                onBack = { navController.popBackStack() },
+            )
+        }
+
         composable(TvRoutes.Movies) {
             // Placeholder for TV Movies Screen
             TvLibraryScreen(
@@ -212,6 +234,9 @@ fun TvNavGraph(
             TvSearchScreen(
                 onItemSelect = { itemId -> navController.navigate("tv_item/$itemId") },
                 onBack = { navController.popBackStack() },
+                onSearchRequests = { query ->
+                    navController.navigate(TvRoutes.requestsRoute(query))
+                },
             )
         }
 
@@ -258,6 +283,9 @@ fun TvNavGraph(
                 },
                 onBack = { navController.popBackStack() },
                 onSearch = { navController.navigate(TvRoutes.Search) },
+                onSearchRequests = { query ->
+                    navController.navigate(TvRoutes.requestsRoute(query))
+                },
             )
         }
 

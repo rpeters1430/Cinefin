@@ -322,6 +322,8 @@ fun TvEmptyState(
     message: String,
     onAction: (() -> Unit)? = null,
     actionText: String = "Refresh",
+    onSecondaryAction: (() -> Unit)? = null,
+    secondaryActionText: String? = null,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -349,10 +351,25 @@ fun TvEmptyState(
                 textAlign = TextAlign.Center,
             )
 
-            onAction?.let {
+            if (onAction != null || onSecondaryAction != null) {
                 Spacer(modifier = Modifier.height(16.dp))
-                TvButton(onClick = it) {
-                    TvText(actionText)
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    onAction?.let {
+                        TvButton(onClick = it) {
+                            TvText(actionText)
+                        }
+                    }
+                    onSecondaryAction?.let {
+                        TvButton(
+                            onClick = it,
+                            colors = androidx.tv.material3.ButtonDefaults.colors(
+                                containerColor = TvMaterialTheme.colorScheme.surfaceVariant,
+                                contentColor = TvMaterialTheme.colorScheme.onSurfaceVariant,
+                            ),
+                        ) {
+                            TvText(secondaryActionText ?: "")
+                        }
+                    }
                 }
             }
         }

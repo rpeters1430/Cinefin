@@ -138,8 +138,7 @@ fun ImmersiveHomeScreen(
         }
 
         // Calculate window size class for adaptive layout
-        val windowSizeClass = calculateWindowSizeClass(activity = context as Activity)
-        val adaptiveConfig = rememberAdaptiveLayoutConfig(windowSizeClass)
+        val adaptiveConfig = com.rpeters.jellyfin.ui.adaptive.LocalAdaptiveLayoutConfig.current
 
         // Track scroll state for auto-hiding navigation
         val gridState = rememberLazyGridState()
@@ -301,7 +300,7 @@ fun ImmersiveHomeScreen(
                         onGenerateViewingMood = onGenerateViewingMood,
                         gridState = gridState,
                         listState = listState,
-                        windowSizeClass = windowSizeClass,
+                        windowSizeClass = adaptiveConfig.windowSizeClass,
                         adaptiveConfig = adaptiveConfig,
                         contentPadding = paddingValues,
                         animatedVisibilityScope = animatedVisibilityScope,

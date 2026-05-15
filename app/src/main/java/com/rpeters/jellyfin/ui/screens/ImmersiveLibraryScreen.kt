@@ -82,6 +82,14 @@ import org.jellyfin.sdk.model.api.BaseItemDto
  *
  * Used on the Library tab in [HomeLibraryNavGraph].
  */
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+
+// ... inside the file ...
+
 @OptInAppExperimentalApis
 @Composable
 fun ImmersiveLibraryScreen(
@@ -105,7 +113,7 @@ fun ImmersiveLibraryScreen(
     ) {
         @Suppress("UNUSED_VARIABLE")
         val perfConfig = rememberImmersivePerformanceConfig()
-    val listState = rememberLazyListState()
+    val gridState = rememberLazyGridState()
 
     PerformanceMetricsTracker(
         enabled = com.rpeters.jellyfin.BuildConfig.DEBUG,
@@ -114,9 +122,13 @@ fun ImmersiveLibraryScreen(
 
     val showFabs by remember {
         derivedStateOf {
-            listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset < 100
+            gridState.firstVisibleItemIndex == 0 && gridState.firstVisibleItemScrollOffset < 100
         }
     }
+
+    val adaptiveConfig = com.rpeters.jellyfin.ui.adaptive.LocalAdaptiveLayoutConfig.current
+    // Limit to 3 columns max for the library screen so the large cards still look good
+    val columns = adaptiveConfig.gridColumns.coerceAtMost(3)
 
     Box(
         modifier = modifier
@@ -128,8 +140,9 @@ fun ImmersiveLibraryScreen(
             onRefresh = onRefresh,
             modifier = Modifier.fillMaxSize(),
         ) {
-            LazyColumn(
-                state = listState,
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(columns),
+                state = gridState,
                 modifier = Modifier
                     .fillMaxSize()
                     .statusBarsPadding(),
@@ -140,8 +153,9 @@ fun ImmersiveLibraryScreen(
                     bottom = 120.dp,
                 ),
                 verticalArrangement = Arrangement.spacedBy(ImmersiveDimens.SpacingRowTight),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                item(key = "header") {
+                item(key = "header", span = { GridItemSpan(maxLineSpan) }) {
                     Spacer(modifier = Modifier.height(120.dp))
                     Text(
                         text = stringResource(id = R.string.your_libraries),
@@ -156,17 +170,17 @@ fun ImmersiveLibraryScreen(
 
                 when {
                     isLoading && errorMessage == null && libraries.isEmpty() -> {
-                        items(ImmersiveLibraryScreenDefaults.LibraryPlaceholderCount) {
+                        items(ImmersiveLibraryScreenDefaults.LibraryPlaceholderCount, span = { GridItemSpan(1) }) {
                             ImmersiveLibraryLoadingCard()
                         }
                     }
                     errorMessage != null -> {
-                        item(key = "error") {
+                        item(key = "error", span = { GridItemSpan(maxLineSpan) }) {
                             ImmersiveErrorCard(errorMessage = errorMessage)
                         }
                     }
                     libraries.isEmpty() -> {
-                        item(key = "empty") {
+                        item(key = "empty", span = { GridItemSpan(maxLineSpan) }) {
                             ExpressiveSimpleEmptyState(
                                 icon = Icons.AutoMirrored.Filled.LibraryBooks,
                                 title = stringResource(id = R.string.no_libraries_found),

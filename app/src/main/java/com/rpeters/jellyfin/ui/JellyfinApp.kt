@@ -121,7 +121,14 @@ fun JellyfinApp(
     val navBarVisible = remember { mutableStateOf(true) }
 
     JellyfinAndroidTheme(themePreferences = themePreferences) {
-        CompositionLocalProvider(LocalNavBarVisible provides navBarVisible) {
+        val windowSizeClass = calculateWindowSizeClass(activity = LocalContext.current as Activity)
+        val adaptiveLayoutConfig = com.rpeters.jellyfin.ui.adaptive.rememberAdaptiveLayoutConfig(windowSizeClass)
+        
+        CompositionLocalProvider(
+            LocalNavBarVisible provides navBarVisible,
+            com.rpeters.jellyfin.ui.adaptive.LocalWindowSizeClass provides windowSizeClass,
+            com.rpeters.jellyfin.ui.adaptive.LocalAdaptiveLayoutConfig provides adaptiveLayoutConfig
+        ) {
         val navController = rememberNavController()
         val connectionViewModel: ServerConnectionViewModel = hiltViewModel()
         val connectionState by connectionViewModel.connectionState.collectAsStateWithLifecycle()

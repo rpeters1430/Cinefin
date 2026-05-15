@@ -86,7 +86,13 @@
       "Read(//home/rpeters1428/Cinefin/.worktrees/m3-expressive-fixes/$BASE/app/src/main/java/com/rpeters/jellyfin/ui/screens/**)",
       "Bash(wc:*)",
       "Bash(unzip:*)",
-      "Bash(Up\" row, matching the behaviour of the standard HomeContent.kt.:*)"
+      "Bash(Up\" row, matching the behaviour of the standard HomeContent.kt.:*)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\rpete\\\\Cinefin\\\\plugin_temp\" -Recurse -File)",
+      "Bash(Select-Object FullName)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\rpete\\\\Cinefin\\\\app\\\\src\\\\main\\\\java\\\\com\\\\rpeters\\\\jellyfin\" -Recurse -File)",
+      "Bash(Select-Object -ExpandProperty Name)",
+      "Bash(Sort-Object)",
+      "PowerShell(Select-String *)"
     ],
     "deny": [],
     "ask": [],

@@ -103,6 +103,7 @@ fun TvItemDetailScreen(
     onPlay: (itemId: String, itemName: String, startPositionMs: Long) -> Unit,
     onBack: (() -> Unit)? = null,
     onSearch: (() -> Unit)? = null,
+    onSearchRequests: ((String) -> Unit)? = null,
 ) {
     val appState by viewModel.appState.collectAsStateWithLifecycle()
     val seasonState by seasonViewModel.state.collectAsStateWithLifecycle()
@@ -151,6 +152,7 @@ fun TvItemDetailScreen(
     val favoriteButtonFocusRequester = remember { FocusRequester() }
     val watchedButtonFocusRequester = remember { FocusRequester() }
     val moreButtonFocusRequester = remember { FocusRequester() }
+    val requestButtonFocusRequester = remember { FocusRequester() }
     val nextContentFocusRequester = remember { FocusRequester() }
     val resumeMs = item?.userData?.playbackPositionTicks?.div(10_000) ?: 0L
     val isResuming = resumeMs > 0L
@@ -634,6 +636,37 @@ fun TvItemDetailScreen(
                                 TvIcon(Icons.Default.Info, null)
                                 Spacer(Modifier.width(8.dp))
                                 TvText(if (showMoreDetails) "Hide Details" else "More")
+                            }
+
+                            if (onSearchRequests != null) {
+                                TvButton(
+                                    onClick = {
+                                        item.name?.let { onSearchRequests(it) }
+                                    },
+                                    modifier = Modifier
+                                        .focusRequester(requestButtonFocusRequester)
+                                        .onFocusChanged { focusState ->
+                                            if (focusState.isFocused) {
+                                                lastFocusedActionRequester = requestButtonFocusRequester
+                                            }
+                                        }
+                                        .onPreviewKeyEvent { keyEvent ->
+                                            if (keyEvent.type == KeyEventType.KeyDown && keyEvent.key == Key.DirectionDown) {
+                                                nextContentFocusRequester.requestFocus()
+                                                true
+                                            } else {
+                                                false
+                                            }
+                                        },
+                                    colors = TvButtonDefaults.colors(
+                                        containerColor = Color.White.copy(alpha = 0.1f),
+                                        contentColor = Color.White,
+                                    ),
+                                ) {
+                                    TvIcon(Icons.Default.AutoAwesome, null) // Using AutoAwesome as a "magic/request" icon
+                                    Spacer(Modifier.width(8.dp))
+                                    TvText(if (item.type == BaseItemKind.SERIES) "Request Missing" else "Request")
+                                }
                             }
                         }
 

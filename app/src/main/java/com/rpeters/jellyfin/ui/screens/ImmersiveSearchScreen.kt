@@ -79,6 +79,11 @@ import com.rpeters.jellyfin.ui.viewmodel.SearchViewModel
 import com.rpeters.jellyfin.utils.getItemKey
 import com.rpeters.jellyfin.utils.rememberDebouncedState
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 
@@ -185,7 +190,7 @@ fun ImmersiveSearchScreen(
         }
     }
 
-    val listState = rememberLazyListState()
+    val listState = rememberLazyGridState()
 
     // Auto-hide search bar when scrolling down
     val showSearchBar by remember {
@@ -194,13 +199,16 @@ fun ImmersiveSearchScreen(
         }
     }
 
+    val columns = adaptiveConfig.gridColumns.coerceAtMost(3) // Ensure cards are large
+
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background),
     ) {
         // Main content
-        LazyColumn(
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(columns),
             state = listState,
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
@@ -210,10 +218,11 @@ fun ImmersiveSearchScreen(
                 bottom = 120.dp, // Space for MiniPlayer + FABs
             ),
             verticalArrangement = Arrangement.spacedBy(ImmersiveDimens.SpacingRowTight),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             // Content Type Filters
             if (isFilterExpanded) {
-                item(key = "filters") {
+                item(key = "filters", span = { GridItemSpan(maxLineSpan) }) {
                     OutlinedCard(
                         modifier = Modifier.fillMaxWidth(),
                     ) {
@@ -269,7 +278,7 @@ fun ImmersiveSearchScreen(
 
             // Search suggestions when no active search
             if (searchQuery.isBlank() && appState.searchResults.isEmpty()) {
-                item(key = "suggestions") {
+                item(key = "suggestions", span = { GridItemSpan(maxLineSpan) }) {
                     Column(
                         modifier = Modifier.padding(vertical = 8.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -349,7 +358,7 @@ fun ImmersiveSearchScreen(
 
             // Search results
             if (appState.isSearching) {
-                item(key = "searching") {
+                item(key = "searching", span = { GridItemSpan(maxLineSpan) }) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -371,7 +380,7 @@ fun ImmersiveSearchScreen(
             }
 
             appState.errorMessage?.let { error ->
-                item(key = "error") {
+                item(key = "error", span = { GridItemSpan(maxLineSpan) }) {
                     Card(
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.errorContainer,
@@ -389,7 +398,7 @@ fun ImmersiveSearchScreen(
             }
 
             if (appState.searchResults.isEmpty() && !appState.isSearching && appState.errorMessage == null && searchQuery.isNotBlank()) {
-                item(key = "no_results") {
+                item(key = "no_results", span = { GridItemSpan(maxLineSpan) }) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -433,7 +442,7 @@ fun ImmersiveSearchScreen(
             // Grouped results by type
             val groupedResults = appState.searchResults.groupBy { it.type }
             groupedResults.forEach { (type, items) ->
-                item(key = "header_$type") {
+                item(key = "header_$type", span = { GridItemSpan(maxLineSpan) }) {
                     Text(
                         text = when (type) {
                             BaseItemKind.MOVIE -> "Movies"
@@ -475,6 +484,7 @@ fun ImmersiveSearchScreen(
                 }
             }
         }
+
 
         // Floating search bar (auto-hides on scroll)
         AnimatedVisibility(

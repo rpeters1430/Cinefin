@@ -73,6 +73,7 @@ import androidx.tv.material3.Text as TvText
 fun TvSearchScreen(
     onItemSelect: (String) -> Unit,
     onBack: (() -> Unit)? = null,
+    onSearchRequests: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier,
     viewModel: SearchViewModel = hiltViewModel(),
     mainViewModel: MainAppViewModel = hiltViewModel(),
@@ -235,6 +236,10 @@ fun TvSearchScreen(
                         message = "We couldn't find anything matching '${searchState.searchQuery}'",
                         onAction = { viewModel.clearSearch() },
                         actionText = "Clear Search",
+                        onSecondaryAction = if (onSearchRequests != null && searchState.searchQuery.isNotBlank()) {
+                            { onSearchRequests(searchState.searchQuery) }
+                        } else null,
+                        secondaryActionText = "Search request catalog",
                     )
                 } else if (searchState.searchResults.isNotEmpty()) {
                     val resultGroups = remember(searchState.searchResults) {
