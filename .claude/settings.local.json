@@ -92,7 +92,8 @@
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\rpete\\\\Cinefin\\\\app\\\\src\\\\main\\\\java\\\\com\\\\rpeters\\\\jellyfin\" -Recurse -File)",
       "Bash(Select-Object -ExpandProperty Name)",
       "Bash(Sort-Object)",
-      "PowerShell(Select-String *)"
+      "PowerShell(Select-String *)",
+      "Bash(gh issue *)"
     ],
     "deny": [],
     "ask": [],
