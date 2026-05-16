@@ -57,6 +57,18 @@ class SonarrRepository @Inject constructor(
         service to prefs.apiKey
     }
 
+    suspend fun getQualityProfiles(): ApiResult<List<com.rpeters.jellyfin.data.model.SonarrQualityProfile>> = retryNetworkCall {
+        val (service, apiKey) = getService() ?: return@retryNetworkCall notConfiguredError()
+        try {
+            val response = service.getQualityProfiles(apiKey)
+            if (response.isSuccessful) ApiResult.Success(response.body() ?: emptyList())
+            else ApiResult.Error("HTTP ${response.code()}", errorType = errorType(response.code()))
+        } catch (e: Exception) {
+            SecureLogger.e(TAG, "Sonarr getQualityProfiles failed", e)
+            ApiResult.Error(e.message ?: "Failed to get quality profiles", e, ErrorType.NETWORK)
+        }
+    }
+
     suspend fun testConnection(): ApiResult<Unit> = retryNetworkCall {
         val (service, apiKey) = getService() ?: return@retryNetworkCall notConfiguredError()
         try {
@@ -72,7 +84,7 @@ class SonarrRepository @Inject constructor(
         }
     }
 
-    suspend fun addSeries(tvdbId: Int, requestedSeasons: List<Int>?): ApiResult<Unit> = retryNetworkCall {
+    suspend fun addSeries(tvdbId: Int, requestedSeasons: List<Int>?, qualityProfileId: Int? = null): ApiResult<Unit> = retryNetworkCall {
         val (service, apiKey) = getService() ?: return@retryNetworkCall notConfiguredError()
         try {
             val lookupResponse = service.lookupSeriesByTvdb(apiKey, "tvdb:$tvdbId")
@@ -84,7 +96,8 @@ class SonarrRepository @Inject constructor(
             val rootFolderPath = series.rootFolderPath?.takeIf { it.isNotBlank() }
                 ?: service.getRootFolders(apiKey).body()?.firstOrNull()?.path
                 ?: "/tv"
-            val qualityProfileId = series.qualityProfileId.takeIf { it != 0 }
+            val resolvedQualityProfileId = qualityProfileId
+                ?: series.qualityProfileId.takeIf { it != 0 }
                 ?: service.getQualityProfiles(apiKey).body()?.firstOrNull()?.id
                 ?: 1
 
@@ -106,7 +119,7 @@ class SonarrRepository @Inject constructor(
                 seriesType = series.seriesType.ifBlank { "standard" },
                 seasons = seasons,
                 rootFolderPath = rootFolderPath,
-                qualityProfileId = qualityProfileId,
+                qualityProfileId = resolvedQualityProfileId,
                 monitored = true,
                 addOptions = SonarrAddOptions(searchForMissingEpisodes = true),
                 images = series.images,

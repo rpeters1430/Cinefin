@@ -2,10 +2,12 @@ package com.rpeters.jellyfin.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rpeters.jellyfin.data.model.RadarrQualityProfile
 import com.rpeters.jellyfin.data.model.SeerrMediaInfo
 import com.rpeters.jellyfin.data.model.SeerrMediaItem
 import com.rpeters.jellyfin.data.model.SeerrRequestRequest
 import com.rpeters.jellyfin.data.model.SeerrSeason
+import com.rpeters.jellyfin.data.model.SonarrQualityProfile
 import com.rpeters.jellyfin.data.preferences.ArrPreferencesRepository
 import com.rpeters.jellyfin.data.preferences.SeerrPreferences
 import com.rpeters.jellyfin.data.preferences.SeerrPreferencesRepository
@@ -35,6 +37,18 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
 import javax.inject.Inject
+
+data class PendingMovieRequest(
+    val item: SeerrMediaItem,
+    val qualityProfiles: List<RadarrQualityProfile>,
+)
+
+data class PendingTvRequest(
+    val item: SeerrMediaItem,
+    val seasons: List<Int>,
+    val qualityProfiles: List<SonarrQualityProfile>,
+    val isUsingSonarrDirect: Boolean,
+)
 
 data class TvEpisodeAvailability(
     val seasonNumber: Int,
@@ -83,6 +97,8 @@ data class RequestsUiState(
     val tvAvailabilityByMediaId: Map<Int, TvAvailability> = emptyMap(),
     val successMessage: String? = null,
     val recentSearches: List<String> = emptyList(),
+    val pendingMovieRequest: PendingMovieRequest? = null,
+    val pendingTvRequest: PendingTvRequest? = null,
 )
 
 @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
@@ -196,7 +212,120 @@ class RequestsViewModel @Inject constructor(
     }
 
     fun requestMedia(item: SeerrMediaItem) {
-        requestSeasons(item, null)
+        val state = _uiState.value
+        if (state.isPluginConfigured) {
+            requestSeasons(item, null)
+            return
+        }
+        val seerr = seerrPreferences.value
+        val useSeerr = seerr.isValid && seerr.isEnabled
+        when {
+            item.mediaType == "movie" && !useSeerr -> initiateMovieQualityRequest(item)
+            item.mediaType == "tv" -> initiateTvSeasonRequest(item, useSeerr)
+            else -> requestSeasons(item, null)
+        }
+    }
+
+    private fun initiateMovieQualityRequest(item: SeerrMediaItem) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(requestingMediaId = item.id) }
+            val profiles = when (val result = radarrRepository.getQualityProfiles()) {
+                is ApiResult.Success -> result.data
+                else -> emptyList()
+            }
+            _uiState.update {
+                it.copy(
+                    requestingMediaId = null,
+                    pendingMovieRequest = PendingMovieRequest(item, profiles),
+                )
+            }
+        }
+    }
+
+    private fun initiateTvSeasonRequest(item: SeerrMediaItem, useSeerr: Boolean) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(requestingMediaId = item.id) }
+            val mediaId = item.tmdbId ?: item.id
+            val seasons = when (val result = seerrRepository.getTvDetails(mediaId)) {
+                is ApiResult.Success -> result.data.seasons
+                    .filter { it.seasonNumber > 0 }
+                    .map { it.seasonNumber }
+                    .sorted()
+                else -> emptyList()
+            }
+            val qualityProfiles = if (!useSeerr && _uiState.value.isSonarrConfigured) {
+                when (val result = sonarrRepository.getQualityProfiles()) {
+                    is ApiResult.Success -> result.data
+                    else -> emptyList()
+                }
+            } else {
+                emptyList()
+            }
+            _uiState.update {
+                it.copy(
+                    requestingMediaId = null,
+                    pendingTvRequest = PendingTvRequest(
+                        item = item,
+                        seasons = seasons,
+                        qualityProfiles = qualityProfiles,
+                        isUsingSonarrDirect = !useSeerr,
+                    ),
+                )
+            }
+        }
+    }
+
+    fun confirmMovieRequest(item: SeerrMediaItem, qualityProfileId: Int) {
+        _uiState.update { it.copy(pendingMovieRequest = null) }
+        viewModelScope.launch {
+            val mediaId = item.tmdbId ?: item.id
+            _uiState.update { it.copy(requestingMediaId = item.id) }
+            val result = radarrRepository.addMovie(mediaId, qualityProfileId)
+            _uiState.update { state ->
+                when (result) {
+                    is ApiResult.Success -> state.copy(
+                        requestingMediaId = null,
+                        successMessage = "Request submitted for ${item.displayTitle}",
+                    )
+                    is ApiResult.Error -> state.copy(requestingMediaId = null, errorMessage = result.message)
+                    else -> state.copy(requestingMediaId = null)
+                }
+            }
+        }
+    }
+
+    fun confirmTvRequest(item: SeerrMediaItem, selectedSeasons: List<Int>, qualityProfileId: Int?) {
+        _uiState.update { it.copy(pendingTvRequest = null) }
+        val state = _uiState.value
+        val seerr = seerrPreferences.value
+        val useSeerr = !state.isPluginConfigured && seerr.isValid && seerr.isEnabled
+        if (useSeerr) {
+            requestSeasons(item, selectedSeasons)
+        } else {
+            viewModelScope.launch {
+                val tvdbId = item.tvdbId
+                if (tvdbId == null) {
+                    _uiState.update { it.copy(errorMessage = "TVDB ID not available for ${item.displayTitle}") }
+                    return@launch
+                }
+                _uiState.update { it.copy(requestingMediaId = item.id) }
+                val result = sonarrRepository.addSeries(tvdbId, selectedSeasons, qualityProfileId)
+                _uiState.update { st ->
+                    when (result) {
+                        is ApiResult.Success -> st.copy(
+                            requestingMediaId = null,
+                            successMessage = "Request submitted for ${item.displayTitle}",
+                        )
+                        is ApiResult.Error -> st.copy(requestingMediaId = null, errorMessage = result.message)
+                        else -> st.copy(requestingMediaId = null)
+                    }
+                }
+            }
+        }
+    }
+
+    fun dismissPendingRequest() {
+        _uiState.update { it.copy(pendingMovieRequest = null, pendingTvRequest = null) }
     }
 
     fun requestSeason(item: SeerrMediaItem, seasonNumber: Int) {

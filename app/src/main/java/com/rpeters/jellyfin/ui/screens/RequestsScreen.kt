@@ -28,7 +28,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
@@ -38,7 +40,9 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.InputChip
@@ -46,14 +50,20 @@ import androidx.compose.material3.InputChipDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.PlainTooltip
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipDefaults
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -66,6 +76,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -82,10 +93,14 @@ import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBar
 import com.rpeters.jellyfin.ui.components.ShimmerBox
 import com.rpeters.jellyfin.ui.components.expressiveGlow
 import com.rpeters.jellyfin.ui.theme.JellyfinExpressiveTheme
+import com.rpeters.jellyfin.ui.viewmodel.PendingMovieRequest
+import com.rpeters.jellyfin.ui.viewmodel.PendingTvRequest
 import com.rpeters.jellyfin.ui.viewmodel.RequestsViewModel
 import com.rpeters.jellyfin.ui.viewmodel.TvAvailability
 import com.rpeters.jellyfin.ui.viewmodel.TvEpisodeAvailability
 import com.rpeters.jellyfin.ui.viewmodel.TvSeasonAvailability
+
+private enum class SeasonRequestMode { LATEST, ALL, CUSTOM }
 
 @OptInAppExperimentalApis
 @Composable
@@ -95,7 +110,6 @@ fun RequestsScreen(
     viewModel: RequestsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val seerrPrefs by viewModel.seerrPreferences.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(initialQuery) {
@@ -116,6 +130,22 @@ fun RequestsScreen(
             snackbarHostState.showSnackbar(it)
             viewModel.clearMessages()
         }
+    }
+
+    uiState.pendingMovieRequest?.let { pending ->
+        MovieQualityDialog(
+            pending = pending,
+            onConfirm = viewModel::confirmMovieRequest,
+            onDismiss = viewModel::dismissPendingRequest,
+        )
+    }
+
+    uiState.pendingTvRequest?.let { pending ->
+        TvSeasonRequestDialog(
+            pending = pending,
+            onConfirm = viewModel::confirmTvRequest,
+            onDismiss = viewModel::dismissPendingRequest,
+        )
     }
 
     Scaffold(
@@ -180,7 +210,6 @@ fun RequestsScreen(
                 items(uiState.results, key = { it.id }) { item ->
                     RequestMediaHeroCard(
                         item = item,
-                        seerrBaseUrl = seerrPrefs.baseUrl,
                         tvAvailability = uiState.tvAvailabilityByMediaId[item.id],
                         isLoadingAvailability = item.id in uiState.loadingAvailabilityIds,
                         isTvChecked = item.id in uiState.checkedTvItemIds,
@@ -294,7 +323,6 @@ private fun SearchSection(
 @Composable
 private fun RequestMediaHeroCard(
     item: SeerrMediaItem,
-    seerrBaseUrl: String,
     tvAvailability: TvAvailability?,
     isLoadingAvailability: Boolean,
     isTvChecked: Boolean,
@@ -310,20 +338,8 @@ private fun RequestMediaHeroCard(
     onCheckAvailability: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val backdropUrl = item.backdropPath?.let { path ->
-        if (seerrBaseUrl.isNotBlank()) {
-            "${seerrBaseUrl.trimEnd('/')}/imageproxy/t/p/w1280$path"
-        } else {
-            "https://image.tmdb.org/t/p/w1280$path"
-        }
-    }
-    val posterUrl = item.posterPath?.let { path ->
-        if (seerrBaseUrl.isNotBlank()) {
-            "${seerrBaseUrl.trimEnd('/')}/imageproxy/t/p/w342$path"
-        } else {
-            "https://image.tmdb.org/t/p/w342$path"
-        }
-    }
+    val backdropUrl = item.backdropPath?.let { "https://image.tmdb.org/t/p/w1280$it" }
+    val posterUrl = item.posterPath?.let { "https://image.tmdb.org/t/p/w342$it" }
 
     val mediaStatus = item.mediaInfo?.status ?: 1
     val isAvailable = mediaStatus == 5
@@ -803,29 +819,39 @@ private fun EpisodePill(
     }
     val clickable = canRequestEpisode && !isRequestingAny && !episode.isAvailable
 
-    Box(
-        modifier = Modifier
-            .height(32.dp)
-            .defaultMinSize(minWidth = 38.dp)
-            .clip(RoundedCornerShape(8.dp))
-            .background(containerColor)
-            .then(if (clickable) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(horizontal = 8.dp),
-        contentAlignment = Alignment.Center,
+    TooltipBox(
+        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(),
+        tooltip = {
+            PlainTooltip {
+                Text("E${episode.episodeNumber}: ${episode.title}")
+            }
+        },
+        state = rememberTooltipState(),
     ) {
-        if (isRequestingEpisode) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(14.dp),
-                strokeWidth = 2.dp,
-                color = contentColor,
-            )
-        } else {
-            Text(
-                text = episode.episodeNumber.toString(),
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold,
-                color = contentColor,
-            )
+        Box(
+            modifier = Modifier
+                .height(32.dp)
+                .defaultMinSize(minWidth = 38.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(containerColor)
+                .then(if (clickable) Modifier.clickable(onClick = onClick) else Modifier)
+                .padding(horizontal = 8.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (isRequestingEpisode) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(14.dp),
+                    strokeWidth = 2.dp,
+                    color = contentColor,
+                )
+            } else {
+                Text(
+                    text = "E${episode.episodeNumber}",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = contentColor,
+                )
+            }
         }
     }
 }
@@ -853,6 +879,195 @@ private fun RequestShimmerCard(modifier: Modifier = Modifier) {
             ShimmerBox(modifier = Modifier.fillMaxWidth(0.9f).height(14.dp), cornerRadius = 4)
         }
     }
+}
+
+// ─── Movie Quality Dialog ─────────────────────────────────────────────────────
+
+@Composable
+private fun MovieQualityDialog(
+    pending: PendingMovieRequest,
+    onConfirm: (SeerrMediaItem, Int) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var selectedProfileId by remember {
+        mutableIntStateOf(pending.qualityProfiles.firstOrNull()?.id ?: 1)
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Select Quality") },
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                Text(
+                    text = pending.item.displayTitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                if (pending.qualityProfiles.isEmpty()) {
+                    Text(
+                        "No quality profiles found — Radarr default will be used.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    pending.qualityProfiles.forEach { profile ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { selectedProfileId = profile.id }
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            RadioButton(
+                                selected = selectedProfileId == profile.id,
+                                onClick = { selectedProfileId = profile.id },
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(profile.name, style = MaterialTheme.typography.bodyLarge)
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(pending.item, selectedProfileId) }) {
+                Text("Request")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+    )
+}
+
+// ─── TV Season Request Dialog ─────────────────────────────────────────────────
+
+@OptInAppExperimentalApis
+@Composable
+private fun TvSeasonRequestDialog(
+    pending: PendingTvRequest,
+    onConfirm: (SeerrMediaItem, List<Int>, Int?) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var mode by remember { mutableStateOf(SeasonRequestMode.ALL) }
+    var selectedSeasons by remember { mutableStateOf(pending.seasons.toSet()) }
+    var selectedProfileId by remember {
+        mutableIntStateOf(pending.qualityProfiles.firstOrNull()?.id ?: 1)
+    }
+
+    val latestSeason = pending.seasons.lastOrNull()
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Request Seasons") },
+        text = {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Text(
+                    text = pending.item.displayTitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                listOf(
+                    SeasonRequestMode.ALL to "All seasons",
+                    SeasonRequestMode.LATEST to if (latestSeason != null) "Latest season only (S$latestSeason)" else "Latest season",
+                    SeasonRequestMode.CUSTOM to "Select specific seasons",
+                ).forEach { (m, label) ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { mode = m }
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RadioButton(selected = mode == m, onClick = { mode = m })
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(label, style = MaterialTheme.typography.bodyLarge)
+                    }
+                }
+
+                AnimatedVisibility(
+                    visible = mode == SeasonRequestMode.CUSTOM && pending.seasons.isNotEmpty(),
+                    enter = fadeIn(tween(160)) + expandVertically(tween(200)),
+                    exit = fadeOut(tween(120)) + shrinkVertically(tween(160)),
+                ) {
+                    FlowRow(
+                        modifier = Modifier.padding(start = 16.dp, top = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        pending.seasons.forEach { season ->
+                            FilterChip(
+                                selected = season in selectedSeasons,
+                                onClick = {
+                                    selectedSeasons = if (season in selectedSeasons) {
+                                        selectedSeasons - season
+                                    } else {
+                                        selectedSeasons + season
+                                    }
+                                },
+                                label = { Text("S$season") },
+                            )
+                        }
+                    }
+                }
+
+                if (pending.isUsingSonarrDirect && pending.qualityProfiles.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    HorizontalDivider()
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        "Quality",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    pending.qualityProfiles.forEach { profile ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { selectedProfileId = profile.id }
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            RadioButton(
+                                selected = selectedProfileId == profile.id,
+                                onClick = { selectedProfileId = profile.id },
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(profile.name, style = MaterialTheme.typography.bodyLarge)
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val seasons = when (mode) {
+                        SeasonRequestMode.LATEST -> listOfNotNull(latestSeason)
+                        SeasonRequestMode.ALL -> pending.seasons
+                        SeasonRequestMode.CUSTOM -> selectedSeasons.sorted()
+                    }
+                    val profileId = if (pending.isUsingSonarrDirect) selectedProfileId else null
+                    onConfirm(pending.item, seasons, profileId)
+                },
+                enabled = mode != SeasonRequestMode.CUSTOM || selectedSeasons.isNotEmpty(),
+            ) {
+                Text("Request")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+    )
 }
 
 // ─── Empty & Unconfigured States ──────────────────────────────────────────────

@@ -64,7 +64,19 @@ class RadarrRepository @Inject constructor(
         }
     }
 
-    suspend fun addMovie(tmdbId: Int): ApiResult<Unit> = retryNetworkCall {
+    suspend fun getQualityProfiles(): ApiResult<List<com.rpeters.jellyfin.data.model.RadarrQualityProfile>> = retryNetworkCall {
+        val (service, apiKey) = getService() ?: return@retryNetworkCall notConfiguredError()
+        try {
+            val response = service.getQualityProfiles(apiKey)
+            if (response.isSuccessful) ApiResult.Success(response.body() ?: emptyList())
+            else ApiResult.Error("HTTP ${response.code()}", errorType = errorType(response.code()))
+        } catch (e: Exception) {
+            SecureLogger.e(TAG, "Radarr getQualityProfiles failed", e)
+            ApiResult.Error(e.message ?: "Failed to get quality profiles", e, ErrorType.NETWORK)
+        }
+    }
+
+    suspend fun addMovie(tmdbId: Int, qualityProfileId: Int? = null): ApiResult<Unit> = retryNetworkCall {
         val (service, apiKey) = getService() ?: return@retryNetworkCall notConfiguredError()
         try {
             val lookupResponse = service.lookupMovieByTmdb(apiKey, "tmdb:$tmdbId")
@@ -73,7 +85,9 @@ class RadarrRepository @Inject constructor(
 
             val movie = lookupResponse.body()!![0]
             val rootFolderPath = service.getRootFolders(apiKey).body()?.firstOrNull()?.path ?: "/movies"
-            val qualityProfileId = service.getQualityProfiles(apiKey).body()?.firstOrNull()?.id ?: 1
+            val resolvedQualityProfileId = qualityProfileId
+                ?: service.getQualityProfiles(apiKey).body()?.firstOrNull()?.id
+                ?: 1
 
             val addRequest = RadarrAddMovieRequest(
                 title = movie.title,
@@ -82,7 +96,7 @@ class RadarrRepository @Inject constructor(
                 year = movie.year,
                 images = movie.images,
                 rootFolderPath = rootFolderPath,
-                qualityProfileId = qualityProfileId,
+                qualityProfileId = resolvedQualityProfileId,
                 monitored = true,
                 addOptions = RadarrAddOptions(searchForMovie = true),
             )
