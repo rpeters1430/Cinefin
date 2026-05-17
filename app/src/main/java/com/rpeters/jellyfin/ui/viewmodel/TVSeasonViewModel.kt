@@ -29,6 +29,8 @@ data class TVSeasonState(
     val errorMessage: String? = null,
     val aiSummary: String? = null,
     val isLoadingAiSummary: Boolean = false,
+    val whyYoullLoveThis: String? = null,
+    val isLoadingWhyYoullLoveThis: Boolean = false,
 )
 
 @HiltViewModel
@@ -46,8 +48,10 @@ class TVSeasonViewModel @Inject constructor(
 
     // Track the current series ID to avoid clearing cache on re-entry
     private var currentSeriesId: String? = null
+    private var whyYoullLoveThisJob: kotlinx.coroutines.Job? = null
 
     fun loadSeriesData(seriesId: String) {
+        whyYoullLoveThisJob?.cancel()
         viewModelScope.launch {
             // Only clear cache and episodes if we're loading a different series
             // This preserves the episode dropdown state when navigating back
@@ -135,6 +139,10 @@ class TVSeasonViewModel @Inject constructor(
                 isLoading = false,
                 errorMessage = errorMessage,
             )
+
+            if (seriesDetails != null) {
+                generateWhyYoullLoveThis(seriesDetails)
+            }
         }
     }
 
@@ -283,6 +291,56 @@ class TVSeasonViewModel @Inject constructor(
                 }
                 is ApiResult.Loading -> {
                     null
+                }
+            }
+        }
+    }
+
+    private fun generateWhyYoullLoveThis(series: BaseItemDto) {
+        whyYoullLoveThisJob?.cancel()
+        val seriesId = series.id.toString()
+        whyYoullLoveThisJob = viewModelScope.launch {
+            _state.value = _state.value.copy(isLoadingWhyYoullLoveThis = true)
+            try {
+                val viewingHistory = try {
+                    when (val result = mediaRepository.getContinueWatching(limit = 20)) {
+                        is ApiResult.Success -> result.data
+                        else -> emptyList()
+                    }
+                } catch (e: Exception) {
+                    emptyList()
+                }
+
+                if (viewingHistory.isNotEmpty()) {
+                    val pitch = generativeAiRepository.generateWhyYoullLoveThis(
+                        item = series,
+                        viewingHistory = viewingHistory,
+                    )
+                    if (_state.value.seriesDetails?.id?.toString() == seriesId) {
+                        _state.value = _state.value.copy(
+                            whyYoullLoveThis = pitch.takeIf { it.isNotBlank() },
+                            isLoadingWhyYoullLoveThis = false,
+                        )
+                    }
+                } else {
+                    if (_state.value.seriesDetails?.id?.toString() == seriesId) {
+                        _state.value = _state.value.copy(
+                            whyYoullLoveThis = null,
+                            isLoadingWhyYoullLoveThis = false,
+                        )
+                    }
+                }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                if (_state.value.seriesDetails?.id?.toString() == seriesId) {
+                    _state.value = _state.value.copy(isLoadingWhyYoullLoveThis = false)
+                }
+                throw e
+            } catch (e: Exception) {
+                if (_state.value.seriesDetails?.id?.toString() == seriesId) {
+                    _state.value = _state.value.copy(
+                        whyYoullLoveThis = null,
+                        isLoadingWhyYoullLoveThis = false,
+                    )
                 }
             }
         }

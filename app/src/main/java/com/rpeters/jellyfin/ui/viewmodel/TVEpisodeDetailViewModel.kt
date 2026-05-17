@@ -18,6 +18,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
 import javax.inject.Inject
@@ -34,9 +35,15 @@ data class TVEpisodeDetailState(
     val isLoading: Boolean = false,
     val aiSummary: String? = null,
     val isLoadingAiSummary: Boolean = false,
+    val previouslyOn: String? = null,
+    val isLoadingPreviouslyOn: Boolean = false,
     val isDownloaded: Boolean = false,
     val downloadInfo: OfflineDownload? = null,
     val isOffline: Boolean = false,
+    val contentWarnings: List<String> = emptyList(),
+    val isLoadingContentWarnings: Boolean = false,
+    val aiChapterMarkers: List<org.jellyfin.sdk.model.api.ChapterInfo> = emptyList(),
+    val isLoadingAiChapterMarkers: Boolean = false,
 )
 
 @HiltViewModel
@@ -48,6 +55,7 @@ class TVEpisodeDetailViewModel @Inject constructor(
     private val connectivityChecker: ConnectivityChecker,
     private val playbackProgressManager: com.rpeters.jellyfin.ui.player.PlaybackProgressManager,
     private val analytics: com.rpeters.jellyfin.utils.AnalyticsHelper,
+    private val aiPreferencesRepository: com.rpeters.jellyfin.data.preferences.AiPreferencesRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(TVEpisodeDetailState())
@@ -91,6 +99,12 @@ class TVEpisodeDetailViewModel @Inject constructor(
                 seriesInfo = seriesInfo,
                 isLoading = true,
                 chapters = emptyList(),
+                previouslyOn = null,
+                isLoadingPreviouslyOn = false,
+                contentWarnings = emptyList(),
+                isLoadingContentWarnings = false,
+                aiChapterMarkers = emptyList(),
+                isLoadingAiChapterMarkers = false,
             )
 
             // Also fetch initial progress from server
@@ -120,7 +134,62 @@ class TVEpisodeDetailViewModel @Inject constructor(
             loadChapters(episodeId)
 
             observeDownloadState(episodeId)
+            generateAiMetadata(episode)
             _state.value = _state.value.copy(isLoading = false)
+        }
+    }
+
+    private fun generateAiMetadata(episode: BaseItemDto) {
+        viewModelScope.launch {
+            val prefs = aiPreferencesRepository.preferences.first()
+            val title = episode.name ?: "Unknown"
+            val overview = episode.overview ?: ""
+            val genres = episode.genres ?: emptyList()
+            val durationMs = (episode.runTimeTicks ?: 0L) / 10_000L
+
+            if (prefs.enableSmartContentWarnings && overview.isNotBlank()) {
+                _state.value = _state.value.copy(isLoadingContentWarnings = true)
+                try {
+                    val warnings = generativeAiRepository.generateContentWarnings(title, overview, genres)
+                    if (_state.value.episode?.id == episode.id) {
+                        _state.value = _state.value.copy(
+                            contentWarnings = warnings,
+                            isLoadingContentWarnings = false
+                        )
+                    }
+                } catch (e: CancellationException) {
+                    if (_state.value.episode?.id == episode.id) {
+                        _state.value = _state.value.copy(isLoadingContentWarnings = false)
+                    }
+                    throw e
+                } catch (e: Exception) {
+                    if (_state.value.episode?.id == episode.id) {
+                        _state.value = _state.value.copy(isLoadingContentWarnings = false)
+                    }
+                }
+            }
+
+            if (prefs.enableAiChapterMarkers && overview.isNotBlank() && durationMs > 0 && _state.value.chapters.isEmpty()) {
+                _state.value = _state.value.copy(isLoadingAiChapterMarkers = true)
+                try {
+                    val chapters = generativeAiRepository.generateChapterMarkers(title, overview, durationMs)
+                    if (_state.value.episode?.id == episode.id) {
+                        _state.value = _state.value.copy(
+                            aiChapterMarkers = chapters,
+                            isLoadingAiChapterMarkers = false
+                        )
+                    }
+                } catch (e: CancellationException) {
+                    if (_state.value.episode?.id == episode.id) {
+                        _state.value = _state.value.copy(isLoadingAiChapterMarkers = false)
+                    }
+                    throw e
+                } catch (e: Exception) {
+                    if (_state.value.episode?.id == episode.id) {
+                        _state.value = _state.value.copy(isLoadingAiChapterMarkers = false)
+                    }
+                }
+            }
         }
     }
 
@@ -177,6 +246,13 @@ class TVEpisodeDetailViewModel @Inject constructor(
                         nextEpisode = next,
                         seasonEpisodes = episodes,
                     )
+
+                    if (currentIndex > 0) {
+                        val previousEpisodes = episodes.subList(0, currentIndex)
+                        _state.value.episode?.let { currentEpisode ->
+                            generatePreviouslyOn(currentEpisode, previousEpisodes)
+                        }
+                    }
                 } else {
                     // Still store all episodes even if we can't find previous/next
                     _state.value = _state.value.copy(
@@ -243,6 +319,33 @@ class TVEpisodeDetailViewModel @Inject constructor(
                     aiSummary = "Error generating summary: ${e.message}",
                     isLoadingAiSummary = false,
                 )
+            }
+        }
+    }
+
+    private fun generatePreviouslyOn(currentEpisode: BaseItemDto, previousEpisodes: List<BaseItemDto>) {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isLoadingPreviouslyOn = true)
+            try {
+                val previouslyOnText = generativeAiRepository.generatePreviouslyOn(currentEpisode, previousEpisodes)
+                if (_state.value.episode?.id == currentEpisode.id) {
+                    _state.value = _state.value.copy(
+                        previouslyOn = previouslyOnText.takeIf { it.isNotBlank() },
+                        isLoadingPreviouslyOn = false
+                    )
+                }
+            } catch (e: CancellationException) {
+                if (_state.value.episode?.id == currentEpisode.id) {
+                    _state.value = _state.value.copy(isLoadingPreviouslyOn = false)
+                }
+                throw e
+            } catch (e: Exception) {
+                if (_state.value.episode?.id == currentEpisode.id) {
+                    _state.value = _state.value.copy(
+                        previouslyOn = null,
+                        isLoadingPreviouslyOn = false
+                    )
+                }
             }
         }
     }

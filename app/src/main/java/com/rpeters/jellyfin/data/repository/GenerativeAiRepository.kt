@@ -4,6 +4,7 @@ import android.util.Log
 import com.rpeters.jellyfin.data.ai.AiDownloadState
 import com.rpeters.jellyfin.data.ai.AiTextModel
 import com.rpeters.jellyfin.data.ai.HybridAiTextModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
@@ -487,6 +488,171 @@ class GenerativeAiRepository @Inject constructor(
                 append(" and $tvCount ${if (tvCount == 1) "show" else "shows"}")
             }
             append(" in your library ($totalAppearances total appearances).")
+        }
+    }
+
+    /**
+     * Generates a "Previously On..." summary for a TV episode.
+     * Analyzes previous episodes in the season to summarize context.
+     */
+    suspend fun generatePreviouslyOn(
+        currentEpisode: BaseItemDto,
+        previousEpisodes: List<BaseItemDto>
+    ): String = withContext(Dispatchers.IO) {
+        if (!isAiEnabled()) return@withContext ""
+        if (previousEpisodes.isEmpty()) return@withContext ""
+        logModelUsage("generatePreviouslyOn", usesPrimaryModel = false)
+
+        val maxEpisodes = 5
+        val relevantPastEpisodes = previousEpisodes
+            .sortedByDescending { it.indexNumber ?: 0 }
+            .take(maxEpisodes)
+            .reversed()
+
+        val episodeDescriptions = relevantPastEpisodes.joinToString("\n") { ep ->
+            "Episode ${ep.indexNumber}: ${ep.name}\nOverview: ${ep.overview ?: "No overview."}"
+        }
+
+        val prompt = """
+            You are creating a "Previously On..." summary for an upcoming TV episode.
+            Based on the overviews of the past ${relevantPastEpisodes.size} episodes, write a single, cohesive paragraph summarizing the key plot points and character arcs that lead into the current episode.
+            Keep it engaging, spoiler-free for the current episode, and under 75 words.
+            Do not list the episodes individually. Write it as a narrative recap.
+
+            Past Episodes Context:
+            $episodeDescriptions
+
+            Current Episode (Do NOT spoil this, just use for context of where the story is heading):
+            Title: ${currentEpisode.name}
+            Overview: ${currentEpisode.overview ?: "No overview."}
+            
+            "Previously On..." Summary:
+        """.trimIndent()
+
+        try {
+            val response = proModel.generateText(prompt)
+            val success = response.isNotBlank()
+            analytics.logAiEvent("generate_previously_on", success, getBackendName(false))
+            response.trim()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            analytics.logAiEvent("generate_previously_on", false, getBackendName(false))
+            ""
+        }
+    }
+
+    /**
+     * Generates a list of content warnings (e.g., jump scares, flashing lights).
+     */
+    suspend fun generateContentWarnings(
+        title: String,
+        overview: String,
+        genres: List<String> = emptyList()
+    ): List<String> = withContext(Dispatchers.IO) {
+        if (!isAiEnabled()) return@withContext emptyList()
+        if (overview.isBlank()) return@withContext emptyList()
+        logModelUsage("generateContentWarnings", usesPrimaryModel = false)
+
+        val prompt = """
+            Analyze the following overview and genres for the media title "$title" and predict potential content warnings.
+            Look for indicators of: "Jump Scares", "Flashing Lights / Strobe", "Gore / Violence", "Intense Themes", "Language", etc.
+            
+            Genres: ${genres.joinToString(", ")}
+            Overview: $overview
+
+            Return ONLY a comma-separated list of 1-3 word warnings. If no warnings are detected, return an empty string.
+            Example: Jump Scares, Flashing Lights, Violence
+        """.trimIndent()
+
+        try {
+            val response = proModel.generateText(prompt)
+            val success = response.isNotBlank()
+            analytics.logAiEvent("generate_content_warnings", success, getBackendName(false))
+            
+            if (response.isBlank()) return@withContext emptyList()
+            
+            response.split(",")
+                .map { it.trim() }
+                .map { it.trim('-', '*', ' ', '\t') }
+                .filter { warning ->
+                    warning.isNotBlank() &&
+                        warning.length <= 40 &&
+                        warning.lowercase() !in setOf("none", "n/a", "no warnings")
+                }
+                .distinctBy { it.lowercase() }
+                .take(4)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            analytics.logAiEvent("generate_content_warnings", false, getBackendName(false))
+            emptyList()
+        }
+    }
+
+    /**
+     * Generates estimated chapter markers based on narrative structure and duration.
+     * Note: This is an estimation since it doesn't analyze the video file directly.
+     */
+    suspend fun generateChapterMarkers(
+        title: String,
+        overview: String,
+        durationMs: Long
+    ): List<org.jellyfin.sdk.model.api.ChapterInfo> = withContext(Dispatchers.IO) {
+        if (!isAiEnabled()) return@withContext emptyList()
+        if (overview.isBlank() || durationMs <= 0) return@withContext emptyList()
+        logModelUsage("generateChapterMarkers", usesPrimaryModel = false)
+
+        val durationMinutes = durationMs / 60000
+        val prompt = """
+            You are generating estimated chapter markers for a video file based on its narrative structure.
+            The media title is "$title", the total duration is $durationMinutes minutes, and the overview is:
+            "$overview"
+            
+            Based on standard narrative pacing (e.g., Intro, Act 1, Climax, Credits), generate 4 to 8 logical chapter markers.
+            Distribute the timestamps logically across the $durationMinutes minutes.
+            
+            Return the output STRICTLY in the following format, one per line, with no extra text:
+            [Minute]:[Second] - [Chapter Name]
+            Example:
+            0:00 - Introduction
+            12:30 - The Journey Begins
+        """.trimIndent()
+
+        try {
+            val response = proModel.generateText(prompt)
+            val success = response.isNotBlank()
+            analytics.logAiEvent("generate_chapter_markers", success, getBackendName(false))
+            
+            val chapters = mutableListOf<org.jellyfin.sdk.model.api.ChapterInfo>()
+            val chapterLineRegex = Regex("""^\s*(\d{1,3}):(\d{1,2})\s*-\s*(.+?)\s*$""")
+            response.lines().forEach { line ->
+                val match = chapterLineRegex.matchEntire(line) ?: return@forEach
+                val min = match.groupValues[1].toLongOrNull() ?: return@forEach
+                val sec = match.groupValues[2].toLongOrNull() ?: return@forEach
+                val name = match.groupValues[3].trim()
+                val positionMs = (min * 60 + sec) * 1_000L
+                if (sec in 0..59 && positionMs in 0 until durationMs && name.isNotBlank()) {
+                    chapters.add(
+                        org.jellyfin.sdk.model.api.ChapterInfo(
+                            name = name.take(80),
+                            startPositionTicks = positionMs * 10_000L,
+                            imagePath = null,
+                            imageDateModified = java.time.LocalDateTime.MIN,
+                            imageTag = null
+                        )
+                    )
+                }
+            }
+            chapters
+                .distinctBy { it.startPositionTicks }
+                .sortedBy { it.startPositionTicks }
+                .take(8)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            analytics.logAiEvent("generate_chapter_markers", false, getBackendName(false))
+            emptyList()
         }
     }
 

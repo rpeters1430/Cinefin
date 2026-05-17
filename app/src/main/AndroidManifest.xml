@@ -139,6 +139,30 @@
             android:name="androidx.work.impl.foreground.SystemForegroundService"
             android:foregroundServiceType="dataSync"
             tools:node="merge" />
+
+        <receiver
+            android:name=".ui.surface.components.ContinueWatchingWidgetReceiver"
+            android:exported="true"
+            android:label="Continue Watching">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/continue_watching_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".ui.surface.components.RecentlyAddedWidgetReceiver"
+            android:exported="true"
+            android:label="Recently Added">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/recently_added_widget_info" />
+        </receiver>
     </application>
 
 </manifest>

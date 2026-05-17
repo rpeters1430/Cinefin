@@ -15,11 +15,15 @@ import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.PlayerView
 import com.rpeters.jellyfin.data.preferences.SubtitleAppearancePreferences
+import com.rpeters.jellyfin.ui.player.components.SyncPlayDialog
 import com.rpeters.jellyfin.ui.player.components.VideoPlayerOverlays
 import com.rpeters.jellyfin.ui.player.components.toOverlayState
+import com.rpeters.jellyfin.ui.viewmodel.SyncPlayViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -128,6 +132,10 @@ fun VideoPlayerScreen(
             viewModel.onIntent(VideoPlayerIntent.ClearError)
         }
     }
+
+    var showSyncPlayDialog by remember { mutableStateOf(false) }
+    val syncPlayViewModel: SyncPlayViewModel = hiltViewModel()
+    val syncPlayState by syncPlayViewModel.state.collectAsStateWithLifecycle()
 
     // Real-time position for gestures
     var currentPosMs by remember { mutableLongStateOf(0L) }
@@ -254,6 +262,7 @@ fun VideoPlayerScreen(
                 onIntent = viewModel::onIntent,
                 onClose = onClose,
                 onPictureInPictureClick = onPictureInPictureClick,
+                onSyncPlayClick = { showSyncPlayDialog = true },
                 supportsPip = supportsPip,
             )
         }
@@ -290,6 +299,26 @@ fun VideoPlayerScreen(
                 discoveryState = state.castDiscoveryState,
                 onDeviceSelect = { viewModel.onIntent(VideoPlayerIntent.SelectCastDevice(it)) },
                 onDismiss = { viewModel.onIntent(VideoPlayerIntent.HideCastDialog) },
+            )
+        }
+
+        if (showSyncPlayDialog) {
+            LaunchedEffect(Unit) {
+                syncPlayViewModel.loadGroups()
+            }
+
+            SyncPlayDialog(
+                state = syncPlayState,
+                onDismissRequest = { showSyncPlayDialog = false },
+                onCreateGroup = { name -> 
+                    syncPlayViewModel.createGroup(name)
+                },
+                onJoinGroup = { id -> 
+                    syncPlayViewModel.joinGroup(id)
+                },
+                onLeaveGroup = { 
+                    syncPlayViewModel.leaveGroup()
+                },
             )
         }
 

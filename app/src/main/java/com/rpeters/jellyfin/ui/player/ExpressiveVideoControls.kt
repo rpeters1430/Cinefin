@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.Cast
 import androidx.compose.material.icons.filled.CastConnected
 import androidx.compose.material.icons.filled.ClosedCaption
 import androidx.compose.material.icons.filled.Forward10
+import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Hd
 import androidx.compose.material.icons.filled.HighQuality
 import androidx.compose.material.icons.filled.Movie
@@ -89,6 +90,7 @@ fun ExpressiveVideoControls(
     onAudioClick: () -> Unit, // New audio selection callback
     onToggleMute: () -> Unit,
     onCastClick: () -> Unit,
+    onSyncPlayClick: () -> Unit = {},
     onSubtitlesClick: () -> Unit,
     onAspectRatioChange: (AspectRatioMode) -> Unit,
     onPlaybackSpeedChange: (Float) -> Unit,
@@ -148,6 +150,7 @@ fun ExpressiveVideoControls(
                     playerState = playerState,
                     onBackClick = onBackClick,
                     onCastClick = onCastClick,
+                    onSyncPlayClick = onSyncPlayClick,
                     overlayContent = overlayContent,
                     overlayScrim = overlayScrim,
                 )
@@ -166,6 +169,7 @@ fun ExpressiveVideoControls(
                     onSubtitlesClick = onSubtitlesClick,
                     onAspectRatioChange = onAspectRatioChange,
                     onPlaybackSpeedChange = onPlaybackSpeedChange,
+                    onSyncPlayClick = onSyncPlayClick,
                     onPictureInPictureClick = onPictureInPictureClick,
                     supportsPip = supportsPip,
                     overlayContent = overlayContent,
@@ -182,6 +186,7 @@ private fun ExpressiveTopControls(
     playerState: VideoPlayerState,
     onBackClick: () -> Unit,
     onCastClick: () -> Unit,
+    onSyncPlayClick: () -> Unit = {},
     overlayContent: Color,
     overlayScrim: Color,
     modifier: Modifier = Modifier,
@@ -287,14 +292,23 @@ private fun ExpressiveTopControls(
                     }
                 }
 
-                // Right side - Cast button only (PiP moved to bottom controls)
-                AnimatedContent(
-                    targetState = playerState.isCastConnected,
-                    label = "cast_button",
-                ) { isConnected ->
-                    Box(
-                        modifier = Modifier.padding(start = 8.dp),
-                    ) {
+                // Right side - SyncPlay and Cast buttons
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    ExpressiveIconButton(
+                        icon = Icons.Default.Groups,
+                        contentDescription = "SyncPlay",
+                        onClick = onSyncPlayClick,
+                        contentColor = overlayContent,
+                        containerColor = overlayScrim.copy(alpha = 0.35f),
+                    )
+
+                    AnimatedContent(
+                        targetState = playerState.isCastConnected,
+                        label = "cast_button",
+                    ) { isConnected ->
                         ExpressiveIconButton(
                             icon = if (isConnected) Icons.Default.CastConnected else Icons.Default.Cast,
                             contentDescription = if (isConnected) "Disconnect from ${playerState.castDeviceName ?: "Cast Device"}" else "Cast to Device",
@@ -323,6 +337,7 @@ private fun ExpressiveBottomControls(
     onSubtitlesClick: () -> Unit,
     onAspectRatioChange: (AspectRatioMode) -> Unit,
     onPlaybackSpeedChange: (Float) -> Unit,
+    onSyncPlayClick: () -> Unit,
     onPictureInPictureClick: () -> Unit,
     supportsPip: Boolean,
     overlayContent: Color,

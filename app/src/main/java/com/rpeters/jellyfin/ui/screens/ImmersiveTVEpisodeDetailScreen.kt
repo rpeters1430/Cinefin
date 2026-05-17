@@ -40,6 +40,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material3.AlertDialog
@@ -77,6 +78,7 @@ import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
 import com.rpeters.jellyfin.ui.components.AiSummaryCard
+import com.rpeters.jellyfin.ui.screens.details.components.PreviouslyOnCard
 import com.rpeters.jellyfin.ui.components.ExpressiveFilledButton
 import com.rpeters.jellyfin.ui.components.PlaybackBreakdownDetails
 import com.rpeters.jellyfin.ui.components.PerformanceOptimizedLazyRow
@@ -134,6 +136,12 @@ fun ImmersiveTVEpisodeDetailScreen(
     onGenerateAiSummary: () -> Unit = {},
     aiSummary: String? = null,
     isLoadingAiSummary: Boolean = false,
+    previouslyOn: String? = null,
+    isLoadingPreviouslyOn: Boolean = false,
+    contentWarnings: List<String> = emptyList(),
+    isLoadingContentWarnings: Boolean = false,
+    aiChapterMarkers: List<org.jellyfin.sdk.model.api.ChapterInfo> = emptyList(),
+    isLoadingAiChapterMarkers: Boolean = false,
     isDownloaded: Boolean = false,
     isOffline: Boolean = false,
     onDeleteOfflineCopy: () -> Unit = {},
@@ -316,22 +324,48 @@ fun ImmersiveTVEpisodeDetailScreen(
                             onGenerateAiSummary = onGenerateAiSummary,
                             aiSummary = aiSummary,
                             isLoadingAiSummary = isLoadingAiSummary,
+                            previouslyOn = previouslyOn,
+                            isLoadingPreviouslyOn = isLoadingPreviouslyOn,
+                            contentWarnings = contentWarnings,
+                            isLoadingContentWarnings = isLoadingContentWarnings,
                             playbackAnalysis = playbackAnalysis,
                         )
                     }
                 }
 
                 // Chapters
-                if (chapters.isNotEmpty()) {
+                val displayChapters = chapters.ifEmpty { aiChapterMarkers }
+                if (displayChapters.isNotEmpty()) {
                     item(key = "chapters") {
                         Box(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)) {
-                            ChapterListSection(
-                                chapters = chapters,
-                                onChapterClick = { positionMs -> onPlayClick(episode, null, positionMs) },
-                                getChapterImageUrl = { chapter, index ->
-                                    getChapterImageUrl(index, chapter.imageTag)
-                                },
-                            )
+                            Column {
+                                if (chapters.isEmpty() && aiChapterMarkers.isNotEmpty()) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.AutoAwesome,
+                                            contentDescription = "AI Generated",
+                                            tint = MaterialTheme.colorScheme.secondary,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            text = "AI Generated Chapters",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.secondary
+                                        )
+                                    }
+                                }
+                                ChapterListSection(
+                                    chapters = displayChapters,
+                                    onChapterClick = { positionMs -> onPlayClick(episode, null, positionMs) },
+                                    getChapterImageUrl = { chapter, index ->
+                                        getChapterImageUrl(index, chapter.imageTag)
+                                    },
+                                )
+                            }
                         }
                     }
                 }
@@ -599,6 +633,10 @@ private fun EpisodeOverviewSection(
     onGenerateAiSummary: () -> Unit,
     aiSummary: String?,
     isLoadingAiSummary: Boolean,
+    previouslyOn: String?,
+    isLoadingPreviouslyOn: Boolean,
+    contentWarnings: List<String>,
+    isLoadingContentWarnings: Boolean,
     playbackAnalysis: PlaybackCapabilityAnalysis?,
 ) {
     Column(
@@ -644,6 +682,59 @@ private fun EpisodeOverviewSection(
                 isLoading = isLoadingAiSummary,
                 modifier = Modifier.fillMaxWidth(),
             )
+        }
+
+        if (isLoadingPreviouslyOn || !previouslyOn.isNullOrBlank()) {
+            PreviouslyOnCard(
+                summary = previouslyOn,
+                isLoading = isLoadingPreviouslyOn,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+
+        if (isLoadingContentWarnings || contentWarnings.isNotEmpty()) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = "Content Warnings",
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Content Warnings",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+                if (isLoadingContentWarnings) {
+                    com.rpeters.jellyfin.ui.components.ExpressiveWavyLinearLoading(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = MaterialTheme.colorScheme.error
+                    )
+                } else {
+                    androidx.compose.foundation.layout.FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        contentWarnings.forEach { warning ->
+                            AssistChip(
+                                onClick = { },
+                                label = { Text(warning) },
+                                colors = androidx.compose.material3.AssistChipDefaults.assistChipColors(
+                                    containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f),
+                                    labelColor = MaterialTheme.colorScheme.onErrorContainer
+                                ),
+                                border = null
+                            )
+                        }
+                    }
+                }
+            }
         }
 
         // Playback Capability

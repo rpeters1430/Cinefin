@@ -809,6 +809,7 @@ open class JellyfinRepository @Inject constructor(
                     ItemFields.STUDIOS,
                     ItemFields.TAGS,
                     ItemFields.CHAPTERS,
+                    ItemFields.REMOTE_TRAILERS,
                 ),
             )
             val item = response.content.items.firstOrNull()

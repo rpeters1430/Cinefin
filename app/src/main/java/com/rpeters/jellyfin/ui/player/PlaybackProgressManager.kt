@@ -393,11 +393,19 @@ class PlaybackProgressManager @Inject constructor(
                     "PlaybackProgressManager",
                     "Failed to report playback stop: ${result.message}",
                 )
-            } else if (BuildConfig.DEBUG) {
-                Log.d(
-                    "PlaybackProgressManager",
-                    "Reported playback stop for: $currentItemId at ${positionMs}ms",
-                )
+            } else {
+                if (BuildConfig.DEBUG) {
+                    Log.d(
+                        "PlaybackProgressManager",
+                        "Reported playback stop for: $currentItemId at ${positionMs}ms",
+                    )
+                }
+                
+                // If the item was an episode and it was completed (position near duration),
+                // trigger smart downloads to fetch the next one.
+                if (durationMs > 0 && positionMs >= durationMs * 0.9) {
+                    com.rpeters.jellyfin.data.worker.SmartDownloadWorker.schedule(context)
+                }
             }
         } catch (e: CancellationException) {
             throw e

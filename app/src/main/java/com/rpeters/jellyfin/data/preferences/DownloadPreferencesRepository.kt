@@ -16,6 +16,7 @@ data class DownloadPreferences(
     val autoCleanEnabled: Boolean,
     val autoCleanWatchedRetentionDays: Int,
     val autoCleanMinFreeSpaceGb: Int,
+    val smartDownloadsEnabled: Boolean,
 ) {
     companion object {
         val DEFAULT = DownloadPreferences(
@@ -24,6 +25,7 @@ data class DownloadPreferences(
             autoCleanEnabled = false,
             autoCleanWatchedRetentionDays = 14,
             autoCleanMinFreeSpaceGb = 5,
+            smartDownloadsEnabled = false,
         )
     }
 }
@@ -43,6 +45,7 @@ class DownloadPreferencesRepository @Inject constructor(
                 ?: DownloadPreferences.DEFAULT.autoCleanWatchedRetentionDays,
             autoCleanMinFreeSpaceGb = prefs[PreferencesKeys.AUTO_CLEAN_MIN_FREE_SPACE_GB]
                 ?: DownloadPreferences.DEFAULT.autoCleanMinFreeSpaceGb,
+            smartDownloadsEnabled = prefs[PreferencesKeys.SMART_DOWNLOADS_ENABLED] ?: DownloadPreferences.DEFAULT.smartDownloadsEnabled,
         )
     }
 
@@ -77,11 +80,18 @@ class DownloadPreferencesRepository @Inject constructor(
         }
     }
 
+    suspend fun setSmartDownloadsEnabled(enabled: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[PreferencesKeys.SMART_DOWNLOADS_ENABLED] = enabled
+        }
+    }
+
     private object PreferencesKeys {
         val WIFI_ONLY = booleanPreferencesKey("downloads_wifi_only")
         val DEFAULT_QUALITY_ID = stringPreferencesKey("downloads_default_quality_id")
         val AUTO_CLEAN_ENABLED = booleanPreferencesKey("downloads_auto_clean_enabled")
         val AUTO_CLEAN_WATCHED_RETENTION_DAYS = androidx.datastore.preferences.core.intPreferencesKey("downloads_auto_clean_watched_retention_days")
         val AUTO_CLEAN_MIN_FREE_SPACE_GB = androidx.datastore.preferences.core.intPreferencesKey("downloads_auto_clean_min_free_space_gb")
+        val SMART_DOWNLOADS_ENABLED = booleanPreferencesKey("downloads_smart_downloads_enabled")
     }
 }

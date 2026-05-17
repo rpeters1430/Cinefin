@@ -24,6 +24,7 @@ internal fun BoxScope.VideoPlayerOverlays(
     onIntent: (VideoPlayerIntent) -> Unit,
     onClose: () -> Unit,
     onPictureInPictureClick: () -> Unit,
+    onSyncPlayClick: () -> Unit,
     supportsPip: Boolean,
 ) {
     GestureFeedbackOverlay(
@@ -73,6 +74,7 @@ internal fun BoxScope.VideoPlayerOverlays(
         onAudioClick = { onIntent(VideoPlayerIntent.ShowAudioDialog) },
         onToggleMute = { onIntent(VideoPlayerIntent.ToggleMute) },
         onCastClick = { onIntent(VideoPlayerIntent.HandleCastButtonClick) },
+        onSyncPlayClick = onSyncPlayClick,
         onSubtitlesClick = { onIntent(VideoPlayerIntent.ShowSubtitleDialog) },
         onAspectRatioChange = { onIntent(VideoPlayerIntent.ChangeAspectRatio(it)) },
         onPlaybackSpeedChange = { onIntent(VideoPlayerIntent.SetPlaybackSpeed(it)) },

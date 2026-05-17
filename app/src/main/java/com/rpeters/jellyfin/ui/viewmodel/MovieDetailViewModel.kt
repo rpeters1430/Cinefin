@@ -19,6 +19,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
 import javax.inject.Inject
@@ -38,6 +39,10 @@ data class MovieDetailState(
     val isDownloaded: Boolean = false,
     val downloadInfo: OfflineDownload? = null,
     val isOffline: Boolean = false,
+    val contentWarnings: List<String> = emptyList(),
+    val isLoadingContentWarnings: Boolean = false,
+    val aiChapterMarkers: List<org.jellyfin.sdk.model.api.ChapterInfo> = emptyList(),
+    val isLoadingAiChapterMarkers: Boolean = false,
 )
 
 @HiltViewModel
@@ -50,6 +55,7 @@ class MovieDetailViewModel @Inject constructor(
     private val connectivityChecker: ConnectivityChecker,
     private val playbackProgressManager: com.rpeters.jellyfin.ui.player.PlaybackProgressManager,
     private val analytics: com.rpeters.jellyfin.utils.AnalyticsHelper,
+    private val aiPreferencesRepository: com.rpeters.jellyfin.data.preferences.AiPreferencesRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(MovieDetailState())
@@ -101,6 +107,10 @@ class MovieDetailViewModel @Inject constructor(
                 playbackAnalysis = null,
                 whyYoullLoveThis = null,
                 isLoadingWhyYoullLoveThis = false,
+                contentWarnings = emptyList(),
+                isLoadingContentWarnings = false,
+                aiChapterMarkers = emptyList(),
+                isLoadingAiChapterMarkers = false,
             )
 
             // Also fetch initial progress from server
@@ -133,6 +143,7 @@ class MovieDetailViewModel @Inject constructor(
                     // Generate personalized "Why You'll Love This" pitch in background
                     // This is the only AI feature on detail screens to keep it simple
                     generateWhyYoullLoveThis(result.data)
+                    generateAiMetadata(result.data)
                 }
                 is ApiResult.Error -> {
                     _state.value = _state.value.copy(
@@ -163,6 +174,60 @@ class MovieDetailViewModel @Inject constructor(
                 }
                 is ApiResult.Loading -> {
                     // no-op
+                }
+            }
+        }
+    }
+
+    private fun generateAiMetadata(movie: BaseItemDto) {
+        viewModelScope.launch {
+            val prefs = aiPreferencesRepository.preferences.first()
+            val title = movie.name ?: "Unknown"
+            val overview = movie.overview ?: ""
+            val genres = movie.genres ?: emptyList()
+            val durationMs = (movie.runTimeTicks ?: 0L) / 10_000L
+
+            if (prefs.enableSmartContentWarnings && overview.isNotBlank()) {
+                _state.value = _state.value.copy(isLoadingContentWarnings = true)
+                try {
+                    val warnings = generativeAiRepository.generateContentWarnings(title, overview, genres)
+                    if (_state.value.movie?.id == movie.id) {
+                        _state.value = _state.value.copy(
+                            contentWarnings = warnings,
+                            isLoadingContentWarnings = false
+                        )
+                    }
+                } catch (e: CancellationException) {
+                    if (_state.value.movie?.id == movie.id) {
+                        _state.value = _state.value.copy(isLoadingContentWarnings = false)
+                    }
+                    throw e
+                } catch (e: Exception) {
+                    if (_state.value.movie?.id == movie.id) {
+                        _state.value = _state.value.copy(isLoadingContentWarnings = false)
+                    }
+                }
+            }
+
+            if (prefs.enableAiChapterMarkers && overview.isNotBlank() && durationMs > 0 && movie.chapters.isNullOrEmpty()) {
+                _state.value = _state.value.copy(isLoadingAiChapterMarkers = true)
+                try {
+                    val chapters = generativeAiRepository.generateChapterMarkers(title, overview, durationMs)
+                    if (_state.value.movie?.id == movie.id) {
+                        _state.value = _state.value.copy(
+                            aiChapterMarkers = chapters,
+                            isLoadingAiChapterMarkers = false
+                        )
+                    }
+                } catch (e: CancellationException) {
+                    if (_state.value.movie?.id == movie.id) {
+                        _state.value = _state.value.copy(isLoadingAiChapterMarkers = false)
+                    }
+                    throw e
+                } catch (e: Exception) {
+                    if (_state.value.movie?.id == movie.id) {
+                        _state.value = _state.value.copy(isLoadingAiChapterMarkers = false)
+                    }
                 }
             }
         }

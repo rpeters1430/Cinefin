@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -109,8 +110,10 @@ fun SettingsScreen(
     libraryActionsPreferencesViewModel: LibraryActionsPreferencesViewModel = hiltViewModel(),
     remoteConfigViewModel: RemoteConfigViewModel = hiltViewModel(),
     serverManagementViewModel: SettingsServerManagementViewModel = hiltViewModel(),
+    aiPreferencesViewModel: com.rpeters.jellyfin.ui.viewmodel.AiPreferencesViewModel = hiltViewModel(),
 ) {
     val libraryActionPrefs by libraryActionsPreferencesViewModel.preferences.collectAsStateWithLifecycle()
+    val aiPrefs by aiPreferencesViewModel.preferences.collectAsStateWithLifecycle()
     val showTranscodingDiagnostics = remoteConfigViewModel.getBoolean(FeatureFlags.Experimental.SHOW_TRANSCODING_DIAGNOSTICS)
     val serverManagementState by serverManagementViewModel.state.collectAsStateWithLifecycle()
     val canManageServer = currentUser?.isAdministrator == true
@@ -118,6 +121,9 @@ fun SettingsScreen(
     SettingsScreenContent(
         enableManagementActions = libraryActionPrefs.enableManagementActions,
         onToggleManagementActions = libraryActionsPreferencesViewModel::setManagementActionsEnabled,
+        aiPrefs = aiPrefs,
+        onToggleSmartContentWarnings = aiPreferencesViewModel::updateEnableSmartContentWarnings,
+        onToggleAiChapterMarkers = aiPreferencesViewModel::updateEnableAiChapterMarkers,
         canManageServer = canManageServer,
         serverManagementState = serverManagementState,
         onRescanLibraries = serverManagementViewModel::rescanLibraries,
@@ -153,6 +159,9 @@ fun SettingsScreen(
 private fun SettingsScreenContent(
     enableManagementActions: Boolean,
     onToggleManagementActions: (Boolean) -> Unit,
+    aiPrefs: com.rpeters.jellyfin.data.preferences.AiPreferences,
+    onToggleSmartContentWarnings: (Boolean) -> Unit,
+    onToggleAiChapterMarkers: (Boolean) -> Unit,
     canManageServer: Boolean,
     serverManagementState: com.rpeters.jellyfin.ui.viewmodel.SettingsServerManagementState,
     onRescanLibraries: () -> Unit,
@@ -281,6 +290,11 @@ private fun SettingsScreenContent(
                                 )
                             }
                             PinningManagementCard(onManagePinsClick = onManagePinsClick)
+                            AiFeaturesCard(
+                                prefs = aiPrefs,
+                                onToggleSmartContentWarnings = onToggleSmartContentWarnings,
+                                onToggleAiChapterMarkers = onToggleAiChapterMarkers,
+                            )
                         }
 
                         SettingsDestinationsSection(
@@ -700,6 +714,9 @@ private fun SettingsScreenPreview() {
         SettingsScreenContent(
             enableManagementActions = true,
             onToggleManagementActions = {},
+            aiPrefs = com.rpeters.jellyfin.data.preferences.AiPreferences.DEFAULT,
+            onToggleSmartContentWarnings = {},
+            onToggleAiChapterMarkers = {},
             canManageServer = true,
             serverManagementState = com.rpeters.jellyfin.ui.viewmodel.SettingsServerManagementState(),
             onRescanLibraries = {},
@@ -785,6 +802,63 @@ private fun AccountCard(
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(text = stringResource(id = R.string.sign_out))
             }
+        }
+    }
+}
+
+@Composable
+private fun AiFeaturesCard(
+    prefs: com.rpeters.jellyfin.data.preferences.AiPreferences,
+    onToggleSmartContentWarnings: (Boolean) -> Unit,
+    onToggleAiChapterMarkers: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    ExpressiveContentCard(
+        modifier = modifier.fillMaxWidth(),
+        containerColor = JellyfinExpressiveTheme.colors.sectionContainer,
+        shape = ShapeTokens.Large,
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.AutoAwesome,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier.size(24.dp),
+                )
+                Text(
+                    text = "AI Features",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+            Text(
+                text = "Configure how Gemini AI enhances your media experience.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            ExpressiveSwitchListItem(
+                title = "Smart Content Warnings",
+                subtitle = "Detect and warn about jump scares, flashing lights, and intense themes before playback.",
+                checked = prefs.enableSmartContentWarnings,
+                onCheckedChange = onToggleSmartContentWarnings,
+                leadingIcon = Icons.Default.Warning,
+            )
+
+            ExpressiveSwitchListItem(
+                title = "AI Chapter Markers",
+                subtitle = "Generate estimated chapter markers for media that doesn't have them.",
+                checked = prefs.enableAiChapterMarkers,
+                onCheckedChange = onToggleAiChapterMarkers,
+                leadingIcon = Icons.Default.PlayCircle,
+            )
         }
     }
 }

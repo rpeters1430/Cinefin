@@ -346,6 +346,12 @@ class DownloadsViewModel @Inject constructor(
         }
     }
 
+    fun setSmartDownloadsEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            downloadPreferencesRepository.setSmartDownloadsEnabled(enabled)
+        }
+    }
+
     fun runAutoCleanNow() {
         viewModelScope.launch {
             val prefs = downloadPreferencesRepository.preferences.first()

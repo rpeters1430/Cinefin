@@ -45,8 +45,8 @@ android {
         applicationId = "com.rpeters.jellyfin"
         minSdk = 26
         targetSdk = 35
-        versionCode = 109
-        versionName = "14.77"
+        versionCode = 110
+        versionName = "14.78"
 
         testInstrumentationRunner = "com.rpeters.jellyfin.testing.HiltTestRunner"
 
@@ -291,6 +291,10 @@ dependencies {
     // Paging 3
     implementation(libs.androidx.paging.runtime)
     implementation(libs.androidx.paging.compose)
+
+    // Glance Widgets
+    implementation(libs.glance.appwidget)
+    implementation(libs.glance.material3)
 
     // Testing
     testImplementation(libs.junit)

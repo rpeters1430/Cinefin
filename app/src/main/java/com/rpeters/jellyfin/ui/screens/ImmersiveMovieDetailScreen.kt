@@ -1,6 +1,7 @@
 package com.rpeters.jellyfin.ui.screens
 
 import android.Manifest
+import android.net.Uri
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -26,6 +27,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.rounded.AddCircle
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Delete
@@ -104,6 +107,7 @@ fun ImmersiveMovieDetailScreen(
     onDeleteClick: (BaseItemDto) -> Unit,
     onMarkWatchedClick: (BaseItemDto) -> Unit,
     onDownloadClick: (BaseItemDto, com.rpeters.jellyfin.data.offline.VideoQuality) -> Unit,
+    onTrailerClick: (String) -> Unit = {},
     onSearchRequests: (String) -> Unit = {},
     isDownloaded: Boolean,
     isOffline: Boolean,
@@ -116,6 +120,10 @@ fun ImmersiveMovieDetailScreen(
     playbackAnalysis: PlaybackCapabilityAnalysis? = null,
     whyYoullLoveThis: String? = null,
     isLoadingWhyYoullLoveThis: Boolean = false,
+    contentWarnings: List<String> = emptyList(),
+    isLoadingContentWarnings: Boolean = false,
+    aiChapterMarkers: List<org.jellyfin.sdk.model.api.ChapterInfo> = emptyList(),
+    isLoadingAiChapterMarkers: Boolean = false,
     getImageUrl: (BaseItemDto) -> String?,
     getChapterImageUrl: (chapterIndex: Int, imageTag: String?) -> String?,
     getBackdropUrl: (BaseItemDto) -> String?,
@@ -152,6 +160,10 @@ fun ImmersiveMovieDetailScreen(
         playbackAnalysis = playbackAnalysis,
         whyYoullLoveThis = whyYoullLoveThis,
         isLoadingWhyYoullLoveThis = isLoadingWhyYoullLoveThis,
+        contentWarnings = contentWarnings,
+        isLoadingContentWarnings = isLoadingContentWarnings,
+        aiChapterMarkers = aiChapterMarkers,
+        isLoadingAiChapterMarkers = isLoadingAiChapterMarkers,
         getImageUrl = getImageUrl,
         getChapterImageUrl = getChapterImageUrl,
         getBackdropUrl = getBackdropUrl,
@@ -180,6 +192,7 @@ private fun ImmersiveMovieDetailContent(
     onDeleteClick: (BaseItemDto) -> Unit,
     onMarkWatchedClick: (BaseItemDto) -> Unit,
     onDownloadClick: (BaseItemDto, com.rpeters.jellyfin.data.offline.VideoQuality) -> Unit,
+    onTrailerClick: (String) -> Unit = {},
     onSearchRequests: (String) -> Unit = {},
     isDownloaded: Boolean,
     isOffline: Boolean,
@@ -192,6 +205,10 @@ private fun ImmersiveMovieDetailContent(
     playbackAnalysis: PlaybackCapabilityAnalysis? = null,
     whyYoullLoveThis: String? = null,
     isLoadingWhyYoullLoveThis: Boolean = false,
+    contentWarnings: List<String> = emptyList(),
+    isLoadingContentWarnings: Boolean = false,
+    aiChapterMarkers: List<org.jellyfin.sdk.model.api.ChapterInfo> = emptyList(),
+    isLoadingAiChapterMarkers: Boolean = false,
     getImageUrl: (BaseItemDto) -> String?,
     getChapterImageUrl: (chapterIndex: Int, imageTag: String?) -> String?,
     getBackdropUrl: (BaseItemDto) -> String?,
@@ -299,6 +316,7 @@ private fun ImmersiveMovieDetailContent(
                                 onRequestClick = {
                                     movie.name?.takeIf { it.isNotBlank() }?.let(onSearchRequests)
                                 },
+                                onTrailerClick = onTrailerClick,
                                 onMoreClick = { showMoreOptions = true },
                             )
                         }
@@ -346,6 +364,51 @@ private fun ImmersiveMovieDetailContent(
                                         summary = aiSummary,
                                         isLoading = isLoadingAiSummary,
                                     )
+                                }
+
+                                if (isLoadingContentWarnings || contentWarnings.isNotEmpty()) {
+                                    Column(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(
+                                                imageVector = Icons.Default.Warning,
+                                                contentDescription = "Content Warnings",
+                                                tint = MaterialTheme.colorScheme.error,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(
+                                                text = "Content Warnings",
+                                                style = MaterialTheme.typography.labelLarge,
+                                                color = MaterialTheme.colorScheme.error
+                                            )
+                                        }
+                                        if (isLoadingContentWarnings) {
+                                            com.rpeters.jellyfin.ui.components.ExpressiveWavyLinearLoading(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                color = MaterialTheme.colorScheme.error
+                                            )
+                                        } else {
+                                            FlowRow(
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                            ) {
+                                                contentWarnings.forEach { warning ->
+                                                    AssistChip(
+                                                        onClick = { },
+                                                        label = { Text(warning) },
+                                                        colors = androidx.compose.material3.AssistChipDefaults.assistChipColors(
+                                                            containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f),
+                                                            labelColor = MaterialTheme.colorScheme.onErrorContainer
+                                                        ),
+                                                        border = null
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -437,20 +500,42 @@ private fun ImmersiveMovieDetailContent(
 
                     // Chapters
                     val movieChapters = movie.chapters ?: emptyList()
-                    if (movieChapters.isNotEmpty()) {
+                    val displayChapters = movieChapters.ifEmpty { aiChapterMarkers }
+                    if (displayChapters.isNotEmpty()) {
                         item(key = "chapters") {
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .background(MaterialTheme.colorScheme.background),
                             ) {
-                                ChapterListSection(
-                                    chapters = movieChapters,
-                                    onChapterClick = { positionMs -> onPlayClick(movie, null, positionMs) },
-                                    getChapterImageUrl = { chapter, index ->
-                                        getChapterImageUrl(index, chapter.imageTag)
-                                    },
-                                )
+                                Column {
+                                    if (movieChapters.isEmpty() && aiChapterMarkers.isNotEmpty()) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.AutoAwesome,
+                                                contentDescription = "AI Generated",
+                                                tint = MaterialTheme.colorScheme.secondary,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(
+                                                text = "AI Generated Chapters",
+                                                style = MaterialTheme.typography.labelMedium,
+                                                color = MaterialTheme.colorScheme.secondary
+                                            )
+                                        }
+                                    }
+                                    ChapterListSection(
+                                        chapters = displayChapters,
+                                        onChapterClick = { positionMs -> onPlayClick(movie, null, positionMs) },
+                                        getChapterImageUrl = { chapter, index ->
+                                            getChapterImageUrl(index, chapter.imageTag)
+                                        },
+                                    )
+                                }
                             }
                         }
                     }
@@ -641,10 +726,13 @@ private fun MovieActionRow(
     onFavoriteClick: () -> Unit,
     onMarkWatchedClick: () -> Unit,
     onDownloadClick: () -> Unit,
+    onTrailerClick: (String) -> Unit,
     onShareClick: () -> Unit,
     onRequestClick: () -> Unit,
     onMoreClick: () -> Unit,
 ) {
+    val trailerUrl = movie.remoteTrailers?.firstOrNull()?.url
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -692,6 +780,14 @@ private fun MovieActionRow(
                 contentColor = if (isWatched) JellyfinTeal80 else MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
+            val displayTrailerUrl = trailerUrl ?: "https://www.youtube.com/results?search_query=${Uri.encode("${movie.name.orEmpty()} trailer")}"
+            ActionButton(
+                icon = Icons.Default.Movie,
+                label = if (trailerUrl.isNullOrBlank()) "Find Trailer" else "Trailer",
+                onClick = { onTrailerClick(displayTrailerUrl) },
+                modifier = Modifier.weight(1f),
+            )
+
             ActionButton(
                 icon = Icons.Rounded.Share,
                 label = "Share",
@@ -706,12 +802,14 @@ private fun MovieActionRow(
                 modifier = Modifier.weight(1f),
             )
 
-            ActionButton(
-                icon = Icons.Rounded.AddCircle,
-                label = "Request",
-                onClick = onRequestClick,
-                modifier = Modifier.weight(1f),
-            )
+            if (trailerUrl.isNullOrBlank()) {
+                ActionButton(
+                    icon = Icons.Rounded.AddCircle,
+                    label = "Request",
+                    onClick = onRequestClick,
+                    modifier = Modifier.weight(1f),
+                )
+            }
         }
     }
 }
@@ -797,6 +895,7 @@ private fun MovieActionRowPreview() {
             onFavoriteClick = {},
             onMarkWatchedClick = {},
             onDownloadClick = {},
+            onTrailerClick = {},
             onShareClick = {},
             onRequestClick = {},
             onMoreClick = {},
@@ -833,6 +932,7 @@ private fun ImmersiveMovieDetailScreenPreview() {
             getPersonImageUrl = { _ -> null },
             serverUrl = "http://localhost:8096",
             onGenerateAiSummary = {},
+            onTrailerClick = {},
         )
     }
 }

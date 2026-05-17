@@ -216,6 +216,8 @@ fun DownloadsScreen(
                     qualities = DownloadsViewModel.QUALITY_PRESETS,
                     onWifiOnlyChanged = downloadsViewModel::setWifiOnly,
                     onDefaultQualitySelected = downloadsViewModel::setDefaultQuality,
+                    smartDownloadsEnabled = downloadPreferences.smartDownloadsEnabled,
+                    onSmartDownloadsEnabledChanged = downloadsViewModel::setSmartDownloadsEnabled,
                     onAutoCleanEnabledChanged = downloadsViewModel::setAutoCleanEnabled,
                     onAutoCleanWatchedRetentionDaysSelected = downloadsViewModel::setAutoCleanWatchedRetentionDays,
                     onAutoCleanMinFreeSpaceGbSelected = downloadsViewModel::setAutoCleanMinFreeSpaceGb,
@@ -497,6 +499,8 @@ private fun ExpressiveDownloadPreferencesCard(
     onAutoCleanEnabledChanged: (Boolean) -> Unit,
     onAutoCleanWatchedRetentionDaysSelected: (Int) -> Unit,
     onAutoCleanMinFreeSpaceGbSelected: (Int) -> Unit,
+    smartDownloadsEnabled: Boolean,
+    onSmartDownloadsEnabledChanged: (Boolean) -> Unit,
     onRunAutoCleanNow: () -> Unit,
 ) {
     ExpressiveContentCard(
@@ -559,6 +563,16 @@ private fun ExpressiveDownloadPreferencesCard(
                 checked = wifiOnly,
                 onCheckedChange = onWifiOnlyChanged,
                 leadingIcon = Icons.Default.Wifi,
+            )
+
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+            ExpressiveSwitchListItem(
+                title = "Smart Downloads",
+                subtitle = "Automatically download next unplayed episodes",
+                checked = smartDownloadsEnabled,
+                onCheckedChange = onSmartDownloadsEnabledChanged,
+                leadingIcon = Icons.Default.AutoAwesome,
             )
 
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))

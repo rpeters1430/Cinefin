@@ -374,6 +374,10 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                 onDownloadClick = { movieItem, quality ->
                     downloadsViewModel.startDownload(movieItem, quality)
                 },
+                onTrailerClick = { url ->
+                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
+                    navController.context.startActivity(intent)
+                },
                 onSearchRequests = { query ->
                     navController.navigate(Screen.Requests.createRoute(query))
                 },
@@ -392,6 +396,10 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                 playbackAnalysis = detailState.playbackAnalysis,
                 whyYoullLoveThis = detailState.whyYoullLoveThis,
                 isLoadingWhyYoullLoveThis = detailState.isLoadingWhyYoullLoveThis,
+                contentWarnings = detailState.contentWarnings,
+                isLoadingContentWarnings = detailState.isLoadingContentWarnings,
+                aiChapterMarkers = detailState.aiChapterMarkers,
+                isLoadingAiChapterMarkers = detailState.isLoadingAiChapterMarkers,
                 getImageUrl = { item -> mainViewModel.getImageUrl(item) },
                 getChapterImageUrl = { chapterIndex, imageTag ->
                     mainViewModel.getChapterImageUrl(resolvedMovie.id.toString(), chapterIndex, imageTag)
@@ -540,6 +548,12 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                     onGenerateAiSummary = { viewModel.generateAiSummary() },
                     aiSummary = detailState.aiSummary,
                     isLoadingAiSummary = detailState.isLoadingAiSummary,
+                    previouslyOn = detailState.previouslyOn,
+                    isLoadingPreviouslyOn = detailState.isLoadingPreviouslyOn,
+                    contentWarnings = detailState.contentWarnings,
+                    isLoadingContentWarnings = detailState.isLoadingContentWarnings,
+                    aiChapterMarkers = detailState.aiChapterMarkers,
+                    isLoadingAiChapterMarkers = detailState.isLoadingAiChapterMarkers,
                     isDownloaded = detailState.isDownloaded,
                     isOffline = detailState.isOffline,
                     onDeleteOfflineCopy = { viewModel.deleteOfflineCopy() },

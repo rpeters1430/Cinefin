@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.ui.screens
 
+import android.net.Uri
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
@@ -37,6 +38,7 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Tv
@@ -74,6 +76,7 @@ import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
 import com.rpeters.jellyfin.ui.components.AiSummaryCard
+import com.rpeters.jellyfin.ui.screens.details.components.WhyYoullLoveThisCard
 import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
 import com.rpeters.jellyfin.ui.components.ExpressiveEmptyState
 import com.rpeters.jellyfin.ui.components.ExpressiveErrorState
@@ -131,6 +134,7 @@ fun ImmersiveTVShowDetailScreen(
     onSeriesClick: (String) -> Unit,
     onEpisodeClick: (BaseItemDto) -> Unit,
     onPlayEpisode: (BaseItemDto) -> Unit,
+    onTrailerClick: (String) -> Unit = {},
     onSearchRequests: (String) -> Unit = {},
     onPersonClick: (String, String) -> Unit = { _, _ -> },
     onGenreClick: (String) -> Unit = {},
@@ -196,6 +200,7 @@ fun ImmersiveTVShowDetailScreen(
                         onSeasonExpand = viewModel::loadSeasonEpisodes,
                         onEpisodeClick = onEpisodeClick,
                         onPlayEpisode = onPlayEpisode,
+                        onTrailerClick = onTrailerClick,
                         onSearchRequests = onSearchRequests,
                         onRefresh = { viewModel.refresh() },
                         onPersonClick = onPersonClick,
@@ -203,6 +208,8 @@ fun ImmersiveTVShowDetailScreen(
                         onGenerateAiSummary = { viewModel.generateAiSummary() },
                         aiSummary = state.aiSummary,
                         isLoadingAiSummary = state.isLoadingAiSummary,
+                        whyYoullLoveThis = state.whyYoullLoveThis,
+                        isLoadingWhyYoullLoveThis = state.isLoadingWhyYoullLoveThis,
                     )
                 }
             }
@@ -243,6 +250,7 @@ private fun ImmersiveShowDetailContent(
     onSeasonExpand: (String) -> Unit,
     onEpisodeClick: (BaseItemDto) -> Unit,
     onPlayEpisode: (BaseItemDto) -> Unit,
+    onTrailerClick: (String) -> Unit,
     onSearchRequests: (String) -> Unit = {},
     onRefresh: () -> Unit,
     onPersonClick: (String, String) -> Unit,
@@ -250,6 +258,8 @@ private fun ImmersiveShowDetailContent(
     onGenerateAiSummary: () -> Unit = {},
     aiSummary: String? = null,
     isLoadingAiSummary: Boolean = false,
+    whyYoullLoveThis: String? = null,
+    isLoadingWhyYoullLoveThis: Boolean = false,
 ) {
     val perfConfig = rememberImmersivePerformanceConfig()
     var expandedSeasonId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -283,6 +293,7 @@ private fun ImmersiveShowDetailContent(
                         getLogoUrl = getLogoUrl,
                         nextEpisode = state.nextEpisode,
                         onPlayEpisode = onPlayEpisode,
+                        onTrailerClick = onTrailerClick,
                         onSearchRequests = onSearchRequests,
                     )
                 }
@@ -307,6 +318,8 @@ private fun ImmersiveShowDetailContent(
                             onGenerateAiSummary = onGenerateAiSummary,
                             aiSummary = aiSummary,
                             isLoadingAiSummary = isLoadingAiSummary,
+                            whyYoullLoveThis = whyYoullLoveThis,
+                            isLoadingWhyYoullLoveThis = isLoadingWhyYoullLoveThis,
                         )
                     }
                 }
@@ -411,9 +424,11 @@ private fun ShowHeroContent(
     getLogoUrl: (BaseItemDto) -> String?,
     nextEpisode: BaseItemDto?,
     onPlayEpisode: (BaseItemDto) -> Unit,
+    onTrailerClick: (String) -> Unit,
     onSearchRequests: (String) -> Unit,
 ) {
     val logoUrl = getLogoUrl(series)
+    val trailerUrl = series.remoteTrailers?.firstOrNull()?.url
 
     Box(
         modifier = Modifier
@@ -499,6 +514,17 @@ private fun ShowHeroContent(
                 )
             }
 
+            val displayTrailerUrl = trailerUrl ?: "https://www.youtube.com/results?search_query=${Uri.encode("${series.name.orEmpty()} trailer")}"
+            TextButton(
+                onClick = { onTrailerClick(displayTrailerUrl) },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.textButtonColors(contentColor = Color.White),
+            ) {
+                Icon(Icons.Default.Movie, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(if (trailerUrl.isNullOrBlank()) "Find Trailer" else "Watch Trailer")
+            }
+
             TextButton(
                 onClick = { series.name?.takeIf { it.isNotBlank() }?.let(onSearchRequests) },
                 modifier = Modifier.fillMaxWidth(),
@@ -519,6 +545,8 @@ private fun ShowMetadataSection(
     onGenerateAiSummary: () -> Unit = {},
     aiSummary: String? = null,
     isLoadingAiSummary: Boolean = false,
+    whyYoullLoveThis: String? = null,
+    isLoadingWhyYoullLoveThis: Boolean = false,
 ) {
     Column(
         modifier = Modifier.padding(16.dp),
@@ -607,6 +635,13 @@ private fun ShowMetadataSection(
                     AiSummaryCard(
                         summary = aiSummary,
                         isLoading = isLoadingAiSummary,
+                    )
+                }
+
+                if (isLoadingWhyYoullLoveThis || !whyYoullLoveThis.isNullOrBlank()) {
+                    WhyYoullLoveThisCard(
+                        pitch = whyYoullLoveThis,
+                        isLoading = isLoadingWhyYoullLoveThis,
                     )
                 }
 
