@@ -111,12 +111,23 @@ class VideoPlayerCastManager @Inject constructor(
         val isConnecting = castState.isConnected && !wasCastConnected && !localPlaybackReleasedForCast
         val shouldExposeRemoteUi = castState.isConnected && !awaitingRemotePlaybackStart
 
+        clearPendingResumesIfConnected(castState)
+        updateUiState(castState, shouldExposeRemoteUi)
+        handleConnectionInitiated(isConnecting, currentState.currentPosition, onStartCasting)
+        handleDisconnection(castState, wasCastConnected, currentState.itemId, currentState.itemName, onStartPlayback, scope)
+        handleAwaitingFailure(castState)
+        managePositionUpdates(castState, scope)
+    }
+
+    private fun clearPendingResumesIfConnected(castState: CastState) {
         if (castState.isConnected) {
             reconnectGraceJob?.cancel()
             reconnectGraceJob = null
             pendingLocalResume = null
         }
+    }
 
+    private fun updateUiState(castState: CastState, shouldExposeRemoteUi: Boolean) {
         stateManager.updateState { it.copy(
             isCastAvailable = castState.isAvailable,
             isCasting = castState.isCasting && shouldExposeRemoteUi,
@@ -131,13 +142,28 @@ class VideoPlayerCastManager @Inject constructor(
             showCastDialog = if (castState.isConnected) false else it.showCastDialog,
             error = castState.error ?: it.error
         ) }
+    }
 
+    private fun handleConnectionInitiated(
+        isConnecting: Boolean,
+        currentPosition: Long,
+        onStartCasting: (position: Long) -> Unit
+    ) {
         if (isConnecting && !hasSentCastLoad) {
-            val startPosition = currentState.currentPosition
+            val startPosition = currentPosition
             awaitingRemotePlaybackStart = true
             onStartCasting(startPosition)
         }
+    }
 
+    private fun handleDisconnection(
+        castState: CastState,
+        wasCastConnected: Boolean,
+        itemId: String,
+        itemName: String,
+        onStartPlayback: (itemId: String, itemName: String, position: Long) -> Unit,
+        scope: CoroutineScope
+    ) {
         if ((wasCastConnected || localPlaybackReleasedForCast) && !castState.isConnected) {
             hasSentCastLoad = false
             awaitingRemotePlaybackStart = false
@@ -149,8 +175,6 @@ class VideoPlayerCastManager @Inject constructor(
             )
             localPlaybackReleasedForCast = false
             val resumePosition = castState.currentPosition
-            val itemId = currentState.itemId
-            val itemName = currentState.itemName
             val playerMessage = playerMessageForCastEnd(
                 sessionEndReason = castState.sessionEndReason,
                 didResumeLocally = shouldResumeLocally && itemId.isNotEmpty(),
@@ -171,14 +195,18 @@ class VideoPlayerCastManager @Inject constructor(
                 stateManager.updateState { it.copy(error = playerMessage) }
             }
         }
+    }
 
+    private fun handleAwaitingFailure(castState: CastState) {
         if (awaitingRemotePlaybackStart && castState.error != null) {
             awaitingRemotePlaybackStart = false
             localPlaybackReleasedForCast = false
             hasSentCastLoad = false
             castManager.disconnectCastSession(userInitiated = false)
         }
+    }
 
+    private fun managePositionUpdates(castState: CastState, scope: CoroutineScope) {
         if (castState.isCasting || awaitingRemotePlaybackStart) {
             startCastPositionUpdates(scope)
         } else {

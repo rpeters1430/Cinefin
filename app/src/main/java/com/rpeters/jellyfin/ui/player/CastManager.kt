@@ -18,6 +18,7 @@ import com.rpeters.jellyfin.ui.player.dlna.DlnaDevice
 import com.rpeters.jellyfin.ui.player.dlna.DlnaPlaybackController
 import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.asExecutor
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -26,7 +27,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.json.JSONObject
-import java.util.concurrent.Executors
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -52,7 +52,7 @@ class CastManager @Inject constructor(
     private val initializationLock = Any()
     private var initializationDeferred: CompletableDeferred<Boolean>? = null
     private val managerScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
-    private val castExecutor = Executors.newSingleThreadExecutor()
+    private val castExecutor = Dispatchers.Default.asExecutor()
     private var activeDlnaDevice: DlnaDevice? = null
 
     private val sessionListener by lazy { 
@@ -404,6 +404,5 @@ class CastManager @Inject constructor(
         castContext?.sessionManager?.removeSessionManagerListener(sessionListener, CastSession::class.java)
         discoveryController.stopDiscovery()
         castContext = null
-        castExecutor.shutdown()
     }
 }
