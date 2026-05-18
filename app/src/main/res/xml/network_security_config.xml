@@ -5,7 +5,11 @@
         Migration: cleartext allowances now live in app/src/debug/res/xml/network_security_config.xml
         so release builds remain locked to HTTPS by default.
     -->
-    <base-config cleartextTrafficPermitted="false">
+    <!-- 
+        Allow cleartext traffic globally to support Jellyfin servers on local networks.
+        Many users run Jellyfin on HTTP without SSL, especially on home networks.
+    -->
+    <base-config cleartextTrafficPermitted="true">
         <trust-anchors>
             <!-- Trust system certificate store -->
             <certificates src="system"/>

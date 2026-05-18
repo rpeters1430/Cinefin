@@ -233,6 +233,7 @@ data class ConnectionState(
     val canEnterOffline: Boolean = false,
     val isOfflineSession: Boolean = false,
     val isNetworkAvailable: Boolean = true,
+    val discoveredServers: List<com.rpeters.jellyfin.data.model.DiscoveredServer> = emptyList(),
 )
 
 /**

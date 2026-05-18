@@ -102,6 +102,7 @@ fun TvNavGraph(
                 errorMessage = connectionState.errorMessage,
                 savedServerUrl = connectionState.savedServerUrl,
                 savedUsername = connectionState.savedUsername,
+                discoveredServers = connectionState.discoveredServers,
             )
         }
 

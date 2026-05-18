@@ -29,6 +29,7 @@ import org.jellyfin.sdk.model.api.AuthenticationResult
 import org.jellyfin.sdk.model.api.PublicSystemInfo
 import java.io.IOException
 import javax.inject.Inject
+import javax.inject.Provider
 import javax.inject.Singleton
 import org.jellyfin.sdk.model.api.QuickConnectResult as SdkQuickConnectResult
 
@@ -36,6 +37,7 @@ import org.jellyfin.sdk.model.api.QuickConnectResult as SdkQuickConnectResult
 class JellyfinAuthRepository @Inject constructor(
     private val jellyfin: Jellyfin,
     private val secureCredentialManager: SecureCredentialManager,
+    private val connectionOptimizerProvider: Provider<ConnectionOptimizer>,
     private val timeProvider: () -> Long = System::currentTimeMillis,
 ) : IJellyfinAuthRepository, TokenProvider {
     private val authMutex = Mutex()
@@ -89,18 +91,8 @@ class JellyfinAuthRepository @Inject constructor(
     }
 
     override suspend fun testServerConnection(serverUrl: String): ApiResult<PublicSystemInfo> {
-        return try {
-            SecureLogger.d(TAG, "testServerConnection: Attempting to connect to server")
-            val client = createApiClient(serverUrl)
-            val response = client.systemApi.getPublicSystemInfo()
-            SecureLogger.d(TAG, "testServerConnection: Successfully connected to server")
-            ApiResult.Success(response.content)
-        } catch (e: Exception) {
-            if (e is kotlinx.coroutines.CancellationException) throw e
-            Log.e(TAG, "testServerConnection: Error connecting to server", e)
-            val errorType = RepositoryUtils.getErrorType(e)
-            ApiResult.Error(throwableMessageOrFallback("Connection error", e), e, errorType)
-        }
+        SecureLogger.d(TAG, "testServerConnection: Testing connection for $serverUrl using optimizer")
+        return connectionOptimizerProvider.get().testServerConnection(serverUrl)
     }
 
     override suspend fun authenticateUser(

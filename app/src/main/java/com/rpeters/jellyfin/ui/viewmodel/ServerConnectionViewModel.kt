@@ -74,6 +74,7 @@ class ServerConnectionViewModel @Inject constructor(
     private val secureCredentialManager: SecureCredentialManager,
     private val certificatePinningManager: CertificatePinningManager,
     private val connectivityChecker: ConnectivityChecker,
+    private val discoveryRepository: com.rpeters.jellyfin.data.repository.IJellyfinDiscoveryRepository,
     private val offlineDownloadManagerProvider: Provider<OfflineDownloadManager>,
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
@@ -83,6 +84,7 @@ class ServerConnectionViewModel @Inject constructor(
 
     private var quickConnectPollingJob: Job? = null
     private var lastAttempt: ConnectionAttempt? = null
+    private var discoveryJob: Job? = null
 
     companion object {
         private const val AUTO_LOGIN_DEBOUNCE_MS = 2_000L
@@ -92,6 +94,9 @@ class ServerConnectionViewModel @Inject constructor(
     }
 
     init {
+        // Start server discovery
+        startDiscovery()
+
         // Load saved credentials and remember login state
         viewModelScope.launch {
             val preferences = context.dataStore.data.first()
@@ -1091,10 +1096,22 @@ class ServerConnectionViewModel @Inject constructor(
         }
     }
 
+    private fun startDiscovery() {
+        discoveryJob?.cancel()
+        discoveryJob = viewModelScope.launch {
+            discoveryRepository.discoverServers().collect { servers ->
+                _connectionState.value = _connectionState.value.copy(
+                    discoveredServers = servers
+                )
+            }
+        }
+    }
+
     override fun onCleared() {
         super.onCleared()
         // Cancel any ongoing quick connect polling when ViewModel is destroyed
         quickConnectPollingJob?.cancel()
+        discoveryJob?.cancel()
     }
 
     private fun shouldAutoLoginNow(key: String): Boolean {

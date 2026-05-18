@@ -61,6 +61,7 @@ fun TvServerConnectionScreen(
     errorMessage: String?,
     savedServerUrl: String?,
     savedUsername: String?,
+    discoveredServers: List<com.rpeters.jellyfin.data.model.DiscoveredServer> = emptyList(),
     modifier: Modifier = Modifier,
 ) {
     val tvLayout = CinefinTvTheme.layout
@@ -129,6 +130,39 @@ fun TvServerConnectionScreen(
                         color = TvMaterialTheme.colorScheme.onSurface.copy(alpha = 0.78f),
                         textAlign = TextAlign.Center,
                     )
+                }
+
+                if (discoveredServers.isNotEmpty() && serverUrl.isEmpty() && !isConnecting) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        TvText(
+                            text = "Discovered Servers",
+                            style = TvMaterialTheme.typography.titleMedium,
+                            color = TvMaterialTheme.colorScheme.primary,
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
+                        ) {
+                            discoveredServers.forEach { server ->
+                                TvCard(
+                                    onClick = { serverUrl = server.address },
+                                    modifier = Modifier.width(200.dp),
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(12.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                    ) {
+                                        TvText(text = server.name, style = TvMaterialTheme.typography.bodyLarge, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                        TvText(text = server.address, style = TvMaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.6f))
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
 
                 TvCard(

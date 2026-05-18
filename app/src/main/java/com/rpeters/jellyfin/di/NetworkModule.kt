@@ -15,6 +15,8 @@ import com.rpeters.jellyfin.data.repository.JellyfinAuthRefreshManager
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
+import com.rpeters.jellyfin.data.repository.IJellyfinDiscoveryRepository
+import com.rpeters.jellyfin.data.repository.JellyfinDiscoveryRepository
 import com.rpeters.jellyfin.network.CachePolicyInterceptor
 import com.rpeters.jellyfin.network.ConnectivityChecker
 import com.rpeters.jellyfin.network.DeviceIdentityProvider
@@ -83,11 +85,9 @@ object NetworkModule {
             // SECURITY: Add certificate pinning
             .sslSocketFactory(sslSocketFactory, pinningTrustManager)
             .hostnameVerifier(hostnameVerifier)
-            // Release builds: TLS only. Debug builds also allow cleartext for local dev servers.
-            .connectionSpecs(
-                if (BuildConfig.DEBUG) listOf(modernTls, compatibleTls, ConnectionSpec.CLEARTEXT)
-                else listOf(modernTls, compatibleTls)
-            )
+            // Support both HTTPS (modern/compatible) and HTTP (cleartext) for Jellyfin servers.
+            // Many users run local servers without SSL.
+            .connectionSpecs(listOf(modernTls, compatibleTls, ConnectionSpec.CLEARTEXT))
 
         if (BuildConfig.DEBUG) {
             // Route all OkHttp log output through SecureLogger so its URL sanitisation
@@ -215,9 +215,10 @@ object NetworkModule {
     fun provideJellyfinAuthRepository(
         jellyfin: Jellyfin,
         secureCredentialManager: com.rpeters.jellyfin.data.SecureCredentialManager,
+        connectionOptimizer: Provider<com.rpeters.jellyfin.data.repository.ConnectionOptimizer>,
         timeProvider: () -> Long,
     ): JellyfinAuthRepository =
-        JellyfinAuthRepository(jellyfin, secureCredentialManager, timeProvider)
+        JellyfinAuthRepository(jellyfin, secureCredentialManager, connectionOptimizer, timeProvider)
 
     @Provides
     @Singleton
@@ -264,6 +265,12 @@ object NetworkModule {
     fun provideCastPlaybackRepository(
         repository: JellyfinRepository,
     ): ICastPlaybackRepository = repository
+
+    @Provides
+    @Singleton
+    fun provideJellyfinDiscoveryRepository(
+        @ApplicationContext context: Context
+    ): IJellyfinDiscoveryRepository = JellyfinDiscoveryRepository(context)
 
     @Provides
     @Singleton

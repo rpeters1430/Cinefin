@@ -147,6 +147,7 @@ fun ServerConnectionScreen(
         isBiometricAuthAvailable,
         requireStrongBiometric,
         isUsingWeakBiometric,
+        connectionState.discoveredServers,
     ) {
         derivedStateOf {
             LoginScreenUiFlags(
@@ -160,6 +161,10 @@ fun ServerConnectionScreen(
                     savedUsername.isNotBlank() &&
                     rememberLogin &&
                     !hasSavedPassword,
+                showDiscoveredServers = connectionState.discoveredServers.isNotEmpty() &&
+                    !connectionState.isConnected &&
+                    !connectionState.isConnecting &&
+                    serverUrl.isBlank(),
             )
         }
     }
@@ -187,6 +192,14 @@ fun ServerConnectionScreen(
             verticalArrangement = Arrangement.spacedBy(32.dp),
         ) {
             LoginHeaderCard(modifier = Modifier.fillMaxWidth())
+
+            if (uiFlags.showDiscoveredServers) {
+                DiscoveredServersCard(
+                    servers = connectionState.discoveredServers,
+                    onServerSelected = { serverUrl = it },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
 
             if (uiFlags.showAutoLoginCard) {
                 AutoLoginCard(
@@ -273,7 +286,66 @@ private data class LoginScreenUiFlags(
     val showAutoLoginCard: Boolean,
     val showBiometricSecurityNotice: Boolean,
     val showSavedCredentialsHint: Boolean,
+    val showDiscoveredServers: Boolean,
 )
+
+@OptInAppExperimentalApis
+@Composable
+private fun DiscoveredServersCard(
+    servers: List<com.rpeters.jellyfin.data.model.DiscoveredServer>,
+    onServerSelected: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    ElevatedCard(
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f),
+        ),
+        elevation = CardDefaults.elevatedCardElevation(
+            defaultElevation = 2.dp,
+        ),
+        shape = ShapeTokens.ExtraLarge,
+        modifier = modifier,
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Dns,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp),
+                )
+                Text(
+                    text = "Discovered Servers",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                servers.forEach { server ->
+                    ExpressiveTonalButton(
+                        onClick = { onServerSelected(server.address) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = ShapeTokens.Large,
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(text = server.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+                            Text(text = server.address, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f))
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
 
 @Composable
 private fun LoginOptionDivider(modifier: Modifier = Modifier) {
