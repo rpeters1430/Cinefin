@@ -38,6 +38,7 @@ internal data class BentoGridItem(
  * @param windowSizeClass The current window size class for adaptive layout.
  * @param getImageUrl Function to resolve the image URL for a given item.
  * @param onItemClick Callback when a media item is clicked.
+ * @param onAiAssistantClick Callback when the AI Discovery banner is tapped.
  * @param modifier The modifier to be applied to the grid.
  * @param gridState The state object to be used to control or observe the grid's scroll state.
  * @param contentPadding The padding to apply around the grid content.
@@ -49,6 +50,7 @@ fun ExpressiveBentoGrid(
     getImageUrl: (BaseItemDto) -> String?,
     onItemClick: (BaseItemDto) -> Unit,
     onItemLongPress: (BaseItemDto) -> Unit = {},
+    onAiAssistantClick: () -> Unit = {},
     modifier: Modifier = Modifier,
     gridState: LazyGridState = rememberLazyGridState(),
     contentPadding: PaddingValues = PaddingValues(0.dp),
@@ -65,7 +67,7 @@ fun ExpressiveBentoGrid(
     val aiDiscoveryDescription = stringResource(R.string.home_ai_discovery_description)
 
     // Map content lists to bento grid items
-    val bentoItems = remember(contentLists, aiDiscoveryTitle, aiDiscoveryDescription) {
+    val bentoItems = remember(contentLists, aiDiscoveryTitle, aiDiscoveryDescription, onAiAssistantClick) {
         buildList {
             // 1. Featured Hero (Top recommendation)
             contentLists.featuredItems.firstOrNull()?.let { item ->
@@ -110,7 +112,7 @@ fun ExpressiveBentoGrid(
                     title = aiDiscoveryTitle,
                     description = aiDiscoveryDescription,
                     icon = Icons.Default.AutoAwesome,
-                    onClick = { /* TODO: Implement AI Discovery navigation */ },
+                    onClick = onAiAssistantClick,
                 ),
             )
 

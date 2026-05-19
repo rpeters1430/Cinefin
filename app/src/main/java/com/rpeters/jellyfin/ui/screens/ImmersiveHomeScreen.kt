@@ -495,6 +495,7 @@ private fun ImmersiveHomeContent(
                 getImageUrl = getImageUrl,
                 onItemClick = stableOnItemClick,
                 onItemLongPress = stableOnItemLongPress,
+                onAiAssistantClick = onAiAssistantClick,
                 gridState = gridState,
                 contentPadding = contentPadding,
                 modifier = Modifier.fillMaxSize(),
