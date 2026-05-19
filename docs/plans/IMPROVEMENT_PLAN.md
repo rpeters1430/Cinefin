@@ -1,397 +1,527 @@
-# Jellyfin Android Improvement Plan
+# Cinefin Android — Improvement Plan
 
-**Last verified on**: 2026-04-22
-**Scope**: Full codebase audit covering transcoding/playback, security, accessibility, UX, and code quality
-**Previous Version**: January 30, 2026 (see docs/archive/ for older plans)
+**Last verified against code on**: 2026-05-19
+**Replaces**: `IMPROVEMENT_PLAN.md` (last verified 2026-04-22)
+**Method**: Direct audit of `Cinefin-main.zip` source tree, not derived from prior plans.
 
-> **Note**: For user-facing bugs with workarounds, see [KNOWN_ISSUES.md](../features/KNOWN_ISSUES.md). For feature roadmap, see [ROADMAP.md](ROADMAP.md). This document focuses on technical debt, architecture improvements, and code quality.
-
-> **Status alignment**: Transcoding/playback overhaul and offline downloads are treated as completed baseline work; only follow-up hardening remains open.
+> **Important**: This document supersedes the prior IMPROVEMENT_PLAN. Many "open" items
+> from the April plan are already shipped in code and have been moved to **§ Already Done
+> (Reclassified)**. Several large files and a brand-new Requests feature were never tracked
+> and are now in **§ New Tech Debt**.
 
 ---
 
 ## Table of Contents
 
-1. [Recently Completed](#recently-completed-)
-2. [Phase A: Transcoding & Playback System Overhaul](#phase-a-transcoding--playback-system-overhaul-completed-) ✅ **COMPLETED**
-3. [Phase B: Security Hardening](#phase-b-security-hardening-high)
-4. [Phase C: Reliability & Error Handling](#phase-c-reliability--error-handling-high)
-5. [Phase D: UX Polish & Accessibility](#phase-d-ux-polish--accessibility-medium)
-6. [Phase E: Missing User Preferences](#phase-e-missing-user-preferences-medium)
-7. [Phase F: Code Quality & Technical Debt](#phase-f-code-quality--technical-debt-carried-forward)
-8. [Phase G: Subtitle System Improvements](#phase-g-subtitle-system-improvements-medium)
-9. [Implementation Priority Order](#implementation-priority-order)
-10. [Related Documentation](#related-documentation)
+1. [Scope of this audit](#scope-of-this-audit)
+2. [Already done (reclassified)](#already-done-reclassified)
+3. [Open work — Tier 1: User-visible & shippable](#tier-1--user-visible--shippable)
+4. [Open work — Tier 2: Reliability & polish](#tier-2--reliability--polish)
+5. [Open work — Tier 3: Architecture & technical debt](#tier-3--architecture--technical-debt)
+6. [Open work — Tier 4: Documentation hygiene](#tier-4--documentation-hygiene)
+7. [Suggested execution order](#suggested-execution-order)
+8. [GitHub issue templates](#github-issue-templates)
 
 ---
 
-## Recently Completed ✅
+## Scope of this audit
 
-**Completion Date**: February 5, 2026 (User Preferences - Phase E)
+I read the source tree directly and cross-checked every claim in the prior plan against
+actual files. Findings fall into three buckets:
 
-### Phase E: User Preferences ✅
-**Status**: Fully implemented with extended PlaybackPreferences system
+- **Already done** — prior plan lists it as open; code shows it shipped. Reclassified, not
+  re-tracked.
+- **Still open** — the plan was right; the work remains.
+- **New / untracked** — emerged since the last plan and is not in any current document.
 
-**What was completed:**
-- ✅ **E1**: Default playback quality preference (already existed as TranscodingQuality)
-- ✅ **E2**: Preferred audio language preference with common language selection
-- ✅ **E3**: Auto-play next episode toggle (enabled by default)
-- ✅ **E5**: Resume playback mode preference (Always/Ask/Never)
-
-**Implementation details:**
-- Extended `PlaybackPreferencesRepository` with three new preferences:
-  - `preferredAudioLanguage: String?` - ISO 639-2/T language codes (eng, spa, fra, etc.)
-  - `autoPlayNextEpisode: Boolean` - Default: true
-  - `resumePlaybackMode: ResumePlaybackMode` - Default: ALWAYS
-- Added `ResumePlaybackMode` enum with three values: ALWAYS, ASK, NEVER
-- Updated `PlaybackPreferencesViewModel` with setter methods for all new preferences
-- Enhanced `PlaybackSettingsScreen` with new UI sections:
-  - "Behavior" section with auto-play toggle and resume mode dropdown
-  - Language dropdown with 13 common languages + "No preference" option
-  - Modern Material 3 design with consistent styling
-
-**Files modified:**
-- `data/preferences/PlaybackPreferencesRepository.kt` - Extended with new preferences
-- `ui/viewmodel/PlaybackPreferencesViewModel.kt` - Added setter methods
-- `ui/screens/settings/PlaybackSettingsScreen.kt` - Added UI controls
-
-**Preferences Wired Into Playback Logic** ✅
-- ✅ Preferred audio language: Auto-selects matching audio track on playback start
-- ✅ Auto-play next episode: Conditionally starts countdown when playback ends
-- ✅ Resume playback mode: Controls whether to resume from saved position or start from beginning
-  - ALWAYS: Auto-resume from saved position (default)
-  - NEVER: Always start from beginning
-  - ASK: Show dialog (TODO: UI layer implementation needed)
-
-**Files wired:**
-- `ui/player/VideoPlayerViewModel.kt` - All three preferences now control playback behavior
-
-**Completion Date**: February 5, 2026 (User Preferences - Phase E Complete)
-
-**Completion Date**: February 5, 2026 (Progress Sync Resilience & Infrastructure)
-
-### Progress Sync Resilience ✅
-**Status**: Fully implemented with offline queuing and background synchronization
-
-**What was completed:**
-- ✅ Created `OfflineProgressRepository` using DataStore for local persistence of pending updates.
-- ✅ Implemented `OfflineProgressSyncWorker` with WorkManager for robust background syncing.
-- ✅ Integrated into `JellyfinUserRepository` to automatically queue updates on network failure.
-- ✅ Wired `MainAppViewModel` to trigger immediate synchronization upon network reconnection.
-- ✅ Added `hilt-work` and `work-runtime-ktx` dependencies for reliable background processing.
-
-### Build & Test Stability ✅
-**Status**: All core unit tests and compilation errors resolved
-
-**Issues fixed:**
-- ✅ Fixed `CastManager` missing helper functions and incompatible `MediaStatus` access.
-- ✅ Updated `JellyfinStreamRepositoryTest`, `EnhancedPlaybackManagerTest`, and `JellyfinRepositoryTest` constructors to match new architecture.
-- ✅ Resolved `NoSuchMethodError` in Compose runtime by aligning BOM and Kotlin versions.
-- ✅ Created `ThemeComposeTest` to verify theme stability across dependency updates.
-
-**Files created/modified:**
-- `data/repository/OfflineProgressRepository.kt` (NEW)
-- `data/worker/OfflineProgressSyncWorker.kt` (NEW)
-- `data/repository/JellyfinUserRepository.kt` (MODIFIED)
-- `ui/viewmodel/MainAppViewModel.kt` (MODIFIED)
-- `app/build.gradle.kts` & `libs.versions.toml` (MODIFIED)
-
-**Completion Date**: February 4, 2026 (Transcoding System Overhaul Part 2 - User Preferences & Adaptive Bitrate)
-
-### Build Errors Fixed ✅
-**Status**: All compilation errors resolved
-
-**Issues fixed:**
-- ✅ Jellyfin SDK API changes in `JellyfinDeviceProfile.kt`
-  - Removed `conditions` parameter from `DirectPlayProfile` (no longer accepted)
-  - Added `conditions = emptyList()` to `ContainerProfile` (now required)
-  - Changed bitrate parameters from `Long` to `Int`
-- ✅ Missing dependencies in `NetworkModule.kt`
-  - Added `ConnectivityChecker` and `PlaybackPreferencesRepository` to `EnhancedPlaybackManager`
-  - Added missing import for `PlaybackPreferencesRepository`
-- ✅ Function visibility conflict in `CastRemoteScreen.kt`
-  - Changed `formatTime()` from public to private to avoid overload conflicts
-- ✅ Missing import in `SearchScreen.kt`
-  - Added import for `SearchResultsContent` from home package
-
-**Files fixed:**
-- `data/model/JellyfinDeviceProfile.kt`
-- `di/NetworkModule.kt`
-- `ui/player/CastRemoteScreen.kt`
-- `ui/screens/SearchScreen.kt`
-
-### A3. Configurable Bitrate Thresholds ✅
-**Status**: Fully implemented and integrated into app
-
-**What was completed:**
-- ✅ Created `PlaybackPreferencesRepository` with DataStore persistence
-- ✅ Built complete Settings UI with dropdown menus for all preferences
-- ✅ Integrated into `EnhancedPlaybackManager` for real-time bitrate decisions
-- ✅ Wired into navigation graph (accessible from Profile → Playback Settings)
-- ✅ Created ViewModel with reactive StateFlow for instant UI updates
-
-**User-configurable settings:**
-- **WiFi Max Bitrate**: 120 Mbps / 80 Mbps / 40 Mbps / 20 Mbps / 10 Mbps / 5 Mbps / 3 Mbps
-- **Cellular Max Bitrate**: 120 Mbps / 80 Mbps / 40 Mbps / 20 Mbps / 10 Mbps / 5 Mbps / 3 Mbps
-- **Transcoding Quality**: Auto / Maximum / High / Medium / Low
-- **Audio Channels**: Auto / Stereo / 5.1 Surround / 7.1 Surround
-
-**Files created/modified:**
-- `data/preferences/PlaybackPreferencesRepository.kt` (NEW)
-- `ui/screens/settings/PlaybackSettingsScreen.kt` (NEW)
-- `ui/viewmodel/PlaybackPreferencesViewModel.kt` (NEW)
-- `data/playback/EnhancedPlaybackManager.kt` (MODIFIED - now uses user preferences)
-- `ui/navigation/ProfileNavGraph.kt` (MODIFIED - added route)
-- `ui/navigation/NavRoutes.kt` (MODIFIED - added route)
-- `di/NetworkModule.kt` (MODIFIED - added dependency injection)
-
-### A8. Adaptive Bitrate Monitoring During Playback ✅
-**Status**: Fully implemented with intelligent quality recommendations
-
-**What was completed:**
-- ✅ Created `AdaptiveBitrateMonitor` singleton that monitors ExoPlayer in real-time
-- ✅ Detects sustained buffering (>5 second threshold)
-- ✅ Tracks multiple buffering events (3+ in 30-second window)
-- ✅ Monitors ExoPlayer bandwidth estimates
-- ✅ Generates quality recommendations with severity levels (Low/Medium/High)
-- ✅ Respects user quality mode (only acts on AUTO, not manual selection)
-- ✅ Built non-intrusive notification card UI
-- ✅ Automatic playback restart at current position with new quality
-- ✅ 1-minute cooldown between recommendations to prevent spam
-- ✅ Analytics tracking for user decisions
-
-**How it works:**
-1. Monitor starts automatically when playback reaches READY state
-2. Checks playback state every 1 second
-3. Detects buffering patterns that indicate network issues
-4. Shows recommendation card at bottom of screen
-5. User can "Switch Quality" (restarts at new quality) or "Not Now" (dismisses)
-6. Only suggests downgrades when on AUTO quality mode
-7. Stops monitoring when player is released
-
-**Files created/modified:**
-- `data/playback/AdaptiveBitrateMonitor.kt` (NEW - 230 lines)
-- `ui/player/VideoPlayerViewModel.kt` (MODIFIED - added monitoring lifecycle)
-- `ui/player/VideoPlayerDialogs.kt` (MODIFIED - added notification UI)
-- `ui/player/VideoPlayerScreen.kt` (MODIFIED - display notification)
-- `ui/player/VideoPlayerActivity.kt` (MODIFIED - wire callbacks)
-
-**Completion Date**: February 2026 (Transcoding System Overhaul Part 1)
-
-1) **Dynamic DeviceProfile Handshake** - Implemented Jellyfin DeviceProfile spec using real hardware capabilities. Profile is now sent to server during playback handshake to eliminate unnecessary transcoding.
-   - Files: `data/model/JellyfinDeviceProfile.kt`, `data/repository/JellyfinRepository.kt`
-
-2) **Intelligent Network Awareness** - Enhanced `ConnectivityChecker` with bandwidth estimation and meteredness detection. `EnhancedPlaybackManager` now uses these metrics for bitrate decisions.
-   - Files: `network/ConnectivityChecker.kt`, `data/playback/EnhancedPlaybackManager.kt`
-
-3) **Multilingual Transcoding Support** - Added `AudioStreamIndex` and `SubtitleStreamIndex` to transcoding URLs. Changing tracks mid-transcode now restarts playback with the correct server-side stream.
-   - Files: `data/repository/JellyfinStreamRepository.kt`, `ui/player/VideoPlayerViewModel.kt`
-
-4) **Session Lifecycle & Recovery** - Added session recovery for 404/401 errors in `PlaybackProgressManager`. Periodic progress reports now double as session heartbeats.
-   - File: `ui/player/PlaybackProgressManager.kt`
-
-5) **Unified Codec Intelligence** - Centralized all codec support logic in `DeviceCapabilities.kt`. Updated `TranscodingDiagnosticsViewModel` to use this single source of truth.
-   - Files: `data/DeviceCapabilities.kt`, `ui/viewmodel/TranscodingDiagnosticsViewModel.kt`
-
-6) **Structured Fallback Detection** - Replaced string-matching error detection with ExoPlayer error codes (`DECODER_INIT_FAILED`, etc.) for more reliable transcoding fallbacks.
-   - File: `ui/player/VideoPlayerViewModel.kt`
-
-**Completion Date**: January 2026
-
-7) **Offline downloads hanging bug** - Replaced infinite `collect` with `first()` + timeout
-8) **Offline download ID mismatch** - Made `startDownload` suspend, returns real ID
-9) **Cache directory initialization race condition** - Added `ensureCacheDir()` guard
-10) **Memory cache thread safety** - Added `synchronized` blocks around memoryCache
-11) **Video player auto quality selection** - "Auto" clears track overrides for adaptive selection
-12) **Transcoding position reset fix** - Position preservation across codec flushes with retry limits
+Version reference points used:
+- `versionCode 111`, `versionName "14.79"` (was `79 / 14.47` in CLAUDE.md)
+- Kotlin `2.3.21`, AGP `9.2.1`, KSP `2.3.8`
+- compileSdk `37`, targetSdk `35`, minSdk `26`
+- Compose BOM `2026.05.00`, Material 3 `1.5.0-alpha19`, Media3 `1.10.1`
+- Jellyfin SDK `1.8.8`, Hilt `2.59.2`, Orbit MVI `11.0.0`
 
 ---
 
-## Phase A: Transcoding & Playback System Overhaul (COMPLETED ✅)
+## Already done (reclassified)
 
-All major transcoding improvements have been implemented!
+These were open in the previous plan or `KNOWN_ISSUES.md`. Code review shows them shipped.
+No further work tracked here — they exist only so reviewers know not to file new issues.
 
-### ~~A3. Make Bitrate Thresholds Configurable~~ ✅ COMPLETED
-**Status**: Fully implemented and integrated
+### ✅ VideoPlayerScreen.kt refactor (Phase F1 / Known Issue #9)
+Prior plan: 1,726 lines. Actual: **368 lines**. Player UI was extracted into
+`ExpressiveVideoControls.kt` (844), `TvVideoPlayerControls.kt` (703), and the
+`ui/player/components/` directory. The refactor is functionally complete.
 
-**Implemented**:
-- ✅ Add "Maximum streaming bitrate" setting (WiFi / Cellular separate)
-- ✅ Add "Transcoding quality" preference (Auto, Maximum, High, Medium, Low)
-- ✅ Add "Audio channels" preference (Auto, Stereo, 5.1, 7.1)
-- ✅ Store in DataStore with reactive Flow updates
-- ✅ Inject into `EnhancedPlaybackManager` for bitrate decisions
-- ✅ Expose in Settings screen under "Playback Settings"
-- ✅ Wire into navigation graph
+### ✅ Auth interceptor non-blocking refresh (Known Issue #5 / ROADMAP §3.0)
+The interceptor now delegates to `JellyfinAuthRefreshManager` which uses:
+- Single-flight `Mutex` + `Deferred` to coalesce concurrent refreshes
+- Coroutine `delay()` for backoff (no `Thread.sleep`)
+- `withTimeoutOrNull(10_000L)` bound on the refresh
+One `runBlocking` remains inside `refreshAfterUnauthorized()` because OkHttp's
+`Authenticator` interface is synchronous — this is unavoidable and bounded. **The issue
+as filed is resolved.**
 
-### ~~A8. Add Adaptive Bitrate During Playback~~ ✅ COMPLETED
-**Status**: Fully implemented with user notification system
+### ✅ Music background playback foundation (ROADMAP §1.1 / Known Issue #6)
+`AudioService` is a complete `MediaSessionService` with `DefaultMediaNotificationProvider`,
+media-button handling (play/pause/next/prev/seek/stop), `mediaPlayback` foreground service
+type in the manifest, `onTaskRemoved` cleanup for Android 17, session state persistence
+via `AudioSessionStateStore`, and shuffle/repeat exposed through `AudioServiceConnection`.
+`NowPlayingScreen` wires all of it. Music in the background, on the lock screen, and from
+notification controls all work in code. See Tier 2 for the remaining validation work.
 
-**Implemented**:
-- ✅ Monitor ExoPlayer playback state every second
-- ✅ Detect sustained buffering (>5 seconds threshold)
-- ✅ Detect multiple buffering events (3+ in 30 second window)
-- ✅ Track bandwidth estimates from ExoPlayer
-- ✅ Recommend quality downgrades with severity levels (Low/Medium/High)
-- ✅ Only acts when user is on AUTO quality mode (respects manual selection)
-- ✅ UI notification card with accept/dismiss actions
-- ✅ Automatic playback restart at current position with new quality
-- ✅ Analytics tracking for user acceptance/dismissal
-- ✅ Cooldown period between recommendations (1 minute minimum)
+### ✅ Android 16 ProgressStyle notifications (Phase 2 modernization plan)
+`OfflineDownloadWorker.kt:172-194` uses `NotificationCompat.ProgressStyle` gated on
+`SDK_INT >= 36`, with indeterminate fallback during the transcoding phase and a legacy
+`setProgress()` path for older devices.
 
----
+### ✅ Android 16 standardized haptic curves (Phase 2 modernization plan)
+`ExpressiveHaptics.kt` has both `seekTick()` (uses `PRIMITIVE_LOW_TICK`) and
+`limitReached()` (`PRIMITIVE_THUD`) on top of the existing `selectionTick()` and
+`errorTick()`. The architecture supports the new curves as planned.
 
-## Phase B: Security Hardening (HIGH)
+### ✅ Android 17 AudioService hardening (Phase 2 modernization plan)
+`onTaskRemoved` cleanup is in place at `AudioService.kt:167`.
 
-### B1. Remove API Tokens from URL Query Parameters ✅ COMPLETED
-**Status**: Fully implemented (February 2026)
-**Priority**: High | **Effort**: 1-2 days
+### ✅ Android 17 mandatory resizability (Phase 2 modernization plan)
+`AndroidManifest.xml:47` already declares `android:resizeableActivity="true"`. The
+`VideoPlayerActivity` uses `configChanges="orientation|screenSize|keyboardHidden|screenLayout"`
+which is the correct pattern for dynamic orientation handling.
 
-**Problem**: Access tokens were appended as `?api_key=` query parameters in URLs, exposing them in logs and network traffic (CWE-598).
+### ✅ JellyfinRepository → IJellyfinRepository boundary (2026-03-30 plan)
+12 consumers converted to the interface; cast playback split into
+`ICastPlaybackRepository`. The remaining concrete usages in `MainAppViewModel` and
+`ServerConnectionViewModel` are intentional (they touch session/connection lifecycle).
+**Do not expand `IJellyfinRepository` further** without designing a separate
+session/connection abstraction first.
 
-**Solution Implemented**:
-- [x] Subtitle URLs: Use `Authorization: MediaBrowser Token="..."` header via OkHttp interceptor
-- [x] Stream URLs: Authentication handled via OkHttp interceptor headers (X-Emby-Token)
-- [x] Image URLs: No authentication in query parameters
-- [x] Cast URLs: Removed `addAuthTokenToUrl()` function and all calls to it
-- [x] Cast Image URLs: Direct URLs without tokens (requires server to allow unauthenticated image access)
+### ✅ Empty states (Phase D1)
+`EmptyStateComposable.kt` exists and is used in `FavoritesScreen`, `LibraryScreen`,
+`AudioQueueScreen`, `SearchResultsContent`, and the immersive TV detail screens.
+`ExpressiveStateComponents.kt` covers the more decorated cases.
 
-**Notes**:
-- All API requests now use header-based authentication via `JellyfinAuthInterceptor`
-- Cast receivers fetch images directly and cannot use custom headers
-- Servers must allow unauthenticated access to `/Items/{id}/Images/*` endpoints for Cast artwork
-- Future enhancement: Local proxy for Cast image authentication if needed
-
-**Files Modified**:
-- `ui/player/CastManager.kt` - Removed token injection from Cast image URLs
-- All URLs now rely on header-based authentication
-
----
-
-## Phase C: Reliability & Error Handling (HIGH)
-
-### C1. Add Progress Sync Resilience for Network Drops ✅ COMPLETED
-**Status**: Fully implemented with local queuing and background flush.
+### ✅ Android CI workflow (CURRENT_STATUS warning)
+The previous `CURRENT_STATUS.md` claimed "primary Android CI workflows are missing."
+`.github/workflows/android-ci.yml` exists with build/test/lint stages.
 
 ---
 
-## Phase D: UX Polish & Accessibility (MEDIUM)
+## Tier 1 — User-visible & shippable
 
-### D1. Add Empty State Composables ✅ COMPLETED
-**Status**: Fully implemented (February 2026)
-**Priority**: Medium | **Effort**: 1 day
+Highest-leverage items the next user-facing release should pick up.
 
-**Implemented**:
-- [x] Created `EmptyStateComposable` reusable component in `ui/components/`
-- [x] Supports multiple types (Info, Error, NoResults) with appropriate styling
-- [x] Configurable icon, title, description, and optional action button
-- [x] Follows Material 3 design principles
-- [x] Implemented in SearchResultsContent (enhanced with icon and description)
-- [x] Implemented in FavoritesScreen (replaced inline empty state)
-- [x] Implemented in LibraryScreen (replaced simple text)
-- [x] Implemented in AudioQueueScreen (replaced inline empty state)
+### 1.1 Resume-playback "Ask" dialog
+**Status**: backend ready, UI missing
+**Effort**: 0.5 day
+**File**: `ui/player/VideoPlayerViewModel.kt` (line 239 — `else` branch silently treats
+ASK like ALWAYS), new dialog component in `ui/player/components/`.
 
-**Files Created**:
-- `ui/components/EmptyStateComposable.kt` - Reusable empty state component
+The `ResumePlaybackMode.ASK` enum value, preference UI, and DataStore plumbing all
+exist, but the `VideoPlayerViewModel.initializePlayback()` `when` block has no ASK case
+— it falls through to auto-resume. Users who choose "Ask" silently get "Always".
 
-**Files Modified**:
-- `ui/screens/home/SearchResultsContent.kt` - Enhanced empty state with icon
-- `ui/screens/FavoritesScreen.kt` - Uses EmptyStateComposable
-- `ui/screens/LibraryScreen.kt` - Uses EmptyStateComposable
-- `ui/screens/AudioQueueScreen.kt` - Uses EmptyStateComposable
+**Fix**:
+1. Add ASK branch in `VideoPlayerViewModel.initializePlayback()` that emits a
+   `ResumePromptState` instead of seeking immediately
+2. New `ResumePlaybackDialog` composable in `ui/player/components/`
+3. Wire dialog → `viewModel.confirmResume(fromBeginning: Boolean)`
+4. Phone player + TV player both need the dialog
 
-**Note**: Many screens (MoviesScreen, TVEpisodesScreen, etc.) already have custom empty states using `ExpressiveEmptyState` or similar components.
-
-### D3. Add Content Descriptions for Accessibility
-**Priority**: Medium | **Effort**: 1 day
-- [ ] Add `contentDescription` to all media cards and player controls for TalkBack support
+**Acceptance**: A previously-watched item with `resumePlaybackMode = ASK` shows a
+"Resume from XX:XX / Start over" dialog before playback starts on both phone and TV.
 
 ---
 
-## Phase E: Missing User Preferences ✅ COMPLETED
+### 1.2 Subtitle gaps — external, styling, sync delay
+**Status**: appearance customization shipped; functional gaps remain
+**Effort**: 3–5 days
+**Files**: `ui/player/VideoPlayerViewModel.kt`,
+`data/preferences/SubtitleAppearancePreferences.kt`,
+`ui/screens/settings/SubtitleSettingsScreen.kt`
 
-All standard user preference features have been implemented in PlaybackSettingsScreen:
-- ✅ **E1**: Default playback quality (TranscodingQuality enum - Auto/Maximum/High/Medium/Low)
-- ✅ **E2**: Preferred audio language (13 common languages with ISO 639-2/T codes)
-- ✅ **E3**: Auto-play next episode toggle (boolean, default: enabled)
-- ✅ **E5**: Resume playback mode (Always/Ask/Never enum)
+`SubtitleAppearancePreferences` covers text size, font, and background only. Three
+functional gaps remain — confirmed by reading the preferences file (no delay field, no
+external-track flag, no style preservation flag):
 
-**Note**: These preferences are now stored in DataStore and exposed in the UI. The next step is to wire them into `VideoPlayerViewModel` to control actual playback behavior (auto-play, resume, audio track selection).
+- **External subtitles**: `OfflineDownloadManager.downloadExternalSubtitles()` exists for
+  offline playback, but the streaming player still filters them out. Bring the streaming
+  path up to parity.
+- **ASS/SSA styling**: currently flattened to VTT-equivalent text. Preserve original
+  styling where Media3's text renderer supports it; document the fallback for what it
+  doesn't.
+- **Sync delay**: add a `subtitleDelayMs: Int = 0` to `SubtitleAppearancePreferences`
+  (range ±5,000 ms), expose a slider in the player overlay, and apply via the timed
+  text track's offset.
 
----
-
-## Phase F: Code Quality & Technical Debt
-
-### F1. Refactor Large Composables
-- Remaining: `VideoPlayerScreen.kt` (~1,700 lines), `HomeScreen.kt` (~1,100 lines)
-
----
-
-## Implementation Priority Order (Updated)
-
-### Tier 1: High Priority ✅ ALL COMPLETED
-1. ~~**Configurable bitrate thresholds** (A3)~~ ✅ COMPLETED
-2. ~~**Remove tokens from URLs** (B1)~~ ✅ COMPLETED - Security fix
-3. ~~**Progress sync resilience** (C1)~~ ✅ COMPLETED - Data integrity
-4. ~~**User preferences** (Phase E)~~ ✅ COMPLETED - Standard client features
-
-### Tier 2: Medium Priority
-5. ~~**Adaptive bitrate during playback** (A8)~~ ✅ COMPLETED
-6. ~~**Empty states** (D1)~~ ✅ COMPLETED - UX polish
-7. **Accessibility** (D3) - Content descriptions for TalkBack
-8. **Refactor large composables** (F1) - Maintainability (IN PROGRESS: HomeScreen & VideoPlayerScreen partially split)
+**Acceptance**: An MKV with embedded ASS subtitles plays with styling intact; a separate
+`.srt` next to a media item is selectable in the player; the sync slider shifts subtitles
+in real time.
 
 ---
 
-## Summary of Progress
+### 1.3 Auto-skip intro / outro preference (ROADMAP §1.6.2)
+**Status**: not started
+**Effort**: 2–3 days
+**Files**: `data/preferences/PlaybackPreferencesRepository.kt`,
+`ui/player/VideoPlayerViewModel.kt`, `ui/screens/settings/PlaybackSettingsScreen.kt`
 
-### 🎉 Completed Phases
-- **Phase A: Transcoding & Playback System Overhaul** ✅ **100% COMPLETE**
-  - All transcoding improvements implemented
-  - User preferences for bitrate control
-  - Adaptive quality recommendations during playback
-  - Intelligent network-aware decisions
+Jellyfin servers expose chapter markers (`Chapters[]` with `MarkerType: "IntroStart"` /
+`"IntroEnd"` / `"CreditsStart"`). Add:
+- New preferences: `autoSkipIntro: Boolean`, `autoSkipCredits: Boolean`, plus
+  `skipIntroPromptSeconds: Int` (0 = silent skip, >0 = show "Skip intro" button)
+- Player listener that watches `currentPosition` against chapter markers and either
+  auto-seeks or surfaces a skip-prompt overlay
+- Setting UI in `PlaybackSettingsScreen` matching the existing dropdown style
 
-- **Phase B: Security Hardening** ✅ **COMPLETE**
-  - Removed API tokens from URL query parameters (CWE-598 fixed)
-  - All authentication now uses header-based tokens
-
-- **Phase C: Reliability & Error Handling** ✅ **COMPLETE**
-  - Progress sync resilience with offline queuing
-  - Background synchronization via WorkManager
-
-- **Phase D: UX Polish** ✅ **PARTIAL COMPLETE**
-  - D1: Empty state composables ✅
-  - D3: Accessibility (content descriptions) - Remaining
-
-- **Phase E: User Preferences** ✅ **COMPLETE**
-  - Preferred audio language selection
-  - Auto-play next episode toggle
-  - Resume playback mode (Always/Ask/Never)
-  - All preferences stored in DataStore with reactive UI
-
-### 🚧 In Progress
-- **Phase F: Code Quality & Technical Debt** 🔄 **PARTIAL**
-  - HomeScreen.kt partially refactored into smaller components
-  - VideoPlayerScreen.kt partially refactored into smaller components
-
-### 📊 Overall Status
-- **Build Status**: ✅ All files compile successfully
-- **Test Coverage**: Existing tests passing
-- **New Files Created**: 10+ (repositories, ViewModels, UI components, workers)
-- **Files Modified**: 20+ (integration across codebase)
-
-### 🎯 Next Recommended Priorities
-Based on user impact and technical debt:
-
-1. **Accessibility (D3)**: Add content descriptions for TalkBack support (~1 day)
-2. **Wire Preferences**: Connect Phase E preferences to VideoPlayerViewModel for actual playback control (~1 day)
-3. **Code Quality (F1)**: Complete large composable refactoring (~3-5 days)
+**Acceptance**: Toggling auto-skip-intro produces the expected behavior on content that
+has intro markers; absence of markers gracefully no-ops.
 
 ---
 
-## Related Documentation
+### 1.4 Android TV D-pad navigation audit (ROADMAP §2.1)
+**Status**: TV UI exists, no audit recorded
+**Effort**: 3–5 days
+**Files**: `ui/tv/TvFocusManager.kt`, `ui/screens/tv/*`, `ui/player/tv/TvVideoPlayerScreen.kt`
 
-- [KNOWN_ISSUES.md](../features/KNOWN_ISSUES.md)
-- [ROADMAP.md](ROADMAP.md)
-- [TRANSCODING_FIX_SUMMARY.md](../TRANSCODING_FIX_SUMMARY.md)
-- [TESTING_GUIDE.md](TESTING_GUIDE.md) - ViewModel testing patterns and best practices
+`TvFocusManager` (507 lines) and `TvKeyboardHandler` (425 lines) suggest serious focus
+infrastructure, but no audit document exists for any of the 10 TV screens.
+
+Per-screen audit checklist:
+- [ ] `TvHomeScreen.kt` (364 lines)
+- [ ] `TvLibraryScreen.kt` (472)
+- [ ] `TvItemDetailScreen.kt` (999) — also a refactor candidate
+- [ ] `TvSearchScreen.kt` (359)
+- [ ] `TvServerConnectionScreen.kt` (405)
+- [ ] `TvQuickConnectScreen.kt` (435)
+- [ ] `TvRequestsScreen.kt` (302)
+- [ ] `TvSettingsScreen.kt` (242)
+- [ ] `TvVideoPlayerScreen.kt` (1,089) — also a refactor candidate
+- [ ] `TvAdaptiveHomeContent.kt` (360)
+
+For each screen, verify (using a physical remote or `adb shell input keyevent`):
+- Initial focus lands on a sensible element
+- Every reachable card has a visible focus indicator
+- No focus dead-ends (no node where DPAD-back exits the app unexpectedly)
+- Long-press, menu, and play/pause buttons all behave
+
+**Acceptance**: A signed-off audit doc at `docs/plans/2026-XX-XX-tv-dpad-audit.md` per
+screen, plus issues filed for each defect found.
+
+---
+
+## Tier 2 — Reliability & polish
+
+### 2.1 Music background playback validation
+**Status**: code complete (see § Already Done); needs OEM-stress validation
+**Effort**: 1–2 days
+
+The architecture is shipped. What's missing is real-device validation:
+- Verify lock-screen art renders on Samsung One UI, MIUI, ColorOS (their notification
+  customizations break things)
+- Doze / app-standby behavior — does playback survive 30+ minutes screen-off?
+- Bluetooth headset disconnect / reconnect — does play/pause survive?
+- Phone-call interruption + resume
+
+This is testing work, not coding. Output should be a recorded test matrix in
+`docs/development/MUSIC_PLAYBACK_VALIDATION.md`.
+
+### 2.2 Offline downloads reliability on aggressive OEMs (Known Issue #7)
+**Status**: feature works; long-running edge cases unverified
+**Effort**: 2–3 days
+
+Same shape as 2.1 — the feature is shipped, but WorkManager behavior under aggressive
+battery-saver policies (Xiaomi, OPPO, Samsung) and process death during long downloads
+needs documented validation. The recently-fixed download-hang and ID-mismatch bugs
+prove this area still attracts edge cases.
+
+### 2.3 Cast image authentication
+**Status**: known trade-off
+**Effort**: 3–4 days for the proxy approach
+**File**: `ui/player/CastManager.kt`, `ui/player/cast/CastMediaLoadBuilder.kt`
+
+API tokens were removed from Cast URLs (correctly, per CWE-598). The trade-off is that
+servers locked down to require auth on `/Items/{id}/Images/*` now serve broken Cast
+artwork. Options:
+- **Short term**: document the server-side workaround in `KNOWN_ISSUES.md` (allow
+  unauthenticated image access for the Items endpoint)
+- **Medium term**: add an opt-in local proxy that injects auth headers for Cast
+  receivers — would require a local HTTP server in the app, ~3 days
+- **Long term**: implement the official Jellyfin Cast receiver protocol
+  (`F007D354` / `6F511C87`) which supports custom data payloads — this is large, not on
+  any near-term plan
+
+For now, **document the trade-off explicitly** and pick one of the longer paths in a
+later quarter.
+
+### 2.4 Content descriptions sweep (Phase D3)
+**Status**: partial — 476 `contentDescription` usages across `app/src/main`, but no
+audit confirms full coverage
+**Effort**: 1–2 days
+
+The codebase clearly cares about a11y (MediaCards has them, lots of IconButtons have
+them), but there's no documented TalkBack sweep. Run TalkBack and audit:
+- Player controls (play/pause, skip, subtitle/audio buttons)
+- Bottom nav bar items
+- All media cards on Home and Library screens
+- Settings toggles and dropdowns
+
+Filing this as one task rather than per-screen because the actual work is small once
+someone sits down with the device. Expected deliverable: small PR + a
+`docs/development/ACCESSIBILITY_AUDIT.md` checklist.
+
+### 2.5 AI Discovery TODO
+**Status**: dead-end click handler
+**Effort**: 0.5 day or "remove the button"
+**File**: `ui/screens/home/ExpressiveBentoGrid.kt:113`
+
+```kotlin
+onClick = { /* TODO: Implement AI Discovery navigation */ },
+```
+A button on the home bento grid does nothing on tap. Either wire it to the existing
+AI Assistant route (`Screen.AiAssistant.route`) or remove the button until the
+discovery feature exists. Both options ship in under an hour.
+
+---
+
+## Tier 3 — Architecture & technical debt
+
+The previous plan tracked HomeScreen / VideoPlayerScreen as the refactor targets.
+Those are done. **The new size leaders are below.** Top 10 by line count:
+
+| File | Lines | Verdict |
+|---|---:|---|
+| `ui/viewmodel/MainAppViewModel.kt` | 1,675 | God ViewModel — see 3.1 |
+| `data/repository/JellyfinRepository.kt` | 1,427 | God repository — see 3.2 |
+| `ui/screens/ImmersiveTVEpisodeDetailScreen.kt` | 1,235 | Immersive sprawl — see 3.3 |
+| `data/offline/OfflineDownloadManager.kt` | 1,216 | Borderline; deferred |
+| `ui/screens/ServerConnectionScreen.kt` | 1,215 | Not on any list — see 3.4 |
+| `data/repository/GenerativeAiRepository.kt` | 1,195 | AI repo bloat — see 3.5 |
+| `ui/screens/RequestsScreen.kt` | 1,148 | New, untracked — see 3.6 |
+| `ui/viewmodel/ServerConnectionViewModel.kt` | 1,135 | Pairs with 3.4 |
+| `ui/player/tv/TvVideoPlayerScreen.kt` | 1,089 | TV player not refactored |
+| `ui/screens/ImmersiveTVSeasonScreen.kt` | 1,069 | Immersive sprawl |
+
+### 3.1 Break up `MainAppViewModel.kt` (1,675 lines)
+**Effort**: 3–4 days
+
+Largest single source file. Holds delete-item, library load, home video load, home
+load, library item, load item, and several other concerns — each currently lives in its
+own test file (`MainAppViewModel*Test.kt`), which is a hint at the natural seams.
+
+Extract into feature-scoped ViewModels or `LibraryActions` / `HomeActions` collaborator
+classes. Concrete proposal:
+- `LibraryActionsViewModel` — delete-item, library load, library item
+- `HomeContentViewModel` — home load, home video load, home videos
+- `LoadItemViewModel` (or move into existing `MovieDetailViewModel` / `TVSeasonViewModel`)
+- `MainAppViewModel` stays as the navigation/auth coordinator only
+
+Use the existing per-feature test files as the conversion checklist.
+
+### 3.2 Decompose `JellyfinRepository.kt` (1,427 lines)
+**Effort**: 3–5 days
+
+The interface refactor (2026-03-30) decoupled consumers, but the concrete class still
+mixes media library reads, playback URL construction, image URL construction, user data
+reporting, session restoration, quick-connect, and token refresh. Natural splits:
+
+- `JellyfinLibraryRepository` — items, search, person, episodes (most of `IJellyfinRepository`)
+- `JellyfinPlaybackUrlBuilder` — `getTranscodedStreamUrl` and related
+- `JellyfinUserDataReporter` — played/unplayed/favorite reporting
+- `JellyfinSessionRepository` — session restore, quick connect, token refresh helpers
+  (already implied by the "keep concrete" list in 2026-03-30 status)
+- `JellyfinRepository` becomes a thin façade or is deleted
+
+The 2026-03-30 doc explicitly said *"do not expand IJellyfinRepository further"* — that
+guidance is correct. Instead, split the concrete class.
+
+### 3.3 Immersive detail screens (TV Show/Season/Episode, Movie)
+**Effort**: 2 days each, can be staged
+**Files**: `ImmersiveTVEpisodeDetailScreen.kt` (1,235),
+`ImmersiveTVSeasonScreen.kt` (1,069), `ImmersiveTVShowDetailScreen.kt` (1,059),
+`ImmersiveMovieDetailScreen.kt` (938)
+
+Each immersive detail screen follows the same general structure: hero section + metadata
++ actions + cast row + similar items + episodes/seasons (where applicable). Extract a
+shared `ImmersiveDetailScaffold` and section composables similar to what
+`ui/screens/details/components/` already does for the non-immersive path. Should
+collapse all four screens to ~400–500 lines each.
+
+### 3.4 ServerConnection screen + ViewModel pair (1,215 + 1,135 lines)
+**Effort**: 3 days
+
+These weren't on any prior plan but together they're 2,350 lines of single-feature code.
+Likely candidates:
+- Pull the QR-code / Quick Connect path into its own screen + VM (similar to
+  `TvQuickConnectScreen` which is its own file)
+- Pull cert-pinning prompts into `ui/screens/details/components/` or a similar
+- Extract the multi-step "scan / manual entry / test connection / submit" flow into
+  a state machine; the current single-file approach is the reason for the size
+
+### 3.5 `GenerativeAiRepository.kt` (1,195 lines)
+**Effort**: 2 days
+
+Brand new since the last plan. Holds chat, summary, mood analysis, recommendations,
+smart search, person bio, theme extraction, why-you'll-love-this, mood collections, and
+multimodal (mostly commented out). Each AI feature has its own prompt template, its own
+parsing, and its own caching strategy. Split by feature into a small `data/ai/`
+sub-package:
+
+- `AiChatService`
+- `AiSummaryService`
+- `AiRecommendationService`
+- `AiPersonBioService`
+- `AiThematicAnalysisService`
+- Repository becomes a façade over the services
+
+Bonus: the `loadBitmapFromUri` `TODO()` is in a commented-out block (lines 1169–1194) —
+when you uncomment that for multimodal support, implement it via Coil's
+`ImageRequest.Builder` and the existing `ContentResolver` pattern.
+
+### 3.6 Track the Requests feature (1,148 + 741 lines)
+**Effort**: documentation only (1 hour)
+
+`RequestsScreen.kt`, `RequestsViewModel.kt`, and `TvRequestsScreen.kt` exist but appear
+in no `docs/features/` or `docs/plans/` document. Add a feature doc covering what this
+is (Jellyseerr integration? Self-hosted requests?), where the endpoints come from, and
+which feature flags gate it. Without that, future Claude/Gemini sessions will treat the
+3 files as orphans and possibly delete them.
+
+### 3.7 Test suite is partially red (2026-03-30 note never followed up)
+**Effort**: 1–2 days of triage
+
+The repository refactor note said *"full unit test suite is not green overall."* That
+admission was 7 weeks ago and no follow-up exists. Action:
+1. Run `./gradlew testDebugUnitTest` and capture the failure list
+2. Categorize: flaky vs broken-by-refactor vs broken-by-dep-update
+3. File one issue per category, fix in order
+4. Add a `verifyTestsPass` task to CI gating, so this can't drift again
+
+### 3.8 Build warnings (~150) (Phase F / Known Issue #11)
+**Effort**: 2–3 hours
+The "warning budget" task in `build.gradle.kts` already encodes the categories
+(`deprecation: 24, nullability: 16, api-migration: 18, tooling: 12`). Reduce each
+budget by 25% as a sprint goal, then again. The pipeline machinery exists; just use it.
+
+### 3.9 `DeviceCapabilities.kt` (934 lines) — high test-value
+**Effort**: 1–2 days
+Not a refactor — a test-coverage target. This file feeds every playback decision.
+`DeviceCapabilitiesTest.kt` exists but doesn't cover the codec-detection branches
+exhaustively. Add table-driven tests across codec families (H.264, H.265 8-bit, H.265
+10-bit, AV1, VP9), bitrate tiers, and audio channel configurations. This is the kind
+of file where a future Jellyfin SDK update could silently break direct-play decisions.
+
+---
+
+## Tier 4 — Documentation hygiene
+
+The `docs/plans/` directory has accumulated 45+ files including 5 session summaries,
+3 phase-completion summaries, dated plans from February, and an `IMPROVEMENT_SYSTEM.md`
+describing how plans are managed. Three meta-problems:
+
+### 4.1 Conflicting truth sources
+`CURRENT_STATUS.md` says Music Playback is "Partial." `KNOWN_ISSUES.md` says it's
+"Incomplete." `AudioService.kt` says both are wrong (it's nearly fully wired). Pick
+**one canonical truth source** (`CURRENT_STATUS.md` is the right one — it already calls
+itself the source of truth in its own header) and rewrite the others to defer to it.
+
+### 4.2 Stale version numbers in `CLAUDE.md`
+The "High-Level Architecture" section lists Compose BOM 2026.03.01, Hilt 2.59.1, Kotlin
+2.3.20, Media3 1.10.0-rc03, Jellyfin SDK 1.8.6, versionCode 79. Every one of those
+is now stale. Replace with a single line that says *"see `gradle/libs.versions.toml`
+for current versions"* — that's where they actually live, and a doc copy will always
+drift.
+
+### 4.3 Archive the dated plans
+Move anything under `docs/plans/` whose work is shipped into `docs/archive/`. Specifically:
+- `2026-02-20-*` (TV login, surgical fixes — done)
+- `2026-02-21-*` (transcoding progress — done)
+- `2026-02-22-*` (offline download bug fixes — done)
+- `2026-02-24-*` (immersive library refactor — done)
+- `2026-03-16-upgrade-plan.md` / `upgrade-path.md` (superseded by `UPGRADE_PATH.md`)
+- `2026-03-28-*` (Android 16/17 modernization — done; see § Already Done)
+- `2026-03-30-jellyfin-repository-refactor-status.md` (refactor at chosen boundary — done)
+- `2026-04-26-android-16-17-modernization-phase-2.md` (done; see § Already Done)
+- All `SESSION_*_SUMMARY.md`, `PHASE_*_*.md`, `QUICK_WINS_*` (point-in-time records)
+
+Leave only the active strategic docs in `docs/plans/`:
+- `IMPROVEMENT_PLAN.md` (this file)
+- `CURRENT_STATUS.md`
+- `ROADMAP.md`
+- `TV_ROADMAP.md`
+- `UPGRADE_PATH.md`
+- `CINEFIN_SERVER_PLUGIN_ARCHITECTURE.md`
+- `NAVIGATION3_EVALUATION.md`
+
+---
+
+## Suggested execution order
+
+If you're picking what to do next, in priority order:
+
+1. **2.5 AI Discovery TODO** (30 min) — visible broken button, trivial fix
+2. **1.1 Resume "Ask" dialog** (0.5 day) — backend ready, ship the UI
+3. **3.6 Document the Requests feature** (1 hour) — prevents future confusion
+4. **3.7 Test suite triage** (1–2 days) — unlock confident refactoring
+5. **1.3 Auto-skip intro/outro** (2–3 days) — high-impact user feature
+6. **1.4 Android TV D-pad audit** (3–5 days) — flips TV from Partial → Complete
+7. **1.2 Subtitle gaps** (3–5 days) — last missing piece of "complete media client"
+8. **3.1 + 3.2 MainAppViewModel and JellyfinRepository decomposition** (~1 week)
+9. **3.3 Immersive screen extraction** (~1 week, can stage per-screen)
+10. **4.1 + 4.2 + 4.3 Docs cleanup** (1 day, batch it)
+
+Tier 2 reliability work (2.1 music validation, 2.2 OEM offline, 2.4 a11y sweep) is best
+folded into whichever release ships features 1-3 above — they're "do while you're already
+holding the test device."
+
+---
+
+## GitHub issue templates
+
+If you want to file these as issues directly, here are ready-to-paste titles and bodies.
+I've tagged what should be one issue vs. parent-and-children. Use the existing
+`.github/ISSUE_TEMPLATE/feature_request.md` and `bug_report.md` as the base.
+
+### Issues to file
+
+| # | Title | Type | Priority |
+|---|---|---|---|
+| A | Wire up ResumePlaybackMode.ASK dialog in player | enhancement | high |
+| B | Add subtitle sync delay preference | enhancement | medium |
+| C | Enable external subtitle support in streaming player | enhancement | medium |
+| D | Preserve ASS/SSA subtitle styling | enhancement | medium |
+| E | Add auto-skip intro/outro preference | enhancement | medium |
+| F | Android TV D-pad navigation audit (parent) | epic | high |
+| F.1–F.10 | One sub-issue per TV screen | task | medium |
+| G | Music background playback OEM validation | testing | medium |
+| H | Offline download OEM/battery-saver validation | testing | medium |
+| I | Cast image authentication strategy decision | discussion | low |
+| J | TalkBack accessibility sweep | enhancement | medium |
+| K | Implement AI Discovery click handler or remove the button | bug | low |
+| L | Decompose MainAppViewModel.kt (1,675 lines) | refactor | medium |
+| M | Decompose JellyfinRepository.kt (1,427 lines) | refactor | medium |
+| N | Extract immersive detail-screen scaffold | refactor | medium |
+| O | Split ServerConnectionScreen + ViewModel | refactor | low |
+| P | Decompose GenerativeAiRepository.kt | refactor | medium |
+| Q | Document the Requests feature | docs | high |
+| R | Triage and fix failing unit tests | bug | high |
+| S | Reduce build warning budget by 25% per sprint | chore | low |
+| T | Expand DeviceCapabilities test coverage | testing | medium |
+| U | Documentation: pick one canonical status source | docs | medium |
+| V | Documentation: archive shipped dated plans | docs | low |
+| W | Documentation: remove stale versions from CLAUDE.md | docs | low |
+
+Each issue body should cite the relevant section of this plan plus its file references.
+Most of the labor of writing those bodies is already done above — paragraphs in
+§§ 1.1–4.3 can be lifted verbatim into the issues.
+
+---
+
+## Related documentation
+
+- [CURRENT_STATUS.md](CURRENT_STATUS.md) — feature truth table
+- [ROADMAP.md](ROADMAP.md) — forward-looking feature work
+- [KNOWN_ISSUES.md](../features/KNOWN_ISSUES.md) — user-facing bugs (needs reconciliation
+  with this plan; see 4.1)
+- [UPGRADE_PATH.md](UPGRADE_PATH.md) — dependency upgrade strategy
+- [CLAUDE.md](../../CLAUDE.md) — development guidelines (needs version cleanup; see 4.2)
+- [TESTING_GUIDE.md](../development/TESTING_GUIDE.md) — ViewModel testing patterns

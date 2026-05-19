@@ -1,6 +1,6 @@
 # Jellyfin Android - Known Issues
 
-**Last verified on**: 2026-04-23
+**Last verified on**: 2026-05-19
 
 This document tracks user-facing bugs, workarounds, and fix status. For technical debt and code quality improvements, see [docs/plans/IMPROVEMENT_PLAN.md](../plans/IMPROVEMENT_PLAN.md). For feature status, see [CURRENT_STATUS.md](../plans/CURRENT_STATUS.md). For planned features, see [ROADMAP.md](../plans/ROADMAP.md).
 
@@ -36,64 +36,6 @@ This document tracks user-facing bugs, workarounds, and fix status. For technica
 
 ## 🟡 MEDIUM PRIORITY Issues (Functionality Gaps)
 
-### #5: Authentication Interceptor Blocks OkHttp Threads
-
-**Impact**: Slow token refresh, potential network timeouts
-**Affected Users**: All users during token refresh (every 24 hours)
-**File**: `app/src/main/java/com/rpeters/jellyfin/network/JellyfinAuthInterceptor.kt:159`
-
-**Details**:
-- Token refresh uses `runBlocking` in OkHttp interceptor
-- Backoff strategy uses `Thread.sleep()` which blocks OkHttp threads
-- Can cause network requests to queue up during refresh
-- May cause timeout errors if refresh takes too long
-
-**Workaround**:
-- None for users - token refresh is automatic
-- If experiencing network timeouts, restart app to force new session
-
-**Fix Status**: 🔜 Planned
-**Canonical Plan**: [IMPROVEMENT_PLAN §Phase C](../plans/IMPROVEMENT_PLAN.md#phase-c-reliability--error-handling-high)
-**Target**: Phase 3 - Code Quality
-
-**Code Location**:
-```kotlin
-// JellyfinAuthInterceptor.kt:159 - Blocking backoff
-private fun backoff(attempt: Int) {
-    Thread.sleep(calculateBackoff(attempt)) // Blocks OkHttp thread
-}
-```
-
----
-
-### #6: Music Background Playback Incomplete
-
-**Impact**: Music stops when app is backgrounded
-**Affected Users**: All users attempting to play music
-**Files**:
-- `app/src/main/java/com/rpeters/jellyfin/ui/player/audio/AudioService.kt`
-- `app/src/main/java/com/rpeters/jellyfin/ui/components/MiniPlayer.kt`
-- `app/src/main/java/com/rpeters/jellyfin/ui/screens/NowPlayingScreen.kt`
-
-**Details**:
-- Music UI exists but background playback is not implemented
-- No MediaSession integration for notification controls
-- No lock screen controls
-- Music stops when app is minimized or screen is locked
-- Queue management (shuffle, repeat) not connected
-
-**Workaround**:
-- Keep app in foreground while listening to music
-- Use screen timeout settings to keep app active longer
-- Consider using Jellyfin web player or other clients for music
-
-**Fix Status**: 🔜 In Progress
-**Canonical Plan**: [ROADMAP §1.1](../plans/ROADMAP.md#11-music-background-playback)
-**Target**: Phase 1 - Complete Core Features
-**Effort**: 5-7 days
-
----
-
 ### #7: Offline Downloads Reliability Edge Cases
 
 **Impact**: Core offline downloads work, but long-running/background edge cases can still fail
@@ -112,7 +54,7 @@ private fun backoff(attempt: Int) {
 - Prefer stable Wi-Fi for large jobs
 
 **Fix Status**: 🔜 Planned
-**Canonical Plan**: [IMPROVEMENT_PLAN §Phase C](../plans/IMPROVEMENT_PLAN.md#phase-c-reliability--error-handling-high)
+**Canonical Plan**: [IMPROVEMENT_PLAN §2.2](../plans/IMPROVEMENT_PLAN.md#22-offline-downloads-reliability-on-aggressive-oems-known-issue-7)
 **Target**: Reliability hardening
 **Effort**: 2-4 days of validation + fixes
 
@@ -154,31 +96,33 @@ private fun backoff(attempt: Int) {
 
 ### #9: Large Composables Impact Recomposition Performance
 
-**Impact**: Slower UI updates, increased memory during recomposition
-**Affected Users**: All users (noticeable on lower-end devices)
-**Files**:
-- `app/src/main/java/com/rpeters/jellyfin/ui/screens/HomeScreen.kt` (1,119 lines)
-- `app/src/main/java/com/rpeters/jellyfin/ui/player/VideoPlayerScreen.kt` (1,726 lines)
+**Impact**: Slower UI updates on lower-end devices for the largest screens
+**Affected Users**: All users (more noticeable on LOW-tier devices per ImmersivePerformanceConfig)
 
-**Details**:
-- Some Composable functions are very large (1,000+ lines)
-- Increases compilation time and memory usage during recomposition
-- Harder to maintain and test
-- Can cause unnecessary recompositions of entire screen
-- Impacts developer experience (slow IDE, hard to navigate)
+**Status update (May 2026)**: The original offenders — HomeScreen (was 1,119) and
+VideoPlayerScreen (was 1,726) — have been refactored (now 528 and 368 lines).
+The new size leaders are:
+
+| File | Lines |
+|---|---:|
+| `ui/viewmodel/MainAppViewModel.kt` | 1,675 |
+| `data/repository/JellyfinRepository.kt` | 1,427 |
+| `ui/screens/ImmersiveTVEpisodeDetailScreen.kt` | 1,235 |
+| `ui/screens/ImmersiveTVSeasonScreen.kt` | 1,069 |
+| `ui/screens/ImmersiveTVShowDetailScreen.kt` | 1,059 |
+| `ui/screens/ImmersiveMovieDetailScreen.kt` | 938 |
 
 **Workaround**:
 - None for users
 - Developers: Refactor screens into smaller composables
 
 **Fix Status**: 🔜 Planned
-**Canonical Plan**: [IMPROVEMENT_PLAN §Phase F](../plans/IMPROVEMENT_PLAN.md#phase-f-code-quality--technical-debt-carried-forward)
-**Target**: Phase 3 - Code Quality
-**Effort**: 3-5 days
+**Canonical Plan**: [IMPROVEMENT_PLAN §3](../plans/IMPROVEMENT_PLAN.md#tier-3--architecture--technical-debt)
+**Effort**: 3–4 days per major file; can be staged
 
 ---
 
-### #10: Build Warnings (~150 Warnings)
+### #11: Build Warnings (~150 Warnings)
 
 **Impact**: Developer experience, potential future issues
 **Affected Users**: Developers only
@@ -196,13 +140,13 @@ private fun backoff(attempt: Int) {
 - Developers: See canonical plan below
 
 **Fix Status**: 🔜 Planned
-**Canonical Plan**: [IMPROVEMENT_PLAN §Phase F](../plans/IMPROVEMENT_PLAN.md#phase-f-code-quality--technical-debt-carried-forward)
-**Target**: Phase 3 - Code Quality
+**Canonical Plan**: [IMPROVEMENT_PLAN §3.8](../plans/IMPROVEMENT_PLAN.md#38-build-warnings-150-phase-f--known-issue-11)
+**Target**: Reduce warning budget 25% per sprint (machinery already in place)
 **Effort**: 2-3 hours
 
 ---
 
-### #11: Android TV D-Pad Navigation Not Fully Tested
+### #12: Android TV D-Pad Navigation Not Fully Tested
 
 **Impact**: Potential navigation issues on Android TV
 **Affected Users**: Android TV users
@@ -225,13 +169,41 @@ private fun backoff(attempt: Int) {
 - Report specific navigation issues on GitHub
 
 **Fix Status**: 🔜 Planned
-**Canonical Plan**: [ROADMAP §2.1](../plans/ROADMAP.md#21-d-pad-navigation-audit)
+**Canonical Plan**: [IMPROVEMENT_PLAN §1.4](../plans/IMPROVEMENT_PLAN.md#14-android-tv-d-pad-navigation-audit-roadmap-21)
 **Target**: Phase 2 - Android TV Polish
 **Effort**: 3-5 days
 
 ---
 
 ## ✅ Recently Resolved Issues
+
+### Authentication Interceptor Blocking (✅ Fixed Mar 2026)
+**Status**: Refactored to single-flight Mutex + Deferred pattern with coroutine `delay()`
+**Files**:
+- `app/src/main/java/com/rpeters/jellyfin/network/JellyfinAuthInterceptor.kt`
+- `app/src/main/java/com/rpeters/jellyfin/data/repository/JellyfinAuthRefreshManager.kt` (new)
+**Details**:
+- Token refresh now goes through `JellyfinAuthRefreshManager` which coalesces concurrent refresh requests via `Mutex` + cached `Deferred`
+- Backoff uses coroutine `delay()` instead of `Thread.sleep()` — no longer blocks OkHttp threads
+- 10-second timeout via `withTimeoutOrNull()` prevents indefinite hangs
+- One `runBlocking` remains at the OkHttp `Authenticator` interop boundary (unavoidable because the SAM interface is synchronous); it's bounded and only fires on 401 responses
+
+### Music Background Playback (✅ Fixed Apr 2026)
+**Status**: Full MediaSession integration shipped; foreground service hardened for Android 17
+**Files**:
+- `app/src/main/java/com/rpeters/jellyfin/ui/player/audio/AudioService.kt` (442 lines)
+- `app/src/main/java/com/rpeters/jellyfin/ui/player/audio/AudioServiceConnection.kt`
+- `app/src/main/java/com/rpeters/jellyfin/ui/player/audio/AudioNotificationProvider.kt`
+**Details**:
+- `AudioService` extends `MediaSessionService` with full callback handling
+- `DefaultMediaNotificationProvider` provides system notification + lock screen controls
+- Media buttons (play/pause/next/prev/seek/stop) all wired through `onMediaButtonEvent`
+- Shuffle and repeat exposed via `AudioServiceConnection.toggleShuffle()` / `toggleRepeatMode()`
+- Session state persistence via `AudioSessionStateStore` survives process death
+- `onTaskRemoved()` cleanup for Android 17 background-constraint compliance
+- Manifest declares `android:foregroundServiceType="mediaPlayback"`
+
+**Remaining**: OEM-stress validation on Samsung One UI, MIUI, ColorOS — tracked in [IMPROVEMENT_PLAN §2.1](../plans/IMPROVEMENT_PLAN.md#21-music-background-playback-validation)
 
 ### Auto-Play Next Episode (✅ Fixed Jan 23, 2026)
 **Status**: Implemented with countdown UI and automatic continuation
@@ -390,12 +362,12 @@ For a summary of active issues and overall project status, please refer to the *
 We welcome contributions to fix these issues! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ### High-Impact Fixes Needed
-1. **Auth refresh retry/backoff** (#5) - Medium priority, avoid blocking OkHttp threads
-2. **Music background playback** (#6) - Already in progress, help welcome
+1. **Resume "Ask" dialog** - Backend ready; just write the dialog UI (~0.5 day)
+2. **Subtitle gaps** (#8) - External subtitles, ASS/SSA styling, sync delay
 
 ### Good First Issues
-- **Build warnings** (#9) - Low risk, good for beginners
-- **Android TV testing** (#10) - Manual testing, no code changes required initially
+- **Build warnings** (#11) - Low risk, good for beginners
+- **Android TV testing** (#12) - Manual testing, no code changes required initially
 
 ---
 
@@ -419,5 +391,5 @@ We welcome contributions to fix these issues! See [CONTRIBUTING.md](CONTRIBUTING
   - 🟡 **Medium**: Feature incomplete or degraded, affects some users
   - 🟢 **Low**: Minor annoyances, developer experience, performance on edge cases
 
-**Last Review**: January 30, 2026
-**Next Review**: TBD (review after each major release)
+**Last Review**: May 19, 2026
+**Next Review**: After IMPROVEMENT_PLAN Tier 1 items ship
