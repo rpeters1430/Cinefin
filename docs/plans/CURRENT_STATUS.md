@@ -1,6 +1,6 @@
 # Jellyfin Android - Current Status
 
-**Last verified on**: 2026-04-22
+**Last verified on**: 2026-05-19
 
 > **Quick Links**: [Feature Status](CURRENT_STATUS.md) | [Known Issues](../features/KNOWN_ISSUES.md) | [Roadmap](ROADMAP.md) | [Upgrade Path](UPGRADE_PATH.md)
 
@@ -12,8 +12,8 @@ This document provides a comprehensive snapshot of what works RIGHT NOW in the J
 
 | Status | Meaning | Current Features |
 |---|---|---|
-| **Complete** | Implemented and validated in current app behavior | Authentication, Secure Storage, Certificate Pinning, Video Playback, Adaptive Bitrate, Transcoding Diagnostics, AI Assistant, AI Summaries, Library Browsing, Search, Favorites, Resume Playback, Picture-in-Picture, Chromecast, Auto-Play Next Episode, **Offline Downloads**, Firebase Integration, Material 3 UI, Adaptive Navigation, Recently Added Carousel |
-| **Partial** | User-visible functionality exists but key capabilities are still missing | Music Playback, Android TV |
+| **Complete** | Implemented and validated in current app behavior | Authentication, Secure Storage, Certificate Pinning, Video Playback, Adaptive Bitrate, Transcoding Diagnostics, AI Assistant, AI Summaries, Library Browsing, Search, Favorites, Resume Playback, Picture-in-Picture, Chromecast, Auto-Play Next Episode, **Offline Downloads**, **Music Playback (Background)**, Firebase Integration, Material 3 UI, Adaptive Navigation, Recently Added Carousel |
+| **Partial** | User-visible functionality exists but key capabilities are still missing | Android TV |
 | **Not started** | Not yet implemented (backlog only) | Live TV & DVR, Sync Play, Multi-Profile Support, Home Screen Widgets |
 
 This table is the source of truth used by [ROADMAP.md](ROADMAP.md), [KNOWN_ISSUES.md](../features/KNOWN_ISSUES.md), and [IMPROVEMENT_PLAN.md](IMPROVEMENT_PLAN.md).
@@ -39,6 +39,7 @@ This table is the source of truth used by [ROADMAP.md](ROADMAP.md), [KNOWN_ISSUE
 | **Picture-in-Picture** | ✅ Complete | Phone, Tablet, TV | Manual/auto-enter, remote actions (play/pause, skip ±30s) |
 | **Chromecast** | ✅ Complete | Phone, Tablet | Full casting with seek, volume, position tracking |
 | **Auto-Play Next Episode** | ✅ Complete | Phone, Tablet | Countdown UI, automatic continuation |
+| **Music Playback (Background)** | ✅ Complete | Phone, Tablet | MediaSession with notification + lock-screen controls, shuffle, repeat, queue management, session state persistence, onTaskRemoved cleanup. Pending OEM-stress validation (see [IMPROVEMENT_PLAN §2.1](IMPROVEMENT_PLAN.md#21-music-background-playback-validation)) |
 | **Offline Downloads** | ✅ Complete | Phone, Tablet | Background WorkManager downloads, progress notifications, storage management, offline playback routing, delete/cleanup actions, Wi-Fi-only setting |
 | **Firebase Integration** | ✅ Complete | All | Analytics, Config, Crashlytics, App Check |
 | **Material 3 UI** | ✅ Complete | All | Expressive components, dark/light/AMOLED themes |
@@ -49,7 +50,6 @@ This table is the source of truth used by [ROADMAP.md](ROADMAP.md), [KNOWN_ISSUE
 
 | Feature | Status | Platforms | What Works | What's Missing | Issue Link |
 |---------|--------|-----------|------------|----------------|------------|
-| **Music Playback** | ⚠️ Partial | Phone, Tablet | UI, basic playback | Background playback, notification controls, lock screen controls, queue management | [ROADMAP §1.1](ROADMAP.md#11-music-background-playback) |
 | **Android TV** | ⚠️ Partial | Android TV | UI screens, basic navigation | D-pad testing, focus indicators, player controls | [ROADMAP §2.1](ROADMAP.md#21-d-pad-navigation-audit) |
 
 ### ❌ Not Implemented
@@ -72,7 +72,7 @@ This table is the source of truth used by [ROADMAP.md](ROADMAP.md), [KNOWN_ISSUE
 
 - **Min SDK**: Android 8.0 (API 26)
 - **Target SDK**: Android 15 (API 35)
-- **Compile SDK**: Android 16 Preview (API 36)
+- **Compile SDK**: Android 17 Preview (API 37)
 - **Navigation**: Bottom navigation bar, adaptive navigation suite
 - **UI**: Full Material 3 Expressive design
 - **Features**: All core features fully functional
@@ -99,29 +99,21 @@ This table is the source of truth used by [ROADMAP.md](ROADMAP.md), [KNOWN_ISSUE
 
 ### Architecture Stack
 
-| Component | Version | Status |
-|-----------|---------|--------|
-| **Kotlin** | 2.3.20 | ✅ Stable |
-| **Compose BOM** | 2026.03.01 | ✅ Latest |
-| **Orbit MVI** | 9.0.0 | ✅ New Standard |
-| **Material 3** | 1.5.0-alpha16 | ⚠️ Alpha (intentional for Expressive) |
-| **Hilt** | 2.59.2 | ✅ Stable |
-| **Coroutines** | 1.10.2 | ✅ Stable |
-| **Retrofit** | 3.0.0 | ✅ Stable |
-| **OkHttp** | 5.3.2 | ✅ Stable |
-| **Coil** | 3.4.0 | ✅ Stable |
-| **Media3** | 1.10.0 | ✅ Stable (March 30 release) |
-| **Jellyfin SDK** | 1.8.6 | ✅ Stable |
-| **Navigation** | 2.9.7 | ✅ Stable |
-| **Lifecycle** | 2.10.0 | ✅ Stable |
-| **Paging** | 3.5.0-alpha01 | ⚠️ Alpha |
+Current versions are the source of truth in `gradle/libs.versions.toml`. The
+project tracks a deliberate "stable-first" policy with alpha/beta exceptions
+documented per-dependency in [UPGRADE_PATH.md](UPGRADE_PATH.md).
 
-
-**See**: [UPGRADE_PATH.md](UPGRADE_PATH.md) for full dependency upgrade strategy.
+Key technology choices:
+- UI: Jetpack Compose with Material 3 (Expressive components on alpha track)
+- Architecture: MVVM + Repository, Orbit MVI for new ViewModels
+- DI: Hilt
+- Media: Media3 / ExoPlayer with Jellyfin FFmpeg decoder
+- AI: Google Gemini (on-device Nano + cloud fallback)
+- Firebase: Crashlytics, Analytics, Remote Config, App Check
 
 ### Build Status
 
-- **CI/CD**: ⚠️ Dependency check workflow is active; primary Android CI workflows referenced in docs are currently missing from `.github/workflows`
+- **CI/CD**: ✅ Android CI (`android-ci.yml`), dependency check, Claude/Gemini automation, and release workflows all active
 - **Unit Tests**: ✅ Passing (target 70%+ coverage)
 - **Lint**: ⚠️ ~150 non-critical warnings (see [ROADMAP §3.2](ROADMAP.md#32-fix-build-warnings))
 - **Coverage**: ✅ JaCoCo configured and reporting
@@ -147,7 +139,7 @@ This table is the source of truth used by [ROADMAP.md](ROADMAP.md), [KNOWN_ISSUE
 - **Migration Path**: Will update when Material 3 Expressive reaches stable (see [UPGRADE_PATH.md](UPGRADE_PATH.md))
 
 ### Performance Considerations
-- **Large Composables**: Some screens are large (HomeScreen: 1,119 lines, VideoPlayerScreen: 1,726 lines) - planned refactor in [ROADMAP §3.1](ROADMAP.md#31-refactor-large-files)
+- **Large Composables**: The original HomeScreen and VideoPlayerScreen refactors are complete (now 528 and 368 lines respectively). New refactor targets are tracked in [IMPROVEMENT_PLAN §3](IMPROVEMENT_PLAN.md#tier-3--architecture--technical-debt) — MainAppViewModel (1,675), JellyfinRepository (1,427), and the immersive detail screens.
 - **Image Loading**: Optimized with device performance profiles (LOW/MEDIUM/HIGH/FLAGSHIP tiers)
 - **Memory**: LeakCanary enabled in debug builds for leak detection
 
@@ -161,7 +153,14 @@ This table is the source of truth used by [ROADMAP.md](ROADMAP.md), [KNOWN_ISSUE
 
 ## Development Status
 
-### Recent Completions (January - February 2026)
+### Recent Completions (March – May 2026)
+- ✅ **Music background playback shipped**: MediaSession, notification provider, shuffle/repeat, session persistence, Android 17 task-removed hardening (Apr 2026)
+- ✅ **Android 16 modernization**: ProgressStyle notifications, standardized haptic curves (seekTick, limitReached) (Apr 2026)
+- ✅ **Auth refresh redesigned**: Removed blocking Thread.sleep + runBlocking patterns in favor of single-flight Mutex/Deferred with bounded timeout (Mar 2026)
+- ✅ **Repository interface refactor**: 12 consumers moved to IJellyfinRepository, cast playback split off to ICastPlaybackRepository (Mar 2026)
+- ✅ **VideoPlayerScreen extraction**: 1,726 → 368 lines; controls and gestures extracted to dedicated files (Mar 2026)
+
+### Recent Completions (January – February 2026)
 - ✅ **API Token Security**: Removed API tokens from URL query parameters (Feb 2026)
 - ✅ **Adaptive Bitrate**: Implemented adaptive bitrate monitoring and configurable playback settings (Feb 2026)
 - ✅ **AI Assistant**: Implemented AI Assistant with on-device and cloud capabilities (Feb 2026)
@@ -175,14 +174,13 @@ This table is the source of truth used by [ROADMAP.md](ROADMAP.md), [KNOWN_ISSUE
 - ✅ **Chromecast enhancements**: seek bar, volume control, position tracking (Jan 2026)
 
 ### Active Development
-- 🔄 Music background playback (in progress - [ROADMAP §1.1](ROADMAP.md))
 - 🔄 Android TV D-pad navigation testing (in progress - [ROADMAP §2.1](ROADMAP.md))
 
 ### Code Quality Focus
 - 🎯 Test coverage target: 70%+ for ViewModels and Repositories
 - 🎯 Refactoring large composables (ongoing - [ROADMAP §3.1](ROADMAP.md))
 - 🎯 Fixing build warnings (planned - [ROADMAP §3.2](ROADMAP.md))
-- 🎯 Auth refresh retry improvements (planned - [IMPROVEMENT_PLAN §Phase C](IMPROVEMENT_PLAN.md#phase-c-reliability--error-handling-high))
+- 🎯 Auth refresh redesigned: complete (see [IMPROVEMENT_PLAN § Already Done](IMPROVEMENT_PLAN.md#already-done-reclassified))
 
 ---
 
@@ -226,7 +224,7 @@ This table is the source of truth used by [ROADMAP.md](ROADMAP.md), [KNOWN_ISSUE
 
 **What Works Now**: The Jellyfin Android client is a fully functional media player with secure authentication, video playback, library browsing, search, favorites, Picture-in-Picture, Chromecast, and auto-play next episode. The UI is modern with Material 3 Expressive components, and the architecture is solid with MVVM, Hilt DI, and Kotlin Coroutines.
 
-**What's In Progress**: Music background playback, Android TV D-pad navigation, and offline reliability polish are under active development.
+**What's In Progress**: Android TV D-pad navigation and offline reliability polish are under active development.
 
 **What's Planned**: Live TV, Sync Play, multi-profile support, and home screen widgets are on the roadmap for future phases.
 
