@@ -1,6 +1,5 @@
 package com.rpeters.jellyfin.ui.screens
 
-import android.app.Activity
 import androidx.annotation.OptIn
 import androidx.annotation.VisibleForTesting
 import androidx.compose.animation.core.animateDpAsState
@@ -12,7 +11,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,7 +25,6 @@ import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
 import com.rpeters.jellyfin.data.JellyfinServer
-import com.rpeters.jellyfin.ui.adaptive.rememberAdaptiveLayoutConfig
 import com.rpeters.jellyfin.ui.components.*
 import com.rpeters.jellyfin.ui.components.aiAura
 import com.rpeters.jellyfin.ui.components.immersive.*
