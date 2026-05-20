@@ -60,7 +60,7 @@ firebaseBom = "34.13.0"
 googleGmsGoogleServices = "4.4.4"
 googleFirebaseCrashlytics = "3.0.7"
 googleFirebasePerf = "2.0.2"
-glance = "1.2.0-rc01"
+glance = "1.3.0-alpha01"
 mlkitGenaiPrompt = "1.0.0-beta2"
 orbit = "11.0.0"
 
