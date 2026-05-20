@@ -200,7 +200,7 @@ class CinefinApplication : Application(), SingletonImageLoader.Factory, Configur
     }
 
     private fun initializeModernSurfaces() {
-        applicationScope.launch {
+        applicationScope.launch(Dispatchers.Main) {
             try {
                 modernSurfaceCoordinatorProvider.get().initialize()
             } catch (e: CancellationException) {

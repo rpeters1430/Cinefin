@@ -43,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -95,7 +96,10 @@ fun ExpressiveMediaCard(
     val cardModifier = modifier
         .width(200.dp)
         .height(320.dp)
-        .scale(scale)
+        .graphicsLayer {
+            scaleX = scale
+            scaleY = scale
+        }
         .primaryExpressiveGlow(
             color = glowColor,
             alpha = if (cardType == ExpressiveCardType.ELEVATED) 0.12f else 0.08f,
@@ -505,7 +509,10 @@ fun ExpressiveContentCard(
 
     ElevatedCard(
         modifier = modifier
-            .scale(scale)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
             .then(
                 if (onClick != null) {
                     Modifier.clickable(

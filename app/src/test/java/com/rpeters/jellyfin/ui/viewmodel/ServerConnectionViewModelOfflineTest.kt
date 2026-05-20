@@ -1,6 +1,8 @@
 package com.rpeters.jellyfin.ui.viewmodel
 
 import android.content.Context
+import androidx.datastore.preferences.core.edit
+import androidx.test.core.app.ApplicationProvider
 import com.rpeters.jellyfin.data.SecureCredentialManager
 import com.rpeters.jellyfin.data.repository.IJellyfinAuthRepository
 import com.rpeters.jellyfin.data.repository.IJellyfinRepository
@@ -14,6 +16,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -21,13 +25,22 @@ import kotlinx.coroutines.test.setMain
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.After
 import org.junit.Test
+import kotlinx.coroutines.test.resetMain
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 import javax.inject.Provider
+import com.rpeters.jellyfin.data.common.TestDispatcherProvider
+import com.rpeters.jellyfin.data.repository.common.ApiResult
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.cancel
 
 /**
  * Tests for ServerConnectionViewModel offline startup behavior.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
+@RunWith(RobolectricTestRunner::class)
 class ServerConnectionViewModelOfflineTest {
 
     private lateinit var repository: IJellyfinRepository
@@ -37,6 +50,7 @@ class ServerConnectionViewModelOfflineTest {
     private lateinit var connectivityChecker: ConnectivityChecker
     private lateinit var offlineDownloadManager: com.rpeters.jellyfin.data.offline.OfflineDownloadManager
     private lateinit var offlineDownloadManagerProvider: Provider<com.rpeters.jellyfin.data.offline.OfflineDownloadManager>
+    private lateinit var discoveryRepository: com.rpeters.jellyfin.data.repository.IJellyfinDiscoveryRepository
     private lateinit var context: Context
     private lateinit var viewModel: ServerConnectionViewModel
 
@@ -46,14 +60,16 @@ class ServerConnectionViewModelOfflineTest {
     fun setup() {
         Dispatchers.setMain(testDispatcher)
 
+        context = ApplicationProvider.getApplicationContext()
         repository = mockk(relaxed = true)
         authRepository = mockk(relaxed = true)
         secureCredentialManager = mockk(relaxed = true)
         certificatePinningManager = mockk(relaxed = true)
         connectivityChecker = mockk(relaxed = true)
+        discoveryRepository = mockk(relaxed = true)
         offlineDownloadManager = mockk(relaxed = true)
         offlineDownloadManagerProvider = Provider { offlineDownloadManager }
-        context = mockk(relaxed = true)
+        every { offlineDownloadManager.downloads } returns MutableStateFlow(emptyList())
 
         // Setup default mocks
         coEvery { repository.isConnectedFlow } returns flowOf(false)
@@ -63,6 +79,29 @@ class ServerConnectionViewModelOfflineTest {
                 every { isAvailable } returns false
                 every { isWeakOnly } returns false
             }
+        coEvery { authRepository.testServerConnection(any()) } returns ApiResult.Success(mockk(relaxed = true))
+        coEvery { authRepository.authenticateUser(any(), any(), any()) } returns ApiResult.Success(mockk(relaxed = true))
+    }
+
+    @After
+    fun tearDown() {
+        if (::viewModel.isInitialized) {
+            viewModel.viewModelScope.cancel()
+        }
+        io.mockk.unmockkAll()
+        Dispatchers.resetMain()
+    }
+
+    private suspend fun awaitCondition(timeoutMs: Long = 2000, condition: suspend () -> Boolean) {
+        val start = System.currentTimeMillis()
+        while (System.currentTimeMillis() - start < timeoutMs) {
+            if (condition()) return
+            delay(10)
+            Thread.sleep(10)
+        }
+        if (!condition()) {
+            throw AssertionError("Condition not met within $timeoutMs ms")
+        }
     }
 
     @Test
@@ -87,9 +126,14 @@ class ServerConnectionViewModelOfflineTest {
             secureCredentialManager,
             certificatePinningManager,
             connectivityChecker,
+            discoveryRepository,
             offlineDownloadManagerProvider,
             context,
+            TestDispatcherProvider(testDispatcher),
         )
+        awaitCondition {
+            viewModel.connectionState.value.savedServerUrl == "https://server.com"
+        }
         advanceUntilIdle()
 
         // Then: Auto-login should be skipped
@@ -130,9 +174,14 @@ class ServerConnectionViewModelOfflineTest {
             secureCredentialManager,
             certificatePinningManager,
             connectivityChecker,
+            discoveryRepository,
             offlineDownloadManagerProvider,
             context,
+            TestDispatcherProvider(testDispatcher),
         )
+        awaitCondition {
+            viewModel.connectionState.value.savedServerUrl == "https://server.com"
+        }
         advanceUntilIdle()
 
         // Then: Initially offline with error
@@ -177,9 +226,14 @@ class ServerConnectionViewModelOfflineTest {
             secureCredentialManager,
             certificatePinningManager,
             connectivityChecker,
+            discoveryRepository,
             offlineDownloadManagerProvider,
             context,
+            TestDispatcherProvider(testDispatcher),
         )
+        awaitCondition {
+            viewModel.connectionState.value.savedServerUrl == "https://server.com"
+        }
         advanceUntilIdle()
 
         // Then: Should attempt auto-login
@@ -204,33 +258,29 @@ class ServerConnectionViewModelOfflineTest {
             secureCredentialManager,
             certificatePinningManager,
             connectivityChecker,
+            discoveryRepository,
             offlineDownloadManagerProvider,
             context,
+            TestDispatcherProvider(testDispatcher),
         )
+        awaitCondition {
+            viewModel.connectionState.value.savedServerUrl == "https://server.com"
+        }
         advanceUntilIdle()
-
-        // When: User tries to connect manually
-        // Note: The actual implementation would check connectivity in connectToServer
-        // For now, the NetworkStateInterceptor will catch it
-
-        // Then: Connection should be intercepted by NetworkStateInterceptor
-        // This is tested in NetworkStateInterceptorTest
     }
 
-    private fun setupDataStoreWithCredentials(
+    private suspend fun setupDataStoreWithCredentials(
         serverUrl: String = "",
         username: String = "",
         rememberLogin: Boolean = true,
     ) {
-        val preferences = mockk<androidx.datastore.preferences.core.Preferences>(relaxed = true)
-        every { preferences[com.rpeters.jellyfin.ui.viewmodel.PreferencesKeys.SERVER_URL] } returns serverUrl
-        every { preferences[com.rpeters.jellyfin.ui.viewmodel.PreferencesKeys.USERNAME] } returns username
-        every { preferences[com.rpeters.jellyfin.ui.viewmodel.PreferencesKeys.REMEMBER_LOGIN] } returns rememberLogin
-        every { preferences[com.rpeters.jellyfin.ui.viewmodel.PreferencesKeys.BIOMETRIC_AUTH_ENABLED] } returns false
-        every { preferences[com.rpeters.jellyfin.ui.viewmodel.PreferencesKeys.BIOMETRIC_REQUIRE_STRONG] } returns false
-
-        val dataStore = mockk<androidx.datastore.core.DataStore<androidx.datastore.preferences.core.Preferences>>(relaxed = true)
-        coEvery { dataStore.data } returns flowOf(preferences)
-        every { context.dataStore } returns dataStore
+        context.dataStore.edit { preferences ->
+            preferences.clear()
+            preferences[PreferencesKeys.SERVER_URL] = serverUrl
+            preferences[PreferencesKeys.USERNAME] = username
+            preferences[PreferencesKeys.REMEMBER_LOGIN] = rememberLogin
+            preferences[PreferencesKeys.BIOMETRIC_AUTH_ENABLED] = false
+            preferences[PreferencesKeys.BIOMETRIC_REQUIRE_STRONG] = false
+        }
     }
 }

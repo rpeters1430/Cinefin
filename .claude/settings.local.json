@@ -93,7 +93,8 @@
       "Bash(Select-Object -ExpandProperty Name)",
       "Bash(Sort-Object)",
       "PowerShell(Select-String *)",
-      "Bash(gh issue *)"
+      "Bash(gh issue *)",
+      "PowerShell(Get-Content *)"
     ],
     "deny": [],
     "ask": [],

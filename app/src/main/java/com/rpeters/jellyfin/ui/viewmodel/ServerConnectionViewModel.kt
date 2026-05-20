@@ -34,6 +34,8 @@ import com.rpeters.jellyfin.utils.ServerUrlValidator
 import com.rpeters.jellyfin.utils.normalizeServerUrl
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import com.rpeters.jellyfin.data.common.DispatcherProvider
+import com.rpeters.jellyfin.data.common.DefaultDispatcherProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -77,6 +79,7 @@ class ServerConnectionViewModel @Inject constructor(
     private val discoveryRepository: com.rpeters.jellyfin.data.repository.IJellyfinDiscoveryRepository,
     private val offlineDownloadManagerProvider: Provider<OfflineDownloadManager>,
     @ApplicationContext private val context: Context,
+    private val dispatchers: DispatcherProvider = DefaultDispatcherProvider(),
 ) : ViewModel() {
 
     private val _connectionState = MutableStateFlow(ConnectionState())
@@ -326,7 +329,7 @@ class ServerConnectionViewModel @Inject constructor(
 
         viewModelScope.launch {
             // First test server connection with enhanced feedback (IO dispatcher)
-            val serverResult = withContext(Dispatchers.IO) {
+            val serverResult = withContext(dispatchers.io) {
                 authRepository.testServerConnection(normalizedServerUrl)
             }
             when (serverResult) {
@@ -338,7 +341,7 @@ class ServerConnectionViewModel @Inject constructor(
                     )
 
                     // Now authenticate with enhanced feedback (IO dispatcher)
-                    val authResult = withContext(Dispatchers.IO) {
+                    val authResult = withContext(dispatchers.io) {
                         authRepository.authenticateUser(normalizedServerUrl, username, password)
                     }
                     when (authResult) {
@@ -546,7 +549,7 @@ class ServerConnectionViewModel @Inject constructor(
         // Use NonCancellable to prevent a race condition where navigation (triggered by
         // repository.isConnected becoming true) cancels this coroutine between the DataStore
         // write and the password save, leaving USERNAME saved but hasSavedPassword = false.
-        withContext(Dispatchers.IO + NonCancellable) {
+        withContext(dispatchers.io + NonCancellable) {
             context.dataStore.edit { preferences ->
                 preferences[PreferencesKeys.SERVER_URL] = normalizedUrl
                 preferences[PreferencesKeys.USERNAME] = username
@@ -562,7 +565,7 @@ class ServerConnectionViewModel @Inject constructor(
 
     private suspend fun clearSavedCredentials() {
         val currentState = _connectionState.value
-        withContext(Dispatchers.IO) {
+        withContext(dispatchers.io) {
             context.dataStore.edit { preferences ->
                 preferences.remove(PreferencesKeys.SERVER_URL)
                 preferences.remove(PreferencesKeys.USERNAME)
@@ -584,7 +587,7 @@ class ServerConnectionViewModel @Inject constructor(
     }
 
     private suspend fun clearPersistedSessionToken() {
-        withContext(Dispatchers.IO) {
+        withContext(dispatchers.io) {
             context.dataStore.edit { preferences ->
                 preferences.remove(PreferencesKeys.SESSION_TOKEN)
                 preferences.remove(PreferencesKeys.SESSION_USER_ID)
@@ -601,7 +604,7 @@ class ServerConnectionViewModel @Inject constructor(
             return
         }
 
-        withContext(Dispatchers.IO) {
+        withContext(dispatchers.io) {
             context.dataStore.edit { preferences ->
                 preferences[PreferencesKeys.SERVER_URL] = normalizeServerUrl(server.url)
                 preferences[PreferencesKeys.USERNAME] = server.username
@@ -749,7 +752,7 @@ class ServerConnectionViewModel @Inject constructor(
         )
     }
 
-    private suspend fun hasPlayableOfflineMedia(): Boolean = withContext(Dispatchers.IO) {
+    private suspend fun hasPlayableOfflineMedia(): Boolean = withContext(dispatchers.io) {
         val offlineDownloadManager = offlineDownloadManagerProvider.get()
         offlineDownloadManager.downloads.value.any { download ->
             if (download.status != DownloadStatus.COMPLETED) return@any false
@@ -859,13 +862,13 @@ class ServerConnectionViewModel @Inject constructor(
 
             // First test server connection
             when (
-                val serverResult = withContext(Dispatchers.IO) {
+                val serverResult = withContext(dispatchers.io) {
                     authRepository.testServerConnection(normalizedServerUrl)
                 }
             ) {
                 is ApiResult.Success -> {
                     when (
-                        val enabledResult = withContext(Dispatchers.IO) {
+                        val enabledResult = withContext(dispatchers.io) {
                             authRepository.isQuickConnectEnabled(normalizedServerUrl)
                         }
                     ) {
@@ -881,7 +884,7 @@ class ServerConnectionViewModel @Inject constructor(
                         }
                         is ApiResult.Error -> {
                             _connectionState.value = _connectionState.value.copy(
-                                isConnecting = false,
+                                  isConnecting = false,
                                 quickConnectStatus = "",
                                 errorMessage = "Failed to check Quick Connect availability: ${enabledResult.message}",
                             )
@@ -896,7 +899,7 @@ class ServerConnectionViewModel @Inject constructor(
 
                     // Now initiate Quick Connect
                     when (
-                        val quickConnectResult = withContext(Dispatchers.IO) {
+                        val quickConnectResult = withContext(dispatchers.io) {
                             authRepository.initiateQuickConnect(normalizedServerUrl)
                         }
                     ) {
@@ -965,7 +968,7 @@ class ServerConnectionViewModel @Inject constructor(
             }
 
             when (
-                val stateResult = withContext(Dispatchers.IO) {
+                val stateResult = withContext(dispatchers.io) {
                     authRepository.getQuickConnectState(serverUrl, secret)
                 }
             ) {
@@ -975,7 +978,7 @@ class ServerConnectionViewModel @Inject constructor(
                         "Approved" -> {
                             // User approved the connection, authenticate
                             when (
-                                val authResult = withContext(Dispatchers.IO) {
+                                val authResult = withContext(dispatchers.io) {
                                     authRepository.authenticateWithQuickConnect(serverUrl, secret)
                                 }
                             ) {

@@ -55,25 +55,17 @@
 -dontwarn org.conscrypt.ConscryptHostnameVerifier
 
 # OkHttp 5.x rules - keep internal classes used by Retrofit/SSE
--keep class okhttp3.internal.** { *; }
 -dontwarn okhttp3.internal.**
 
 # Keep OkHttp SSE (Server-Sent Events) support
--keep class okhttp3.sse.** { *; }
 -dontwarn okhttp3.sse.**
 
-# Keep OkHttp core classes
--keep class okhttp3.** { *; }
--keep interface okhttp3.** { *; }
+# Don't warn about OkHttp core classes
 -dontwarn okhttp3.**
 
 # ================================
 # JELLYFIN SDK
 # ================================
-# Preserve Jellyfin SDK classes and methods to maintain API functionality
--keep class org.jellyfin.sdk.** { *; }
--keep interface org.jellyfin.sdk.** { *; }
-
 # Keep all model classes that might be used for API responses
 -keep class org.jellyfin.sdk.model.** { *; }
 -keep class org.jellyfin.sdk.api.** { *; }
@@ -120,15 +112,6 @@
 # ================================
 # MEDIA3 EXOPLAYER
 # ================================
-# Essential for video/audio playback functionality
--keep class androidx.media3.** { *; }
--keep interface androidx.media3.** { *; }
-
-# Keep ExoPlayer implementation classes
--keep class androidx.media3.exoplayer.** { *; }
--keep class androidx.media3.ui.** { *; }
--keep class androidx.media3.common.** { *; }
-
 # Don't warn about Media3 dependencies
 -dontwarn androidx.media3.**
 
@@ -160,13 +143,6 @@
 # ================================
 # COIL IMAGE LOADING
 # ================================
-# Prevent image loading failures
--keep class coil.** { *; }
--keep interface coil.** { *; }
-
-# Keep Coil Compose integration
--keep class coil.compose.** { *; }
-
 # Don't warn about Coil dependencies
 -dontwarn coil.**
 
@@ -177,28 +153,12 @@
 -keepnames class kotlinx.coroutines.internal.MainDispatcherFactory {}
 -keepnames class kotlinx.coroutines.CoroutineExceptionHandler {}
 
-# Keep coroutines intrinsics
--keep class kotlinx.coroutines.** { *; }
+# Don't warn about coroutines
 -dontwarn kotlinx.coroutines.**
 
 # ================================
 # JETPACK COMPOSE
 # ================================
-# Keep Compose runtime classes
--keep class androidx.compose.** { *; }
--keep interface androidx.compose.** { *; }
-
-# Keep Compose compiler generated classes
--keep class androidx.compose.runtime.** { *; }
--keep class androidx.compose.ui.** { *; }
--keep class androidx.compose.material3.** { *; }
-
-# Keep @Composable functions
--keep @androidx.compose.runtime.Composable class *
--keep class * {
-    @androidx.compose.runtime.Composable <methods>;
-}
-
 # Fix for fontWeightAdjustment NoSuchFieldError on some devices
 # Keep Configuration class and all its fields for Compose compatibility
 -keep class android.content.res.Configuration {
@@ -211,11 +171,8 @@
 # ================================
 # ANDROIDX & ANDROID CORE
 # ================================
-# Keep essential Android framework classes
--keep class androidx.** { *; }
--keep interface androidx.** { *; }
-
 # Keep DataStore preferences
+# (Note: Broad androidx.** rules were removed to allow R8 optimization. Libraries bundle their own rules.)
 -keep class androidx.datastore.** { *; }
 
 # Keep Navigation component classes

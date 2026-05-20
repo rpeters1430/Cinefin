@@ -10,6 +10,8 @@ import com.rpeters.jellyfin.data.repository.CinefinPluginRepository
 import com.rpeters.jellyfin.data.repository.JellyfinMediaRepository
 import com.rpeters.jellyfin.data.repository.JellyfinSearchRepository
 import com.rpeters.jellyfin.data.repository.SeerrRepository
+import com.rpeters.jellyfin.data.repository.SonarrRepository
+import com.rpeters.jellyfin.data.repository.RadarrRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
@@ -36,6 +38,12 @@ class RequestsViewModelTest {
     private lateinit var seerrRepository: SeerrRepository
 
     @MockK(relaxed = true)
+    private lateinit var sonarrRepository: SonarrRepository
+
+    @MockK(relaxed = true)
+    private lateinit var radarrRepository: RadarrRepository
+
+    @MockK(relaxed = true)
     private lateinit var jellyfinSearchRepository: JellyfinSearchRepository
 
     @MockK(relaxed = true)
@@ -43,6 +51,9 @@ class RequestsViewModelTest {
 
     @MockK(relaxed = true)
     private lateinit var preferencesRepository: SeerrPreferencesRepository
+
+    @MockK(relaxed = true)
+    private lateinit var arrPreferencesRepository: com.rpeters.jellyfin.data.preferences.ArrPreferencesRepository
 
     @MockK(relaxed = true)
     private lateinit var cinefinPluginRepository: CinefinPluginRepository
@@ -56,6 +67,8 @@ class RequestsViewModelTest {
         Dispatchers.setMain(testDispatcher)
 
         coEvery { preferencesRepository.seerrPreferencesFlow } returns MutableStateFlow(SeerrPreferences.DEFAULT)
+        coEvery { arrPreferencesRepository.sonarrPreferencesFlow } returns MutableStateFlow(com.rpeters.jellyfin.data.preferences.SonarrPreferences.DEFAULT)
+        coEvery { arrPreferencesRepository.radarrPreferencesFlow } returns MutableStateFlow(com.rpeters.jellyfin.data.preferences.RadarrPreferences.DEFAULT)
         coEvery { seerrRepository.getTrending(any()) } returns ApiResult.Success(
             SeerrSearchResult(page = 1, totalPages = 1, totalResults = 0, results = emptyList()),
         )
@@ -65,9 +78,12 @@ class RequestsViewModelTest {
 
         viewModel = RequestsViewModel(
             seerrRepository = seerrRepository,
+            sonarrRepository = sonarrRepository,
+            radarrRepository = radarrRepository,
             jellyfinSearchRepository = jellyfinSearchRepository,
             jellyfinMediaRepository = jellyfinMediaRepository,
             preferencesRepository = preferencesRepository,
+            arrPreferencesRepository = arrPreferencesRepository,
             cinefinPluginRepository = cinefinPluginRepository,
         )
     }
@@ -95,7 +111,7 @@ class RequestsViewModelTest {
         advanceUntilIdle()
 
         coVerify(exactly = 1) { cinefinPluginRepository.requestMedia("202", "tv", listOf(2)) }
-        assertEquals("Request submitted for Test Show via Cinefin Plugin", viewModel.uiState.value.successMessage)
+        assertEquals("Request submitted for Test Show", viewModel.uiState.value.successMessage)
     }
 
     @Test

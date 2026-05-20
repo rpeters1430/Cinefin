@@ -121,8 +121,9 @@ fun ImmersiveMediaCard(
             .height(height)
             .graphicsLayer {
                 translationY = liftOffset
+                scaleX = scale
+                scaleY = scale
             }
-            .scale(scale)
             .expressiveGlow(
                 color = MaterialTheme.colorScheme.primary,
                 alpha = glowAlpha,

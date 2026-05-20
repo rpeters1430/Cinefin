@@ -36,6 +36,7 @@ class TVEpisodeDetailViewModelTest {
     private val connectivityChecker: ConnectivityChecker = mockk()
     private val playbackProgressManager: com.rpeters.jellyfin.ui.player.PlaybackProgressManager = mockk(relaxed = true)
     private val analyticsHelper: com.rpeters.jellyfin.utils.AnalyticsHelper = mockk(relaxed = true)
+    private val aiPreferencesRepository: com.rpeters.jellyfin.data.preferences.AiPreferencesRepository = mockk(relaxed = true)
     private val dispatcher = StandardTestDispatcher()
     private val viewModel by lazy {
         TVEpisodeDetailViewModel(
@@ -46,12 +47,14 @@ class TVEpisodeDetailViewModelTest {
             connectivityChecker,
             playbackProgressManager,
             analyticsHelper,
+            aiPreferencesRepository,
         )
     }
 
     @Before
     fun setup() {
         Dispatchers.setMain(dispatcher)
+        every { aiPreferencesRepository.preferences } returns flowOf(com.rpeters.jellyfin.data.preferences.AiPreferences.DEFAULT)
         every { connectivityChecker.observeNetworkConnectivity() } returns flowOf(true)
         every { playbackProgressManager.playbackProgress } returns MutableStateFlow(
             com.rpeters.jellyfin.ui.player.PlaybackProgress(),

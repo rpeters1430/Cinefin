@@ -44,31 +44,6 @@ fun PerformanceOptimizedLazyColumn(
         }
     }
 
-    // Track visible range for performance optimization
-    val firstVisibleIndex by remember {
-        derivedStateOf { state.firstVisibleItemIndex }
-    }
-
-    val visibleItemCount by remember {
-        derivedStateOf { state.layoutInfo.visibleItemsInfo.size }
-    }
-
-    val visibleRange = remember(firstVisibleIndex, visibleItemCount) {
-        val start = (firstVisibleIndex - preloadOffset).coerceAtLeast(0)
-        val end = (firstVisibleIndex + visibleItemCount + preloadOffset).coerceAtMost(optimizedItems.size)
-        start until end
-    }
-
-    // Performance monitoring
-    LaunchedEffect(optimizedItems.size) {
-        if (optimizedItems.size != items.size) {
-            android.util.Log.d(
-                "PerformanceOptimizedList",
-                "Limited ${items.size} items to ${optimizedItems.size} for performance",
-            )
-        }
-    }
-
     LazyColumn(
         modifier = modifier,
         state = state,
@@ -80,9 +55,8 @@ fun PerformanceOptimizedLazyColumn(
             key = { _, item -> item.id.toString() }, // ✅ Use stable unique ID
             contentType = { _, _ -> "performance_list_item" },
         ) { index, item ->
-            // ✅ Performance: Check visibility with a small buffer
-            val isVisible = index in visibleRange
-            content(item, index, isVisible)
+            // ✅ Performance: Standard Compose LazyColumn virtualizes composition automatically
+            content(item, index, true)
         }
     }
 }
@@ -111,22 +85,6 @@ fun PerformanceOptimizedLazyRow(
         }
     }
 
-    // Track visible range
-    val firstVisibleIndex by remember {
-        derivedStateOf { state.firstVisibleItemIndex }
-    }
-
-    val visibleItemCount by remember {
-        derivedStateOf { state.layoutInfo.visibleItemsInfo.size }
-    }
-
-    val visibleRange = remember(firstVisibleIndex, visibleItemCount) {
-        // ✅ Performance: Buffer of 3 items for smoother horizontal scrolling
-        val start = (firstVisibleIndex - 3).coerceAtLeast(0)
-        val end = (firstVisibleIndex + visibleItemCount + 3).coerceAtMost(optimizedItems.size)
-        start until end
-    }
-
     // Note: Image preloading is handled by the optimized ImageLoader with cache
 
     LazyRow(
@@ -140,8 +98,8 @@ fun PerformanceOptimizedLazyRow(
             key = { _, item -> item.id.toString() }, // ✅ Use stable unique ID
             contentType = { _, _ -> "performance_row_item" },
         ) { index, item ->
-            val isVisible = index in visibleRange
-            content(item, index, isVisible)
+            // ✅ Performance: Standard Compose LazyRow virtualizes composition automatically
+            content(item, index, true)
         }
     }
 }

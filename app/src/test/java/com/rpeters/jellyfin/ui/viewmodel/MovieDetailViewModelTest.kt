@@ -41,6 +41,7 @@ class MovieDetailViewModelTest {
     private val connectivityChecker: ConnectivityChecker = mockk()
     private val playbackProgressManager: com.rpeters.jellyfin.ui.player.PlaybackProgressManager = mockk(relaxed = true)
     private val analyticsHelper: com.rpeters.jellyfin.utils.AnalyticsHelper = mockk(relaxed = true)
+    private val aiPreferencesRepository: com.rpeters.jellyfin.data.preferences.AiPreferencesRepository = mockk(relaxed = true)
     private val dispatcher = StandardTestDispatcher()
     private val viewModel by lazy {
         MovieDetailViewModel(
@@ -52,12 +53,14 @@ class MovieDetailViewModelTest {
             connectivityChecker,
             playbackProgressManager,
             analyticsHelper,
+            aiPreferencesRepository,
         )
     }
 
     @Before
     fun setup() {
         Dispatchers.setMain(dispatcher)
+        every { aiPreferencesRepository.preferences } returns flowOf(com.rpeters.jellyfin.data.preferences.AiPreferences.DEFAULT)
         every { connectivityChecker.observeNetworkConnectivity() } returns flowOf(true)
         every { playbackProgressManager.playbackProgress } returns MutableStateFlow(
             com.rpeters.jellyfin.ui.player.PlaybackProgress(),
@@ -105,13 +108,16 @@ class MovieDetailViewModelTest {
         val history = listOf(BaseItemDto(id = UUID.randomUUID(), name = "History", type = BaseItemKind.MOVIE))
 
         coEvery { repository.getMovieDetails(firstMovie.id.toString()) } returns ApiResult.Success(firstMovie)
-        coEvery { repository.getMovieDetails(secondMovie.id.toString()) } returns ApiResult.Success(secondMovie)
+        coEvery { repository.getMovieDetails(secondMovie.id.toString()) } coAnswers {
+            kotlinx.coroutines.delay(1000)
+            ApiResult.Success(secondMovie)
+        }
         coEvery { playbackUtils.analyzePlaybackCapabilities(firstMovie) } returns playbackAnalysis()
         coEvery { playbackUtils.analyzePlaybackCapabilities(secondMovie) } returns playbackAnalysis()
         coEvery { mediaRepository.getSimilarMovies(any(), limit = 10) } returns ApiResult.Success(emptyList())
         coEvery { mediaRepository.getContinueWatching(limit = 20) } returns ApiResult.Success(history)
-        coEvery { generativeAiRepository.generateWhyYoullLoveThis(firstMovie, history) } returns "First pitch"
-        coEvery { generativeAiRepository.generateWhyYoullLoveThis(secondMovie, history) } returns "Second pitch"
+        coEvery { generativeAiRepository.generateWhyYoullLoveThis(match { it.id == firstMovie.id }, any()) } returns "First pitch"
+        coEvery { generativeAiRepository.generateWhyYoullLoveThis(match { it.id == secondMovie.id }, any()) } returns "Second pitch"
 
         viewModel.loadMovieDetails(firstMovie.id.toString())
         dispatcher.scheduler.advanceUntilIdle()

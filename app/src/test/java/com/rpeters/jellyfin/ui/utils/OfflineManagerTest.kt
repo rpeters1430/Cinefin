@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
+import com.rpeters.jellyfin.data.offline.DownloadStatus
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -25,6 +26,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+
+@RunWith(RobolectricTestRunner::class)
 class OfflineManagerTest {
 
     private lateinit var context: Context
@@ -43,6 +48,7 @@ class OfflineManagerTest {
     @Before
     fun setUp() {
         MockKAnnotations.init(this)
+        io.mockk.every { offlineDownloadManager.downloads } returns kotlinx.coroutines.flow.MutableStateFlow(emptyList())
 
         context = mockk(relaxed = true)
         connectivityManager = mockk(relaxed = true)
@@ -109,18 +115,41 @@ class OfflineManagerTest {
 
     @Test
     fun offlineStorageUsage_reportsTotalSizeAndCount() {
-        mockkObject(MediaDownloadManager)
+        val downloadOne = com.rpeters.jellyfin.data.offline.OfflineDownload(
+            id = "1",
+            jellyfinItemId = "item1",
+            itemName = "Item 1",
+            itemType = "Movie",
+            downloadUrl = "http://...",
+            localFilePath = "/path/to/1",
+            fileSize = 1_048_576L,
+            status = DownloadStatus.COMPLETED
+        )
+        val downloadTwo = com.rpeters.jellyfin.data.offline.OfflineDownload(
+            id = "2",
+            jellyfinItemId = "item2",
+            itemName = "Item 2",
+            itemType = "Episode",
+            downloadUrl = "http://...",
+            localFilePath = "/path/to/2",
+            fileSize = 1_048_576L,
+            status = DownloadStatus.COMPLETED
+        )
+        every { offlineDownloadManager.getCompletedDownloads() } returns listOf(downloadOne, downloadTwo)
 
         val itemOne = mockk<BaseItemDto>(relaxed = true) {
+            every { id } returns java.util.UUID.nameUUIDFromBytes("item1".toByteArray())
             every { type } returns BaseItemKind.MOVIE
         }
         val itemTwo = mockk<BaseItemDto>(relaxed = true) {
+            every { id } returns java.util.UUID.nameUUIDFromBytes("item2".toByteArray())
             every { type } returns BaseItemKind.EPISODE
         }
 
-        offlineManager.setOfflineContent(listOf(itemOne, itemTwo))
-
-        every { MediaDownloadManager.getTotalDownloadSize(context) } returns 2_097_152L
+        offlineManager.setOfflineContent(listOf(
+            OfflineLibraryItem(itemOne, "/path/to/1", null, null, 1_048_576L, null),
+            OfflineLibraryItem(itemTwo, "/path/to/2", null, null, 1_048_576L, null)
+        ))
 
         val storageInfo = offlineManager.getOfflineStorageUsage()
 
@@ -131,17 +160,21 @@ class OfflineManagerTest {
 
     @Test
     fun suggestPlaybackSource_prefersLocalThenFallsBackToStreamOrUnavailable() {
-        mockkObject(MediaDownloadManager)
-        val item = mockk<BaseItemDto>(relaxed = true)
+        val itemId = java.util.UUID.randomUUID()
+        val item = mockk<BaseItemDto>(relaxed = true) {
+            every { id } returns itemId
+        }
         val onlineUrl = "https://example.com/stream"
 
-        every { MediaDownloadManager.isDownloaded(context, item) } returns true
-        every { MediaDownloadManager.getLocalFilePath(context, item) } returns "file://offline"
+        every { offlineDownloadManager.isItemDownloaded(itemId.toString()) } returns true
+        offlineManager.setOfflineContent(listOf(
+            OfflineLibraryItem(item, "file://offline", null, null, 100L, null)
+        ))
 
         assertEquals(PlaybackSource.LOCAL, offlineManager.suggestPlaybackSource(item))
         assertEquals("file://offline", item.getBestPlaybackUrl(offlineManager, onlineUrl))
 
-        every { MediaDownloadManager.isDownloaded(context, item) } returns false
+        every { offlineDownloadManager.isItemDownloaded(itemId.toString()) } returns false
 
         assertEquals(PlaybackSource.STREAM, offlineManager.suggestPlaybackSource(item))
         assertEquals(onlineUrl, item.getBestPlaybackUrl(offlineManager, onlineUrl))
@@ -153,11 +186,11 @@ class OfflineManagerTest {
         assertNull(item.getBestPlaybackUrl(offlineManager, onlineUrl))
     }
 
-    private fun OfflineManager.setOfflineContent(items: List<BaseItemDto>) {
+    private fun OfflineManager.setOfflineContent(items: List<OfflineLibraryItem>) {
         val field = OfflineManager::class.java.getDeclaredField("_offlineContent")
         field.isAccessible = true
         @Suppress("UNCHECKED_CAST")
-        val state = field.get(this) as MutableStateFlow<List<BaseItemDto>>
+        val state = field.get(this) as MutableStateFlow<List<OfflineLibraryItem>>
         state.value = items
     }
 }

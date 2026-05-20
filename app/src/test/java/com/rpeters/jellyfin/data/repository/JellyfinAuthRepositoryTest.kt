@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.data.repository
 
+import javax.inject.Provider
 import com.rpeters.jellyfin.data.SecureCredentialManager
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.data.repository.common.ErrorType
@@ -46,6 +47,8 @@ class JellyfinAuthRepositoryTest {
     private lateinit var apiClient: ApiClient
     private lateinit var quickConnectApi: QuickConnectApi
     private lateinit var userApi: UserApi
+    private lateinit var connectionOptimizer: ConnectionOptimizer
+    private lateinit var connectionOptimizerProvider: Provider<ConnectionOptimizer>
 
     @Before
     fun setUp() {
@@ -56,6 +59,8 @@ class JellyfinAuthRepositoryTest {
         apiClient = mockk(relaxed = true)
         quickConnectApi = mockk(relaxed = true)
         userApi = mockk(relaxed = true)
+        connectionOptimizer = mockk(relaxed = true)
+        connectionOptimizerProvider = Provider { connectionOptimizer }
 
         mockkStatic("org.jellyfin.sdk.api.client.extensions.QuickConnectApiKt")
         mockkStatic("org.jellyfin.sdk.api.client.extensions.UserApiKt")
@@ -68,7 +73,7 @@ class JellyfinAuthRepositoryTest {
         every { apiClient.quickConnectApi } returns quickConnectApi
         every { apiClient.userApi } returns userApi
 
-        repository = JellyfinAuthRepository(jellyfin, credentialManager)
+        repository = JellyfinAuthRepository(jellyfin, credentialManager, connectionOptimizerProvider)
     }
 
     @After

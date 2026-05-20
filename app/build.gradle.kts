@@ -11,19 +11,9 @@ plugins {
     alias(libs.plugins.google.firebase.perf)
 }
 
-configurations.all {
-    resolutionStrategy.eachDependency {
-        if (requested.group in setOf(
-                "androidx.compose.ui",
-                "androidx.compose.foundation",
-                "androidx.compose.runtime",
-                "androidx.compose.animation",
-            )
-        ) {
-            useVersion(libs.versions.composeCore.get())
-            because("Align all core Compose libraries to prevent BOM internal version mismatches")
-        }
-    }
+
+composeCompiler {
+    stabilityConfigurationFiles.add(rootProject.layout.projectDirectory.file("compose-stability.conf"))
 }
 
 android {
@@ -154,10 +144,6 @@ android {
             isIncludeAndroidResources = true
             isReturnDefaultValues = true
         }
-    }
-
-    tasks.withType<Test> {
-        maxHeapSize = "2048m"
     }
 
     lint {
@@ -381,3 +367,9 @@ tasks.register<JacocoReport>("jacocoTestReport") {
 }
 
 apply(plugin = "jacoco")
+
+tasks.withType<Test> {
+    maxHeapSize = "4096m"
+    jvmArgs("-XX:+UseG1GC")
+    forkEvery = 1
+}

@@ -8,6 +8,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
@@ -75,7 +76,11 @@ fun Modifier.tvFocusDesign(
     focusedScale: Float = TvThemeTokens.FocusedScale,
 ): Modifier {
     return this
-        .scale(if (isFocused) focusedScale else 1.0f)
+        .graphicsLayer {
+            val scale = if (isFocused) focusedScale else 1.0f
+            scaleX = scale
+            scaleY = scale
+        }
         .border(
             width = if (isFocused) TvThemeTokens.FocusedBorderWidth else 0.dp,
             color = if (isFocused) focusedBorderColor else Color.Transparent,

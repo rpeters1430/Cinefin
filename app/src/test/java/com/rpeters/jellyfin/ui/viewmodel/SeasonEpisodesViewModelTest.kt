@@ -22,6 +22,8 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
+import kotlinx.coroutines.flow.flowOf
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class SeasonEpisodesViewModelTest {
 
@@ -31,6 +33,18 @@ class SeasonEpisodesViewModelTest {
     @MockK
     private lateinit var repository: IJellyfinRepository
 
+    @MockK(relaxed = true)
+    private lateinit var seerrRepository: com.rpeters.jellyfin.data.repository.SeerrRepository
+
+    @MockK(relaxed = true)
+    private lateinit var sonarrRepository: com.rpeters.jellyfin.data.repository.SonarrRepository
+
+    @MockK(relaxed = true)
+    private lateinit var arrPreferencesRepository: com.rpeters.jellyfin.data.preferences.ArrPreferencesRepository
+
+    @MockK(relaxed = true)
+    private lateinit var seerrPreferencesRepository: com.rpeters.jellyfin.data.preferences.SeerrPreferencesRepository
+
     private lateinit var viewModel: SeasonEpisodesViewModel
     private val dispatcher = UnconfinedTestDispatcher()
 
@@ -38,7 +52,17 @@ class SeasonEpisodesViewModelTest {
     fun setup() {
         MockKAnnotations.init(this)
         Dispatchers.setMain(dispatcher)
-        viewModel = SeasonEpisodesViewModel(repository)
+
+        coEvery { arrPreferencesRepository.sonarrPreferencesFlow } returns flowOf(com.rpeters.jellyfin.data.preferences.SonarrPreferences.DEFAULT)
+        coEvery { seerrPreferencesRepository.seerrPreferencesFlow } returns flowOf(com.rpeters.jellyfin.data.preferences.SeerrPreferences.DEFAULT)
+
+        viewModel = SeasonEpisodesViewModel(
+            repository = repository,
+            seerrRepository = seerrRepository,
+            sonarrRepository = sonarrRepository,
+            arrPreferencesRepository = arrPreferencesRepository,
+            seerrPreferencesRepository = seerrPreferencesRepository,
+        )
     }
 
     @After
