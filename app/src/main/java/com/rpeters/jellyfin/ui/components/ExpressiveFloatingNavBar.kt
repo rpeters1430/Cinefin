@@ -41,6 +41,8 @@ fun ExpressiveFloatingNavBar(
     isVisible: Boolean,
     modifier: Modifier = Modifier,
 ) {
+    val useCompactButtons = items.size > 5
+
     AnimatedVisibility(
         visible = isVisible,
         enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
@@ -84,6 +86,7 @@ fun ExpressiveFloatingNavBar(
                             contentDescription = item.title,
                             label = item.title,
                             selected = isSelected,
+                            useCompactLayout = useCompactButtons,
                             onClick = {
                                 haptics.lightClick()
                                 onNavigate(item)
@@ -102,6 +105,7 @@ private fun ExpressiveNavBarButton(
     contentDescription: String,
     label: String,
     selected: Boolean,
+    useCompactLayout: Boolean,
     onClick: () -> Unit,
 ) {
     Surface(
@@ -112,7 +116,10 @@ private fun ExpressiveNavBarButton(
         } else {
             MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
         },
-        modifier = Modifier.size(height = 48.dp, width = if (selected) 116.dp else 48.dp),
+        modifier = Modifier.size(
+            height = 48.dp,
+            width = if (selected && !useCompactLayout) 116.dp else 48.dp,
+        ),
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 10.dp),
@@ -125,7 +132,7 @@ private fun ExpressiveNavBarButton(
                 tint = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(26.dp),
             )
-            if (selected) {
+            if (selected && !useCompactLayout) {
                 Text(
                     text = label,
                     style = MaterialTheme.typography.labelMedium,
