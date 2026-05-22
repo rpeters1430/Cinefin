@@ -92,7 +92,8 @@ fun ParallaxHeroSection(
                                 colors = listOf(
                                     Color.Transparent,
                                     Color.Black.copy(alpha = 0.3f),
-                                    backgroundColor.copy(alpha = 0.8f),
+                                    backgroundColor.copy(alpha = 0.65f),
+                                    backgroundColor.copy(alpha = 0.9f),
                                     backgroundColor,
                                 ),
                                 startY = 0f,
