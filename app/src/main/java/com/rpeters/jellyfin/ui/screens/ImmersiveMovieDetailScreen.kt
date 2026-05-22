@@ -62,6 +62,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -334,6 +335,7 @@ private fun ImmersiveMovieDetailContent(
                                     .fillMaxWidth()
                                     .padding(horizontal = 16.dp, vertical = 8.dp),
                                 verticalArrangement = Arrangement.spacedBy(16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
                             ) {
                                 if (isLoadingWhyYoullLoveThis || !whyYoullLoveThis.isNullOrBlank()) {
                                     WhyYoullLoveThisCard(
@@ -369,7 +371,8 @@ private fun ImmersiveMovieDetailContent(
                                 if (isLoadingContentWarnings || contentWarnings.isNotEmpty()) {
                                     Column(
                                         modifier = Modifier.fillMaxWidth(),
-                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally,
                                     ) {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Icon(
@@ -392,7 +395,8 @@ private fun ImmersiveMovieDetailContent(
                                             )
                                         } else {
                                             FlowRow(
-                                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
                                                 verticalArrangement = Arrangement.spacedBy(8.dp),
                                             ) {
                                                 contentWarnings.forEach { warning ->
@@ -426,17 +430,20 @@ private fun ImmersiveMovieDetailContent(
                                     .fillMaxWidth()
                                     .padding(horizontal = 16.dp, vertical = 16.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
                             ) {
                                 Text(
                                     text = "Synopsis",
                                     style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.Bold,
+                                    textAlign = TextAlign.Center,
                                 )
                                 Text(
                                     text = movie.overview ?: "No synopsis available.",
                                     style = MaterialTheme.typography.bodyLarge,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     lineHeight = MaterialTheme.typography.bodyLarge.lineHeight.times(1.4f),
+                                    textAlign = TextAlign.Center,
                                 )
 
                                 playbackAnalysis?.let { analysis ->
@@ -737,7 +744,7 @@ private fun MovieActionRow(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         val displayTrailerUrl = trailerUrl ?: "https://www.youtube.com/results?search_query=${Uri.encode("${movie.name.orEmpty()} trailer")}"
 

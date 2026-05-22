@@ -21,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
 /**
@@ -45,6 +46,7 @@ fun WhyYoullLoveThisCard(
                 .fillMaxWidth()
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             // Header
             Row(
@@ -79,6 +81,7 @@ fun WhyYoullLoveThisCard(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onTertiaryContainer,
                         lineHeight = MaterialTheme.typography.bodyMedium.lineHeight.times(1.5f),
+                        textAlign = TextAlign.Center,
                     )
                 }
             }

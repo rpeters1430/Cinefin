@@ -48,7 +48,7 @@ fun MovieHeroContent(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(top = 120.dp) // Offset for background
+            .padding(top = 136.dp) // Offset for background
             .padding(horizontal = 16.dp, vertical = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp),
