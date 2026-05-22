@@ -289,8 +289,9 @@ dependencies {
     testImplementation(libs.androidx.arch.core.testing)
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.robolectric)
-    testImplementation(libs.androidx.ui.test.junit4)
     testImplementation(platform(libs.androidx.compose.bom))
+    testImplementation(libs.androidx.ui.test.junit4)
+    testImplementation("androidx.compose.ui:ui-test")
 
     // Hilt testing
     testImplementation(libs.dagger.hilt.android.testing)

@@ -81,6 +81,7 @@ import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
 import com.rpeters.jellyfin.ui.components.ExpressiveEmptyState
 import com.rpeters.jellyfin.ui.components.ExpressiveErrorState
 import com.rpeters.jellyfin.ui.components.ExpressiveFilledButton
+import com.rpeters.jellyfin.ui.components.ExpressiveOutlinedButton
 import com.rpeters.jellyfin.ui.components.ExpressiveFullScreenLoading
 import com.rpeters.jellyfin.ui.components.ExpressiveLoadingCard
 import com.rpeters.jellyfin.ui.components.PerformanceOptimizedLazyRow
@@ -326,19 +327,53 @@ private fun ImmersiveShowDetailContent(
             }
 
             // 3. Seasons & Episodes
-            if (state.seasons.isNotEmpty()) {
-                item {
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.background)
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Text(
                         text = "Seasons",
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
+                    )
+                    state.seriesDetails?.let { series ->
+                        TextButton(
+                            onClick = { series.name?.takeIf { it.isNotBlank() }?.let(onSearchRequests) }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AddCircle,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Request Seasons")
+                        }
+                    }
+                }
+            }
+
+            if (state.seasons.isEmpty()) {
+                item {
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(MaterialTheme.colorScheme.background)
-                            .padding(horizontal = 16.dp, vertical = 16.dp),
-                    )
+                            .padding(horizontal = 16.dp, vertical = 24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "No seasons available.",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
-
+            } else {
                 items(state.seasons, key = { it.getItemKey() }) { season ->
                     val seasonId = season.id.toString()
                     val isExpanded = expandedSeasonId == seasonId
@@ -496,43 +531,50 @@ private fun ShowHeroContent(
                 }
             }
 
-            // Watch Button
-            ExpressiveFilledButton(
-                onClick = { nextEpisode?.let { onPlayEpisode(it) } },
-                enabled = nextEpisode != null,
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-            ) {
-                Icon(Icons.Default.PlayArrow, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                val userData = series.userData
-                Text(
-                    text = when {
-                        series.isCompletelyWatched() -> "Rewatch"
-                        (userData?.playedPercentage ?: 0.0) > 0 -> "Watch Next"
-                        else -> "Start Watching Series"
-                    },
-                )
-            }
-
             val displayTrailerUrl = trailerUrl ?: "https://www.youtube.com/results?search_query=${Uri.encode("${series.name.orEmpty()} trailer")}"
-            TextButton(
-                onClick = { onTrailerClick(displayTrailerUrl) },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.textButtonColors(contentColor = Color.White),
-            ) {
-                Icon(Icons.Default.Movie, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(if (trailerUrl.isNullOrBlank()) "Find Trailer" else "Watch Trailer")
-            }
 
-            TextButton(
-                onClick = { series.name?.takeIf { it.isNotBlank() }?.let(onSearchRequests) },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.textButtonColors(contentColor = Color.White),
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(Icons.Default.AddCircle, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Request missing seasons")
+                ExpressiveFilledButton(
+                    onClick = { nextEpisode?.let { onPlayEpisode(it) } },
+                    enabled = nextEpisode != null,
+                    modifier = Modifier.weight(2f),
+                ) {
+                    Icon(Icons.Default.PlayArrow, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    val userData = series.userData
+                    Text(
+                        text = when {
+                            series.isCompletelyWatched() -> "Rewatch"
+                            (userData?.playedPercentage ?: 0.0) > 0 -> "Watch Next"
+                            else -> "Start Watching Series"
+                        },
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                ExpressiveOutlinedButton(
+                    onClick = { onTrailerClick(displayTrailerUrl) },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = Color.White,
+                    ),
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.5f))
+                ) {
+                    Icon(Icons.Default.Movie, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (trailerUrl.isNullOrBlank()) "Find Trailer" else "Trailer",
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
         }
     }

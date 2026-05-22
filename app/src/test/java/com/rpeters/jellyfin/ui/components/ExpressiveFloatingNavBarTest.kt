@@ -1,8 +1,9 @@
 package com.rpeters.jellyfin.ui.components
 
-import androidx.compose.ui.test.assertDoesNotExist
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.navigation.NavDestination
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -38,7 +39,7 @@ class ExpressiveFloatingNavBarTest {
             }
         }
 
-        composeRule.onNodeWithText(selected.title).assertDoesNotExist()
+        composeRule.onAllNodesWithText(selected.title).assertCountEquals(0)
     }
 
     @Test

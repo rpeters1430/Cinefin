@@ -739,24 +739,61 @@ private fun MovieActionRow(
             .padding(horizontal = 16.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        // Main Play Button
-        TextButton(
-            onClick = onPlayClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            shape = MaterialTheme.shapes.medium,
-            colors = ButtonDefaults.textButtonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-            ),
+        val displayTrailerUrl = trailerUrl ?: "https://www.youtube.com/results?search_query=${Uri.encode("${movie.name.orEmpty()} trailer")}"
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            // Main Play Button
+            TextButton(
+                onClick = onPlayClick,
+                modifier = Modifier
+                    .weight(2f)
+                    .height(56.dp),
+                shape = MaterialTheme.shapes.medium,
+                colors = ButtonDefaults.textButtonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                ),
             ) {
-                Icon(Icons.Rounded.PlayArrow, contentDescription = null, modifier = Modifier.size(24.dp))
-                Text("Watch Now", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Icon(Icons.Rounded.PlayArrow, contentDescription = null, modifier = Modifier.size(24.dp))
+                    Text("Watch Now", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                }
+            }
+
+            // Trailer Button
+            androidx.compose.material3.OutlinedButton(
+                onClick = { onTrailerClick(displayTrailerUrl) },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(56.dp),
+                shape = MaterialTheme.shapes.medium,
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                ),
+                border = androidx.compose.foundation.BorderStroke(
+                    width = 1.dp,
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                )
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Icon(Icons.Default.Movie, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Text(
+                        text = if (trailerUrl.isNullOrBlank()) "Find Trailer" else "Trailer",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
+                }
             }
         }
 
@@ -778,14 +815,6 @@ private fun MovieActionRow(
                 onClick = onMarkWatchedClick,
                 modifier = Modifier.weight(1f),
                 contentColor = if (isWatched) JellyfinTeal80 else MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-
-            val displayTrailerUrl = trailerUrl ?: "https://www.youtube.com/results?search_query=${Uri.encode("${movie.name.orEmpty()} trailer")}"
-            ActionButton(
-                icon = Icons.Default.Movie,
-                label = if (trailerUrl.isNullOrBlank()) "Find Trailer" else "Trailer",
-                onClick = { onTrailerClick(displayTrailerUrl) },
-                modifier = Modifier.weight(1f),
             )
 
             ActionButton(

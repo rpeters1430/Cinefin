@@ -375,8 +375,7 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                     downloadsViewModel.startDownload(movieItem, quality)
                 },
                 onTrailerClick = { url ->
-                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
-                    navController.context.startActivity(intent)
+                    com.rpeters.jellyfin.ui.utils.TrailerUtils.playTrailer(navController.context, url)
                 },
                 onSearchRequests = { query ->
                     navController.navigate(Screen.Requests.createRoute(query))
