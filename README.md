@@ -332,7 +332,7 @@ Automated workflows for:
 
 ## 📊 Project Status
 
-### **What's Working Now (April 2026)** ✅
+### **What's Working Now (May 2026)** ✅
 
 | Feature | Status |
 |---------|--------|
@@ -361,6 +361,7 @@ Automated workflows for:
 |---------|--------|
 | Music Background Playback (notification, lock-screen controls) | 🔄 In Progress |
 | Android TV D-pad navigation & focus polish | 🔄 In Progress |
+| Expanded instrumentation test coverage for playback + casting flows | 🔄 In Progress |
 
 ### **Planned** 📋
 
@@ -372,6 +373,8 @@ Automated workflows for:
 | Home Screen Widgets | Low |
 
 **[📖 See detailed roadmap in docs/plans/ROADMAP.md](docs/plans/ROADMAP.md)**
+
+> Last README status refresh: **May 22, 2026 (UTC)**. For the source-of-truth matrix, see **[docs/plans/CURRENT_STATUS.md](docs/plans/CURRENT_STATUS.md)**.
 
 ---
 
