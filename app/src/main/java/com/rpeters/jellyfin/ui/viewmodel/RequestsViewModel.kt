@@ -303,7 +303,7 @@ class RequestsViewModel @Inject constructor(
             requestSeasons(item, selectedSeasons)
         } else {
             viewModelScope.launch {
-                val tvdbId = item.tvdbId
+                val tvdbId = resolveTvdbId(item)
                 if (tvdbId == null) {
                     _uiState.update { it.copy(errorMessage = "TVDB ID not available for ${item.displayTitle}") }
                     return@launch
@@ -321,6 +321,16 @@ class RequestsViewModel @Inject constructor(
                     }
                 }
             }
+        }
+    }
+
+    private suspend fun resolveTvdbId(item: SeerrMediaItem): Int? {
+        item.tvdbId?.let { return it }
+        _uiState.value.tvAvailabilityByMediaId[item.id]?.tvdbId?.let { return it }
+        val mediaId = item.tmdbId ?: item.id
+        return when (val result = seerrRepository.getTvDetails(mediaId)) {
+            is ApiResult.Success -> result.data.externalIds?.tvdbId
+            else -> null
         }
     }
 
