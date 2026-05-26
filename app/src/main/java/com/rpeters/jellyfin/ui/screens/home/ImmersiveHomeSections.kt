@@ -42,6 +42,7 @@ import org.jellyfin.sdk.model.api.CollectionType
 internal fun MobileExpressiveHomeContent(
     appState: MainAppState,
     contentLists: HomeContentLists,
+    currentServer: com.rpeters.jellyfin.data.JellyfinServer?,
     getImageUrl: (BaseItemDto) -> String?,
     getBackdropUrl: (BaseItemDto) -> String?,
     getSeriesImageUrl: (BaseItemDto) -> String?,
@@ -56,7 +57,7 @@ internal fun MobileExpressiveHomeContent(
     modifier: Modifier = Modifier,
 ) {
     val unknownText = androidx.compose.ui.res.stringResource(id = R.string.unknown)
-    val libraryRows = remember(appState.libraries, appState.itemsByLibrary) {
+    val libraryRows = remember(appState.libraries, appState.itemsByLibrary, currentServer) {
         appState.libraries.mapNotNull { library ->
             if (library.toLibraryTypeOrNull() == LibraryType.STUFF) return@mapNotNull null
             val libraryId = library.id.toString()
@@ -89,7 +90,7 @@ internal fun MobileExpressiveHomeContent(
         if (heroItems.isNotEmpty() || appState.isLoading) {
             item(key = "recently_added_hero", contentType = "hero_row") {
                 if (heroItems.isNotEmpty()) {
-                    val featuredCarouselItems = remember(heroItems, unknownText) {
+                    val featuredCarouselItems = remember(heroItems, unknownText, currentServer) {
                         heroItems.map { item ->
                             CarouselItem(
                                 id = item.id.toString(),

@@ -80,6 +80,7 @@ fun androidx.navigation.NavGraphBuilder.authNavGraph(
                 viewModel.startQuickConnect()
                 navController.navigate(Screen.QuickConnect.route)
             },
+            onRestartDiscovery = { viewModel.restartDiscovery() },
             connectionState = connectionState,
             savedServerUrl = connectionState.savedServerUrl,
             savedUsername = connectionState.savedUsername,

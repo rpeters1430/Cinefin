@@ -18,10 +18,14 @@ import com.rpeters.jellyfin.utils.MainThreadMonitor
 import com.rpeters.jellyfin.utils.SecureLogger
 import com.rpeters.jellyfin.data.playback.HandoffManager
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 @androidx.media3.common.util.UnstableApi
 @AndroidEntryPoint
 class MainActivity : FragmentActivity() {
+
+    @Inject
+    lateinit var handoffManager: HandoffManager
 
     private var shortcutDestination by mutableStateOf<String?>(null)
 
@@ -76,12 +80,15 @@ class MainActivity : FragmentActivity() {
         if (intent?.action == HandoffManager.ACTION_HANDOFF_RESUME) {
             val itemId = intent.getStringExtra(HandoffManager.EXTRA_ITEM_ID)
             val positionMs = intent.getLongExtra(HandoffManager.EXTRA_POSITION_MS, 0L)
+            val signature = intent.getStringExtra(HandoffManager.EXTRA_SIGNATURE)
             
-            if (itemId != null) {
-                SecureLogger.i(TAG, "Received handoff intent for $itemId at $positionMs ms")
+            if (itemId != null && signature != null && handoffManager.verifySignature(itemId, positionMs, signature)) {
+                SecureLogger.i(TAG, "Received validated handoff intent for $itemId at $positionMs ms")
                 // For now, we reuse the shortcut mechanism to navigate to the item
                 // In a future update, we can add a specific handoff UI prompt
                 shortcutDestination = "item_detail/$itemId?startPosition=$positionMs"
+            } else if (itemId != null) {
+                SecureLogger.w(TAG, "Ignoring unverified or unsigned handoff intent payload for $itemId")
             }
         }
     }

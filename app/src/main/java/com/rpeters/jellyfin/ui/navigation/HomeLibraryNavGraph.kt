@@ -53,9 +53,9 @@ fun androidx.navigation.NavGraphBuilder.homeLibraryNavGraph(
         val onClearSearch = remember(viewModel) { { viewModel.clearSearch() } }
         val onSearchClick = remember(navController) { { navController.navigate(Screen.Search.route) } }
         val onAiAssistantClick = remember(navController) { { navController.navigate(Screen.AiAssistant.route) } }
-        val getImageUrl = remember(viewModel) { { item: org.jellyfin.sdk.model.api.BaseItemDto -> viewModel.getImageUrl(item) } }
-        val getBackdropUrl = remember(viewModel) { { item: org.jellyfin.sdk.model.api.BaseItemDto -> viewModel.getBackdropUrl(item) } }
-        val getSeriesImageUrl = remember(viewModel) { { item: org.jellyfin.sdk.model.api.BaseItemDto -> viewModel.getSeriesImageUrl(item) } }
+        val getImageUrl = remember(viewModel, currentServer) { { item: org.jellyfin.sdk.model.api.BaseItemDto -> viewModel.getImageUrl(item) } }
+        val getBackdropUrl = remember(viewModel, currentServer) { { item: org.jellyfin.sdk.model.api.BaseItemDto -> viewModel.getBackdropUrl(item) } }
+        val getSeriesImageUrl = remember(viewModel, currentServer) { { item: org.jellyfin.sdk.model.api.BaseItemDto -> viewModel.getSeriesImageUrl(item) } }
 
         val onItemClick = remember(navController) {
             { item: org.jellyfin.sdk.model.api.BaseItemDto ->
@@ -172,7 +172,7 @@ fun androidx.navigation.NavGraphBuilder.homeLibraryNavGraph(
         )
 
         val onRefresh = remember(viewModel) { { viewModel.loadInitialData(forceRefresh = true) } }
-        val getImageUrl = remember(viewModel) { { item: org.jellyfin.sdk.model.api.BaseItemDto -> viewModel.getImageUrl(item) } }
+        val getImageUrl = remember(viewModel, currentServer) { { item: org.jellyfin.sdk.model.api.BaseItemDto -> viewModel.getImageUrl(item) } }
         val onLibraryClick = remember(navController) {
             { library: org.jellyfin.sdk.model.api.BaseItemDto ->
                 try {

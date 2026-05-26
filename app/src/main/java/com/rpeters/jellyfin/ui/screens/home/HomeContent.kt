@@ -202,7 +202,7 @@ fun HomeContent(
                 if (contentLists.featuredItems.isNotEmpty() || appState.isLoading) {
                     item(key = "featured", contentType = "carousel") {
                         if (contentLists.featuredItems.isNotEmpty()) {
-                            val featured = remember(contentLists.featuredItems, unknownText) {
+                            val featured = remember(contentLists.featuredItems, unknownText, getImageUrl, getSeriesImageUrl, getBackdropUrl) {
                                 contentLists.featuredItems.map {
                                     it.toCarouselItem(
                                         titleOverride = it.name ?: unknownText,

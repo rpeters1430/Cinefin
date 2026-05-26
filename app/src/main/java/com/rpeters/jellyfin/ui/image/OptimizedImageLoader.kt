@@ -130,8 +130,21 @@ fun OptimizedImage(
     val context = LocalContext.current
     val backgroundColor = MaterialTheme.colorScheme.surfaceVariant
 
+    // ✅ Performance: Skip Coil if URL is null or blank to avoid unnecessary requests
+    if (imageUrl.isNullOrBlank()) {
+        Box(
+            modifier = modifier
+                .clip(RoundedCornerShape(cornerRadius))
+                .background(backgroundColor),
+            contentAlignment = Alignment.Center,
+        ) {
+            placeholder?.invoke() ?: error?.invoke()
+        }
+        return
+    }
+
     // ✅ Performance: Remember request with stable key to prevent recreation
-    val imageRequest: ImageRequest = remember(imageUrl, size.width, size.height, cornerRadius.value) {
+    val imageRequest: ImageRequest = remember(imageUrl, size.width, size.height, cornerRadius.value, quality) {
         val builder = ImageRequest.Builder(context)
             .data(imageUrl)
             .size(Size(size.width, size.height))

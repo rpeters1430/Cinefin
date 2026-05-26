@@ -222,9 +222,9 @@ private fun ImmersiveHeroCard(
                     val gradientBrush = Brush.verticalGradient(
                         colors = listOf(
                             Color.Transparent,
-                            scrimColor.copy(alpha = 0.4f),
-                            backgroundColor.copy(alpha = 0.8f),
-                            backgroundColor,
+                            scrimColor.copy(alpha = 0.35f),
+                            scrimColor.copy(alpha = 0.70f),
+                            scrimColor.copy(alpha = 0.90f),
                         ),
                         startY = size.height * 0.3f,
                         endY = size.height,

@@ -126,9 +126,9 @@ private fun CarouselMovieCard(
                         val gradient = Brush.verticalGradient(
                             colors = listOf(
                                 Color.Transparent,
-                                scrimColor.copy(alpha = 0.45f),
-                                backgroundColor.copy(alpha = 0.9f),
-                                backgroundColor,
+                                scrimColor.copy(alpha = 0.35f),
+                                scrimColor.copy(alpha = 0.70f),
+                                scrimColor.copy(alpha = 0.90f),
                             ),
                             startY = size.height * 0.40f,
                             endY = size.height,
@@ -296,9 +296,9 @@ private fun CarouselContentCard(
                         val gradient = Brush.verticalGradient(
                             colors = listOf(
                                 Color.Transparent,
-                                scrimColor.copy(alpha = 0.45f),
-                                backgroundColor.copy(alpha = 0.9f),
-                                backgroundColor,
+                                scrimColor.copy(alpha = 0.35f),
+                                scrimColor.copy(alpha = 0.70f),
+                                scrimColor.copy(alpha = 0.90f),
                             ),
                             startY = size.height * 0.40f,
                             endY = size.height,

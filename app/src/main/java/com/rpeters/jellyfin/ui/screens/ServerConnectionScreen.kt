@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -46,6 +47,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
+import android.content.pm.PackageManager
+import android.os.Build
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -86,6 +94,7 @@ import java.util.Date
 fun ServerConnectionScreen(
     onConnect: (String, String, String) -> Unit = { _, _, _ -> },
     onQuickConnect: () -> Unit = {},
+    onRestartDiscovery: () -> Unit = {},
     connectionState: ConnectionState = ConnectionState(),
     savedServerUrl: String = "",
     savedUsername: String = "",
@@ -107,6 +116,36 @@ fun ServerConnectionScreen(
     var serverUrl by rememberSaveable(savedServerUrl) { mutableStateOf(savedServerUrl) }
     var username by rememberSaveable(savedUsername) { mutableStateOf(savedUsername) }
     var password by rememberSaveable { mutableStateOf("") }
+
+    val context = LocalContext.current
+    var isLocalNetworkPermissionGranted by remember {
+        mutableStateOf(
+            if (Build.VERSION.SDK_INT >= 37) {
+                ContextCompat.checkSelfPermission(context, "android.permission.ACCESS_LOCAL_NETWORK") == PackageManager.PERMISSION_GRANTED
+            } else {
+                true
+            }
+        )
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        isLocalNetworkPermissionGranted = isGranted
+        if (isGranted) {
+            onRestartDiscovery()
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        if (Build.VERSION.SDK_INT >= 37) {
+            val isGranted = ContextCompat.checkSelfPermission(context, "android.permission.ACCESS_LOCAL_NETWORK") == PackageManager.PERMISSION_GRANTED
+            isLocalNetworkPermissionGranted = isGranted
+            if (!isGranted) {
+                permissionLauncher.launch("android.permission.ACCESS_LOCAL_NETWORK")
+            }
+        }
+    }
 
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusRequester = remember { FocusRequester() }
@@ -148,6 +187,7 @@ fun ServerConnectionScreen(
         requireStrongBiometric,
         isUsingWeakBiometric,
         connectionState.discoveredServers,
+        isLocalNetworkPermissionGranted,
     ) {
         derivedStateOf {
             LoginScreenUiFlags(
@@ -161,7 +201,7 @@ fun ServerConnectionScreen(
                     savedUsername.isNotBlank() &&
                     rememberLogin &&
                     !hasSavedPassword,
-                showDiscoveredServers = connectionState.discoveredServers.isNotEmpty() &&
+                showDiscoveredServers = (connectionState.discoveredServers.isNotEmpty() || (Build.VERSION.SDK_INT >= 37 && !isLocalNetworkPermissionGranted)) &&
                     !connectionState.isConnected &&
                     !connectionState.isConnecting &&
                     serverUrl.isBlank(),
@@ -185,6 +225,8 @@ fun ServerConnectionScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .widthIn(max = 560.dp)
+                .align(Alignment.Center)
                 .padding(horizontal = 24.dp, vertical = 32.dp)
                 .imePadding()
                 .verticalScroll(rememberScrollState()),
@@ -197,6 +239,12 @@ fun ServerConnectionScreen(
                 DiscoveredServersCard(
                     servers = connectionState.discoveredServers,
                     onServerSelected = { serverUrl = it },
+                    isLocalNetworkPermissionGranted = isLocalNetworkPermissionGranted,
+                    onRequestPermission = {
+                        if (Build.VERSION.SDK_INT >= 37) {
+                            permissionLauncher.launch("android.permission.ACCESS_LOCAL_NETWORK")
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
@@ -294,6 +342,8 @@ private data class LoginScreenUiFlags(
 private fun DiscoveredServersCard(
     servers: List<com.rpeters.jellyfin.data.model.DiscoveredServer>,
     onServerSelected: (String) -> Unit,
+    isLocalNetworkPermissionGranted: Boolean,
+    onRequestPermission: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     ElevatedCard(
@@ -327,18 +377,39 @@ private fun DiscoveredServersCard(
                 )
             }
 
-            Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                servers.forEach { server ->
+            if (Build.VERSION.SDK_INT >= 37 && !isLocalNetworkPermissionGranted) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "Local network discovery is unavailable because permission was denied. Grant network permissions to automatically find servers on your home network.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f),
+                        textAlign = TextAlign.Center
+                    )
                     ExpressiveTonalButton(
-                        onClick = { onServerSelected(server.address) },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = ShapeTokens.Large,
+                        onClick = onRequestPermission,
+                        shape = ShapeTokens.Large
                     ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(text = server.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
-                            Text(text = server.address, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f))
+                        Text(text = "Grant Permission", style = MaterialTheme.typography.labelLarge)
+                    }
+                }
+            } else {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    servers.forEach { server ->
+                        ExpressiveTonalButton(
+                            onClick = { onServerSelected(server.address) },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = ShapeTokens.Large,
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(text = server.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+                                Text(text = server.address, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f))
+                            }
                         }
                     }
                 }

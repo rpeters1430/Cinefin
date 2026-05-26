@@ -9,6 +9,9 @@ import androidx.annotation.RequiresApi
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.security.SecureRandom
+import javax.crypto.Mac
+import javax.crypto.spec.SecretKeySpec
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -26,6 +29,22 @@ class HandoffManager @Inject constructor(
         const val EXTRA_ITEM_ID = "handoff_item_id"
         const val EXTRA_POSITION_MS = "handoff_position_ms"
         const val EXTRA_TITLE = "handoff_title"
+        const val EXTRA_SIGNATURE = "handoff_signature"
+    }
+
+    private val sessionKey = ByteArray(32).apply { SecureRandom().nextBytes(this) }
+
+    fun generateSignature(itemId: String, positionMs: Long): String {
+        val data = "$itemId:$positionMs"
+        val mac = Mac.getInstance("HmacSHA256")
+        mac.init(SecretKeySpec(sessionKey, "HmacSHA256"))
+        val signatureBytes = mac.doFinal(data.toByteArray(Charsets.UTF_8))
+        return android.util.Base64.encodeToString(signatureBytes, android.util.Base64.NO_WRAP)
+    }
+
+    fun verifySignature(itemId: String, positionMs: Long, signature: String): Boolean {
+        val expected = generateSignature(itemId, positionMs)
+        return expected == signature
     }
 
     private var currentItemId: String? = null
@@ -107,6 +126,7 @@ class HandoffManager @Inject constructor(
             putExtra(EXTRA_ITEM_ID, itemId)
             putExtra(EXTRA_TITLE, title)
             putExtra(EXTRA_POSITION_MS, positionMs)
+            putExtra(EXTRA_SIGNATURE, generateSignature(itemId, positionMs))
             setPackage(context.packageName)
             // Ensure this is broadcast globally if using Cross-Device SDK, 
             // but for now we keep it internal for simulation.

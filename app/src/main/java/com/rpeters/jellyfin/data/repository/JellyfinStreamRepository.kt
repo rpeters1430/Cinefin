@@ -28,10 +28,10 @@ class JellyfinStreamRepository @Inject constructor(
         private const val DEFAULT_MAX_AUDIO_CHANNELS = 2
 
         // Image size constants
-        private const val DEFAULT_IMAGE_MAX_HEIGHT = 400
-        private const val DEFAULT_IMAGE_MAX_WIDTH = 400
-        private const val BACKDROP_MAX_HEIGHT = 400
-        private const val BACKDROP_MAX_WIDTH = 800
+        private const val DEFAULT_IMAGE_MAX_HEIGHT = 800
+        private const val DEFAULT_IMAGE_MAX_WIDTH = 800
+        private const val BACKDROP_MAX_HEIGHT = 1080
+        private const val BACKDROP_MAX_WIDTH = 1920
 
         // Default codecs
         private const val DEFAULT_VIDEO_CODEC = "h264"

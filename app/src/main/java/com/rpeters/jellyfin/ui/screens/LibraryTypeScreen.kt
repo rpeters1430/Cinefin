@@ -109,6 +109,7 @@ fun LibraryTypeScreen(
     val adaptiveConfig = rememberAdaptiveLayoutConfig(windowSizeClass)
     var selectedItem by remember { mutableStateOf<BaseItemDto?>(null) }
     var showManageSheet by remember { mutableStateOf(false) }
+    @Suppress("DEPRECATION")
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     val managementEnabled = libraryActionPrefs.enableManagementActions

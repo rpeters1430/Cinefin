@@ -42,6 +42,7 @@ object ImageLoadingOptimizer {
         performanceProfile: DevicePerformanceProfile,
     ): ImageLoader {
         val imageHttpClient = okHttpClient.newBuilder()
+            .cache(null) // ✅ FIX: Disable redundant OkHttp cache for images
             .addInterceptor { chain ->
                 val request = chain.request().newBuilder()
                     .header("Accept", "image/webp,image/avif,image/*,*/*;q=0.8")

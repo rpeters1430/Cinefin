@@ -127,8 +127,12 @@ fun ImmersiveLibraryScreen(
     }
 
     val adaptiveConfig = com.rpeters.jellyfin.ui.adaptive.LocalAdaptiveLayoutConfig.current
-    // Limit to 3 columns max for the library screen so the large cards still look good
-    val columns = adaptiveConfig.gridColumns.coerceAtMost(3)
+    // Use a single vertical list on phones to avoid text wrapping, and 2-3 columns on tablets
+    val columns = if (adaptiveConfig.isTablet) {
+        adaptiveConfig.gridColumns.coerceIn(2, 3)
+    } else {
+        1
+    }
 
     Box(
         modifier = modifier

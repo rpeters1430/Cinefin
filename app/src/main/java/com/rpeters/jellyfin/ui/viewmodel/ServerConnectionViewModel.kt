@@ -1099,6 +1099,11 @@ class ServerConnectionViewModel @Inject constructor(
         }
     }
 
+    fun restartDiscovery() {
+        SecureLogger.d("ServerConnectionVM", "Restarting server discovery")
+        startDiscovery()
+    }
+
     private fun startDiscovery() {
         discoveryJob?.cancel()
         discoveryJob = viewModelScope.launch {

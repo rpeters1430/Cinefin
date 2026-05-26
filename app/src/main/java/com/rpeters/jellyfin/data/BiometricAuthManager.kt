@@ -54,7 +54,9 @@ class BiometricAuthManager(private val context: Context) {
         // Check if biometric auth is available
         val capability = getCapability(requireStrongBiometric)
         if (!capability.isAvailable) {
-            continuation.resume(false)
+            if (continuation.isActive) {
+                continuation.resume(false)
+            }
             return@suspendCancellableCoroutine
         }
 
@@ -66,13 +68,17 @@ class BiometricAuthManager(private val context: Context) {
                 override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
                     super.onAuthenticationError(errorCode, errString)
                     // Authentication error (e.g., user cancelled, timeout)
-                    continuation.resume(false)
+                    if (continuation.isActive) {
+                        continuation.resume(false)
+                    }
                 }
 
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                     super.onAuthenticationSucceeded(result)
                     // Authentication succeeded
-                    continuation.resume(true)
+                    if (continuation.isActive) {
+                        continuation.resume(true)
+                    }
                 }
 
                 override fun onAuthenticationFailed() {

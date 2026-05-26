@@ -88,6 +88,7 @@ fun ImmersiveHomeScreen(
         val context = LocalContext.current
         var selectedItem by remember { mutableStateOf<BaseItemDto?>(null) }
         var showManageSheet by remember { mutableStateOf(false) }
+        @Suppress("DEPRECATION")
         val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
         val managementEnabled = libraryActionPrefs.enableManagementActions
@@ -503,6 +504,7 @@ private fun ImmersiveHomeContent(
             MobileExpressiveHomeContent(
                 appState = appState,
                 contentLists = contentLists,
+                currentServer = currentServer,
                 getImageUrl = getImageUrl,
                 getBackdropUrl = getBackdropUrl,
                 getSeriesImageUrl = getSeriesImageUrl,
