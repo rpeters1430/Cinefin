@@ -1,6 +1,5 @@
 package com.rpeters.jellyfin.ui.screens
 
-import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -55,7 +54,6 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.platform.LocalContext
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.core.content.ContextCompat
 import android.content.pm.PackageManager
 import android.os.Build
