@@ -4,11 +4,22 @@
 **Current state**: `compileSdk = 37`, `targetSdk = 37`, `minSdk = 30`, NDK `29.0.14206865`, AGP `9.2.1`, Kotlin `2.3.21`
 **Scope**: Behavior changes, deprecations, and new platform features that apply once Cinefin runs (or targets) Android 16 (API 36, "Baklava") and Android 17 (API 37).
 
+This document is the **single source of truth** for Android 16/17 requirements and tracking.
+
 This document supersedes the open items in:
 - `docs/plans/2026-03-28-android-16-17-modernization.md`
 - `docs/plans/2026-04-26-android-16-17-modernization-phase-2.md`
 
 Items already complete in the codebase are listed at the bottom in **§9 — Already Done** so we don't redo them.
+
+## Quick tracking order (use this first)
+
+If you only need one short list to work from, follow these in order:
+
+1. Finish all unchecked items in **§1 Hard Compatibility Items**.
+2. Then complete **§2 Behavior Changes** that impact all devices.
+3. Then complete selected feature adoption work from **§3–§4**.
+4. Use **§8 Risk Ranking** to prioritize and **§9 Already Done** to avoid duplicate work.
 
 ---
 
