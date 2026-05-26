@@ -3,6 +3,7 @@ package com.rpeters.jellyfin.data.repository
 import android.util.Log
 import androidx.annotation.VisibleForTesting
 import com.rpeters.jellyfin.BuildConfig
+import com.rpeters.jellyfin.core.constants.Constants
 import com.rpeters.jellyfin.data.JellyfinServer
 import com.rpeters.jellyfin.data.SecureCredentialManager
 import com.rpeters.jellyfin.data.model.QuickConnectResult
@@ -57,7 +58,9 @@ class JellyfinAuthRepository @Inject constructor(
 
     companion object {
         private const val TAG = "JellyfinAuthRepository"
-        private const val TOKEN_VALIDITY_DURATION_MS = 50 * 60 * 1000L // 50 minutes (10 min buffer)
+        // Proactive refresh: re-authenticate before this age threshold so the token is
+        // renewed before it could expire on a server with a short session lifetime.
+        private const val TOKEN_VALIDITY_DURATION_MS = Constants.TOKEN_VALIDITY_DURATION_MS
         private const val TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000L // Refresh 5 minutes before expiration
     }
 

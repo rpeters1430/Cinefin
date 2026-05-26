@@ -159,22 +159,44 @@ class ServerConnectionViewModel @Inject constructor(
                     }
                 }
 
-                val restoredServer = JellyfinServer(
-                    id = savedSessionServerId,
-                    name = savedSessionServerName ?: savedUsername,
-                    url = savedServerUrl,
-                    isConnected = true,
-                    userId = savedSessionUserId,
-                    username = savedUsername,
-                    accessToken = savedSessionToken,
-                    loginTimestamp = restoredLoginTimestamp,
-                    normalizedUrl = normalizeServerUrl(savedServerUrl),
-                )
-                authRepository.restorePersistedSession(restoredServer)
+                // Check token expiry BEFORE calling restorePersistedSession().
+                // restorePersistedSession() emits _isConnected=true on the repository flow,
+                // which a concurrent coroutine maps to _connectionState.isConnected=true and
+                // triggers home-screen navigation. If we then call clearPersistedSessionToken()
+                // the DataStore token is gone but in-memory state says "connected", leaving the
+                // home screen in a broken state where images fail. By evaluating expiry first we
+                // avoid ever entering that inconsistent window.
+                // Jellyfin tokens are long-lived by default; use a generous client-side validity
+                // period so only very stale sessions are rejected here. The network layer handles
+                // actual server-side token expiry via 401 responses.
+                val sessionAgeMs = System.currentTimeMillis() - restoredLoginTimestamp
+                val isSessionStale = sessionAgeMs > Constants.SESSION_TOKEN_MAX_AGE_MS
 
-                if (authRepository.isTokenExpired()) {
+                if (isSessionStale) {
+                    // Session is very old; clear it and fall through to auto-login or login screen.
+                    SecureLogger.w(
+                        "ServerConnectionVM",
+                        "Persisted session is stale (age ${sessionAgeMs / 86_400_000}d), clearing.",
+                    )
                     clearPersistedSessionToken()
                 } else {
+                    // Normalise the stored URL before restoring to handle legacy values that may
+                    // have been saved with trailing slashes or other format variations. Without
+                    // this, getImageUrl() can produce double-slash URLs (e.g. "server//Items/…")
+                    // that the server rejects with 404, causing all images to fail after upgrade.
+                    val normalizedSavedUrl = normalizeServerUrl(savedServerUrl)
+                    val restoredServer = JellyfinServer(
+                        id = savedSessionServerId,
+                        name = savedSessionServerName ?: savedUsername,
+                        url = normalizedSavedUrl,
+                        isConnected = true,
+                        userId = savedSessionUserId,
+                        username = savedUsername,
+                        accessToken = savedSessionToken,
+                        loginTimestamp = restoredLoginTimestamp,
+                        normalizedUrl = normalizedSavedUrl,
+                    )
+                    authRepository.restorePersistedSession(restoredServer)
                     _connectionState.value = _connectionState.value.copy(
                         isConnected = true,
                         isConnecting = false,
