@@ -253,18 +253,22 @@ fun AppearanceSettingsScreen(
                 )
             }
 
-            ExpressiveSettingsCard(
-                title = "Layout",
-                icon = Icons.Default.AutoAwesome,
-                description = "System bar and surface treatment",
-            ) {
-                ExpressiveSwitchListItem(
-                    title = "Edge-to-Edge",
-                    subtitle = "Extend content behind the status and navigation bars",
-                    checked = themePreferences.enableEdgeToEdge,
-                    onCheckedChange = { viewModel.setEnableEdgeToEdge(it) },
-                    leadingIcon = Icons.Default.AutoAwesome,
-                )
+            // On API 36+, edge-to-edge is enforced by the system and cannot be opted out.
+            // Only show the toggle on older API levels where it has an effect.
+            if (Build.VERSION.SDK_INT < 36) {
+                ExpressiveSettingsCard(
+                    title = "Layout",
+                    icon = Icons.Default.AutoAwesome,
+                    description = "System bar and surface treatment",
+                ) {
+                    ExpressiveSwitchListItem(
+                        title = "Edge-to-Edge",
+                        subtitle = "Extend content behind the status and navigation bars",
+                        checked = themePreferences.enableEdgeToEdge,
+                        onCheckedChange = { viewModel.setEnableEdgeToEdge(it) },
+                        leadingIcon = Icons.Default.AutoAwesome,
+                    )
+                }
             }
             
             Spacer(modifier = Modifier.height(16.dp))

@@ -3,12 +3,13 @@
 
     <style name="Theme.JellyfinAndroid" parent="Theme.Material3.DayNight.NoActionBar" />
     
+    <!-- windowFullscreen/windowTranslucentStatus/windowTranslucentNavigation are deprecated
+         at API 30+ and conflict with edge-to-edge enforcement on API 36+.
+         Full-screen and system-bar hiding are handled at runtime in setupFullScreenMode()
+         via WindowInsetsControllerCompat. -->
     <style name="Theme.JellyfinAndroid.VideoPlayer" parent="Theme.Material3.DayNight.NoActionBar">
-        <item name="android:windowFullscreen">true</item>
         <item name="android:windowContentOverlay">@null</item>
         <item name="android:windowBackground">@android:color/black</item>
-        <item name="android:windowTranslucentStatus">true</item>
-        <item name="android:windowTranslucentNavigation">true</item>
     </style>
 
     <!-- Material 3 aligned theme for MediaRouter (legacy View-based component) -->
