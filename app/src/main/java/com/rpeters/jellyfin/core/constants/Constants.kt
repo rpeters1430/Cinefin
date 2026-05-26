@@ -12,8 +12,12 @@ object Constants {
     const val NETWORK_WRITE_TIMEOUT_SECONDS = 30L
 
     // Authentication
-    const val TOKEN_VALIDITY_DURATION_MS = 45 * 60 * 1000L // 45 minutes (15 min before typical 60min server expiry)
+    const val TOKEN_VALIDITY_DURATION_MS = 45 * 60 * 1000L // 45 minutes (proactive refresh threshold)
     const val TOKEN_REFRESH_THRESHOLD_MS = 5 * 60 * 1000L // 5 minutes before expiry
+    // Jellyfin tokens are long-lived by default (no server-side expiry unless configured).
+    // Use 30 days as the client-side maximum age before treating a persisted session as stale
+    // and requiring a fresh login. The network layer handles actual server-side expiry via 401.
+    const val SESSION_TOKEN_MAX_AGE_MS = 30L * 24 * 60 * 60 * 1000L // 30 days
 
     // Pagination
     const val DEFAULT_PAGE_SIZE = 20
