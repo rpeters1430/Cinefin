@@ -1,6 +1,6 @@
 package com.rpeters.jellyfin.ui
 
-import android.app.Activity
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -121,7 +121,7 @@ fun JellyfinApp(
     val navBarVisible = remember { mutableStateOf(true) }
 
     JellyfinAndroidTheme(themePreferences = themePreferences) {
-        val windowSizeClass = calculateWindowSizeClass(activity = LocalContext.current as Activity)
+        val windowSizeClass = calculateWindowSizeClass(activity = checkNotNull(LocalActivity.current))
         val adaptiveLayoutConfig = com.rpeters.jellyfin.ui.adaptive.rememberAdaptiveLayoutConfig(windowSizeClass)
         
         CompositionLocalProvider(
@@ -222,7 +222,7 @@ fun JellyfinApp(
         }
 
         // Calculate window size class for adaptive navigation
-        val windowSizeClass = calculateWindowSizeClass(activity = context as Activity)
+        val windowSizeClass = calculateWindowSizeClass(activity = checkNotNull(LocalActivity.current))
         val navBackStackEntry = navController.currentBackStackEntryAsState()
         val currentDestination = navBackStackEntry.value?.destination
 

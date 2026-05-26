@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.viewModelScope
 import androidx.test.core.app.ApplicationProvider
+import com.rpeters.jellyfin.core.constants.Constants
 import com.rpeters.jellyfin.data.BiometricCapability
 import com.rpeters.jellyfin.data.SecureCredentialManager
 import com.rpeters.jellyfin.data.JellyfinServer
@@ -17,6 +18,10 @@ import com.rpeters.jellyfin.ui.viewmodel.PreferencesKeys.BIOMETRIC_AUTH_ENABLED
 import com.rpeters.jellyfin.ui.viewmodel.PreferencesKeys.BIOMETRIC_REQUIRE_STRONG
 import com.rpeters.jellyfin.ui.viewmodel.PreferencesKeys.REMEMBER_LOGIN
 import com.rpeters.jellyfin.ui.viewmodel.PreferencesKeys.SERVER_URL
+import com.rpeters.jellyfin.ui.viewmodel.PreferencesKeys.SESSION_LOGIN_TIMESTAMP
+import com.rpeters.jellyfin.ui.viewmodel.PreferencesKeys.SESSION_SERVER_ID
+import com.rpeters.jellyfin.ui.viewmodel.PreferencesKeys.SESSION_TOKEN
+import com.rpeters.jellyfin.ui.viewmodel.PreferencesKeys.SESSION_USER_ID
 import com.rpeters.jellyfin.ui.viewmodel.PreferencesKeys.USERNAME
 import com.rpeters.jellyfin.ui.components.ConnectionPhase
 import io.mockk.*
@@ -411,6 +416,119 @@ class ServerConnectionViewModelTest {
         
         viewModel.viewModelScope.cancel()
     }
+
+    // region Session restore tests (regression for issue #1094)
+
+    @Test
+    fun sessionRestore_freshSession_callsRestorePersistedSession() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // A session 1 hour old is well within the 30-day window — restore must be called.
+            val recentTimestamp = System.currentTimeMillis() - (60 * 60 * 1000L)
+            context.dataStore.edit { preferences ->
+                preferences[SESSION_TOKEN] = "existing-token"
+                preferences[SESSION_USER_ID] = "user-id-1"
+                preferences[SESSION_SERVER_ID] = "server-id-1"
+                preferences[SESSION_LOGIN_TIMESTAMP] = recentTimestamp
+            }
+
+            viewModel = ServerConnectionViewModel(
+                repository,
+                authRepository,
+                secureCredentialManager,
+                certificatePinningManager,
+                connectivityChecker,
+                discoveryRepository,
+                offlineDownloadManagerProvider,
+                context,
+                TestDispatcherProvider(mainDispatcherRule.dispatcher),
+            )
+            awaitCondition { viewModel.connectionState.value.savedServerUrl == "https://example.com" }
+            advanceUntilIdle()
+
+            // The fix requires restorePersistedSession to be called (not skipped or cleared).
+            coVerify(exactly = 1) { authRepository.restorePersistedSession(any()) }
+            viewModel.viewModelScope.cancel()
+        }
+
+    @Test
+    fun sessionRestore_staleSession_doesNotCallRestorePersistedSession() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // A session older than SESSION_TOKEN_MAX_AGE_MS (30 days) must be discarded before
+            // restorePersistedSession() is called — this prevents the race condition where the
+            // repository emits connected=true and we then clear the DataStore token underneath.
+            val staleTimestamp = System.currentTimeMillis() - (Constants.SESSION_TOKEN_MAX_AGE_MS + 1000L)
+            context.dataStore.edit { preferences ->
+                preferences[SESSION_TOKEN] = "stale-token"
+                preferences[SESSION_USER_ID] = "user-id-1"
+                preferences[SESSION_SERVER_ID] = "server-id-1"
+                preferences[SESSION_LOGIN_TIMESTAMP] = staleTimestamp
+            }
+
+            viewModel = ServerConnectionViewModel(
+                repository,
+                authRepository,
+                secureCredentialManager,
+                certificatePinningManager,
+                connectivityChecker,
+                discoveryRepository,
+                offlineDownloadManagerProvider,
+                context,
+                TestDispatcherProvider(mainDispatcherRule.dispatcher),
+            )
+            awaitCondition { viewModel.connectionState.value.savedServerUrl == "https://example.com" }
+            advanceUntilIdle()
+
+            // Critical: restorePersistedSession must NEVER be called for a stale session.
+            // If it were, the connected state would be set before the token is cleared,
+            // leaving the home screen in a broken state (images fail, session has no token).
+            coVerify(exactly = 0) { authRepository.restorePersistedSession(any()) }
+            viewModel.viewModelScope.cancel()
+        }
+
+    @Test
+    fun sessionRestore_trailingSlashUrl_normalizesUrlBeforeRestore() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Legacy DataStore values saved with trailing slashes must be normalized before the
+            // JellyfinServer object is built. Without this, getImageUrl() produces double-slash
+            // paths (e.g. "server//Items/…") that the server rejects with 404.
+            context.dataStore.edit { preferences ->
+                preferences[SERVER_URL] = "http://jellyfin.local:8096/"
+                preferences[USERNAME] = "user"
+                preferences[SESSION_TOKEN] = "token-abc"
+                preferences[SESSION_USER_ID] = "uid"
+                preferences[SESSION_SERVER_ID] = "sid"
+                preferences[SESSION_LOGIN_TIMESTAMP] = System.currentTimeMillis()
+            }
+            coEvery {
+                secureCredentialManager.hasSavedPassword("http://jellyfin.local:8096/", "user")
+            } returns false
+            coEvery {
+                secureCredentialManager.hasSavedPassword("http://jellyfin.local:8096", "user")
+            } returns false
+
+            val capturedServer = slot<JellyfinServer>()
+            coEvery { authRepository.restorePersistedSession(capture(capturedServer)) } just Runs
+
+            viewModel = ServerConnectionViewModel(
+                repository,
+                authRepository,
+                secureCredentialManager,
+                certificatePinningManager,
+                connectivityChecker,
+                discoveryRepository,
+                offlineDownloadManagerProvider,
+                context,
+                TestDispatcherProvider(mainDispatcherRule.dispatcher),
+            )
+            awaitCondition { capturedServer.isCaptured }
+            advanceUntilIdle()
+
+            assertFalse(capturedServer.captured.url.endsWith("/"))
+            assertFalse(capturedServer.captured.normalizedUrl?.endsWith("/") == true)
+            viewModel.viewModelScope.cancel()
+        }
+
+    // endregion
 
     private suspend fun awaitCondition(timeoutMs: Long = 2000, condition: suspend () -> Boolean) {
         val start = System.currentTimeMillis()

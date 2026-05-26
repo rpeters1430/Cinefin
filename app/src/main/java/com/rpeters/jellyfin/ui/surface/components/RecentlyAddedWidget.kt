@@ -26,7 +26,7 @@ import androidx.glance.layout.width
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
-import androidx.glance.unit.ColorProvider
+import androidx.compose.ui.graphics.Color
 import com.rpeters.jellyfin.R
 
 class RecentlyAddedWidget : GlanceAppWidget() {
@@ -62,7 +62,7 @@ class RecentlyAddedWidget : GlanceAppWidget() {
                     style = TextStyle(
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
-                        color = ColorProvider(android.R.color.white)
+                        color = androidx.glance.unit.ColorProvider(Color.White)
                     )
                 )
             }
@@ -75,7 +75,7 @@ class RecentlyAddedWidget : GlanceAppWidget() {
                         text = "New movies and shows will appear here",
                         style = TextStyle(
                             fontSize = 14.sp,
-                            color = ColorProvider(android.R.color.darker_gray)
+                            color = androidx.glance.unit.ColorProvider(Color(0xFF888888))
                         ),
                         modifier = GlanceModifier.padding(vertical = 8.dp)
                     )
