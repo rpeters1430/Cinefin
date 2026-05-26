@@ -1,6 +1,10 @@
 package com.rpeters.jellyfin.ui.screens
 
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
+import android.provider.Settings
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -52,8 +56,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
-import android.content.pm.PackageManager
-import android.os.Build
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -89,6 +91,9 @@ import com.rpeters.jellyfin.ui.theme.ShapeTokens
 import java.text.DateFormat
 import java.util.Date
 
+private const val Android17SdkInt = 37
+private const val LocalNetworkPermission = "android.permission.ACCESS_LOCAL_NETWORK"
+
 @OptInAppExperimentalApis
 @Composable
 fun ServerConnectionScreen(
@@ -120,8 +125,8 @@ fun ServerConnectionScreen(
     val context = LocalContext.current
     var isLocalNetworkPermissionGranted by remember {
         mutableStateOf(
-            if (Build.VERSION.SDK_INT >= 37) {
-                ContextCompat.checkSelfPermission(context, "android.permission.ACCESS_LOCAL_NETWORK") == PackageManager.PERMISSION_GRANTED
+            if (Build.VERSION.SDK_INT >= Android17SdkInt) {
+                ContextCompat.checkSelfPermission(context, LocalNetworkPermission) == PackageManager.PERMISSION_GRANTED
             } else {
                 true
             }
@@ -138,13 +143,19 @@ fun ServerConnectionScreen(
     }
 
     LaunchedEffect(Unit) {
-        if (Build.VERSION.SDK_INT >= 37) {
-            val isGranted = ContextCompat.checkSelfPermission(context, "android.permission.ACCESS_LOCAL_NETWORK") == PackageManager.PERMISSION_GRANTED
+        if (Build.VERSION.SDK_INT >= Android17SdkInt) {
+            val isGranted = ContextCompat.checkSelfPermission(context, LocalNetworkPermission) == PackageManager.PERMISSION_GRANTED
             isLocalNetworkPermissionGranted = isGranted
             if (!isGranted) {
-                permissionLauncher.launch("android.permission.ACCESS_LOCAL_NETWORK")
+                permissionLauncher.launch(LocalNetworkPermission)
             }
         }
+    }
+    val openAppSettings: () -> Unit = {
+        val settingsIntent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+            data = Uri.fromParts("package", context.packageName, null)
+        }
+        context.startActivity(settingsIntent)
     }
 
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -201,7 +212,7 @@ fun ServerConnectionScreen(
                     savedUsername.isNotBlank() &&
                     rememberLogin &&
                     !hasSavedPassword,
-                showDiscoveredServers = (connectionState.discoveredServers.isNotEmpty() || (Build.VERSION.SDK_INT >= 37 && !isLocalNetworkPermissionGranted)) &&
+                showDiscoveredServers = (connectionState.discoveredServers.isNotEmpty() || (Build.VERSION.SDK_INT >= Android17SdkInt && !isLocalNetworkPermissionGranted)) &&
                     !connectionState.isConnected &&
                     !connectionState.isConnecting &&
                     serverUrl.isBlank(),
@@ -241,10 +252,11 @@ fun ServerConnectionScreen(
                     onServerSelected = { serverUrl = it },
                     isLocalNetworkPermissionGranted = isLocalNetworkPermissionGranted,
                     onRequestPermission = {
-                        if (Build.VERSION.SDK_INT >= 37) {
-                            permissionLauncher.launch("android.permission.ACCESS_LOCAL_NETWORK")
+                        if (Build.VERSION.SDK_INT >= Android17SdkInt) {
+                            permissionLauncher.launch(LocalNetworkPermission)
                         }
                     },
+                    onOpenSettings = openAppSettings,
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
@@ -344,6 +356,7 @@ private fun DiscoveredServersCard(
     onServerSelected: (String) -> Unit,
     isLocalNetworkPermissionGranted: Boolean,
     onRequestPermission: () -> Unit,
+    onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     ElevatedCard(
@@ -377,7 +390,7 @@ private fun DiscoveredServersCard(
                 )
             }
 
-            if (Build.VERSION.SDK_INT >= 37 && !isLocalNetworkPermissionGranted) {
+            if (Build.VERSION.SDK_INT >= Android17SdkInt && !isLocalNetworkPermissionGranted) {
                 Column(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -395,6 +408,15 @@ private fun DiscoveredServersCard(
                     ) {
                         Text(text = "Grant Permission", style = MaterialTheme.typography.labelLarge)
                     }
+                    TextButton(onClick = onOpenSettings) {
+                        Text(text = "Grant in Settings")
+                    }
+                    Text(
+                        text = "You can still connect by manually entering your server URL below.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f),
+                        textAlign = TextAlign.Center,
+                    )
                 }
             } else {
                 Column(

@@ -53,7 +53,7 @@ We use two FGS types: `mediaPlayback` (`AudioService`) and `dataSync` (download 
 ### 1.5 — `ACCESS_LOCAL_NETWORK` runtime grant on SDK 37
 Already implemented in `ServerConnectionScreen.kt` (lines 121–148), but the gating is fragile:
 
-- [ ] The launcher fires from `LaunchedEffect(Unit)` on every recomposition of the screen. Once the user denies it once, it won't auto-relaunch — good — but the UI doesn't tell them why discovery is broken. Add an inline rationale + a "Grant in Settings" deep-link.
+- [x] The launcher fires from `LaunchedEffect(Unit)` on first composition. Denial UX now includes inline rationale text plus a "Grant in Settings" deep-link, and explicitly states manual URL entry still works (implemented on 2026-05-26 in `ServerConnectionScreen`).
 - [ ] Permission denial should not block manual server URL entry. Confirm `onRestartDiscovery` is only called when granted, and the manual URL flow still works without it.
 - [ ] Add a robolectric test for `Build.VERSION.SDK_INT >= 37` permission denial → manual entry still functional.
 
