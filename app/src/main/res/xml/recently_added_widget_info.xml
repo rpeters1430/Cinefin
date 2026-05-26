@@ -9,5 +9,5 @@
     android:previewLayout="@layout/glance_default_layout"
     android:targetCellWidth="2"
     android:targetCellHeight="2"
-    android:maxResizeWidth="4"
-    android:maxResizeHeight="3" />
+    android:maxResizeWidth="4dp"
+    android:maxResizeHeight="3dp" />
