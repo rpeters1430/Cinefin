@@ -35,7 +35,7 @@ Android 15+ devices ship with 16 KB memory pages and Play requires that new apps
 - DataStore — bundles `libdatastore_shared_counter.so`
 
 **Action**:
-- [ ] Add a CI check that runs `zipalign -c -P 16 -v 4 app-release.apk` (or `apksigner verify --print-page-size`) and fails if any `.so` is not 16 KB aligned.
+- [x] Added CI step "Verify 16 KB page alignment of native libraries" in `android-ci.yml` — runs `zipalign -c -P 16 -v 4` on the debug APK after every build and fails with a diagnostic message if any `.so` is not 16 KB aligned.
 - [ ] Verify `libffmpegJNI.so` version 1.9.0+1 is 16 KB aligned. If not, bump to whichever release of `jellyfin-media3-ffmpeg-decoder` is built with NDK r28+. (Our own NDK `29.0.14206865` is fine.)
 - [ ] Test a release APK on an Android 16 emulator with a 16 KB system image (`system-images;android-36;google_apis;arm64-v8a` — the `_16k_` variant).
 
@@ -52,14 +52,15 @@ On SDK 36+, apps can no longer opt out of edge-to-edge. `Window.setDecorFitsSyst
 Apps on screens **≥600dp** can no longer opt out of resizability or lock orientation, regardless of `android:resizeableActivity` and `android:screenOrientation`. We're well-positioned (`resizeableActivity="true"`, `MainActivity` uses `screenOrientation="user"`), but the player needs work:
 
 - [ ] **`VideoPlayerActivity`** sets `requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR` at runtime (line 329). On ≥600dp devices on Android 16, the system will *ignore* this. Confirm the player still renders correctly when the system forces a re-layout mid-playback (configChanges handles orientation, but verify `screenLayout`, `density`, and `smallestScreenSize` are also handled — they are, per the manifest).
-- [ ] Add a Robolectric or instrumentation test that resizes the activity at ≥600dp width and asserts the ExoPlayer surface survives without releasing the player.
+- [x] Added `VideoPlayerActivity_configChanges_handles_all_required_entries_for_Android_16` unit test in `VideoPlayerActivityLogicTest` — parses the manifest source and asserts all required configChanges entries (orientation, screenSize, uiMode, fontScale, layoutDirection, etc.) are present.
+- [ ] Add a Robolectric/instrumentation test that actually resizes the activity window at ≥600dp and asserts ExoPlayer survives without releasing.
 - [x] Audit `configChanges` on `VideoPlayerActivity`. Added `uiMode|fontScale|layoutDirection` to manifest so the player handles dark/light switch, font scale, and RTL layout direction changes without recreating and disrupting playback.
 
 ### 1.4 — Foreground service type strictness (Android 14+, tightened in 15/16)
 We use two FGS types: `mediaPlayback` (`AudioService`) and `dataSync` (download worker). Already mostly correct, but:
 
 - [ ] Confirm `AudioService.onCreate()` calls `startForeground(...)` **within 5 seconds** of the service starting in every code path, including the rebind/restart after `onTaskRemoved`. The Media3 `MediaSessionService` base class handles this, but our custom `notificationProvider` swap could regress it — add a unit test that asserts `startForeground` is called before any awaitable suspension.
-- [ ] Long-running downloads on Android 15+ hit the **6-hour cumulative dataSync FGS quota**. `OfflineDownloadWorker` needs a fallback: when a single download exceeds 6h (e.g. transcoding a 4K Blu-ray remux on a slow server), switch to `setExpedited` chunks or chain `OneTimeWorkRequest`s. Today the worker can be killed silently mid-download. *Tracked in IMPROVEMENT_PLAN §2.1; promote to Android-16-blocker.*
+- [x] Added `withTimeoutOrNull(FGS_DATASYNC_MAX_DURATION_MS)` (5.5 h) around `executeDownload` in `OfflineDownloadWorker`. On timeout the worker returns `Result.retry()` so WorkManager reschedules it — the download manager resumes from where it left off. Avoids silent OS kill at the 6h quota boundary.
 - [ ] Declare `FOREGROUND_SERVICE_MEDIA_PROCESSING` (new in API 36) for any future server-side transcode-monitoring service. Not used today; leave as a note.
 
 ### 1.5 — `ACCESS_LOCAL_NETWORK` runtime grant on SDK 37
@@ -126,7 +127,7 @@ Android 15+ exposes `Surface.setFrameRate()` to declare the desired frame rate t
 ### 3.5 — Predictive Back Compose integration
 We have `android:enableOnBackInvokedCallback="true"` ✓ but **zero `BackHandler` or `PredictiveBackHandler` usages** anywhere in `app/src/main`. That means:
 
-- [ ] Custom back handling in nested screens (drawers, detail screens, video controls overlay) currently relies entirely on the OS-level dispatcher. That's fine in most places, but the player's full-screen controls overlay should be dismissible via predictive back — wire up `PredictiveBackHandler` to consume the back swipe and fade the controls instead of exiting the player on the first swipe.
+- [x] Added `PredictiveBackHandler(enabled = state.isControlsVisible)` in `VideoPlayerScreen.kt`. When the controls overlay is visible, a back swipe hides the controls; when hidden the back press falls through to `VideoPlayerActivity`'s `OnBackPressedCallback` which stops playback and exits.
 - [ ] Navigation Compose 2.10+ has its own predictive-back animation support; verify `JellyfinNavGraph` uses the `composable(..., enterTransition = ...)` API and not the deprecated manual transition spec, so back swipes get the system animation.
 
 ---

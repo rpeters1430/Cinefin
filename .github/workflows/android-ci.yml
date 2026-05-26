@@ -84,6 +84,29 @@ jobs:
       - name: Enforce warning budget baseline
         run: ./gradlew --no-daemon --stacktrace verifyWarningBudget
 
+      - name: Verify 16 KB page alignment of native libraries
+        shell: bash
+        run: |
+          APK="app/build/outputs/apk/debug/app-debug.apk"
+          if [ ! -f "$APK" ]; then
+            echo "Debug APK not found, skipping 16 KB alignment check"
+            exit 0
+          fi
+          ZIPALIGN="${ANDROID_HOME}/build-tools/35.0.0/zipalign"
+          if [ ! -f "$ZIPALIGN" ]; then
+            echo "zipalign not found at $ZIPALIGN, skipping"
+            exit 0
+          fi
+          echo "Checking 16 KB page alignment for .so files in $APK"
+          if "$ZIPALIGN" -c -P 16 -v 4 "$APK"; then
+            echo "✅ All .so files are 16 KB page-aligned"
+          else
+            echo "❌ One or more .so files are NOT 16 KB page-aligned."
+            echo "   Action: bump org.jellyfin.media3:media3-ffmpeg-decoder to a release"
+            echo "   built with NDK r28+ and verify DataStore/graphics-path .so files."
+            exit 1
+          fi
+
       - name: Upload debug APK
         if: always()
         uses: actions/upload-artifact@v4

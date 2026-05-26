@@ -4,6 +4,7 @@ import android.os.Build
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.File
 
 class VideoPlayerActivityLogicTest {
 
@@ -82,5 +83,40 @@ class VideoPlayerActivityLogicTest {
         )
 
         assertFalse(result)
+    }
+
+    // §1.3 Android 16 — VideoPlayerActivity must handle all listed config changes so
+    // the player survives dark-mode switches, font scale, RTL, and system-forced
+    // orientation changes on ≥600dp screens without recreating the Activity.
+    @Test
+    fun `VideoPlayerActivity configChanges handles all required entries for Android 16`() {
+        val manifest = File("src/main/AndroidManifest.xml").takeIf { it.exists() }
+            ?: File("../app/src/main/AndroidManifest.xml").takeIf { it.exists() }
+
+        requireNotNull(manifest) { "Could not locate AndroidManifest.xml from test working directory" }
+
+        val content = manifest.readText()
+        val required = listOf(
+            "orientation",
+            "screenSize",
+            "keyboardHidden",
+            "screenLayout",
+            "density",
+            "smallestScreenSize",
+            "uiMode",        // dark/light mode switch must not recreate the player
+            "fontScale",     // accessibility font changes must not disrupt playback
+            "layoutDirection", // RTL switch must not disrupt playback
+        )
+
+        val videoPlayerEntry = content
+            .substringAfter("VideoPlayerActivity")
+            .substringBefore("</activity>")
+
+        required.forEach { entry ->
+            assertTrue(
+                "VideoPlayerActivity configChanges must include '$entry' to survive Android 16 system changes",
+                videoPlayerEntry.contains(entry),
+            )
+        }
     }
 }
