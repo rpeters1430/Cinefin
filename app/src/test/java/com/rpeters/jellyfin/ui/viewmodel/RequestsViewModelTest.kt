@@ -2,8 +2,10 @@ package com.rpeters.jellyfin.ui.viewmodel
 
 import com.rpeters.jellyfin.data.model.CinefinPluginInfoResponse
 import com.rpeters.jellyfin.data.model.CinefinPluginRequestResponse
+import com.rpeters.jellyfin.data.model.SeerrExternalIds
 import com.rpeters.jellyfin.data.model.SeerrMediaItem
 import com.rpeters.jellyfin.data.model.SeerrSearchResult
+import com.rpeters.jellyfin.data.model.SeerrTvDetails
 import com.rpeters.jellyfin.data.preferences.SeerrPreferences
 import com.rpeters.jellyfin.data.preferences.SeerrPreferencesRepository
 import com.rpeters.jellyfin.data.repository.CinefinPluginRepository
@@ -132,5 +134,29 @@ class RequestsViewModelTest {
 
         assertEquals("Plugin rejected request", viewModel.uiState.value.errorMessage)
         assertNull(viewModel.uiState.value.successMessage)
+    }
+
+    @Test
+    fun confirmTvRequest_tvdbMissing_fetchesFromSeerrDetailsAndRequestsSonarr() = runTest(testDispatcher) {
+        val item = SeerrMediaItem(
+            id = 101,
+            mediaType = "tv",
+            tmdbId = 202,
+            tvdbId = null,
+            name = "Test Show",
+        )
+        coEvery { seerrRepository.getTvDetails(202) } returns ApiResult.Success(
+            SeerrTvDetails(externalIds = SeerrExternalIds(tvdbId = 303)),
+        )
+        coEvery { sonarrRepository.addSeries(303, listOf(2), 7) } returns ApiResult.Success(Unit)
+
+        advanceUntilIdle()
+        viewModel.confirmTvRequest(item, listOf(2), 7)
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { seerrRepository.getTvDetails(202) }
+        coVerify(exactly = 1) { sonarrRepository.addSeries(303, listOf(2), 7) }
+        assertEquals("Request submitted for Test Show", viewModel.uiState.value.successMessage)
+        assertNull(viewModel.uiState.value.errorMessage)
     }
 }
