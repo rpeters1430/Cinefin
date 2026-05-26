@@ -12,42 +12,35 @@ import android.os.Vibrator
 import androidx.compose.ui.platform.LocalContext
 
 /**
- * Helper to provide consistent haptic feedback across the app.
- * Updated for Android 16 (API 36) with frequency-aware haptic curves.
+ * Haptic feedback helper using Android 16 (BAKLAVA) frequency-aware composition primitives.
+ * Falls back gracefully on devices that don't support the required primitives.
  */
 class ExpressiveHaptics(
     private val hapticFeedback: HapticFeedback,
     private val vibrator: Vibrator? = null
 ) {
-    
-    /**
-     * Subtle click feedback for standard interactions.
-     */
+
     fun lightClick() {
         hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
     }
-    
-    /**
-     * Standard click feedback.
-     */
+
     fun click() {
         hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
     }
-    
-    /**
-     * Strong feedback for important actions or long-press start.
-     */
+
     fun heavyClick() {
         hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
     }
 
-    /**
-     * Playback started/resumed haptic.
-     * Android 16+: Uses a rising frequency curve for a "start" feel.
-     */
+    /** Playback started/resumed — rising frequency curve. */
     fun playbackStarted() {
-        if (Build.VERSION.SDK_INT >= 36 && vibrator != null) {
-            // Android 16 Haptic Curve (Baklava)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA && vibrator != null &&
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+            vibrator.areAllPrimitivesSupported(
+                VibrationEffect.Composition.PRIMITIVE_TICK,
+                VibrationEffect.Composition.PRIMITIVE_QUICK_RISE,
+            )
+        ) {
             val effect = VibrationEffect.startComposition()
                 .addPrimitive(VibrationEffect.Composition.PRIMITIVE_TICK, 0.5f)
                 .addPrimitive(VibrationEffect.Composition.PRIMITIVE_QUICK_RISE, 0.8f)
@@ -58,12 +51,15 @@ class ExpressiveHaptics(
         }
     }
 
-    /**
-     * Playback paused haptic.
-     * Android 16+: Uses a falling frequency curve for a "stop" feel.
-     */
+    /** Playback paused — falling frequency curve. */
     fun playbackPaused() {
-        if (Build.VERSION.SDK_INT >= 36 && vibrator != null) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA && vibrator != null &&
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+            vibrator.areAllPrimitivesSupported(
+                VibrationEffect.Composition.PRIMITIVE_TICK,
+                VibrationEffect.Composition.PRIMITIVE_QUICK_FALL,
+            )
+        ) {
             val effect = VibrationEffect.startComposition()
                 .addPrimitive(VibrationEffect.Composition.PRIMITIVE_TICK, 0.3f)
                 .addPrimitive(VibrationEffect.Composition.PRIMITIVE_QUICK_FALL, 0.6f)
@@ -74,11 +70,12 @@ class ExpressiveHaptics(
         }
     }
 
-    /**
-     * Subtle tick for seeking.
-     */
+    /** Subtle tick for seek-bar dragging. */
     fun seekTick() {
-        if (Build.VERSION.SDK_INT >= 36 && vibrator != null) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA && vibrator != null &&
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+            vibrator.areAllPrimitivesSupported(VibrationEffect.Composition.PRIMITIVE_LOW_TICK)
+        ) {
             val effect = VibrationEffect.startComposition()
                 .addPrimitive(VibrationEffect.Composition.PRIMITIVE_LOW_TICK, 0.4f)
                 .compose()
@@ -88,11 +85,12 @@ class ExpressiveHaptics(
         }
     }
 
-    /**
-     * Stronger feedback when a limit is reached (e.g., end of list or slider).
-     */
+    /** Stronger feedback when a limit is reached (end of list, slider boundary). */
     fun limitReached() {
-        if (Build.VERSION.SDK_INT >= 36 && vibrator != null) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA && vibrator != null &&
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+            vibrator.areAllPrimitivesSupported(VibrationEffect.Composition.PRIMITIVE_THUD)
+        ) {
             val effect = VibrationEffect.startComposition()
                 .addPrimitive(VibrationEffect.Composition.PRIMITIVE_THUD, 1.0f)
                 .compose()

@@ -115,7 +115,7 @@ fun ExpressiveVideoControls(
     val stableOnSeek = remember(onSeek, haptics) {
         {
                 position: Long ->
-            haptics.lightClick()
+            haptics.seekTick()
             onSeek(position)
         }
     }

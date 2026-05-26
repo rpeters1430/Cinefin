@@ -42,17 +42,18 @@ Android 15+ devices ship with 16 KB memory pages and Play requires that new apps
 ### 1.2 — Edge-to-edge enforcement (Android 16, targetSdk 36+)
 On SDK 36+, apps can no longer opt out of edge-to-edge. `Window.setDecorFitsSystemWindows(false)` is now a no-op-or-crash; the system *always* draws under system bars. We already call `enableEdgeToEdge()` in `MainActivity` and use `WindowInsets.statusBars` / `WindowInsets.navigationBars` in Compose. Remaining audit items:
 
-- [ ] **`VideoPlayerActivity`** — `Theme.JellyfinAndroid.VideoPlayer` correctly drops the deprecated `windowFullscreen` flags (good), but verify the runtime full-screen path in `setupFullScreenMode()` uses `WindowInsetsControllerCompat.hide(systemBars())` with `BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE`, not the deprecated `systemUiVisibility` flags.
+- [x] **`VideoPlayerActivity`** — `Theme.JellyfinAndroid.VideoPlayer` correctly drops the deprecated `windowFullscreen` flags (good), but verify the runtime full-screen path in `setupFullScreenMode()` uses `WindowInsetsControllerCompat.hide(systemBars())` with `BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE`, not the deprecated `systemUiVisibility` flags. ✅ Confirmed: uses `WindowInsetsControllerCompat` with `BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE`.
 - [ ] **Bottom sheets, dialogs, snackbars** — anywhere we wrap a `Scaffold` with a custom bottom bar (`JellyfinApp.kt` lines ~334, ~369, ~407 use `WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()` manually), confirm they don't double-pad once the system enforces edge-to-edge. Prefer `Modifier.safeDrawingPadding()` or `Scaffold`'s built-in `contentWindowInsets` over manual `WindowInsets.navigationBars` reads.
 - [ ] **TV surface (`TvJellyfinApp`)** — TV runs without system bars but the same code path executes. Sanity check that the manual `navigationBars` padding becomes zero on Leanback rather than introducing a phantom gap.
 - [ ] **Status bar / nav bar color** — these XML attrs are deprecated at SDK 35+; we don't set them in `themes.xml`, but double-check no inherited style does.
+- [ ] **Bottom sheets, dialogs, snackbars** — verify `Scaffold`-wrapped screens don't double-pad once the system enforces edge-to-edge. Prefer `Modifier.safeDrawingPadding()` or `Scaffold`'s `contentWindowInsets` over manual `WindowInsets.navigationBars` reads.
 
 ### 1.3 — Adaptive / large screen mandate (Android 16)
 Apps on screens **≥600dp** can no longer opt out of resizability or lock orientation, regardless of `android:resizeableActivity` and `android:screenOrientation`. We're well-positioned (`resizeableActivity="true"`, `MainActivity` uses `screenOrientation="user"`), but the player needs work:
 
 - [ ] **`VideoPlayerActivity`** sets `requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR` at runtime (line 329). On ≥600dp devices on Android 16, the system will *ignore* this. Confirm the player still renders correctly when the system forces a re-layout mid-playback (configChanges handles orientation, but verify `screenLayout`, `density`, and `smallestScreenSize` are also handled — they are, per the manifest).
 - [ ] Add a Robolectric or instrumentation test that resizes the activity at ≥600dp width and asserts the ExoPlayer surface survives without releasing the player.
-- [ ] Audit `configChanges` on `VideoPlayerActivity`. Missing from the list: `uiMode` (dark/light switch), `fontScale`, `layoutDirection`. Decide per-attribute whether to handle or to recreate.
+- [x] Audit `configChanges` on `VideoPlayerActivity`. Added `uiMode|fontScale|layoutDirection` to manifest so the player handles dark/light switch, font scale, and RTL layout direction changes without recreating and disrupting playback.
 
 ### 1.4 — Foreground service type strictness (Android 14+, tightened in 15/16)
 We use two FGS types: `mediaPlayback` (`AudioService`) and `dataSync` (download worker). Already mostly correct, but:
@@ -64,9 +65,10 @@ We use two FGS types: `mediaPlayback` (`AudioService`) and `dataSync` (download 
 ### 1.5 — `ACCESS_LOCAL_NETWORK` runtime grant on SDK 37
 Already implemented in `ServerConnectionScreen.kt` (lines 121–148), but the gating is fragile:
 
-- [ ] The launcher fires from `LaunchedEffect(Unit)` on every recomposition of the screen. Once the user denies it once, it won't auto-relaunch — good — but the UI doesn't tell them why discovery is broken. Add an inline rationale + a "Grant in Settings" deep-link.
-- [ ] Permission denial should not block manual server URL entry. Confirm `onRestartDiscovery` is only called when granted, and the manual URL flow still works without it.
-- [ ] Add a robolectric test for `Build.VERSION.SDK_INT >= 37` permission denial → manual entry still functional.
+- [x] The launcher fires from `LaunchedEffect(Unit)` — fixed to fire only once via `hasAskedLocalNetworkPermission` rememberSaveable guard, preventing repeated prompts on recomposition.
+- [x] Added inline rationale text and "Grant Permission" / "Open Settings" (deep-link to app details after permanent denial) to `DiscoveredServersCard`. Manual URL entry note ("You can still connect by entering a server URL below.") is also surfaced.
+- [x] `onRestartDiscovery` is only called when permission is granted; manual URL flow is unaffected.
+- [ ] Add a Robolectric test for `Build.VERSION.SDK_INT >= 37` permission denial → manual entry still functional.
 
 ### 1.6 — Certificate Transparency enforcement
 `network_security_config.xml` notes "Certificate Transparency (enforced at API 37+) applies automatically to all HTTPS connections." This is correct, but:
@@ -91,8 +93,8 @@ Regular jobs get a stricter execution-runtime quota. WorkManager handles this tr
 ### 2.2 — Notification permission UX (Android 13+, stricter prompt suppression on 16)
 Android 16 will suppress repeated rejected prompts more aggressively. We currently request from `DownloadButton` and `ImmersiveTVEpisodeDetailScreen`:
 
-- [ ] Add `shouldShowRequestPermissionRationale` check before launching. Show our own pre-prompt explaining why downloads need a notification.
-- [ ] After two denials, treat notifications as permanently denied for this session and surface a "Notifications disabled — open Settings" affordance next to the download button instead of re-prompting.
+- [x] Added `shouldShowRequestPermissionRationale` check in `DownloadButton.kt`. Shows an AlertDialog rationale ("Enable download notifications?") before launching the system prompt.
+- [x] After permanent denial (rationale=false and previously asked), `DownloadButton` surfaces a "Notifications off — tap to enable" `TextButton` that deep-links to the app's Settings page. Download proceeds without blocking.
 
 ### 2.3 — `getParcelableExtra(name, Class)` migration
 Already done in `AudioService.kt`. One more spot — `MainActivity.handleHandoffIntent` reads several string and long extras, which are fine. **No further action.**
@@ -111,9 +113,9 @@ Already done in `AudioService.kt`. One more spot — `MainActivity.handleHandoff
 ### 3.2 — Richer haptics (`VibrationEffect.Composition` primitives)
 **Done.** `ExpressiveHaptics.kt` already uses `PRIMITIVE_QUICK_RISE`, `PRIMITIVE_QUICK_FALL`, `PRIMITIVE_THUD` with `Build.VERSION.SDK_INT >= 36` guards. Polish only:
 
-- [ ] Replace the hardcoded `>= 36` numeric literal with `>= Build.VERSION_CODES.BAKLAVA` once the constant lands in our compileSdk. (It does at SDK 36 — use `Build.VERSION_CODES.BAKLAVA`.)
-- [ ] Add a per-device capability check via `vibrator.areAllPrimitivesSupported(PRIMITIVE_QUICK_RISE, ...)`. Some OEMs report API 36 but ship a basic vibrator that no-ops the composition. Fall back to legacy haptics when unsupported.
-- [ ] Wire `seekTick()` into the seek bar in `ExpressiveVideoControls.kt` (the plan in `2026-04-26-...-phase-2.md` Step 2.3 hasn't been done yet).
+- [x] Replaced all hardcoded `>= 36` literals with `>= Build.VERSION_CODES.BAKLAVA` in `ExpressiveHaptics.kt`.
+- [x] Added `vibrator.areAllPrimitivesSupported(...)` OEM capability check per-method in `ExpressiveHaptics.kt`. Falls back to legacy `HapticFeedbackType` when the device doesn't support the required primitive.
+- [x] Wired `seekTick()` into the seek-bar callback in `ExpressiveVideoControls.kt` (replaces `lightClick()`).
 
 ### 3.3 — Embedded Photo Picker (Android 16)
 **Not done.** Plan called for profile-image picker integration. Currently we don't have a profile-image upload flow at all. Defer — when we add it, use `ActivityResultContracts.PickVisualMedia()` with embedded preview on API 36+.
@@ -157,7 +159,7 @@ Android 17 further tightens BAL. Audit anywhere we start an activity from a non-
 - [ ] No `Activity.startActivity` from `BroadcastReceiver.onReceive` anywhere — grep confirmed clean.
 
 ### 4.5 — Glance widget changes for Android 17
-- [ ] `continue_watching_widget_info.xml` and `recently_added_widget_info.xml` are very minimal. Add `android:targetCellWidth`/`targetCellHeight` (Android 12+), `android:previewLayout`, `android:description` (Android 12+), and `android:maxResizeWidth`/`maxResizeHeight` for the new Android 17 widget host sizing rules.
+- [x] Added `android:targetCellWidth="2"`, `targetCellHeight="2"`, `previewLayout`, `description`, `maxResizeWidth="4"`, `maxResizeHeight="3"` to both `continue_watching_widget_info.xml` and `recently_added_widget_info.xml`.
 
 ---
 
