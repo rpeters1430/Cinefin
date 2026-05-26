@@ -81,7 +81,7 @@
         <activity
             android:name=".ui.player.VideoPlayerActivity"
             android:exported="false"
-            android:configChanges="orientation|screenSize|keyboardHidden|screenLayout|density|smallestScreenSize"
+            android:configChanges="orientation|screenSize|keyboardHidden|screenLayout|density|smallestScreenSize|uiMode|fontScale|layoutDirection"
             android:supportsPictureInPicture="true"
             android:theme="@style/Theme.JellyfinAndroid.VideoPlayer"
             android:launchMode="singleTask" />

@@ -48,9 +48,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
+import androidx.activity.ComponentActivity
 import androidx.compose.ui.platform.LocalContext
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.core.content.ContextCompat
 import android.content.pm.PackageManager
 import android.os.Build
@@ -118,31 +123,43 @@ fun ServerConnectionScreen(
     var password by rememberSaveable { mutableStateOf("") }
 
     val context = LocalContext.current
+    val localNetworkPermission = "android.permission.ACCESS_LOCAL_NETWORK"
     var isLocalNetworkPermissionGranted by remember {
         mutableStateOf(
             if (Build.VERSION.SDK_INT >= 37) {
-                ContextCompat.checkSelfPermission(context, "android.permission.ACCESS_LOCAL_NETWORK") == PackageManager.PERMISSION_GRANTED
+                ContextCompat.checkSelfPermission(context, localNetworkPermission) == PackageManager.PERMISSION_GRANTED
             } else {
                 true
             }
         )
     }
+    var localNetworkPermDenied by rememberSaveable { mutableStateOf(false) }
+    var hasAskedLocalNetworkPermission by rememberSaveable { mutableStateOf(false) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         isLocalNetworkPermissionGranted = isGranted
         if (isGranted) {
+            localNetworkPermDenied = false
             onRestartDiscovery()
+        } else if (hasAskedLocalNetworkPermission) {
+            val activity = context as? ComponentActivity
+            val canAskAgain = activity?.shouldShowRequestPermissionRationale(localNetworkPermission) == true
+            if (!canAskAgain) {
+                localNetworkPermDenied = true
+            }
         }
     }
 
+    // Request the permission once on first composition only; do not re-prompt on every recompose.
     LaunchedEffect(Unit) {
-        if (Build.VERSION.SDK_INT >= 37) {
-            val isGranted = ContextCompat.checkSelfPermission(context, "android.permission.ACCESS_LOCAL_NETWORK") == PackageManager.PERMISSION_GRANTED
+        if (Build.VERSION.SDK_INT >= 37 && !hasAskedLocalNetworkPermission) {
+            val isGranted = ContextCompat.checkSelfPermission(context, localNetworkPermission) == PackageManager.PERMISSION_GRANTED
             isLocalNetworkPermissionGranted = isGranted
             if (!isGranted) {
-                permissionLauncher.launch("android.permission.ACCESS_LOCAL_NETWORK")
+                hasAskedLocalNetworkPermission = true
+                permissionLauncher.launch(localNetworkPermission)
             }
         }
     }
@@ -240,9 +257,11 @@ fun ServerConnectionScreen(
                     servers = connectionState.discoveredServers,
                     onServerSelected = { serverUrl = it },
                     isLocalNetworkPermissionGranted = isLocalNetworkPermissionGranted,
+                    isPermDenied = localNetworkPermDenied,
                     onRequestPermission = {
                         if (Build.VERSION.SDK_INT >= 37) {
-                            permissionLauncher.launch("android.permission.ACCESS_LOCAL_NETWORK")
+                            hasAskedLocalNetworkPermission = true
+                            permissionLauncher.launch(localNetworkPermission)
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
@@ -343,9 +362,11 @@ private fun DiscoveredServersCard(
     servers: List<com.rpeters.jellyfin.data.model.DiscoveredServer>,
     onServerSelected: (String) -> Unit,
     isLocalNetworkPermissionGranted: Boolean,
+    isPermDenied: Boolean = false,
     onRequestPermission: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
     ElevatedCard(
         colors = CardDefaults.elevatedCardColors(
             containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f),
@@ -383,18 +404,44 @@ private fun DiscoveredServersCard(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text(
-                        text = "Local network discovery is unavailable because permission was denied. Grant network permissions to automatically find servers on your home network.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f),
-                        textAlign = TextAlign.Center
-                    )
-                    ExpressiveTonalButton(
-                        onClick = onRequestPermission,
-                        shape = ShapeTokens.Large
-                    ) {
-                        Text(text = "Grant Permission", style = MaterialTheme.typography.labelLarge)
+                    if (isPermDenied) {
+                        Text(
+                            text = "Local network access was permanently denied. Open Settings to grant the permission, then return here to discover servers.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f),
+                            textAlign = TextAlign.Center,
+                        )
+                        ExpressiveTonalButton(
+                            onClick = {
+                                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                    data = Uri.fromParts("package", context.packageName, null)
+                                }
+                                context.startActivity(intent)
+                            },
+                            shape = ShapeTokens.Large,
+                        ) {
+                            Text(text = "Open Settings", style = MaterialTheme.typography.labelLarge)
+                        }
+                    } else {
+                        Text(
+                            text = "Local network discovery requires permission. Grant network access to automatically find servers on your home network.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f),
+                            textAlign = TextAlign.Center,
+                        )
+                        ExpressiveTonalButton(
+                            onClick = onRequestPermission,
+                            shape = ShapeTokens.Large,
+                        ) {
+                            Text(text = "Grant Permission", style = MaterialTheme.typography.labelLarge)
+                        }
                     }
+                    Text(
+                        text = "You can still connect by entering a server URL below.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.6f),
+                        textAlign = TextAlign.Center,
+                    )
                 }
             } else {
                 Column(

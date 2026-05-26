@@ -20,6 +20,7 @@ import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.withTimeoutOrNull
 
 @HiltWorker
 class OfflineDownloadWorker @AssistedInject constructor(
@@ -60,7 +61,11 @@ class OfflineDownloadWorker @AssistedInject constructor(
         var lastForegroundPercent = 0
 
         return try {
-            when (
+            // Android 15+ enforces a 6-hour cumulative quota for FOREGROUND_SERVICE_TYPE_DATA_SYNC.
+            // We cap each execution at 5.5 hours to stay within the budget. If the download is
+            // still in-progress at the deadline we return RETRY so WorkManager reschedules it;
+            // the OfflineDownloadManager supports resuming from where it left off.
+            val executionResult = withTimeoutOrNull(FGS_DATASYNC_MAX_DURATION_MS) {
                 offlineDownloadManager.executeDownload(downloadId) { download, progress ->
                     if (!notificationsEnabled) return@executeDownload
                     val percent = progress.progressPercent.toInt().coerceIn(0, 100)
@@ -93,7 +98,14 @@ class OfflineDownloadWorker @AssistedInject constructor(
                         ),
                     )
                 }
-            ) {
+            }
+
+            if (executionResult == null) {
+                SecureLogger.w(TAG, "cid=$cid download hit 5.5h FGS dataSync quota limit; rescheduling for downloadId=$downloadId")
+                return Result.retry()
+            }
+
+            when (executionResult) {
                 OfflineDownloadManager.DownloadExecutionResult.SUCCESS -> {
                     SecureLogger.i(TAG, "cid=$cid worker finished SUCCESS for downloadId=$downloadId")
                     if (notificationsEnabled) {
@@ -333,6 +345,9 @@ class OfflineDownloadWorker @AssistedInject constructor(
         private const val NOTIFICATION_ID_COMPLETION_BASE = 4100
         private const val FOREGROUND_UPDATE_MIN_INTERVAL_MS = 1500L
         private const val FOREGROUND_UPDATE_MIN_PERCENT_DELTA = 2
+        // Android 15+ enforces a 6-hour cumulative dataSync FGS quota. Cap each work execution
+        // at 5.5 hours so we stay comfortably under the limit and allow WorkManager to retry.
+        private const val FGS_DATASYNC_MAX_DURATION_MS = (5L * 60 + 30L) * 60 * 1000
 
         fun inputData(downloadId: String): Data = Data.Builder()
             .putString(KEY_DOWNLOAD_ID, downloadId)

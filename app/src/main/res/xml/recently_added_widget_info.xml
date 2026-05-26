@@ -4,4 +4,10 @@
     android:minWidth="110dp"
     android:minHeight="110dp"
     android:resizeMode="horizontal|vertical"
-    android:widgetCategory="home_screen" />
+    android:widgetCategory="home_screen"
+    android:description="@string/library_recently_added_section"
+    android:previewLayout="@layout/glance_default_layout"
+    android:targetCellWidth="2"
+    android:targetCellHeight="2"
+    android:maxResizeWidth="4"
+    android:maxResizeHeight="3" />

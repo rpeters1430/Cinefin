@@ -3,8 +3,12 @@
 package com.rpeters.jellyfin.ui.components
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
+import android.provider.Settings
+import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
@@ -14,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,6 +54,9 @@ fun DownloadButton(
     var showQualityDialog by remember { mutableStateOf(false) }
     var redownloadMode by remember { mutableStateOf(false) }
     var pendingQuality by remember { mutableStateOf<com.rpeters.jellyfin.data.offline.VideoQuality?>(null) }
+    var showNotificationRationale by remember { mutableStateOf(false) }
+    var notificationsPermDenied by rememberSaveable { mutableStateOf(false) }
+    var hasAlreadyAskedNotificationPermission by rememberSaveable { mutableStateOf(false) }
     val itemId = item.id.toString()
     val currentDownloadFlow = remember(downloadsViewModel, itemId) {
         downloadsViewModel.observeCurrentDownload(itemId)
@@ -59,7 +67,6 @@ fun DownloadButton(
     }
     val progress by progressFlow.collectAsStateWithLifecycle(initialValue = null)
 
-    // Deferred permission launcher
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
     ) { granted ->
@@ -67,7 +74,15 @@ fun DownloadButton(
             "DownloadsFlow",
             "POST_NOTIFICATIONS result via DownloadButton: granted=$granted, itemId=${item.id}",
         )
-        // After permission choice, proceed with the pending download if any
+        if (!granted && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            hasAlreadyAskedNotificationPermission
+        ) {
+            val activity = context as? ComponentActivity
+            val canAskAgain = activity?.shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS) == true
+            if (!canAskAgain) {
+                notificationsPermDenied = true
+            }
+        }
         val quality = pendingQuality
         if (quality != null) {
             if (redownloadMode) {
@@ -82,29 +97,68 @@ fun DownloadButton(
 
     fun requestPermissionAndStartDownload(quality: com.rpeters.jellyfin.data.offline.VideoQuality) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.POST_NOTIFICATIONS,
-            ) != PackageManager.PERMISSION_GRANTED
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
         ) {
-            SecureLogger.i(
-                "DownloadsFlow",
-                "Requesting POST_NOTIFICATIONS via DownloadButton for itemId=${item.id}, quality=${quality.id}",
-            )
+            val activity = context as? ComponentActivity
+            val shouldShowRationale = activity?.shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS) == true
             pendingQuality = quality
-            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-        } else {
-            SecureLogger.i(
-                "DownloadsFlow",
-                "POST_NOTIFICATIONS already granted (or not required) via DownloadButton for itemId=${item.id}, quality=${quality.id}",
-            )
-            if (redownloadMode) {
-                downloadsViewModel.redownloadByItem(item, quality)
-            } else {
-                downloadsViewModel.startDownload(item, quality)
+            when {
+                shouldShowRationale -> {
+                    showNotificationRationale = true
+                }
+                hasAlreadyAskedNotificationPermission -> {
+                    // Permanently denied — download proceeds without progress notifications
+                    notificationsPermDenied = true
+                    SecureLogger.i("DownloadsFlow", "POST_NOTIFICATIONS permanently denied; starting download without notifications for itemId=${item.id}")
+                    if (redownloadMode) downloadsViewModel.redownloadByItem(item, quality) else downloadsViewModel.startDownload(item, quality)
+                    pendingQuality = null
+                    redownloadMode = false
+                }
+                else -> {
+                    hasAlreadyAskedNotificationPermission = true
+                    SecureLogger.i("DownloadsFlow", "Requesting POST_NOTIFICATIONS for itemId=${item.id}, quality=${quality.id}")
+                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
             }
+        } else {
+            SecureLogger.i("DownloadsFlow", "POST_NOTIFICATIONS granted or not required for itemId=${item.id}, quality=${quality.id}")
+            if (redownloadMode) downloadsViewModel.redownloadByItem(item, quality) else downloadsViewModel.startDownload(item, quality)
             redownloadMode = false
         }
+    }
+
+    if (showNotificationRationale) {
+        AlertDialog(
+            onDismissRequest = {
+                showNotificationRationale = false
+                val quality = pendingQuality
+                if (quality != null) {
+                    if (redownloadMode) downloadsViewModel.redownloadByItem(item, quality) else downloadsViewModel.startDownload(item, quality)
+                    pendingQuality = null
+                    redownloadMode = false
+                }
+            },
+            title = { Text("Enable download notifications?") },
+            text = { Text("Cinefin can show download progress in the notification shade. This is optional — your download will proceed either way.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showNotificationRationale = false
+                    hasAlreadyAskedNotificationPermission = true
+                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }) { Text("Allow") }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showNotificationRationale = false
+                    val quality = pendingQuality
+                    if (quality != null) {
+                        if (redownloadMode) downloadsViewModel.redownloadByItem(item, quality) else downloadsViewModel.startDownload(item, quality)
+                        pendingQuality = null
+                        redownloadMode = false
+                    }
+                }) { Text("Skip") }
+            },
+        )
     }
 
     if (showQualityDialog) {
@@ -124,7 +178,8 @@ fun DownloadButton(
 
     val activeDownload = currentDownload
 
-    Box(modifier = modifier) {
+    Column(modifier = modifier) {
+    Box {
         when (activeDownload?.status) {
             DownloadStatus.PENDING -> {
                 PendingDownloadButton(showText = showText)
@@ -174,6 +229,28 @@ fun DownloadButton(
                 )
             }
         }
+    }
+    if (notificationsPermDenied) {
+        TextButton(
+            onClick = {
+                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = Uri.fromParts("package", context.packageName, null)
+                }
+                context.startActivity(intent)
+            },
+        ) {
+            Icon(
+                Icons.Default.NotificationsOff,
+                contentDescription = null,
+                modifier = Modifier.size(14.dp),
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                "Notifications off — tap to enable",
+                style = MaterialTheme.typography.labelSmall,
+            )
+        }
+    }
     }
 }
 

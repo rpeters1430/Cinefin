@@ -1,6 +1,7 @@
 package com.rpeters.jellyfin.ui.player
 
 import android.content.res.Configuration
+import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -100,6 +101,18 @@ fun VideoPlayerScreen(
     val playerColors = rememberVideoPlayerColors()
 
     val overlayState = state.toOverlayState()
+
+    // §3.5 — Predictive back: when the controls overlay is visible, a back swipe dismisses
+    // the controls rather than finishing the player. Once hidden the next back gesture
+    // falls through to VideoPlayerActivity's OnBackPressedCallback which stops playback.
+    PredictiveBackHandler(enabled = state.isControlsVisible) { progress ->
+        try {
+            progress.collect { /* progress available for future fade animation */ }
+            viewModel.onIntent(VideoPlayerIntent.SetControlsVisible(false))
+        } catch (_: java.util.concurrent.CancellationException) {
+            // Back gesture was cancelled — leave controls visible
+        }
+    }
 
     // Gesture feedback states
     var showSeekFeedback by remember { mutableStateOf(false) }
