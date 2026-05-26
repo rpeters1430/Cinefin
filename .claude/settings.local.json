@@ -94,7 +94,8 @@
       "Bash(Sort-Object)",
       "PowerShell(Select-String *)",
       "Bash(gh issue *)",
-      "PowerShell(Get-Content *)"
+      "PowerShell(Get-Content *)",
+      "Bash(gh pr *)"
     ],
     "deny": [],
     "ask": [],
