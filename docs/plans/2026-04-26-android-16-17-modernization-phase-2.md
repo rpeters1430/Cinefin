@@ -1,5 +1,10 @@
 # Implementation Plan: Android 16 & 17 Modernization (Phase 2)
 
+> [!IMPORTANT]
+> This plan has been consolidated into `/tmp/workspace/rpeters1430/Cinefin/docs/plans/ANDROID_16_17_READINESS.md`.
+> Use that file as the single checklist to track Android 16/17 work.
+> Keep this file for historical context only.
+
 ## Objective
 Adopt the latest platform features from Android 16 (Baklava) and ensure compliance with Android 17 (Vanilla Ice Cream) Beta 4. This phase focuses on user engagement via Live Update notifications, rich haptics, and system stability.
 

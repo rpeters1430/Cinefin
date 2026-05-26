@@ -1,5 +1,10 @@
 # Android 16 & 17 Modernization Plan
 
+> [!IMPORTANT]
+> This draft has been consolidated into `/tmp/workspace/rpeters1430/Cinefin/docs/plans/ANDROID_16_17_READINESS.md`.
+> Use that file as the single checklist to track Android 16/17 work.
+> Keep this file for historical context only.
+
 **Date**: March 28, 2026
 **Status**: Draft / Proposed
 **Target SDK**: 35 (Current) -> 36 (Android 16) -> 37 (Android 17 Beta 3)
