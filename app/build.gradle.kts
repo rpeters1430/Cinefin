@@ -238,6 +238,7 @@ dependencies {
     implementation(libs.androidx.media3.datasource.okhttp)
     implementation(libs.jellyfin.media3.ffmpeg.decoder)
     implementation(libs.google.cast.framework)
+    implementation(libs.google.play.age.signals)
 
     // Firebase
     implementation(platform(libs.firebase.bom))
