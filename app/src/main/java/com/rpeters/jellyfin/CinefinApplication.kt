@@ -49,6 +49,9 @@ class CinefinApplication : Application(), SingletonImageLoader.Factory, Configur
     lateinit var authRepositoryProvider: Provider<JellyfinAuthRepository>
 
     @Inject
+    lateinit var userRepositoryProvider: Provider<com.rpeters.jellyfin.data.repository.JellyfinUserRepository>
+
+    @Inject
     lateinit var generativeAiRepositoryProvider: Provider<com.rpeters.jellyfin.data.repository.GenerativeAiRepository>
 
     @Inject
@@ -195,7 +198,12 @@ class CinefinApplication : Application(), SingletonImageLoader.Factory, Configur
                 .await()
 
             val userStatus = result?.userStatus()
-            if (PlayAgeSignalsCompliance.isAdultVerified(userStatus)) {
+            val isVerified = PlayAgeSignalsCompliance.isAdultVerified(userStatus)
+            
+            // Persist the status to the repository
+            userRepositoryProvider.get().updateAdultVerifiedStatus(isVerified)
+
+            if (isVerified) {
                 SecureLogger.i(TAG, "Play Age Signals verified adult user")
             } else {
                 SecureLogger.w(
