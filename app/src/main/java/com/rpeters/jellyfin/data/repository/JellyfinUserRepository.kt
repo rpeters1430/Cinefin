@@ -7,6 +7,9 @@ import com.rpeters.jellyfin.data.repository.common.BaseJellyfinRepository
 import com.rpeters.jellyfin.data.repository.common.ErrorType
 import com.rpeters.jellyfin.utils.SecureLogger
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import org.jellyfin.sdk.api.client.extensions.itemsApi
 import org.jellyfin.sdk.api.client.extensions.libraryApi
 import org.jellyfin.sdk.api.client.extensions.playStateApi
@@ -36,6 +39,13 @@ class JellyfinUserRepository @Inject constructor(
     cache: JellyfinCache,
     private val offlineProgressRepository: OfflineProgressRepository,
 ) : BaseJellyfinRepository(authRepository, sessionManager, cache) {
+
+    private val _isAdultVerified = MutableStateFlow<Boolean?>(null)
+    val isAdultVerified: StateFlow<Boolean?> = _isAdultVerified.asStateFlow()
+
+    fun updateAdultVerifiedStatus(isVerified: Boolean) {
+        _isAdultVerified.value = isVerified
+    }
 
     suspend fun logout() {
         authRepository.logout()

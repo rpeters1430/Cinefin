@@ -6,6 +6,9 @@ import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import coil3.ImageLoader
 import coil3.SingletonImageLoader
+import com.google.android.play.agesignals.AgeSignalsException
+import com.google.android.play.agesignals.AgeSignalsManagerFactory
+import com.google.android.play.agesignals.AgeSignalsRequest
 import com.google.firebase.FirebaseApp
 import com.google.firebase.appcheck.FirebaseAppCheck
 import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory
@@ -16,6 +19,7 @@ import com.rpeters.jellyfin.ui.surface.ModernSurfaceCoordinator
 import com.rpeters.jellyfin.utils.AppResources
 import com.rpeters.jellyfin.utils.DeviceTypeUtils
 import com.rpeters.jellyfin.utils.NetworkOptimizer
+import com.rpeters.jellyfin.utils.PlayAgeSignalsCompliance
 import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CancellationException
@@ -24,6 +28,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Provider
@@ -42,6 +47,9 @@ class CinefinApplication : Application(), SingletonImageLoader.Factory, Configur
 
     @Inject
     lateinit var authRepositoryProvider: Provider<JellyfinAuthRepository>
+
+    @Inject
+    lateinit var userRepositoryProvider: Provider<com.rpeters.jellyfin.data.repository.JellyfinUserRepository>
 
     @Inject
     lateinit var generativeAiRepositoryProvider: Provider<com.rpeters.jellyfin.data.repository.GenerativeAiRepository>
@@ -76,6 +84,7 @@ class CinefinApplication : Application(), SingletonImageLoader.Factory, Configur
             DeviceTypeUtils.getDeviceType(this@CinefinApplication)
             
             initializeAppCheck()
+            initializePlayAgeSignals()
             validateAiApiKeyConfiguration()
         }
 
@@ -172,12 +181,42 @@ class CinefinApplication : Application(), SingletonImageLoader.Factory, Configur
                 )
                 SecureLogger.i(TAG, "Firebase App Check initialized with Play Integrity (debug build, debug provider not available)")
             }
+
         } else {
             // Release mode: Use Play Integrity
             firebaseAppCheck.installAppCheckProviderFactory(
                 PlayIntegrityAppCheckProviderFactory.getInstance(),
             )
             SecureLogger.i(TAG, "Firebase App Check initialized with Play Integrity")
+        }
+    }
+
+    private suspend fun initializePlayAgeSignals() {
+        try {
+            val result = AgeSignalsManagerFactory.create(this)
+                .checkAgeSignals(AgeSignalsRequest.builder().build())
+                .await()
+
+            val userStatus = result?.userStatus()
+            val isVerified = PlayAgeSignalsCompliance.isAdultVerified(userStatus)
+            
+            // Persist the status to the repository
+            userRepositoryProvider.get().updateAdultVerifiedStatus(isVerified)
+
+            if (isVerified) {
+                SecureLogger.i(TAG, "Play Age Signals verified adult user")
+            } else {
+                SecureLogger.w(
+                    TAG,
+                    "Play Age Signals requires restricted experience for status=${PlayAgeSignalsCompliance.describeStatus(userStatus)}",
+                )
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: AgeSignalsException) {
+            SecureLogger.w(TAG, "Play Age Signals unavailable (${e.errorCode}); continuing with default access")
+        } catch (e: Exception) {
+            SecureLogger.w(TAG, "Play Age Signals check failed; continuing with default access", e)
         }
     }
 
