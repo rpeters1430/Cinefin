@@ -66,6 +66,8 @@ import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
 import com.rpeters.jellyfin.ui.image.rememberScreenWidthHeight
 import com.rpeters.jellyfin.ui.theme.JellyfinExpressiveTheme
 import com.rpeters.jellyfin.ui.theme.MusicGreen
+import com.rpeters.jellyfin.ui.utils.MediaColorPalette
+import com.rpeters.jellyfin.ui.utils.rememberMediaColorPalette
 import com.rpeters.jellyfin.ui.viewmodel.AudioPlaybackViewModel
 
 /**
@@ -87,6 +89,17 @@ fun NowPlayingScreen(
 ) {
     val playbackState by viewModel.playbackState.collectAsStateWithLifecycle()
     val queue by viewModel.queue.collectAsStateWithLifecycle()
+
+    val defaultPrimary = MaterialTheme.colorScheme.primary
+    val defaultBackground = MaterialTheme.colorScheme.background
+    val artworkUrl = remember(playbackState.currentMediaItem) {
+        playbackState.currentMediaItem?.mediaMetadata?.artworkUri?.toString()
+    }
+    val palette = rememberMediaColorPalette(
+        imageUrl = artworkUrl,
+        defaultPrimary = defaultPrimary,
+        defaultBackground = defaultBackground,
+    )
 
     // Local state for smooth seeking
     var isSeeking by remember { mutableStateOf(false) }
@@ -122,7 +135,7 @@ fun NowPlayingScreen(
                     Brush.verticalGradient(
                         colors = listOf(
                             MaterialTheme.colorScheme.surface,
-                            MaterialTheme.colorScheme.surfaceContainerLow,
+                            palette.darkMuted.copy(alpha = 0.45f),
                             MaterialTheme.colorScheme.surfaceVariant,
                         ),
                     ),
@@ -134,8 +147,8 @@ fun NowPlayingScreen(
                     .background(
                         Brush.radialGradient(
                             colors = listOf(
-                                MusicGreen.copy(alpha = 0.26f),
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
+                                palette.vibrant.copy(alpha = 0.24f),
+                                palette.lightVibrant.copy(alpha = 0.16f),
                                 Color.Transparent,
                             ),
                             radius = 1100f,
@@ -151,6 +164,7 @@ fun NowPlayingScreen(
             ) {
                 AlbumArtSection(
                     currentMediaItem = playbackState.currentMediaItem,
+                    palette = palette,
                     modifier = Modifier.weight(1f),
                 )
 
@@ -197,6 +211,7 @@ fun NowPlayingScreen(
 @Composable
 private fun AlbumArtSection(
     currentMediaItem: androidx.media3.common.MediaItem?,
+    palette: MediaColorPalette,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -210,8 +225,8 @@ private fun AlbumArtSection(
                 .background(
                     Brush.radialGradient(
                         colors = listOf(
-                            MusicGreen.copy(alpha = 0.32f),
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
+                            palette.vibrant.copy(alpha = 0.3f),
+                            palette.lightVibrant.copy(alpha = 0.15f),
                             Color.Transparent,
                         ),
                     ),

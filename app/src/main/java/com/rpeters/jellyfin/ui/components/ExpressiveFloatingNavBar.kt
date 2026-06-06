@@ -61,6 +61,7 @@ fun ExpressiveFloatingNavBar(
                 color = MaterialTheme.colorScheme.surface.copy(alpha = 0.75f),
                 modifier = Modifier
                     .wrapContentWidth(),
+                borderRadius = 28.dp,
             ) {
                 Row(
                     modifier = Modifier

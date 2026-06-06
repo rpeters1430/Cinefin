@@ -7,6 +7,11 @@ object PlayAgeSignalsCompliance {
         return userStatus == AgeSignalsVerificationStatus.VERIFIED
     }
 
+    fun isBlocked(userStatus: Int?): Boolean {
+        return userStatus == AgeSignalsVerificationStatus.SUPERVISED_APPROVAL_PENDING ||
+                userStatus == AgeSignalsVerificationStatus.SUPERVISED_APPROVAL_DENIED
+    }
+
     fun describeStatus(userStatus: Int?): String {
         return when (userStatus) {
             AgeSignalsVerificationStatus.VERIFIED -> "VERIFIED"
@@ -18,3 +23,4 @@ object PlayAgeSignalsCompliance {
         }
     }
 }
+

@@ -180,6 +180,8 @@ constructor(
     // Delegate to repositories for compatibility
     val currentServer = repository.currentServerFlow
     val isConnected = repository.isConnectedFlow
+    val isAdultVerified = userRepository.isAdultVerified
+    val ageSignalsStatus = userRepository.ageSignalsStatus
 
     private val _serverInfo = MutableStateFlow<ApiResult<ServerInfo>?>(null)
     val serverInfo: StateFlow<ApiResult<ServerInfo>?> = _serverInfo.asStateFlow()

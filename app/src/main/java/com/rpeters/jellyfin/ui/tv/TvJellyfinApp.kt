@@ -41,6 +41,9 @@ import androidx.tv.material3.Icon
 import com.rpeters.jellyfin.ui.theme.CinefinTvTheme
 import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
 import com.rpeters.jellyfin.ui.viewmodel.ThemePreferencesViewModel
+import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
+import com.rpeters.jellyfin.ui.components.AgeSignalsBlockScreen
+import com.rpeters.jellyfin.utils.PlayAgeSignalsCompliance
 import androidx.tv.material3.MaterialTheme as TvMaterialTheme
 import androidx.tv.material3.Surface as TvSurface
 import androidx.tv.material3.Text as TvText
@@ -58,6 +61,7 @@ fun TvJellyfinApp(
 ) {
     val themeViewModel: ThemePreferencesViewModel = hiltViewModel()
     val themePreferences by themeViewModel.themePreferences.collectAsStateWithLifecycle()
+    val mainAppViewModel: MainAppViewModel = hiltViewModel()
 
     JellyfinAndroidTheme(themePreferences = themePreferences) {
         CinefinTvTheme(
@@ -65,22 +69,27 @@ fun TvJellyfinApp(
             appFont = themePreferences.appFont,
         ) {
             TvSurface(modifier = modifier.fillMaxSize()) {
-                val navController = rememberNavController()
-                val tvFocusManager = remember { TvFocusManager() }
-                val backStackEntry by navController.currentBackStackEntryAsState()
-                val currentDestination = backStackEntry?.destination
+                val ageSignalsStatus by mainAppViewModel.ageSignalsStatus.collectAsStateWithLifecycle()
+                if (ageSignalsStatus != null && PlayAgeSignalsCompliance.isBlocked(ageSignalsStatus)) {
+                    AgeSignalsBlockScreen(status = ageSignalsStatus!!)
+                } else {
+                    val navController = rememberNavController()
+                    val tvFocusManager = remember { TvFocusManager() }
+                    val backStackEntry by navController.currentBackStackEntryAsState()
+                    val currentDestination = backStackEntry?.destination
 
-                val showDrawer = currentDestination?.route?.let { route ->
-                    val normalizedRoute = normalizeTvRoute(route)
-                    TvNavigationItem.items.any { it.route == normalizedRoute }
-                } ?: false
+                    val showDrawer = currentDestination?.route?.let { route ->
+                        val normalizedRoute = normalizeTvRoute(route)
+                        TvNavigationItem.items.any { it.route == normalizedRoute }
+                    } ?: false
 
-                CompositionLocalProvider(LocalTvFocusManager provides tvFocusManager) {
-                    TvMainScreen(
-                        navController = navController,
-                        showDrawer = showDrawer,
-                        modifier = Modifier.fillMaxSize(),
-                    )
+                    CompositionLocalProvider(LocalTvFocusManager provides tvFocusManager) {
+                        TvMainScreen(
+                            navController = navController,
+                            showDrawer = showDrawer,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
                 }
             }
         }

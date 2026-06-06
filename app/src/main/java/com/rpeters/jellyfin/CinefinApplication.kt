@@ -198,11 +198,11 @@ class CinefinApplication : Application(), SingletonImageLoader.Factory, Configur
                 .await()
 
             val userStatus = result?.userStatus()
-            val isVerified = PlayAgeSignalsCompliance.isAdultVerified(userStatus)
             
             // Persist the status to the repository
-            userRepositoryProvider.get().updateAdultVerifiedStatus(isVerified)
+            userRepositoryProvider.get().updateAgeSignalsStatus(userStatus)
 
+            val isVerified = PlayAgeSignalsCompliance.isAdultVerified(userStatus)
             if (isVerified) {
                 SecureLogger.i(TAG, "Play Age Signals verified adult user")
             } else {

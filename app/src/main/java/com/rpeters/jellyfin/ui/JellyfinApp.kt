@@ -129,7 +129,11 @@ fun JellyfinApp(
             com.rpeters.jellyfin.ui.adaptive.LocalWindowSizeClass provides windowSizeClass,
             com.rpeters.jellyfin.ui.adaptive.LocalAdaptiveLayoutConfig provides adaptiveLayoutConfig
         ) {
-        val navController = rememberNavController()
+            val ageSignalsStatus by mainAppViewModel.ageSignalsStatus.collectAsStateWithLifecycle()
+            if (ageSignalsStatus != null && com.rpeters.jellyfin.utils.PlayAgeSignalsCompliance.isBlocked(ageSignalsStatus)) {
+                com.rpeters.jellyfin.ui.components.AgeSignalsBlockScreen(status = ageSignalsStatus!!)
+            } else {
+                val navController = rememberNavController()
         val connectionViewModel: ServerConnectionViewModel = hiltViewModel()
         val connectionState by connectionViewModel.connectionState.collectAsStateWithLifecycle()
         val consumeShortcut by rememberUpdatedState(onShortcutConsumed)
@@ -439,6 +443,7 @@ fun JellyfinApp(
                         },
                     )
                 }
+            }
             }
         }
         } // CompositionLocalProvider(LocalNavBarVisible)

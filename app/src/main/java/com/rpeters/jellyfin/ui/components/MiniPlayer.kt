@@ -106,14 +106,10 @@ private fun MiniPlayerContent(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp)
-            .border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
-                shape = RoundedCornerShape(28.dp),
-            )
             .clickable(onClick = onExpandClick),
         shape = RoundedCornerShape(28.dp),
         color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.78f),
+        borderRadius = 28.dp
     ) {
         Column {
             Row(

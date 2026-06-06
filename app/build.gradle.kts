@@ -226,6 +226,7 @@ dependencies {
     // Image Loading
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
+    implementation(libs.androidx.palette)
 
     // Media3
     implementation(libs.androidx.media3.exoplayer)
@@ -239,6 +240,8 @@ dependencies {
     implementation(libs.jellyfin.media3.ffmpeg.decoder)
     implementation(libs.google.cast.framework)
     implementation(libs.google.play.age.signals)
+    implementation(libs.google.play.app.update)
+    implementation(libs.google.play.app.update.ktx)
 
     // Firebase
     implementation(platform(libs.firebase.bom))

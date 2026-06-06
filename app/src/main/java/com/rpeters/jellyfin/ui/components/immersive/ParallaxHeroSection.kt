@@ -30,6 +30,7 @@ import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
  * @param content Content to overlay on the hero image
  */
 import androidx.compose.animation.AnimatedVisibilityScope
+import com.rpeters.jellyfin.ui.utils.rememberMediaColorPalette
 
 @Composable
 fun ParallaxHeroSection(
@@ -44,6 +45,14 @@ fun ParallaxHeroSection(
     showGradient: Boolean = true,
     content: @Composable BoxScope.() -> Unit = {},
 ) {
+    val defaultPrimary = MaterialTheme.colorScheme.primary
+    val defaultBackground = MaterialTheme.colorScheme.background
+    val palette = rememberMediaColorPalette(
+        imageUrl = imageUrl,
+        defaultPrimary = defaultPrimary,
+        defaultBackground = defaultBackground,
+    )
+
     val sharedTransitionScope = com.rpeters.jellyfin.ui.navigation.LocalSharedTransitionScope.current
 
     val sharedElementModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null && itemId != null) {
@@ -91,9 +100,9 @@ fun ParallaxHeroSection(
                             brush = Brush.verticalGradient(
                                 colors = listOf(
                                     Color.Transparent,
-                                    Color.Black.copy(alpha = 0.3f),
-                                    backgroundColor.copy(alpha = 0.65f),
-                                    backgroundColor.copy(alpha = 0.9f),
+                                    palette.vibrant.copy(alpha = 0.15f),
+                                    palette.darkMuted.copy(alpha = 0.6f),
+                                    palette.darkMuted.copy(alpha = 0.9f),
                                     backgroundColor,
                                 ),
                                 startY = 0f,

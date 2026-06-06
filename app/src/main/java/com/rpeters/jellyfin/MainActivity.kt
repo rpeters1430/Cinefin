@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -11,6 +12,11 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import com.google.android.play.core.appupdate.AppUpdateManager
+import com.google.android.play.core.appupdate.AppUpdateManagerFactory
+import com.google.android.play.core.appupdate.AppUpdateOptions
+import com.google.android.play.core.install.model.AppUpdateType
+import com.google.android.play.core.install.model.UpdateAvailability
 import com.rpeters.jellyfin.ui.JellyfinApp
 import com.rpeters.jellyfin.ui.tv.TvJellyfinApp
 import com.rpeters.jellyfin.utils.DeviceTypeUtils
@@ -27,11 +33,24 @@ class MainActivity : FragmentActivity() {
     @Inject
     lateinit var handoffManager: HandoffManager
 
+    private lateinit var appUpdateManager: AppUpdateManager
+
+    private val updateLauncher = registerForActivityResult(
+        ActivityResultContracts.StartIntentSenderForResult()
+    ) { result ->
+        if (result.resultCode != RESULT_OK) {
+            SecureLogger.w(TAG, "In-app update flow failed or was canceled by the user.")
+        }
+    }
+
     private var shortcutDestination by mutableStateOf<String?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        appUpdateManager = AppUpdateManagerFactory.create(this)
+        checkForUpdates()
 
         // Start main thread monitoring in debug builds
         MainThreadMonitor.startMonitoring()
@@ -60,6 +79,41 @@ class MainActivity : FragmentActivity() {
                         this@MainActivity.intent?.removeExtra(EXTRA_SHORTCUT_DESTINATION)
                     },
                 )
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        appUpdateManager.appUpdateInfo.addOnSuccessListener { appUpdateInfo ->
+            if (appUpdateInfo.updateAvailability() == UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS) {
+                try {
+                    appUpdateManager.startUpdateFlowForResult(
+                        appUpdateInfo,
+                        updateLauncher,
+                        AppUpdateOptions.newBuilder(AppUpdateType.IMMEDIATE).build()
+                    )
+                } catch (e: Exception) {
+                    SecureLogger.e(TAG, "Failed to resume in-app update flow", e)
+                }
+            }
+        }
+    }
+
+    private fun checkForUpdates() {
+        appUpdateManager.appUpdateInfo.addOnSuccessListener { appUpdateInfo ->
+            if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE &&
+                appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.IMMEDIATE)
+            ) {
+                try {
+                    appUpdateManager.startUpdateFlowForResult(
+                        appUpdateInfo,
+                        updateLauncher,
+                        AppUpdateOptions.newBuilder(AppUpdateType.IMMEDIATE).build()
+                    )
+                } catch (e: Exception) {
+                    SecureLogger.e(TAG, "Failed to start in-app update flow", e)
+                }
             }
         }
     }

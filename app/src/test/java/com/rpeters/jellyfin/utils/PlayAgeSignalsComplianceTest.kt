@@ -42,4 +42,14 @@ class PlayAgeSignalsComplianceTest {
         assertEquals("UNKNOWN", PlayAgeSignalsCompliance.describeStatus(9_999))
         assertEquals("UNKNOWN", PlayAgeSignalsCompliance.describeStatus(null))
     }
+
+    @Test
+    fun `isBlocked returns true for pending and denied status`() {
+        assertTrue(PlayAgeSignalsCompliance.isBlocked(AgeSignalsVerificationStatus.SUPERVISED_APPROVAL_PENDING))
+        assertTrue(PlayAgeSignalsCompliance.isBlocked(AgeSignalsVerificationStatus.SUPERVISED_APPROVAL_DENIED))
+        assertFalse(PlayAgeSignalsCompliance.isBlocked(AgeSignalsVerificationStatus.VERIFIED))
+        assertFalse(PlayAgeSignalsCompliance.isBlocked(AgeSignalsVerificationStatus.SUPERVISED))
+        assertFalse(PlayAgeSignalsCompliance.isBlocked(AgeSignalsVerificationStatus.UNKNOWN))
+        assertFalse(PlayAgeSignalsCompliance.isBlocked(null))
+    }
 }

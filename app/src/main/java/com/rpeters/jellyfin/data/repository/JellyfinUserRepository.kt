@@ -5,6 +5,7 @@ import com.rpeters.jellyfin.data.model.CurrentUserDetails
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.data.repository.common.BaseJellyfinRepository
 import com.rpeters.jellyfin.data.repository.common.ErrorType
+import com.rpeters.jellyfin.utils.PlayAgeSignalsCompliance
 import com.rpeters.jellyfin.utils.SecureLogger
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -43,8 +44,16 @@ class JellyfinUserRepository @Inject constructor(
     private val _isAdultVerified = MutableStateFlow<Boolean?>(null)
     val isAdultVerified: StateFlow<Boolean?> = _isAdultVerified.asStateFlow()
 
+    private val _ageSignalsStatus = MutableStateFlow<Int?>(null)
+    val ageSignalsStatus: StateFlow<Int?> = _ageSignalsStatus.asStateFlow()
+
     fun updateAdultVerifiedStatus(isVerified: Boolean) {
         _isAdultVerified.value = isVerified
+    }
+
+    fun updateAgeSignalsStatus(status: Int?) {
+        _ageSignalsStatus.value = status
+        _isAdultVerified.value = PlayAgeSignalsCompliance.isAdultVerified(status)
     }
 
     suspend fun logout() {
