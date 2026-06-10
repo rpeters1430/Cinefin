@@ -416,6 +416,7 @@ jobs:
         id: create_release
         uses: softprops/action-gh-release@v2
         with:
+          token: ${{ github.token }}
           tag_name: ${{ steps.version.outputs.tag }}
           name:     "Cinefin ${{ steps.version.outputs.new_name }}"
           files:    app/build/outputs/bundle/release/app-release.aab
@@ -434,7 +435,7 @@ jobs:
             Download **`app-release.aab`** from the assets below and upload it in
             [Google Play Console → Releases](https://play.google.com/console) to submit the update.
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
 
       # ── Completion comment ─────────────────────────────────────
       - name: Post release complete to issue
