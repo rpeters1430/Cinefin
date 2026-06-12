@@ -35,8 +35,8 @@ android {
         applicationId = "com.rpeters.jellyfin"
         minSdk = 30
         targetSdk = 37
-        versionCode = 120
-        versionName = "14.88"
+        versionCode = 121
+        versionName = "14.89"
 
         testInstrumentationRunner = "com.rpeters.jellyfin.testing.HiltTestRunner"
 
@@ -128,7 +128,6 @@ android {
                     "-opt-in=androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi",
                     "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi",
                     "-opt-in=androidx.compose.foundation.layout.ExperimentalLayoutApi",
-                    "-Xannotation-default-target=param-property",
                 ),
             )
         }

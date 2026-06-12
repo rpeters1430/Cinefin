@@ -284,8 +284,7 @@ class JellyfinUserRepository @Inject constructor(
                 playbackOrder = PlaybackOrder.DEFAULT,
                 playSessionId = sessionId,
             )
-            client.playStateApi.reportPlaybackStart(info)
-            Unit
+            client.playStateApi.reportPlaybackStart(info).let { }
         }
 
     suspend fun reportPlaybackProgress(
@@ -315,8 +314,7 @@ class JellyfinUserRepository @Inject constructor(
                 playbackOrder = PlaybackOrder.DEFAULT,
                 playSessionId = effectiveSessionId,
             )
-            client.playStateApi.reportPlaybackProgress(info)
-            Unit
+            client.playStateApi.reportPlaybackProgress(info).let { }
         }
 
         // If network error, queue for later sync
@@ -357,8 +355,7 @@ class JellyfinUserRepository @Inject constructor(
                 playSessionId = effectiveSessionId,
                 failed = failed,
             )
-            client.playStateApi.reportPlaybackStopped(info)
-            Unit
+            client.playStateApi.reportPlaybackStopped(info).let { }
         }
         if (queueOfflineOnNetworkError && result is ApiResult.Error && result.errorType == ErrorType.NETWORK) {
             offlineProgressRepository.addUpdate(
