@@ -71,6 +71,8 @@ data class SonarrAddOptions(
 data class SonarrCommand(
     @SerialName("name") val name: String,
     @SerialName("episodeIds") val episodeIds: List<Int> = emptyList(),
+    @SerialName("seriesId") val seriesId: Int? = null,
+    @SerialName("seasonNumber") val seasonNumber: Int? = null,
 )
 
 // ── Radarr models ────────────────────────────────────────────────────────────

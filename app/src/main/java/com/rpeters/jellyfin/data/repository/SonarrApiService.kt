@@ -12,6 +12,8 @@ import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.POST
+import retrofit2.http.PUT
+import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface SonarrApiService {
@@ -30,6 +32,12 @@ interface SonarrApiService {
         @Query("tvdbId") tvdbId: Int,
     ): Response<List<SonarrSeriesLookupResult>>
 
+    @GET("api/v3/series")
+    suspend fun getSeriesJsonByTvdbId(
+        @Header("X-Api-Key") apiKey: String,
+        @Query("tvdbId") tvdbId: Int,
+    ): Response<List<JsonObject>>
+
     @GET("api/v3/rootFolder")
     suspend fun getRootFolders(@Header("X-Api-Key") apiKey: String): Response<List<SonarrRootFolder>>
 
@@ -47,6 +55,13 @@ interface SonarrApiService {
     suspend fun addSeries(
         @Header("X-Api-Key") apiKey: String,
         @Body request: SonarrAddSeriesRequest,
+    ): Response<JsonObject>
+
+    @PUT("api/v3/series/{id}")
+    suspend fun updateSeries(
+        @Header("X-Api-Key") apiKey: String,
+        @Path("id") id: Int,
+        @Body request: JsonObject,
     ): Response<JsonObject>
 
     @POST("api/v3/command")

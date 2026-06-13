@@ -64,7 +64,7 @@ scripts/gen-local-properties.ps1  # Windows (PowerShell)
 - **Project Name**: Cinefin Android (formerly Jellyfin Android Client)
 - **Application ID**: `com.rpeters.jellyfin`
 - **Namespace**: `com.rpeters.jellyfin`
-- **Version**: Defined in `app/build.gradle.kts` (versionCode: 79, versionName: "14.47")
+- **Version**: Defined in `app/build.gradle.kts` (versionCode: 123, versionName: "14.91")
 
 ### High-Level Architecture
 This is a modern Android client for Jellyfin media servers built with:

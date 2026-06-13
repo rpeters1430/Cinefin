@@ -1,6 +1,6 @@
 # Jellyfin Android - Current Status
 
-**Last verified on**: 2026-05-19
+**Last verified on**: 2026-06-13
 
 > **Quick Links**: [Feature Status](CURRENT_STATUS.md) | [Known Issues](../features/KNOWN_ISSUES.md) | [Roadmap](ROADMAP.md) | [Upgrade Path](UPGRADE_PATH.md)
 
@@ -153,7 +153,8 @@ Key technology choices:
 
 ## Development Status
 
-### Recent Completions (March – May 2026)
+### Recent Completions (March – June 2026)
+- ✅ **Sonarr/Radarr Media Request integrations**: Resolved season and series search integration issues in Sonarr. Added support for editing/updating monitored seasons on existing series and queuing explicit `SeasonSearch` and `SeriesSearch` commands in Sonarr to guarantee index searches are triggered immediately after the metadata populates (Jun 2026)
 - ✅ **Music background playback shipped**: MediaSession, notification provider, shuffle/repeat, session persistence, Android 17 task-removed hardening (Apr 2026)
 - ✅ **Android 16 modernization**: ProgressStyle notifications, standardized haptic curves (seekTick, limitReached) (Apr 2026)
 - ✅ **Auth refresh redesigned**: Removed blocking Thread.sleep + runBlocking patterns in favor of single-flight Mutex/Deferred with bounded timeout (Mar 2026)

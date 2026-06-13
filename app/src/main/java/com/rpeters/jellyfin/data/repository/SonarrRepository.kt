@@ -13,6 +13,10 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
@@ -87,6 +91,77 @@ class SonarrRepository @Inject constructor(
     suspend fun addSeries(tvdbId: Int, requestedSeasons: List<Int>?, qualityProfileId: Int? = null): ApiResult<Unit> = retryNetworkCall {
         val (service, apiKey) = getService() ?: return@retryNetworkCall notConfiguredError()
         try {
+            // Check if the series is already added to Sonarr
+            val existingSeriesResponse = service.getSeriesJsonByTvdbId(apiKey, tvdbId)
+            val existingSeries = if (existingSeriesResponse.isSuccessful) {
+                existingSeriesResponse.body()?.firstOrNull()
+            } else {
+                null
+            }
+
+            if (existingSeries != null) {
+                val seriesId = existingSeries["id"]?.jsonPrimitive?.content?.toIntOrNull()
+                    ?: return@retryNetworkCall ApiResult.Error("Could not parse existing series ID")
+
+                // Update monitored status of the requested seasons
+                val modifiedSeries = JsonObject(existingSeries.toMutableMap().apply {
+                    put("monitored", JsonPrimitive(true))
+                    val seasonsArray = get("seasons") as? JsonArray
+                    if (seasonsArray != null) {
+                        val updatedSeasons = seasonsArray.map { seasonElement ->
+                            val seasonObj = seasonElement as? JsonObject
+                            if (seasonObj != null) {
+                                val seasonNum = seasonObj["seasonNumber"]?.jsonPrimitive?.content?.toIntOrNull()
+                                if (seasonNum != null && requestedSeasons != null && seasonNum in requestedSeasons) {
+                                    JsonObject(seasonObj.toMutableMap().apply {
+                                        put("monitored", JsonPrimitive(true))
+                                    })
+                                } else {
+                                    seasonObj
+                                }
+                            } else {
+                                seasonElement
+                            }
+                        }
+                        put("seasons", JsonArray(updatedSeasons))
+                    }
+                })
+
+                val updateResponse = service.updateSeries(apiKey, seriesId, modifiedSeries)
+                if (!updateResponse.isSuccessful) {
+                    return@retryNetworkCall ApiResult.Error(
+                        "Failed to update existing series in Sonarr: HTTP ${updateResponse.code()}",
+                        errorType = errorType(updateResponse.code())
+                    )
+                }
+
+                // Trigger search for the requested seasons
+                if (!requestedSeasons.isNullOrEmpty()) {
+                    for (season in requestedSeasons) {
+                        if (season > 0) {
+                            service.sendCommand(
+                                apiKey,
+                                SonarrCommand(
+                                    name = "SeasonSearch",
+                                    seriesId = seriesId,
+                                    seasonNumber = season
+                                )
+                            )
+                        }
+                    }
+                } else {
+                    service.sendCommand(
+                        apiKey,
+                        SonarrCommand(
+                            name = "SeriesSearch",
+                            seriesId = seriesId
+                        )
+                    )
+                }
+
+                return@retryNetworkCall ApiResult.Success(Unit)
+            }
+
             val lookupResponse = service.lookupSeriesByTvdb(apiKey, "tvdb:$tvdbId")
             if (!lookupResponse.isSuccessful || lookupResponse.body().isNullOrEmpty()) {
                 return@retryNetworkCall ApiResult.Error("Series TVDB:$tvdbId not found in Sonarr", errorType = ErrorType.NOT_FOUND)
@@ -127,6 +202,32 @@ class SonarrRepository @Inject constructor(
 
             val addResponse = service.addSeries(apiKey, addRequest)
             if (addResponse.isSuccessful) {
+                val addedBody = addResponse.body()
+                val seriesId = (addedBody as? JsonObject)?.get("id")?.jsonPrimitive?.content?.toIntOrNull()
+                if (seriesId != null) {
+                    if (!requestedSeasons.isNullOrEmpty()) {
+                        for (season in requestedSeasons) {
+                            if (season > 0) {
+                                service.sendCommand(
+                                    apiKey,
+                                    SonarrCommand(
+                                        name = "SeasonSearch",
+                                        seriesId = seriesId,
+                                        seasonNumber = season
+                                    )
+                                )
+                            }
+                        }
+                    } else {
+                        service.sendCommand(
+                            apiKey,
+                            SonarrCommand(
+                                name = "SeriesSearch",
+                                seriesId = seriesId
+                            )
+                        )
+                    }
+                }
                 ApiResult.Success(Unit)
             } else {
                 ApiResult.Error("Sonarr rejected add: HTTP ${addResponse.code()}", errorType = errorType(addResponse.code()))
