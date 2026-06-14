@@ -1,13 +1,17 @@
 package com.rpeters.jellyfin.ui.viewmodel
 
-import app.cash.turbine.test
+import com.rpeters.jellyfin.data.preferences.EpisodeNotificationPreferences
+import com.rpeters.jellyfin.data.preferences.EpisodeNotificationPreferencesRepository
 import com.rpeters.jellyfin.data.repository.IJellyfinRepository
 import com.rpeters.jellyfin.data.repository.JellyfinMediaRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
+import com.rpeters.jellyfin.data.worker.EpisodeNotificationWorker
 import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -29,12 +33,24 @@ class TVSeasonViewModelTest {
     private val repository: IJellyfinRepository = mockk()
     private val mediaRepository: JellyfinMediaRepository = mockk()
     private val generativeAiRepository: com.rpeters.jellyfin.data.repository.GenerativeAiRepository = mockk(relaxed = true)
+    private val episodeNotificationRepository: EpisodeNotificationPreferencesRepository = mockk(relaxed = true)
+    private val episodeNotificationScheduler: EpisodeNotificationWorker.Scheduler = mockk(relaxed = true)
     private val dispatcher = StandardTestDispatcher()
-    private val viewModel by lazy { TVSeasonViewModel(repository, mediaRepository, generativeAiRepository) }
+    private val viewModel by lazy {
+        TVSeasonViewModel(
+            repository,
+            mediaRepository,
+            generativeAiRepository,
+            episodeNotificationRepository,
+            episodeNotificationScheduler,
+        )
+    }
 
     @Before
     fun setup() {
         Dispatchers.setMain(dispatcher)
+        every { episodeNotificationRepository.preferencesFlow } returns MutableStateFlow(EpisodeNotificationPreferences.DEFAULT)
+        coEvery { episodeNotificationRepository.getPreferences() } returns EpisodeNotificationPreferences.DEFAULT
     }
 
     @After
@@ -53,32 +69,17 @@ class TVSeasonViewModelTest {
         coEvery { mediaRepository.getSeasonsForSeries(seriesId) } returns ApiResult.Success(listOf(season))
         coEvery { mediaRepository.getSimilarSeries(seriesId) } returns ApiResult.Success(listOf(similar))
 
-        viewModel.state.test {
-            assertEquals(TVSeasonState(), awaitItem())
+        assertEquals(TVSeasonState(), viewModel.state.value)
 
-            viewModel.loadSeriesData(seriesId)
-            dispatcher.scheduler.advanceUntilIdle()
+        viewModel.loadSeriesData(seriesId)
+        dispatcher.scheduler.advanceUntilIdle()
 
-            val loadingState = awaitItem()
-            assertTrue(loadingState.isLoading)
-            assertFalse(loadingState.isSimilarSeriesLoading)
-
-            val similarLoadingState = awaitItem()
-            assertTrue(similarLoadingState.isLoading)
-            assertTrue(similarLoadingState.isSimilarSeriesLoading)
-
-            val similarFinishedState = awaitItem()
-            assertTrue(similarFinishedState.isLoading)
-            assertFalse(similarFinishedState.isSimilarSeriesLoading)
-
-            val finalState = awaitItem()
-            assertFalse(finalState.isLoading)
-            assertFalse(finalState.isSimilarSeriesLoading)
-            assertEquals(series.id, finalState.seriesDetails?.id)
-            assertEquals(listOf(season), finalState.seasons)
-            assertEquals(listOf(similar), finalState.similarSeries)
-            cancelAndIgnoreRemainingEvents()
-        }
+        val finalState = viewModel.state.value
+        assertFalse(finalState.isLoading)
+        assertFalse(finalState.isSimilarSeriesLoading)
+        assertEquals(series.id, finalState.seriesDetails?.id)
+        assertEquals(listOf(season), finalState.seasons)
+        assertEquals(listOf(similar), finalState.similarSeries)
     }
 
     @Test

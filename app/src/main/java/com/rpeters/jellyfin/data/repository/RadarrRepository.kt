@@ -84,10 +84,17 @@ class RadarrRepository @Inject constructor(
                 return@retryNetworkCall ApiResult.Error("Movie TMDB:$tmdbId not found in Radarr", errorType = ErrorType.NOT_FOUND)
 
             val movie = lookupResponse.body()!![0]
-            val rootFolderPath = service.getRootFolders(apiKey).body()?.firstOrNull()?.path ?: "/movies"
+            val rootFolderPath = service.getRootFolders(apiKey).body()?.firstOrNull()?.path
+                ?: return@retryNetworkCall ApiResult.Error(
+                    "No root folder configured in Radarr. Add a root folder in Radarr's settings before requesting movies.",
+                    errorType = ErrorType.BAD_REQUEST,
+                )
             val resolvedQualityProfileId = qualityProfileId
                 ?: service.getQualityProfiles(apiKey).body()?.firstOrNull()?.id
-                ?: 1
+                ?: return@retryNetworkCall ApiResult.Error(
+                    "No quality profile configured in Radarr. Add a quality profile in Radarr's settings before requesting movies.",
+                    errorType = ErrorType.BAD_REQUEST,
+                )
 
             val addRequest = RadarrAddMovieRequest(
                 title = movie.title,

@@ -2,12 +2,16 @@ package com.rpeters.jellyfin.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rpeters.jellyfin.data.preferences.EpisodeNotificationPreferencesRepository
+import com.rpeters.jellyfin.data.preferences.FollowedSeriesNotification
 import com.rpeters.jellyfin.data.repository.IJellyfinRepository
 import com.rpeters.jellyfin.data.repository.JellyfinMediaRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
+import com.rpeters.jellyfin.data.worker.EpisodeNotificationWorker
 import com.rpeters.jellyfin.utils.isCompletelyWatched
 import com.rpeters.jellyfin.utils.isWatched
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -31,6 +35,8 @@ data class TVSeasonState(
     val isLoadingAiSummary: Boolean = false,
     val whyYoullLoveThis: String? = null,
     val isLoadingWhyYoullLoveThis: Boolean = false,
+    val isEpisodeNotificationsFollowed: Boolean = false,
+    val isUpdatingEpisodeNotifications: Boolean = false,
 )
 
 @HiltViewModel
@@ -38,6 +44,8 @@ class TVSeasonViewModel @Inject constructor(
     private val repository: IJellyfinRepository,
     private val mediaRepository: JellyfinMediaRepository,
     private val generativeAiRepository: com.rpeters.jellyfin.data.repository.GenerativeAiRepository,
+    private val episodeNotificationRepository: EpisodeNotificationPreferencesRepository,
+    private val episodeNotificationScheduler: EpisodeNotificationWorker.Scheduler,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(TVSeasonState())
@@ -49,6 +57,20 @@ class TVSeasonViewModel @Inject constructor(
     // Track the current series ID to avoid clearing cache on re-entry
     private var currentSeriesId: String? = null
     private var whyYoullLoveThisJob: kotlinx.coroutines.Job? = null
+    private var followedEpisodeNotificationSeriesIds: Set<String> = emptySet()
+
+    init {
+        viewModelScope.launch {
+            episodeNotificationRepository.preferencesFlow.collectLatest { preferences ->
+                followedEpisodeNotificationSeriesIds = preferences.followedSeries.map { it.seriesId }.toSet()
+                val seriesId = _state.value.seriesDetails?.id?.toString()
+                val isFollowed = seriesId != null && seriesId in followedEpisodeNotificationSeriesIds
+                if (_state.value.isEpisodeNotificationsFollowed != isFollowed) {
+                    _state.value = _state.value.copy(isEpisodeNotificationsFollowed = isFollowed)
+                }
+            }
+        }
+    }
 
     fun loadSeriesData(seriesId: String) {
         whyYoullLoveThisJob?.cancel()
@@ -95,7 +117,7 @@ class TVSeasonViewModel @Inject constructor(
 
                     // Validate that the series has content only if no previous errors
                     // If no seasons exist AND the series has no child count (episodes), show error
-                    if (errorMessage == null && seasons.isEmpty() && (seriesDetails?.childCount ?: 0) == 0) {
+                    if (errorMessage == null && seasons.isEmpty() && seriesDetails?.childCount == 0) {
                         errorMessage = "This TV show has no seasons or episodes available"
                     }
                 }
@@ -138,12 +160,61 @@ class TVSeasonViewModel @Inject constructor(
                 nextEpisode = nextEpisode,
                 isLoading = false,
                 errorMessage = errorMessage,
+                isEpisodeNotificationsFollowed = seriesDetails?.id?.toString() in followedEpisodeNotificationSeriesIds,
             )
 
             if (seriesDetails != null) {
                 generateWhyYoullLoveThis(seriesDetails)
             }
         }
+    }
+
+    fun setEpisodeNotificationsFollowed(followed: Boolean) {
+        val series = _state.value.seriesDetails ?: return
+        val seriesId = series.id.toString()
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isUpdatingEpisodeNotifications = true)
+            if (followed) {
+                val snapshot = loadCurrentSeriesSnapshot()
+                episodeNotificationRepository.followSeries(
+                    FollowedSeriesNotification(
+                        seriesId = seriesId,
+                        seriesName = series.name ?: "Unknown show",
+                        seasonCount = snapshot.seasonCount,
+                        episodeCount = snapshot.episodeCount,
+                        lastCheckedAt = System.currentTimeMillis(),
+                    ),
+                )
+                episodeNotificationScheduler.schedule()
+                _state.value = _state.value.copy(
+                    isEpisodeNotificationsFollowed = true,
+                    isUpdatingEpisodeNotifications = false,
+                )
+            } else {
+                episodeNotificationRepository.unfollowSeries(seriesId)
+                if (episodeNotificationRepository.getPreferences().followedSeries.isEmpty()) {
+                    episodeNotificationScheduler.cancel()
+                }
+                _state.value = _state.value.copy(
+                    isEpisodeNotificationsFollowed = false,
+                    isUpdatingEpisodeNotifications = false,
+                )
+            }
+        }
+    }
+
+    private suspend fun loadCurrentSeriesSnapshot(): SeriesNotificationSnapshot {
+        val seasons = _state.value.seasons
+        var episodeCount = 0
+        seasons.forEach { season ->
+            val seasonId = season.id.toString()
+            val episodes = _state.value.episodesBySeasonId[seasonId] ?: getEpisodesForSeason(seasonId).orEmpty()
+            episodeCount += episodes.size
+        }
+        return SeriesNotificationSnapshot(
+            seasonCount = seasons.size,
+            episodeCount = episodeCount,
+        )
     }
 
     fun clearError() {
@@ -280,18 +351,22 @@ class TVSeasonViewModel @Inject constructor(
 
     private suspend fun getEpisodesForSeason(seasonId: String): List<BaseItemDto>? {
         return episodesCache[seasonId] ?: run {
-            when (val episodesResult = mediaRepository.getEpisodesForSeason(seasonId)) {
-                is ApiResult.Success -> {
-                    // Cache the episodes for future lookups
-                    episodesCache[seasonId] = episodesResult.data
-                    episodesResult.data
+            try {
+                when (val episodesResult = mediaRepository.getEpisodesForSeason(seasonId)) {
+                    is ApiResult.Success -> {
+                        // Cache the episodes for future lookups
+                        episodesCache[seasonId] = episodesResult.data
+                        episodesResult.data
+                    }
+                    is ApiResult.Error -> {
+                        null
+                    }
+                    is ApiResult.Loading -> {
+                        null
+                    }
                 }
-                is ApiResult.Error -> {
-                    null
-                }
-                is ApiResult.Loading -> {
-                    null
-                }
+            } catch (e: Exception) {
+                null
             }
         }
     }
@@ -345,4 +420,9 @@ class TVSeasonViewModel @Inject constructor(
             }
         }
     }
+
+    private data class SeriesNotificationSnapshot(
+        val seasonCount: Int,
+        val episodeCount: Int,
+    )
 }

@@ -39,6 +39,8 @@ import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Tv
@@ -211,6 +213,9 @@ fun ImmersiveTVShowDetailScreen(
                         isLoadingAiSummary = state.isLoadingAiSummary,
                         whyYoullLoveThis = state.whyYoullLoveThis,
                         isLoadingWhyYoullLoveThis = state.isLoadingWhyYoullLoveThis,
+                        isEpisodeNotificationsFollowed = state.isEpisodeNotificationsFollowed,
+                        isUpdatingEpisodeNotifications = state.isUpdatingEpisodeNotifications,
+                        onToggleEpisodeNotifications = viewModel::setEpisodeNotificationsFollowed,
                     )
                 }
             }
@@ -261,6 +266,9 @@ private fun ImmersiveShowDetailContent(
     isLoadingAiSummary: Boolean = false,
     whyYoullLoveThis: String? = null,
     isLoadingWhyYoullLoveThis: Boolean = false,
+    isEpisodeNotificationsFollowed: Boolean = false,
+    isUpdatingEpisodeNotifications: Boolean = false,
+    onToggleEpisodeNotifications: (Boolean) -> Unit = {},
 ) {
     val perfConfig = rememberImmersivePerformanceConfig()
     var expandedSeasonId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -296,6 +304,9 @@ private fun ImmersiveShowDetailContent(
                         onPlayEpisode = onPlayEpisode,
                         onTrailerClick = onTrailerClick,
                         onSearchRequests = onSearchRequests,
+                        isEpisodeNotificationsFollowed = isEpisodeNotificationsFollowed,
+                        isUpdatingEpisodeNotifications = isUpdatingEpisodeNotifications,
+                        onToggleEpisodeNotifications = onToggleEpisodeNotifications,
                     )
                 }
             }
@@ -461,6 +472,9 @@ private fun ShowHeroContent(
     onPlayEpisode: (BaseItemDto) -> Unit,
     onTrailerClick: (String) -> Unit,
     onSearchRequests: (String) -> Unit,
+    isEpisodeNotificationsFollowed: Boolean,
+    isUpdatingEpisodeNotifications: Boolean,
+    onToggleEpisodeNotifications: (Boolean) -> Unit,
 ) {
     val logoUrl = getLogoUrl(series)
     val trailerUrl = series.remoteTrailers?.firstOrNull()?.url
@@ -575,6 +589,36 @@ private fun ShowHeroContent(
                         overflow = TextOverflow.Ellipsis
                     )
                 }
+            }
+
+            ExpressiveOutlinedButton(
+                onClick = { onToggleEpisodeNotifications(!isEpisodeNotificationsFollowed) },
+                enabled = !isUpdatingEpisodeNotifications,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = Color.White,
+                ),
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.5f)),
+            ) {
+                Icon(
+                    imageVector = if (isEpisodeNotificationsFollowed) {
+                        Icons.Default.NotificationsOff
+                    } else {
+                        Icons.Default.Notifications
+                    },
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = if (isEpisodeNotificationsFollowed) {
+                        "Stop New Episode Alerts"
+                    } else {
+                        "Alert Me for New Episodes"
+                    },
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
         }
     }

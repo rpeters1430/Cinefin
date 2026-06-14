@@ -154,7 +154,8 @@ fun BaseItemDto.isCompletelyWatched(): Boolean {
             val seriesPercentage = userData?.playedPercentage ?: 0.0
             userData?.played == true ||
                 seriesPercentage >= Constants.Playback.WATCHED_THRESHOLD_PERCENT ||
-                getUnwatchedEpisodeCount() == 0
+                userData?.unplayedItemCount == 0 ||
+                (childCount != null && getUnwatchedEpisodeCount() == 0)
         }
         type == org.jellyfin.sdk.model.api.BaseItemKind.EPISODE -> isWatched()
         type == org.jellyfin.sdk.model.api.BaseItemKind.MOVIE -> isWatched()

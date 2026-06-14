@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -38,9 +39,11 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -64,7 +67,6 @@ import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -96,6 +98,7 @@ import com.rpeters.jellyfin.ui.components.expressiveGlow
 import com.rpeters.jellyfin.ui.theme.JellyfinExpressiveTheme
 import com.rpeters.jellyfin.ui.viewmodel.PendingMovieRequest
 import com.rpeters.jellyfin.ui.viewmodel.PendingTvRequest
+import com.rpeters.jellyfin.ui.viewmodel.RequestHistoryItem
 import com.rpeters.jellyfin.ui.viewmodel.RequestsViewModel
 import com.rpeters.jellyfin.ui.viewmodel.TvAvailability
 import com.rpeters.jellyfin.ui.viewmodel.TvEpisodeAvailability
@@ -112,6 +115,7 @@ fun RequestsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    var showMyRequests by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(initialQuery) {
         if (!initialQuery.isNullOrBlank() && initialQuery != uiState.query) {
@@ -176,64 +180,131 @@ fun RequestsScreen(
                     .padding(paddingValues),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                // Search bar
-                item(key = "search_bar") {
-                    SearchSection(
-                        query = uiState.query,
-                        recentSearches = uiState.recentSearches,
-                        onQueryChange = viewModel::onQueryChange,
-                        onDismissRecent = viewModel::dismissRecentSearch,
+                // Discover / My Requests tab selector
+                item(key = "tab_row") {
+                    RequestsTabRow(
+                        showMyRequests = showMyRequests,
+                        onTabSelected = { selected ->
+                            showMyRequests = selected
+                            if (selected) viewModel.loadMyRequests()
+                        },
                         modifier = Modifier.padding(horizontal = 16.dp).padding(top = 8.dp),
                     )
                 }
 
-                // Loading shimmer (initial load only)
-                if (uiState.isLoading && uiState.results.isEmpty()) {
-                    items(3, key = { "shimmer_$it" }) {
-                        RequestShimmerCard(modifier = Modifier.padding(horizontal = 16.dp))
-                    }
-                }
-
-                // Section header
-                if (uiState.results.isNotEmpty() && !uiState.isLoading) {
-                    item(key = "section_header") {
-                        Text(
-                            text = if (uiState.query.isBlank()) "Trending" else "Results",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                if (!showMyRequests) {
+                    // Search bar
+                    item(key = "search_bar") {
+                        SearchSection(
+                            query = uiState.query,
+                            recentSearches = uiState.recentSearches,
+                            onQueryChange = viewModel::onQueryChange,
+                            onDismissRecent = viewModel::dismissRecentSearch,
                             modifier = Modifier.padding(horizontal = 16.dp),
                         )
                     }
-                }
 
-                // Results
-                items(uiState.results, key = { it.id }) { item ->
-                    RequestMediaHeroCard(
-                        item = item,
-                        tvAvailability = uiState.tvAvailabilityByMediaId[item.id],
-                        isLoadingAvailability = item.id in uiState.loadingAvailabilityIds,
-                        isTvChecked = item.id in uiState.checkedTvItemIds,
-                        isRequesting = uiState.requestingMediaId == item.id,
-                        requestingSeasonKey = uiState.requestingSeasonKey,
-                        isPluginConfigured = uiState.isPluginConfigured,
-                        pluginCapabilities = uiState.pluginCapabilities,
-                        isSonarrConfigured = uiState.isSonarrConfigured,
-                        onRequest = { viewModel.requestMedia(item) },
-                        onRequestSeason = { seasonNumber -> viewModel.requestSeason(item, seasonNumber) },
-                        onRequestEpisode = { seasonNumber, episodeNumber ->
-                            viewModel.requestMissingEpisode(item, seasonNumber, episodeNumber)
-                        },
-                        onRequestMissingSeasons = { viewModel.requestMissingSeasons(item) },
-                        onCheckAvailability = { viewModel.checkTvAvailability(item) },
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                    )
-                }
+                    // Loading shimmer (initial load only)
+                    if (uiState.isLoading && uiState.results.isEmpty()) {
+                        items(3, key = { "shimmer_$it" }) {
+                            RequestShimmerCard(modifier = Modifier.padding(horizontal = 16.dp))
+                        }
+                    }
 
-                // Empty search state
-                if (uiState.results.isEmpty() && uiState.query.isNotBlank() && !uiState.isLoading) {
-                    item(key = "empty_state") {
-                        EmptySearchState(query = uiState.query)
+                    // Section header
+                    if (uiState.results.isNotEmpty() && !uiState.isLoading) {
+                        item(key = "section_header") {
+                            Text(
+                                text = if (uiState.query.isBlank()) "Trending" else "Results",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                            )
+                        }
+                    }
+
+                    // Results
+                    itemsIndexed(
+                        items = uiState.results,
+                        key = { index, item -> "result_${item.mediaType}_${item.id}_$index" },
+                    ) { _, item ->
+                        RequestMediaHeroCard(
+                            item = item,
+                            tvAvailability = uiState.tvAvailabilityByMediaId[item.id],
+                            isLoadingAvailability = item.id in uiState.loadingAvailabilityIds,
+                            isTvChecked = item.id in uiState.checkedTvItemIds,
+                            isRequesting = uiState.requestingMediaId == item.id,
+                            requestingSeasonKey = uiState.requestingSeasonKey,
+                            isPluginConfigured = uiState.isPluginConfigured,
+                            pluginCapabilities = uiState.pluginCapabilities,
+                            isSonarrConfigured = uiState.isSonarrConfigured,
+                            onRequest = { viewModel.requestMedia(item) },
+                            onRequestSeason = { seasonNumber -> viewModel.requestSeason(item, seasonNumber) },
+                            onRequestEpisode = { seasonNumber, episodeNumber ->
+                                viewModel.requestMissingEpisode(item, seasonNumber, episodeNumber)
+                            },
+                            onRequestMissingSeasons = { viewModel.requestMissingSeasons(item) },
+                            onCheckAvailability = { viewModel.checkTvAvailability(item) },
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                        )
+                    }
+
+                    // Empty search state
+                    if (uiState.results.isEmpty() && uiState.query.isNotBlank() && !uiState.isLoading) {
+                        item(key = "empty_state") {
+                            EmptySearchState(query = uiState.query)
+                        }
+                    }
+
+                    // Load more trigger — composed once the user scrolls near the bottom
+                    if (uiState.results.isNotEmpty() && uiState.currentPage < uiState.totalPages) {
+                        item(key = "load_more") {
+                            LaunchedEffect(uiState.results.size) {
+                                viewModel.loadMoreResults()
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 16.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                            }
+                        }
+                    }
+                } else {
+                    item(key = "status_header") {
+                        RequestStatusHeader(
+                            isRefreshing = uiState.isLoadingMyRequests,
+                            onRefresh = { viewModel.loadMyRequests(forceRefresh = true) },
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                        )
+                    }
+
+                    // Loading shimmer (initial load only)
+                    if (uiState.isLoadingMyRequests && uiState.myRequests.isEmpty()) {
+                        items(3, key = { "my_requests_shimmer_$it" }) {
+                            RequestShimmerCard(modifier = Modifier.padding(horizontal = 16.dp))
+                        }
+                    }
+
+                    // Empty state
+                    if (!uiState.isLoadingMyRequests && uiState.myRequests.isEmpty()) {
+                        item(key = "my_requests_empty") {
+                            EmptyMyRequestsState()
+                        }
+                    }
+
+                    // Request history
+                    items(uiState.myRequests, key = { "my_request_${it.request.id}" }) { entry ->
+                        RequestHistoryCard(
+                            entry = entry,
+                            isCanceling = uiState.cancelingRequestId == entry.request.id,
+                            onCancel = { viewModel.cancelRequest(entry.request.id) },
+                            onAppear = { viewModel.loadRequestMediaDetails(entry.request.id) },
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                        )
                     }
                 }
 
@@ -887,16 +958,17 @@ private fun RequestShimmerCard(modifier: Modifier = Modifier) {
 @Composable
 private fun MovieQualityDialog(
     pending: PendingMovieRequest,
-    onConfirm: (SeerrMediaItem, Int) -> Unit,
+    onConfirm: (SeerrMediaItem, Int?, Boolean) -> Unit,
     onDismiss: () -> Unit,
 ) {
     var selectedProfileId by remember {
-        mutableIntStateOf(pending.qualityProfiles.firstOrNull()?.id ?: 1)
+        mutableStateOf(pending.qualityProfiles.firstOrNull()?.id)
     }
+    var is4k by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Select Quality") },
+        title = { Text(if (pending.isUsingRadarrDirect) "Select Quality" else "Request Movie") },
         text = {
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 Text(
@@ -906,34 +978,48 @@ private fun MovieQualityDialog(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(modifier = Modifier.height(12.dp))
-                if (pending.qualityProfiles.isEmpty()) {
-                    Text(
-                        "No quality profiles found — Radarr default will be used.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                } else {
-                    pending.qualityProfiles.forEach { profile ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { selectedProfileId = profile.id }
-                                .padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            RadioButton(
-                                selected = selectedProfileId == profile.id,
-                                onClick = { selectedProfileId = profile.id },
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(profile.name, style = MaterialTheme.typography.bodyLarge)
+                if (pending.isUsingRadarrDirect) {
+                    if (pending.qualityProfiles.isEmpty()) {
+                        Text(
+                            "No quality profiles found — Radarr default will be used.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    } else {
+                        pending.qualityProfiles.forEach { profile ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { selectedProfileId = profile.id }
+                                    .padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                RadioButton(
+                                    selected = selectedProfileId == profile.id,
+                                    onClick = { selectedProfileId = profile.id },
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(profile.name, style = MaterialTheme.typography.bodyLarge)
+                            }
                         }
+                    }
+                } else {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { is4k = !is4k }
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Checkbox(checked = is4k, onCheckedChange = { is4k = it })
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Request in 4K", style = MaterialTheme.typography.bodyLarge)
                     }
                 }
             }
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(pending.item, selectedProfileId) }) {
+            TextButton(onClick = { onConfirm(pending.item, selectedProfileId, is4k) }) {
                 Text("Request")
             }
         },
@@ -949,14 +1035,15 @@ private fun MovieQualityDialog(
 @Composable
 private fun TvSeasonRequestDialog(
     pending: PendingTvRequest,
-    onConfirm: (SeerrMediaItem, List<Int>, Int?) -> Unit,
+    onConfirm: (SeerrMediaItem, List<Int>, Int?, Boolean) -> Unit,
     onDismiss: () -> Unit,
 ) {
     var mode by remember { mutableStateOf(SeasonRequestMode.ALL) }
     var selectedSeasons by remember { mutableStateOf(pending.seasons.toSet()) }
     var selectedProfileId by remember {
-        mutableIntStateOf(pending.qualityProfiles.firstOrNull()?.id ?: 1)
+        mutableStateOf(pending.qualityProfiles.firstOrNull()?.id)
     }
+    var is4k by remember { mutableStateOf(false) }
 
     val latestSeason = pending.seasons.lastOrNull()
 
@@ -1047,6 +1134,21 @@ private fun TvSeasonRequestDialog(
                         }
                     }
                 }
+
+                if (!pending.isUsingSonarrDirect) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { is4k = !is4k }
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Checkbox(checked = is4k, onCheckedChange = { is4k = it })
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Request in 4K", style = MaterialTheme.typography.bodyLarge)
+                    }
+                }
             }
         },
         confirmButton = {
@@ -1058,7 +1160,7 @@ private fun TvSeasonRequestDialog(
                         SeasonRequestMode.CUSTOM -> selectedSeasons.sorted()
                     }
                     val profileId = if (pending.isUsingSonarrDirect) selectedProfileId else null
-                    onConfirm(pending.item, seasons, profileId)
+                    onConfirm(pending.item, seasons, profileId, is4k)
                 },
                 enabled = mode != SeasonRequestMode.CUSTOM || selectedSeasons.isNotEmpty(),
             ) {
@@ -1144,5 +1246,292 @@ private fun EmptySearchState(query: String) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+    }
+}
+
+// ─── My Requests ────────────────────────────────────────────────────────────
+
+@Composable
+private fun RequestsTabRow(
+    showMyRequests: Boolean,
+    onTabSelected: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FilterChip(
+            selected = !showMyRequests,
+            onClick = { onTabSelected(false) },
+            label = { Text("Discover") },
+        )
+        FilterChip(
+            selected = showMyRequests,
+            onClick = { onTabSelected(true) },
+            label = { Text("Status") },
+        )
+    }
+}
+
+@Composable
+private fun RequestStatusHeader(
+    isRefreshing: Boolean,
+    onRefresh: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column {
+            Text(
+                "Submitted Requests",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                "Current request and download status",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        ExpressiveTextButton(
+            onClick = onRefresh,
+            enabled = !isRefreshing,
+        ) {
+            if (isRefreshing) {
+                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+            } else {
+                Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+            }
+            Spacer(modifier = Modifier.width(6.dp))
+            Text("Refresh")
+        }
+    }
+}
+
+@Composable
+private fun EmptyMyRequestsState() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 48.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Icon(
+                Icons.Default.Info,
+                contentDescription = null,
+                modifier = Modifier.size(40.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+            )
+            Text(
+                "No requests yet",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun RequestHistoryCard(
+    entry: RequestHistoryItem,
+    isCanceling: Boolean,
+    onCancel: () -> Unit,
+    onAppear: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    LaunchedEffect(entry.request.id) { onAppear() }
+
+    val request = entry.request
+    val posterUrl = entry.posterPath?.let { "https://image.tmdb.org/t/p/w154$it" }
+    val title = entry.title
+        ?: if (entry.isLoadingDetails) {
+            "Loading…"
+        } else {
+            val mediaTypeLabel = if (request.type == "tv") "TV Show" else "Movie"
+            "$mediaTypeLabel #${request.media.tmdbId ?: request.media.id}"
+        }
+
+    ExpressiveContentCard(
+        modifier = modifier.fillMaxWidth(),
+        containerColor = JellyfinExpressiveTheme.colors.sectionContainer,
+        shape = JellyfinExpressiveTheme.shapes.section,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier
+                    .width(56.dp)
+                    .height(84.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+            ) {
+                if (posterUrl != null) {
+                    AsyncImage(
+                        model = posterUrl,
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                    )
+                } else if (entry.isLoadingDetails) {
+                    ShimmerBox(modifier = Modifier.fillMaxSize(), cornerRadius = 8)
+                }
+            }
+
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = if (request.type == "tv") "TV Show" else "Movie",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    if (request.is4k) {
+                        Text(
+                            text = "4K",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
+
+                if (request.type == "tv" && request.seasons.isNotEmpty()) {
+                    Text(
+                        text = "Seasons: " + request.seasons.map { it.seasonNumber }.sorted().joinToString(", "),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    RequestStatusBadge(status = request.status)
+                    RequestDownloadStatusBadge(request = request)
+                }
+                Text(
+                    text = request.statusDescription(),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+
+            if (request.status == REQUEST_STATUS_PENDING_APPROVAL) {
+                if (isCanceling) {
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                } else {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = "Cancel request",
+                        modifier = Modifier
+                            .size(20.dp)
+                            .clickable(onClick = onCancel),
+                        tint = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
+        }
+    }
+}
+
+private const val REQUEST_STATUS_PENDING_APPROVAL = 1
+private const val REQUEST_STATUS_APPROVED = 2
+private const val REQUEST_STATUS_DECLINED = 3
+private const val MEDIA_STATUS_UNKNOWN = 1
+private const val MEDIA_STATUS_PENDING = 2
+private const val MEDIA_STATUS_PROCESSING = 3
+private const val MEDIA_STATUS_PARTIALLY_AVAILABLE = 4
+private const val MEDIA_STATUS_AVAILABLE = 5
+
+@Composable
+private fun RequestStatusBadge(status: Int) {
+    val (bgColor, label) = when (status) {
+        REQUEST_STATUS_PENDING_APPROVAL -> Color(0xFFE65100) to "Pending Approval"
+        2 -> Color(0xFF1B5E20) to "Approved"
+        3 -> Color(0xFFB71C1C) to "Declined"
+        else -> Color(0xFF616161) to "Unknown"
+    }
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(6.dp))
+            .background(bgColor)
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = Color.White,
+            fontWeight = FontWeight.SemiBold,
+        )
+    }
+}
+
+@Composable
+private fun RequestDownloadStatusBadge(request: com.rpeters.jellyfin.data.model.SeerrRequestItem) {
+    val (bgColor, label) = request.downloadStatusStyle()
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(6.dp))
+            .background(bgColor)
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = Color.White,
+            fontWeight = FontWeight.SemiBold,
+        )
+    }
+}
+
+private fun com.rpeters.jellyfin.data.model.SeerrRequestItem.downloadStatusStyle(): Pair<Color, String> {
+    return when {
+        status == REQUEST_STATUS_DECLINED -> Color(0xFFB71C1C) to "Stopped"
+        status == REQUEST_STATUS_PENDING_APPROVAL -> Color(0xFF6A1B9A) to "Awaiting"
+        media.status == MEDIA_STATUS_AVAILABLE -> Color(0xFF1B5E20) to "Downloaded"
+        media.status == MEDIA_STATUS_PARTIALLY_AVAILABLE -> Color(0xFF00695C) to "Partial"
+        media.status == MEDIA_STATUS_PROCESSING -> Color(0xFF0D47A1) to "Downloading"
+        media.status == MEDIA_STATUS_PENDING || status == REQUEST_STATUS_APPROVED -> Color(0xFF1565C0) to "Searching"
+        media.status == MEDIA_STATUS_UNKNOWN -> Color(0xFF616161) to "Queued"
+        else -> Color(0xFF616161) to "Unknown"
+    }
+}
+
+private fun com.rpeters.jellyfin.data.model.SeerrRequestItem.statusDescription(): String {
+    return when {
+        status == REQUEST_STATUS_DECLINED -> "Request was declined."
+        status == REQUEST_STATUS_PENDING_APPROVAL -> "Waiting for approval before search starts."
+        media.status == MEDIA_STATUS_AVAILABLE -> "Downloaded and available on the server."
+        media.status == MEDIA_STATUS_PARTIALLY_AVAILABLE -> "Some requested content is available; remaining items are still pending."
+        media.status == MEDIA_STATUS_PROCESSING -> "Approved and actively processing/downloading."
+        media.status == MEDIA_STATUS_PENDING || status == REQUEST_STATUS_APPROVED -> "Approved and queued for search or download."
+        media.status == MEDIA_STATUS_UNKNOWN -> "Submitted, but no download activity has been reported yet."
+        else -> "Status has not been reported by the request server."
     }
 }

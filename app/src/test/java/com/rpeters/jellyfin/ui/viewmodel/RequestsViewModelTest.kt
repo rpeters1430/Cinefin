@@ -3,7 +3,9 @@ package com.rpeters.jellyfin.ui.viewmodel
 import com.rpeters.jellyfin.data.model.CinefinPluginInfoResponse
 import com.rpeters.jellyfin.data.model.CinefinPluginRequestResponse
 import com.rpeters.jellyfin.data.model.SeerrExternalIds
+import com.rpeters.jellyfin.data.model.SeerrEpisode
 import com.rpeters.jellyfin.data.model.SeerrMediaItem
+import com.rpeters.jellyfin.data.model.SeerrSeason
 import com.rpeters.jellyfin.data.model.SeerrSearchResult
 import com.rpeters.jellyfin.data.model.SeerrTvDetails
 import com.rpeters.jellyfin.data.preferences.SeerrPreferences
@@ -27,11 +29,15 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import org.jellyfin.sdk.model.api.BaseItemDto
+import org.jellyfin.sdk.model.api.BaseItemKind
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
+import java.util.UUID
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RequestsViewModelTest {
@@ -158,5 +164,74 @@ class RequestsViewModelTest {
         coVerify(exactly = 1) { sonarrRepository.addSeries(303, listOf(2), 7) }
         assertEquals("Request submitted for Test Show", viewModel.uiState.value.successMessage)
         assertNull(viewModel.uiState.value.errorMessage)
+    }
+
+    @Test
+    fun checkTvAvailability_ignoresFutureUnairedEpisodesWhenCalculatingMissing() = runTest(testDispatcher) {
+        val item = SeerrMediaItem(
+            id = 101,
+            mediaType = "tv",
+            tmdbId = 202,
+            name = "Test Show",
+        )
+        val seriesId = UUID.randomUUID()
+        val seasonId = UUID.randomUUID()
+        val series = BaseItemDto(
+            id = seriesId,
+            name = "Test Show",
+            type = BaseItemKind.SERIES,
+        )
+        val localSeason = BaseItemDto(
+            id = seasonId,
+            name = "Season 1",
+            type = BaseItemKind.SEASON,
+            indexNumber = 1,
+        )
+        val localEpisodes = (1..5).map { episodeNumber ->
+            BaseItemDto(
+                id = UUID.randomUUID(),
+                name = "Episode $episodeNumber",
+                type = BaseItemKind.EPISODE,
+                indexNumber = episodeNumber,
+            )
+        }
+        val seerrSeason = SeerrSeason(
+            seasonNumber = 1,
+            episodeCount = 6,
+            episodes = (1..5).map { episodeNumber ->
+                SeerrEpisode(
+                    episodeNumber = episodeNumber,
+                    name = "Episode $episodeNumber",
+                    airDate = "2020-01-0$episodeNumber",
+                )
+            } + SeerrEpisode(
+                episodeNumber = 6,
+                name = "Episode 6",
+                airDate = "2099-01-01",
+            ),
+        )
+
+        coEvery { jellyfinSearchRepository.searchTVShows("Test Show", limit = 10) } returns ApiResult.Success(listOf(series))
+        coEvery { jellyfinMediaRepository.getSeasonsForSeries(seriesId.toString()) } returns ApiResult.Success(listOf(localSeason))
+        coEvery { jellyfinMediaRepository.getEpisodesForSeason(seasonId.toString()) } returns ApiResult.Success(localEpisodes)
+        coEvery { seerrRepository.getTvDetails(202) } returns ApiResult.Success(
+            SeerrTvDetails(seasons = listOf(SeerrSeason(seasonNumber = 1))),
+        )
+        coEvery { seerrRepository.getTvSeasonDetails(202, 1) } returns ApiResult.Success(seerrSeason)
+
+        advanceUntilIdle()
+        viewModel.checkTvAvailability(item)
+        advanceUntilIdle()
+
+        val season = viewModel.uiState.value.tvAvailabilityByMediaId
+            .getValue(item.id)
+            .seasons
+            .single()
+
+        assertEquals(5, season.totalCount)
+        assertEquals(5, season.availableCount)
+        assertEquals(0, season.missingCount)
+        assertFalse(season.hasMissingEpisodes)
+        assertEquals(listOf(1, 2, 3, 4, 5), season.episodes.map { it.episodeNumber })
     }
 }

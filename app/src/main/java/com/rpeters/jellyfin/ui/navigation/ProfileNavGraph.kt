@@ -21,6 +21,7 @@ import com.rpeters.jellyfin.ui.screens.SettingsRecommendationOptions
 import com.rpeters.jellyfin.ui.screens.SettingsScreen
 import com.rpeters.jellyfin.ui.screens.TranscodingDiagnosticsScreen
 import com.rpeters.jellyfin.ui.screens.settings.AppearanceSettingsScreen
+import com.rpeters.jellyfin.ui.screens.settings.EpisodeNotificationSettingsScreen
 import com.rpeters.jellyfin.ui.screens.settings.PinningSettingsScreen
 import com.rpeters.jellyfin.ui.screens.settings.PrivacySettingsScreen
 import com.rpeters.jellyfin.ui.screens.settings.MediaRequestSettingsScreen
@@ -297,10 +298,7 @@ fun androidx.navigation.NavGraphBuilder.profileNavGraph(
     }
 
     composable(Screen.NotificationsSettings.route) {
-        SettingsSectionScreen(
-            titleRes = R.string.settings_notifications_title,
-            descriptionRes = R.string.settings_notifications_description,
-            optionRes = SettingsRecommendationOptions.notifications,
+        EpisodeNotificationSettingsScreen(
             onNavigateBack = { navController.popBackStack() },
         )
     }

@@ -1,7 +1,9 @@
 package com.rpeters.jellyfin.data.repository
 
+import com.rpeters.jellyfin.data.model.SeerrMovieDetails
 import com.rpeters.jellyfin.data.model.SeerrRequestRequest
 import com.rpeters.jellyfin.data.model.SeerrRequestResponse
+import com.rpeters.jellyfin.data.model.SeerrRequestsResponse
 import com.rpeters.jellyfin.data.model.SeerrSeason
 import com.rpeters.jellyfin.data.model.SeerrSearchResult
 import com.rpeters.jellyfin.data.model.SeerrTvDetails
@@ -153,6 +155,44 @@ open class SeerrRepository @Inject constructor(
         }
     }
 
+    suspend fun getMovieDetails(movieId: Int): ApiResult<SeerrMovieDetails> = retryNetworkCall {
+        val (service, apiKey) = getConnection() ?: return@retryNetworkCall notConfiguredError()
+        try {
+            handleResponse(service.getMovieDetails(apiKey, movieId))
+        } catch (e: Exception) {
+            SecureLogger.e(TAG, "Movie details lookup failed for movieId: $movieId", e)
+            ApiResult.Error("Network error loading Seerr movie details", e, ErrorType.NETWORK)
+        }
+    }
+
+    suspend fun getRequests(filter: String = "all", page: Int = 1, take: Int = 20): ApiResult<SeerrRequestsResponse> = retryNetworkCall {
+        val (service, apiKey) = getConnection() ?: return@retryNetworkCall notConfiguredError()
+        try {
+            handleResponse(service.getRequests(apiKey, take = take, skip = (page - 1) * take, filter = filter))
+        } catch (e: Exception) {
+            SecureLogger.e(TAG, "Get requests failed for filter: $filter", e)
+            ApiResult.Error("Network error loading Seerr requests", e, ErrorType.NETWORK)
+        }
+    }
+
+    suspend fun deleteRequest(requestId: Int): ApiResult<Unit> = retryNetworkCall {
+        val (service, apiKey) = getConnection() ?: return@retryNetworkCall notConfiguredError()
+        try {
+            val response = service.deleteRequest(apiKey, requestId)
+            if (response.isSuccessful) {
+                ApiResult.Success(Unit)
+            } else {
+                ApiResult.Error(
+                    message = readErrorMessage(response) ?: "Failed to cancel request: HTTP ${response.code()}",
+                    errorType = errorTypeForCode(response.code()),
+                )
+            }
+        } catch (e: Exception) {
+            SecureLogger.e(TAG, "Delete request failed for requestId: $requestId", e)
+            ApiResult.Error("Network error canceling Seerr request", e, ErrorType.NETWORK)
+        }
+    }
+
     private fun <T> handleResponse(response: Response<T>): ApiResult<T> {
         return if (response.code() == 202) {
             ApiResult.Error("No seasons available to request", errorType = ErrorType.VALIDATION)
@@ -164,20 +204,21 @@ open class SeerrRepository @Inject constructor(
                 ApiResult.Error("Empty response body from Seerr", errorType = ErrorType.SERVER_ERROR)
             }
         } else {
-            val errorType = when (response.code()) {
-                400 -> ErrorType.BAD_REQUEST
-                401 -> ErrorType.UNAUTHORIZED
-                403 -> ErrorType.FORBIDDEN
-                404 -> ErrorType.NOT_FOUND
-                409 -> ErrorType.VALIDATION
-                in 500..599 -> ErrorType.SERVER_ERROR
-                else -> ErrorType.UNKNOWN
-            }
             ApiResult.Error(
                 message = readErrorMessage(response) ?: "Seerr API error: ${response.code()}",
-                errorType = errorType
+                errorType = errorTypeForCode(response.code())
             )
         }
+    }
+
+    private fun errorTypeForCode(code: Int): ErrorType = when (code) {
+        400 -> ErrorType.BAD_REQUEST
+        401 -> ErrorType.UNAUTHORIZED
+        403 -> ErrorType.FORBIDDEN
+        404 -> ErrorType.NOT_FOUND
+        409 -> ErrorType.VALIDATION
+        in 500..599 -> ErrorType.SERVER_ERROR
+        else -> ErrorType.UNKNOWN
     }
 
     private fun <T> readErrorMessage(response: Response<T>): String? {

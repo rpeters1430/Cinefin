@@ -85,9 +85,53 @@ data class SeerrExternalIds(
 data class SeerrTvDetails(
     val id: Int? = null,
     val name: String? = null,
+    val posterPath: String? = null,
+    val backdropPath: String? = null,
     val mediaInfo: SeerrMediaInfo? = null,
     val seasons: List<SeerrSeason> = emptyList(),
     val externalIds: SeerrExternalIds? = null,
+)
+
+@Serializable
+data class SeerrMovieDetails(
+    val id: Int? = null,
+    val title: String? = null,
+    val posterPath: String? = null,
+    val backdropPath: String? = null,
+)
+
+@Serializable
+data class SeerrPageInfo(
+    val pages: Int = 0,
+    val pageSize: Int = 0,
+    val results: Int = 0,
+    val page: Int = 1,
+)
+
+@Serializable
+data class SeerrRequestMedia(
+    val id: Int,
+    val tmdbId: Int? = null,
+    val tvdbId: Int? = null,
+    val mediaType: String,
+    val status: Int = 1,
+)
+
+@Serializable
+data class SeerrRequestItem(
+    val id: Int,
+    val status: Int, // 1 = pending approval, 2 = approved, 3 = declined
+    val type: String, // "movie" or "tv"
+    val is4k: Boolean = false,
+    val createdAt: String? = null,
+    val media: SeerrRequestMedia,
+    val seasons: List<SeerrRequestedSeason> = emptyList(),
+)
+
+@Serializable
+data class SeerrRequestsResponse(
+    val pageInfo: SeerrPageInfo = SeerrPageInfo(),
+    val results: List<SeerrRequestItem> = emptyList(),
 )
 
 @Serializable

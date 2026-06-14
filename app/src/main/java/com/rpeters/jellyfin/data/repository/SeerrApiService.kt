@@ -1,11 +1,14 @@
 package com.rpeters.jellyfin.data.repository
 
+import com.rpeters.jellyfin.data.model.SeerrMovieDetails
 import com.rpeters.jellyfin.data.model.SeerrRequestRequest
 import com.rpeters.jellyfin.data.model.SeerrRequestResponse
+import com.rpeters.jellyfin.data.model.SeerrRequestsResponse
 import com.rpeters.jellyfin.data.model.SeerrSearchResult
 import com.rpeters.jellyfin.data.model.SeerrTvDetails
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.POST
@@ -47,4 +50,25 @@ interface SeerrApiService {
         @Path("tvId") tvId: Int,
         @Path("seasonNumber") seasonNumber: Int
     ): Response<com.rpeters.jellyfin.data.model.SeerrSeason>
+
+    @GET("api/v1/movie/{movieId}")
+    suspend fun getMovieDetails(
+        @Header("X-Api-Key") apiKey: String,
+        @Path("movieId") movieId: Int
+    ): Response<SeerrMovieDetails>
+
+    @GET("api/v1/request")
+    suspend fun getRequests(
+        @Header("X-Api-Key") apiKey: String,
+        @Query("take") take: Int = 20,
+        @Query("skip") skip: Int = 0,
+        @Query("filter") filter: String = "all",
+        @Query("sort") sort: String = "added"
+    ): Response<SeerrRequestsResponse>
+
+    @DELETE("api/v1/request/{requestId}")
+    suspend fun deleteRequest(
+        @Header("X-Api-Key") apiKey: String,
+        @Path("requestId") requestId: Int
+    ): Response<Unit>
 }

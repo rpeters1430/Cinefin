@@ -35,12 +35,17 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import org.jellyfin.sdk.model.api.BaseItemDto
+import java.time.LocalDate
+import java.time.format.DateTimeParseException
 import javax.inject.Inject
 
 data class PendingMovieRequest(
     val item: SeerrMediaItem,
     val qualityProfiles: List<RadarrQualityProfile>,
+    val isUsingRadarrDirect: Boolean,
 )
 
 data class PendingTvRequest(
@@ -81,6 +86,19 @@ data class TvAvailability(
     val missingSeasons: List<Int> get() = seasons.filter { it.canRequestMissingEpisodes }.map { it.seasonNumber }
 }
 
+data class RequestHistoryItem(
+    val request: com.rpeters.jellyfin.data.model.SeerrRequestItem,
+    val title: String? = null,
+    val posterPath: String? = null,
+    val isLoadingDetails: Boolean = false,
+)
+
+private data class SeerrEpisodeMetadata(
+    val number: Int,
+    val title: String,
+    val airDate: String?,
+)
+
 data class RequestsUiState(
     val query: String = "",
     val results: List<SeerrMediaItem> = emptyList(),
@@ -92,6 +110,7 @@ data class RequestsUiState(
     val isPluginConfigured: Boolean = false,
     val pluginCapabilities: List<String> = emptyList(),
     val isSonarrConfigured: Boolean = false,
+    val isRadarrConfigured: Boolean = false,
     val requestingMediaId: Int? = null,
     val requestingSeasonKey: String? = null,
     val tvAvailabilityByMediaId: Map<Int, TvAvailability> = emptyMap(),
@@ -99,6 +118,13 @@ data class RequestsUiState(
     val recentSearches: List<String> = emptyList(),
     val pendingMovieRequest: PendingMovieRequest? = null,
     val pendingTvRequest: PendingTvRequest? = null,
+    val myRequests: List<RequestHistoryItem> = emptyList(),
+    val isLoadingMyRequests: Boolean = false,
+    val myRequestsLoaded: Boolean = false,
+    val cancelingRequestId: Int? = null,
+    val currentPage: Int = 1,
+    val totalPages: Int = 1,
+    val isLoadingMore: Boolean = false,
 )
 
 @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
@@ -117,6 +143,11 @@ class RequestsViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(RequestsUiState())
     val uiState: StateFlow<RequestsUiState> = _uiState.asStateFlow()
 
+    // Bounds how many season-detail lookups (Seerr + Jellyfin) run concurrently across all
+    // checkTvAvailability() calls, so scrolling through a list of many-season shows doesn't
+    // fire dozens of simultaneous requests at once.
+    private val availabilitySemaphore = Semaphore(4)
+
     private val _searchQuery = MutableStateFlow("")
 
     val seerrPreferences: StateFlow<SeerrPreferences> = preferencesRepository.seerrPreferencesFlow
@@ -127,7 +158,7 @@ class RequestsViewModel @Inject constructor(
         )
 
     init {
-        // Keep isConfigured and isSonarrConfigured in sync with any of the three services being configured & enabled.
+        // Keep isConfigured, isSonarrConfigured, and isRadarrConfigured in sync with any of the three services being configured & enabled.
         viewModelScope.launch {
             combine(
                 preferencesRepository.seerrPreferencesFlow,
@@ -139,9 +170,16 @@ class RequestsViewModel @Inject constructor(
                     (radarr.isValid && radarr.isEnabled) ||
                     _uiState.value.isPluginConfigured
                 val sonarrConfigured = sonarr.isValid && sonarr.isEnabled
-                Pair(configured, sonarrConfigured)
-            }.collect { (configured, sonarrConfigured) ->
-                _uiState.update { it.copy(isConfigured = configured, isSonarrConfigured = sonarrConfigured) }
+                val radarrConfigured = radarr.isValid && radarr.isEnabled
+                Triple(configured, sonarrConfigured, radarrConfigured)
+            }.collect { (configured, sonarrConfigured, radarrConfigured) ->
+                _uiState.update {
+                    it.copy(
+                        isConfigured = configured,
+                        isSonarrConfigured = sonarrConfigured,
+                        isRadarrConfigured = radarrConfigured,
+                    )
+                }
             }
         }
     }
@@ -190,6 +228,8 @@ class RequestsViewModel @Inject constructor(
                                     tvAvailabilityByMediaId = emptyMap(),
                                     loadingAvailabilityIds = emptySet(),
                                     checkedTvItemIds = emptySet(),
+                                    currentPage = searchResult.page,
+                                    totalPages = searchResult.totalPages,
                                 )
                             }
                         }
@@ -211,17 +251,72 @@ class RequestsViewModel @Inject constructor(
         _uiState.update { it.copy(query = query, errorMessage = null, successMessage = null) }
     }
 
+    fun loadMoreResults() {
+        val state = _uiState.value
+        if (state.isLoading || state.isLoadingMore) return
+        if (state.currentPage >= state.totalPages) return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingMore = true) }
+            val query = state.query.trim()
+            val nextPage = state.currentPage + 1
+            val result = if (query.isNotBlank()) {
+                seerrRepository.search(query, nextPage)
+            } else {
+                seerrRepository.getTrending(nextPage)
+            }
+            when (result) {
+                is ApiResult.Success -> _uiState.update {
+                    it.copy(
+                        results = it.results + result.data.results,
+                        currentPage = result.data.page,
+                        totalPages = result.data.totalPages,
+                        isLoadingMore = false,
+                    )
+                }
+                is ApiResult.Error -> _uiState.update { it.copy(isLoadingMore = false, errorMessage = result.message) }
+                is ApiResult.Loading -> _uiState.update { it.copy(isLoadingMore = false) }
+            }
+        }
+    }
+
     fun requestMedia(item: SeerrMediaItem) {
         val state = _uiState.value
         if (state.isPluginConfigured) {
-            requestSeasons(item, null)
+            if (item.mediaType == "tv") {
+                // Let the user pick seasons even when routing through the plugin.
+                initiateTvSeasonRequest(item, useSeerr = true)
+            } else {
+                requestSeasons(item, null)
+            }
             return
         }
         val seerr = seerrPreferences.value
         val useSeerr = seerr.isValid && seerr.isEnabled
         when {
-            item.mediaType == "movie" && !useSeerr -> initiateMovieQualityRequest(item)
-            item.mediaType == "tv" -> initiateTvSeasonRequest(item, useSeerr)
+            item.mediaType == "movie" && !useSeerr -> {
+                if (state.isRadarrConfigured) {
+                    initiateMovieQualityRequest(item)
+                } else {
+                    _uiState.update {
+                        it.copy(errorMessage = "No request service configured for movies. Enable Seerr, Radarr, or the Cinefin plugin in Settings → Media Requests.")
+                    }
+                }
+            }
+            item.mediaType == "movie" && useSeerr -> {
+                _uiState.update {
+                    it.copy(pendingMovieRequest = PendingMovieRequest(item, emptyList(), isUsingRadarrDirect = false))
+                }
+            }
+            item.mediaType == "tv" -> {
+                if (useSeerr || state.isSonarrConfigured) {
+                    initiateTvSeasonRequest(item, useSeerr)
+                } else {
+                    _uiState.update {
+                        it.copy(errorMessage = "No request service configured for TV shows. Enable Seerr, Sonarr, or the Cinefin plugin in Settings → Media Requests.")
+                    }
+                }
+            }
             else -> requestSeasons(item, null)
         }
     }
@@ -236,7 +331,7 @@ class RequestsViewModel @Inject constructor(
             _uiState.update {
                 it.copy(
                     requestingMediaId = null,
-                    pendingMovieRequest = PendingMovieRequest(item, profiles),
+                    pendingMovieRequest = PendingMovieRequest(item, profiles, isUsingRadarrDirect = true),
                 )
             }
         }
@@ -252,6 +347,13 @@ class RequestsViewModel @Inject constructor(
                     .map { it.seasonNumber }
                     .sorted()
                 else -> emptyList()
+            }
+            if (seasons.isEmpty()) {
+                // No season metadata available to build a selection dialog — fall back to
+                // requesting everything via the configured backend (plugin/Seerr/Sonarr).
+                _uiState.update { it.copy(requestingMediaId = null) }
+                requestSeasons(item, null)
+                return@launch
             }
             val qualityProfiles = if (!useSeerr && _uiState.value.isSonarrConfigured) {
                 when (val result = sonarrRepository.getQualityProfiles()) {
@@ -275,8 +377,13 @@ class RequestsViewModel @Inject constructor(
         }
     }
 
-    fun confirmMovieRequest(item: SeerrMediaItem, qualityProfileId: Int) {
+    fun confirmMovieRequest(item: SeerrMediaItem, qualityProfileId: Int?, is4k: Boolean = false) {
+        val pending = _uiState.value.pendingMovieRequest
         _uiState.update { it.copy(pendingMovieRequest = null) }
+        if (pending?.isUsingRadarrDirect == false) {
+            requestSeasons(item, null, is4k)
+            return
+        }
         viewModelScope.launch {
             val mediaId = item.tmdbId ?: item.id
             _uiState.update { it.copy(requestingMediaId = item.id) }
@@ -294,13 +401,14 @@ class RequestsViewModel @Inject constructor(
         }
     }
 
-    fun confirmTvRequest(item: SeerrMediaItem, selectedSeasons: List<Int>, qualityProfileId: Int?) {
+    fun confirmTvRequest(item: SeerrMediaItem, selectedSeasons: List<Int>, qualityProfileId: Int?, is4k: Boolean = false) {
+        val pending = _uiState.value.pendingTvRequest
         _uiState.update { it.copy(pendingTvRequest = null) }
-        val state = _uiState.value
-        val seerr = seerrPreferences.value
-        val useSeerr = !state.isPluginConfigured && seerr.isValid && seerr.isEnabled
+        // Trust the routing decided when the dialog was opened, so a settings change while
+        // the dialog is open can't send the selected quality profile down the wrong path.
+        val useSeerr = pending?.isUsingSonarrDirect == false
         if (useSeerr) {
-            requestSeasons(item, selectedSeasons)
+            requestSeasons(item, selectedSeasons, is4k)
         } else {
             viewModelScope.launch {
                 val tvdbId = resolveTvdbId(item)
@@ -308,8 +416,27 @@ class RequestsViewModel @Inject constructor(
                     _uiState.update { it.copy(errorMessage = "TVDB ID not available for ${item.displayTitle}") }
                     return@launch
                 }
+
+                // If we have availability data (e.g. Seerr credentials are stored but not
+                // enabled for requesting), skip seasons that are already fully downloaded
+                // instead of re-triggering a Sonarr search for them.
+                val availability = _uiState.value.tvAvailabilityByMediaId[item.id]
+                val seasonsToRequest = if (availability != null) {
+                    val missingSeasons = availability.seasons.filter { it.hasMissingEpisodes }.map { it.seasonNumber }.toSet()
+                    val filtered = selectedSeasons.filter { it in missingSeasons }
+                    if (filtered.isEmpty()) {
+                        _uiState.update {
+                            it.copy(errorMessage = "Selected seasons are already fully available for ${item.displayTitle}")
+                        }
+                        return@launch
+                    }
+                    filtered
+                } else {
+                    selectedSeasons
+                }
+
                 _uiState.update { it.copy(requestingMediaId = item.id) }
-                val result = sonarrRepository.addSeries(tvdbId, selectedSeasons, qualityProfileId)
+                val result = sonarrRepository.addSeries(tvdbId, seasonsToRequest, qualityProfileId)
                 _uiState.update { st ->
                     when (result) {
                         is ApiResult.Success -> st.copy(
@@ -355,16 +482,16 @@ class RequestsViewModel @Inject constructor(
         val tvdbId = item.tvdbId
             ?: _uiState.value.tvAvailabilityByMediaId[item.id]?.tvdbId
         val state = _uiState.value
-        val canRequest = state.isPluginConfigured || (tvdbId != null && state.isSonarrConfigured)
-        if (!canRequest) {
-            val reason = when {
-                !state.isSonarrConfigured && !state.isPluginConfigured ->
-                    "Configure Sonarr or the Cinefin plugin in Settings to request individual episodes"
-                tvdbId == null ->
-                    "TVDB ID unavailable for ${item.displayTitle} — try requesting the full season instead"
-                else -> "Individual episode requests require Sonarr or the Cinefin plugin"
+        if (!state.isPluginConfigured && !state.isSonarrConfigured) {
+            _uiState.update {
+                it.copy(errorMessage = "Configure Sonarr or the Cinefin plugin in Settings to request individual episodes")
             }
-            _uiState.update { it.copy(errorMessage = reason) }
+            return
+        }
+        if (tvdbId == null) {
+            _uiState.update {
+                it.copy(errorMessage = "TVDB ID unavailable for ${item.displayTitle} — try requesting the full season instead")
+            }
             return
         }
 
@@ -372,14 +499,11 @@ class RequestsViewModel @Inject constructor(
             val episodeKey = "${item.id}:$seasonNumber:$episodeNumber"
             _uiState.update { it.copy(requestingMediaId = item.id, requestingSeasonKey = episodeKey) }
 
-            // Prefer plugin, fall back to direct Sonarr
+            // Prefer plugin, fall back to direct Sonarr — both are keyed by TVDB ID.
             val result: ApiResult<*> = if (_uiState.value.isPluginConfigured) {
-                val seriesId = item.tvdbId?.toString() ?: item.tmdbId?.toString() ?: item.id.toString()
-                cinefinPluginRepository.requestEpisode(seriesId, seasonNumber, episodeNumber)
-            } else if (tvdbId != null) {
-                sonarrRepository.requestEpisode(tvdbId, seasonNumber, episodeNumber)
+                cinefinPluginRepository.requestEpisode(tvdbId.toString(), seasonNumber, episodeNumber)
             } else {
-                ApiResult.Error("TVDB ID missing — cannot request individual episode")
+                sonarrRepository.requestEpisode(tvdbId, seasonNumber, episodeNumber)
             }
 
             _uiState.update { state ->
@@ -400,7 +524,7 @@ class RequestsViewModel @Inject constructor(
         }
     }
 
-    private fun requestSeasons(item: SeerrMediaItem, requestedSeasons: List<Int>?) {
+    private fun requestSeasons(item: SeerrMediaItem, requestedSeasons: List<Int>?, is4k: Boolean = false) {
         viewModelScope.launch {
             val seasonKey = requestedSeasons?.joinToString(prefix = "${item.id}:", separator = ",")
             _uiState.update { it.copy(requestingMediaId = item.id, requestingSeasonKey = seasonKey) }
@@ -458,11 +582,13 @@ class RequestsViewModel @Inject constructor(
                         mediaType = item.mediaType,
                         mediaId = mediaId,
                         seasons = seasons,
+                        is4k = is4k,
                     )
                 } else {
                     SeerrRequestRequest(
                         mediaType = item.mediaType,
                         mediaId = mediaId,
+                        is4k = is4k,
                     )
                 }
 
@@ -484,12 +610,13 @@ class RequestsViewModel @Inject constructor(
                 return@launch
             }
 
-            // 3. Direct Radarr (movies) or Sonarr (TV) — no Seerr required
+            // 3. Direct Sonarr (TV only) — movies are handled via initiateMovieQualityRequest
+            // before requestSeasons is ever reached, so this branch only needs to cover TV.
             val tvdbId = item.tvdbId
-            val directResult: ApiResult<Unit> = when {
-                item.mediaType == "movie" -> radarrRepository.addMovie(mediaId)
-                item.mediaType == "tv" && tvdbId != null -> sonarrRepository.addSeries(tvdbId, requestedSeasons)
-                else -> ApiResult.Error("No request service configured. Enable Seerr, Sonarr, or Radarr in Settings → Media Requests.")
+            val directResult: ApiResult<Unit> = if (item.mediaType == "tv" && tvdbId != null) {
+                sonarrRepository.addSeries(tvdbId, requestedSeasons)
+            } else {
+                ApiResult.Error("No request service configured. Enable Seerr, Sonarr, or the Cinefin plugin in Settings → Media Requests.")
             }
 
             _uiState.update { state ->
@@ -565,23 +692,25 @@ class RequestsViewModel @Inject constructor(
                 .sortedBy { it.seasonNumber }
                 .map { seerrSeason ->
                     async {
-                        val localSeason = localSeasonByNumber[seerrSeason.seasonNumber]
-                        val localEpisodes = localSeason?.let { season ->
-                            when (val result = jellyfinMediaRepository.getEpisodesForSeason(season.id.toString())) {
+                        availabilitySemaphore.withPermit {
+                            val localSeason = localSeasonByNumber[seerrSeason.seasonNumber]
+                            val localEpisodes = localSeason?.let { season ->
+                                when (val result = jellyfinMediaRepository.getEpisodesForSeason(season.id.toString())) {
+                                    is ApiResult.Success -> result.data
+                                    else -> emptyList()
+                                }
+                            }.orEmpty()
+                            val seerrSeasonWithEpisodes = when (val result = seerrRepository.getTvSeasonDetails(mediaId, seerrSeason.seasonNumber)) {
                                 is ApiResult.Success -> result.data
-                                else -> emptyList()
+                                else -> seerrSeason
                             }
-                        }.orEmpty()
-                        val seerrSeasonWithEpisodes = when (val result = seerrRepository.getTvSeasonDetails(mediaId, seerrSeason.seasonNumber)) {
-                            is ApiResult.Success -> result.data
-                            else -> seerrSeason
+                            buildSeasonAvailability(
+                                seerrSeason = seerrSeasonWithEpisodes,
+                                localEpisodes = localEpisodes,
+                                isRequestableInSeerr = seerrSeason.seasonNumber in requestableSeasonNumbers,
+                                isPendingRequest = seerrSeason.seasonNumber in activeRequestedSeasonNumbers,
+                            )
                         }
-                        buildSeasonAvailability(
-                            seerrSeason = seerrSeasonWithEpisodes,
-                            localEpisodes = localEpisodes,
-                            isRequestableInSeerr = seerrSeason.seasonNumber in requestableSeasonNumbers,
-                            isPendingRequest = seerrSeason.seasonNumber in activeRequestedSeasonNumbers,
-                        )
                     }
                 }
                 .map { it.await() }
@@ -605,14 +734,23 @@ class RequestsViewModel @Inject constructor(
             .mapNotNull { episode -> episode.indexNumber?.let { it to episode } }
             .toMap()
 
+        val today = LocalDate.now()
         val seerrEpisodes = seerrSeason.episodes
             .mapNotNull { episode ->
                 val number = episode.episodeNumber ?: return@mapNotNull null
-                number to (episode.name ?: "Episode $number")
+                SeerrEpisodeMetadata(
+                    number = number,
+                    title = episode.name ?: "Episode $number",
+                    airDate = episode.airDate,
+                )
             }
 
+        val releasedEpisodeNumbers = seerrEpisodes
+            .filter { episode -> episode.hasAiredBy(today) || episode.number in localEpisodeByNumber }
+            .map { it.number }
+
         val episodeNumbers = when {
-            seerrEpisodes.isNotEmpty() -> seerrEpisodes.map { it.first }
+            seerrEpisodes.isNotEmpty() -> releasedEpisodeNumbers
             seerrSeason.episodeCount != null && seerrSeason.episodeCount > 0 -> (1..seerrSeason.episodeCount).toList()
             localEpisodeByNumber.isNotEmpty() -> localEpisodeByNumber.keys.sorted()
             else -> emptyList()
@@ -620,7 +758,7 @@ class RequestsViewModel @Inject constructor(
 
         if (episodeNumbers.isEmpty()) return null
 
-        val titleByNumber = seerrEpisodes.toMap()
+        val titleByNumber = seerrEpisodes.associate { it.number to it.title }
         val episodes = episodeNumbers.distinct().sorted().map { episodeNumber ->
             val localEpisode = localEpisodeByNumber[episodeNumber]
             TvEpisodeAvailability(
@@ -640,6 +778,17 @@ class RequestsViewModel @Inject constructor(
             isPendingRequest = isPendingRequest,
             episodes = episodes,
         )
+    }
+
+    private fun SeerrEpisodeMetadata.hasAiredBy(today: LocalDate): Boolean {
+        val releaseDate = airDate?.takeIf { it.length >= 10 }?.take(10)?.let { date ->
+            try {
+                LocalDate.parse(date)
+            } catch (_: DateTimeParseException) {
+                null
+            }
+        }
+        return releaseDate == null || !releaseDate.isAfter(today)
     }
 
     private fun com.rpeters.jellyfin.data.model.SeerrTvDetails.requestableSeasons(
@@ -666,11 +815,19 @@ class RequestsViewModel @Inject constructor(
     private fun findLocalSeriesMatch(item: SeerrMediaItem, localSeries: List<BaseItemDto>): BaseItemDto? {
         val seerrTitle = item.displayTitle.normalizedTitle()
         val seerrYear = item.displayDate.take(4).toIntOrNull()
-        return localSeries.firstOrNull { series ->
-            val titleMatches = series.name?.normalizedTitle() == seerrTitle
-            val yearMatches = seerrYear == null || series.productionYear == null || series.productionYear == seerrYear
-            titleMatches && yearMatches
-        } ?: localSeries.firstOrNull { series ->
+        val exactTitleMatches = localSeries.filter { it.name?.normalizedTitle() == seerrTitle }
+
+        val exactMatch = if (seerrYear != null) {
+            exactTitleMatches.firstOrNull { series ->
+                series.productionYear == null || series.productionYear == seerrYear
+            }
+        } else {
+            // Seerr didn't provide a year to disambiguate — only auto-match if the title is
+            // unambiguous, otherwise fall through rather than risk picking the wrong series.
+            exactTitleMatches.singleOrNull()
+        }
+
+        return exactMatch ?: localSeries.firstOrNull { series ->
             val title = series.name?.normalizedTitle().orEmpty()
             title.isNotBlank() && (title.contains(seerrTitle) || seerrTitle.contains(title))
         }
@@ -712,6 +869,97 @@ class RequestsViewModel @Inject constructor(
 
     fun clearMessages() {
         _uiState.update { it.copy(errorMessage = null, successMessage = null) }
+    }
+
+    fun loadMyRequests(forceRefresh: Boolean = false) {
+        if (_uiState.value.isLoadingMyRequests) return
+        if (_uiState.value.myRequestsLoaded && !forceRefresh) return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingMyRequests = true) }
+            when (val result = seerrRepository.getRequests(filter = "all", page = 1, take = 50)) {
+                is ApiResult.Success -> {
+                    val items = result.data.results
+                        .sortedByDescending { it.createdAt }
+                        .map { RequestHistoryItem(request = it) }
+                    _uiState.update {
+                        it.copy(myRequests = items, isLoadingMyRequests = false, myRequestsLoaded = true)
+                    }
+                }
+                is ApiResult.Error -> _uiState.update {
+                    it.copy(
+                        isLoadingMyRequests = false,
+                        myRequestsLoaded = true,
+                        errorMessage = result.message.ifBlank { "Failed to load requests" },
+                    )
+                }
+                is ApiResult.Loading -> _uiState.update { it.copy(isLoadingMyRequests = false) }
+            }
+        }
+    }
+
+    fun cancelRequest(requestId: Int) {
+        if (_uiState.value.cancelingRequestId != null) return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(cancelingRequestId = requestId) }
+            when (val result = seerrRepository.deleteRequest(requestId)) {
+                is ApiResult.Success -> _uiState.update {
+                    it.copy(
+                        myRequests = it.myRequests.filterNot { entry -> entry.request.id == requestId },
+                        cancelingRequestId = null,
+                        successMessage = "Request canceled",
+                    )
+                }
+                is ApiResult.Error -> _uiState.update {
+                    it.copy(
+                        cancelingRequestId = null,
+                        errorMessage = result.message.ifBlank { "Failed to cancel request" },
+                    )
+                }
+                is ApiResult.Loading -> _uiState.update { it.copy(cancelingRequestId = null) }
+            }
+        }
+    }
+
+    fun loadRequestMediaDetails(requestId: Int) {
+        val entry = _uiState.value.myRequests.firstOrNull { it.request.id == requestId } ?: return
+        if (entry.title != null || entry.isLoadingDetails) return
+        val media = entry.request.media
+        val tmdbId = media.tmdbId ?: return
+
+        _uiState.update { state ->
+            state.copy(
+                myRequests = state.myRequests.map {
+                    if (it.request.id == requestId) it.copy(isLoadingDetails = true) else it
+                },
+            )
+        }
+
+        viewModelScope.launch {
+            val (title, posterPath) = if (media.mediaType == "movie") {
+                when (val result = seerrRepository.getMovieDetails(tmdbId)) {
+                    is ApiResult.Success -> result.data.title to result.data.posterPath
+                    else -> null to null
+                }
+            } else {
+                when (val result = seerrRepository.getTvDetails(tmdbId)) {
+                    is ApiResult.Success -> result.data.name to result.data.posterPath
+                    else -> null to null
+                }
+            }
+            _uiState.update { state ->
+                state.copy(
+                    myRequests = state.myRequests.map {
+                        if (it.request.id == requestId) {
+                            it.copy(title = title, posterPath = posterPath, isLoadingDetails = false)
+                        } else {
+                            it
+                        }
+                    },
+                )
+            }
+        }
     }
 
     fun dismissRecentSearch(query: String) {

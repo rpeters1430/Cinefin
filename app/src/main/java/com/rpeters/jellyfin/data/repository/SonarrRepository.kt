@@ -112,7 +112,11 @@ class SonarrRepository @Inject constructor(
                             val seasonObj = seasonElement as? JsonObject
                             if (seasonObj != null) {
                                 val seasonNum = seasonObj["seasonNumber"]?.jsonPrimitive?.content?.toIntOrNull()
-                                if (seasonNum != null && requestedSeasons != null && seasonNum in requestedSeasons) {
+                                // requestedSeasons == null means "request the whole series" — monitor every
+                                // real season (mirrors the new-series add path below).
+                                val shouldMonitor = seasonNum != null && seasonNum > 0 &&
+                                    (requestedSeasons == null || seasonNum in requestedSeasons)
+                                if (shouldMonitor) {
                                     JsonObject(seasonObj.toMutableMap().apply {
                                         put("monitored", JsonPrimitive(true))
                                     })
@@ -170,11 +174,17 @@ class SonarrRepository @Inject constructor(
             val series = lookupResponse.body()!![0]
             val rootFolderPath = series.rootFolderPath?.takeIf { it.isNotBlank() }
                 ?: service.getRootFolders(apiKey).body()?.firstOrNull()?.path
-                ?: "/tv"
+                ?: return@retryNetworkCall ApiResult.Error(
+                    "No root folder configured in Sonarr. Add a root folder in Sonarr's settings before requesting series.",
+                    errorType = ErrorType.BAD_REQUEST,
+                )
             val resolvedQualityProfileId = qualityProfileId
                 ?: series.qualityProfileId.takeIf { it != 0 }
                 ?: service.getQualityProfiles(apiKey).body()?.firstOrNull()?.id
-                ?: 1
+                ?: return@retryNetworkCall ApiResult.Error(
+                    "No quality profile configured in Sonarr. Add a quality profile in Sonarr's settings before requesting series.",
+                    errorType = ErrorType.BAD_REQUEST,
+                )
 
             val seasons = series.seasons.map { s ->
                 SonarrSeasonItem(
