@@ -49,6 +49,7 @@ import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBar
 import com.rpeters.jellyfin.ui.theme.JellyfinExpressiveTheme
 import com.rpeters.jellyfin.ui.viewmodel.ConnectionTestState
 import com.rpeters.jellyfin.ui.viewmodel.MediaRequestSettingsViewModel
+import com.rpeters.jellyfin.ui.viewmodel.CredentialImportState
 
 @OptInAppExperimentalApis
 @Composable
@@ -62,6 +63,7 @@ fun MediaRequestSettingsScreen(
     val sonarrTestState by viewModel.sonarrTestState.collectAsStateWithLifecycle()
     val radarrPrefs by viewModel.radarrPreferences.collectAsStateWithLifecycle()
     val radarrTestState by viewModel.radarrTestState.collectAsStateWithLifecycle()
+    val credentialImportState by viewModel.credentialImportState.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -79,6 +81,46 @@ fun MediaRequestSettingsScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
+
+            // ── Server Sync ──────────────────────────────────────────────────
+            ExpressiveSettingsCard(
+                title = "Cinefin Server Plugin",
+                icon = Icons.Default.CloudDownload,
+                description = "Import Sonarr, Radarr, and Overseerr credentials from Jellyfin"
+            ) {
+                ExpressiveFilledButton(
+                    onClick = viewModel::importCredentialsFromPlugin,
+                    enabled = credentialImportState !is CredentialImportState.Importing,
+                ) {
+                    if (credentialImportState is CredentialImportState.Importing) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text("Importing…")
+                    } else {
+                        Text("Import from Jellyfin")
+                    }
+                }
+
+                when (val state = credentialImportState) {
+                    is CredentialImportState.Success -> Text(
+                        text = state.message,
+                        color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+
+                    is CredentialImportState.Failure -> Text(
+                        text = state.message,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+
+                    else -> Unit
+                }
+            }
 
             // ── Seerr / Overseerr ─────────────────────────────────────────────
             ExpressiveSettingsCard(

@@ -9,6 +9,7 @@ import com.rpeters.jellyfin.data.preferences.SeerrPreferencesRepository
 import com.rpeters.jellyfin.data.preferences.SonarrPreferences
 import com.rpeters.jellyfin.data.repository.RadarrRepository
 import com.rpeters.jellyfin.data.repository.SonarrRepository
+import com.rpeters.jellyfin.data.repository.CinefinPluginRepository
 import com.rpeters.jellyfin.data.repository.SeerrRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -27,7 +28,58 @@ class MediaRequestSettingsViewModel @Inject constructor(
     private val seerrRepository: SeerrRepository,
     private val sonarrRepository: SonarrRepository,
     private val radarrRepository: RadarrRepository,
+    private val cinefinPluginRepository: CinefinPluginRepository,
 ) : ViewModel() {
+
+    private val _credentialImportState = MutableStateFlow<CredentialImportState>(CredentialImportState.Idle)
+    val credentialImportState: StateFlow<CredentialImportState> = _credentialImportState.asStateFlow()
+
+    fun importCredentialsFromPlugin() {
+        if (_credentialImportState.value is CredentialImportState.Importing) return
+
+        viewModelScope.launch {
+            _credentialImportState.value = CredentialImportState.Importing
+
+            when (val result = cinefinPluginRepository.getCredentials()) {
+                is ApiResult.Success -> {
+                    val credentials = result.data
+                    var importedCount = 0
+
+                    if (credentials.sonarr.isConfigured) {
+                        arrPrefsRepo.updateSonarrUrl(credentials.sonarr.url)
+                        arrPrefsRepo.updateSonarrApiKey(credentials.sonarr.apiKey)
+                        arrPrefsRepo.setSonarrEnabled(true)
+                        importedCount++
+                    }
+
+                    if (credentials.radarr.isConfigured) {
+                        arrPrefsRepo.updateRadarrUrl(credentials.radarr.url)
+                        arrPrefsRepo.updateRadarrApiKey(credentials.radarr.apiKey)
+                        arrPrefsRepo.setRadarrEnabled(true)
+                        importedCount++
+                    }
+
+                    if (credentials.overseerr.isConfigured) {
+                        seerrPrefsRepo.updateBaseUrl(credentials.overseerr.url)
+                        seerrPrefsRepo.updateApiKey(credentials.overseerr.apiKey)
+                        seerrPrefsRepo.setEnabled(true)
+                        importedCount++
+                    }
+
+                    _credentialImportState.value =
+                        CredentialImportState.Success("Imported $importedCount service configuration(s)")
+                }
+
+                is ApiResult.Error -> {
+                    _credentialImportState.value = CredentialImportState.Failure(result.message)
+                }
+
+                is ApiResult.Loading -> {
+                    _credentialImportState.value = CredentialImportState.Failure("Unexpected response")
+                }
+            }
+        }
+    }
 
     // ── Seerr ────────────────────────────────────────────────────────────────
 
@@ -118,4 +170,12 @@ class MediaRequestSettingsViewModel @Inject constructor(
             }
         }
     }
+
+}
+
+sealed class CredentialImportState {
+    object Idle : CredentialImportState()
+    object Importing : CredentialImportState()
+    data class Success(val message: String) : CredentialImportState()
+    data class Failure(val message: String) : CredentialImportState()
 }

@@ -4,6 +4,7 @@ import com.rpeters.jellyfin.data.model.CinefinPluginEpisodeRequest
 import com.rpeters.jellyfin.data.model.CinefinPluginInfoResponse
 import com.rpeters.jellyfin.data.model.CinefinPluginMediaRequest
 import com.rpeters.jellyfin.data.model.CinefinPluginRequestResponse
+import com.rpeters.jellyfin.data.model.CinefinPluginCredentialsResponse
 import com.rpeters.jellyfin.data.model.CinefinPluginTestRequest
 import retrofit2.Response
 import retrofit2.http.Body
@@ -13,6 +14,9 @@ import retrofit2.http.POST
 interface CinefinPluginApiService {
     @GET("Cinefin/Info")
     suspend fun getPluginInfo(): Response<CinefinPluginInfoResponse>
+
+    @GET("Cinefin/Credentials")
+    suspend fun getCredentials(): Response<CinefinPluginCredentialsResponse>
 
     @POST("Cinefin/Request/Media")
     suspend fun requestMedia(

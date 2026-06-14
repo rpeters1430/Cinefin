@@ -36,3 +36,27 @@ data class CinefinPluginTestRequest(
     val proxyUsername: String = "",
     val proxyPassword: String = "",
 )
+
+@Serializable
+data class CinefinPluginCredentialsResponse(
+    val sonarr: CinefinPluginServiceCredentials,
+    val radarr: CinefinPluginServiceCredentials,
+    val overseerr: CinefinPluginServiceCredentials,
+    val proxy: CinefinPluginProxyCredentials,
+    val ignoreSslErrors: Boolean = false,
+)
+
+@Serializable
+data class CinefinPluginServiceCredentials(
+    val url: String,
+    val apiKey: String,
+    val isConfigured: Boolean,
+)
+
+@Serializable
+data class CinefinPluginProxyCredentials(
+    val username: String = "",
+    val password: String = "",
+    val isConfigured: Boolean = false,
+)
+

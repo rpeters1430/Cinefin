@@ -4,6 +4,7 @@ import com.rpeters.jellyfin.data.model.CinefinPluginEpisodeRequest
 import com.rpeters.jellyfin.data.model.CinefinPluginInfoResponse
 import com.rpeters.jellyfin.data.model.CinefinPluginMediaRequest
 import com.rpeters.jellyfin.data.model.CinefinPluginRequestResponse
+import com.rpeters.jellyfin.data.model.CinefinPluginCredentialsResponse
 import com.rpeters.jellyfin.data.model.CinefinPluginTestRequest
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.data.repository.common.ErrorType
@@ -65,6 +66,18 @@ class CinefinPluginRepository(
             } catch (e: Exception) {
                 SecureLogger.e(TAG, "Failed to get plugin info", e)
                 ApiResult.Error("Network error checking plugin info", e, ErrorType.NETWORK)
+            }
+        }
+    }
+
+    suspend fun getCredentials(): ApiResult<CinefinPluginCredentialsResponse> {
+        val service = getApiService() ?: return notConfiguredError()
+        return retryNetworkCall {
+            try {
+                handleResponse(service.getCredentials())
+            } catch (e: Exception) {
+                SecureLogger.e(TAG, "Failed to get plugin credentials", e)
+                ApiResult.Error("Network error syncing plugin credentials", e, ErrorType.NETWORK)
             }
         }
     }

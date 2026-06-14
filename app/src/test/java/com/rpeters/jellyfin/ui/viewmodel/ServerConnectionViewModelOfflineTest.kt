@@ -93,11 +93,12 @@ class ServerConnectionViewModelOfflineTest {
     }
 
     private suspend fun awaitCondition(timeoutMs: Long = 2000, condition: suspend () -> Boolean) {
-        val start = System.currentTimeMillis()
-        while (System.currentTimeMillis() - start < timeoutMs) {
+        val maxIterations = timeoutMs / 10
+        var iterations = 0
+        while (iterations < maxIterations) {
             if (condition()) return
             delay(10)
-            Thread.sleep(10)
+            iterations++
         }
         if (!condition()) {
             throw AssertionError("Condition not met within $timeoutMs ms")
