@@ -10,10 +10,13 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.rpeters.jellyfin.BuildConfig
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 import java.security.GeneralSecurityException
@@ -228,10 +231,10 @@ class EncryptedPreferences @Inject constructor(
      * @param key The preference key
      * @param value The sensitive value to encrypt and store
      */
-    suspend fun putEncryptedString(key: String, value: String?) {
+    suspend fun putEncryptedString(key: String, value: String?) = withContext(Dispatchers.IO) {
         if (value == null) {
             removeKey(key)
-            return
+            return@withContext
         }
 
         val encrypted = encryptValue(value)
@@ -260,14 +263,15 @@ class EncryptedPreferences @Inject constructor(
                 val encrypted = prefs[stringPreferencesKey(key)]
                 decryptValue(encrypted)
             }
+            .flowOn(Dispatchers.IO)
     }
 
     /**
      * Returns decrypted entries that share the provided prefix.
      */
-    suspend fun getEntriesWithPrefix(prefix: String): Map<String, String> {
+    suspend fun getEntriesWithPrefix(prefix: String): Map<String, String> = withContext(Dispatchers.IO) {
         val preferences = context.secureDataStore.data.first()
-        return preferences.asMap().mapNotNull { (key, value) ->
+        preferences.asMap().mapNotNull { (key, value) ->
             val name = key.name
             if (!name.startsWith(prefix)) {
                 return@mapNotNull null
@@ -284,7 +288,7 @@ class EncryptedPreferences @Inject constructor(
     /**
      * Removes an encrypted value from storage.
      */
-    suspend fun removeKey(key: String) {
+    suspend fun removeKey(key: String) = withContext(Dispatchers.IO) {
         context.secureDataStore.edit { prefs ->
             prefs.remove(stringPreferencesKey(key))
         }
@@ -294,7 +298,7 @@ class EncryptedPreferences @Inject constructor(
      * Clears all encrypted preferences.
      * SECURITY WARNING: This should only be called during logout or app reset.
      */
-    suspend fun clearAll() {
+    suspend fun clearAll() = withContext(Dispatchers.IO) {
         context.secureDataStore.edit { it.clear() }
     }
 }

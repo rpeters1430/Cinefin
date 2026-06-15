@@ -32,6 +32,34 @@ interface SeerrApiService {
         @Query("language") language: String = "en"
     ): Response<SeerrSearchResult>
 
+    @GET("api/v1/discover/movies/upcoming")
+    suspend fun getUpcomingMovies(
+        @Header("X-Api-Key") apiKey: String,
+        @Query("page") page: Int = 1,
+        @Query("language") language: String = "en"
+    ): Response<SeerrSearchResult>
+
+    @GET("api/v1/discover/tv/upcoming")
+    suspend fun getUpcomingTv(
+        @Header("X-Api-Key") apiKey: String,
+        @Query("page") page: Int = 1,
+        @Query("language") language: String = "en"
+    ): Response<SeerrSearchResult>
+
+    @GET("api/v1/discover/movies")
+    suspend fun getPopularMovies(
+        @Header("X-Api-Key") apiKey: String,
+        @Query("page") page: Int = 1,
+        @Query("language") language: String = "en"
+    ): Response<SeerrSearchResult>
+
+    @GET("api/v1/discover/tv")
+    suspend fun getPopularTv(
+        @Header("X-Api-Key") apiKey: String,
+        @Query("page") page: Int = 1,
+        @Query("language") language: String = "en"
+    ): Response<SeerrSearchResult>
+
     @POST("api/v1/request")
     suspend fun request(
         @Header("X-Api-Key") apiKey: String,

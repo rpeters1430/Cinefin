@@ -58,7 +58,7 @@ class SeerrPreferencesRepository @Inject constructor(
 
     suspend fun updateBaseUrl(url: String) {
         dataStore.edit { preferences ->
-            preferences[PreferencesKeys.BASE_URL] = url
+            preferences[PreferencesKeys.BASE_URL] = com.rpeters.jellyfin.utils.normalizeServerUrl(url)
         }
     }
 

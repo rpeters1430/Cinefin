@@ -43,7 +43,9 @@ class ArrPreferencesRepository @Inject constructor(
             SonarrPreferences(baseUrl = url, apiKey = key.orEmpty(), isEnabled = enabled)
         }
 
-    suspend fun updateSonarrUrl(url: String) = sonarrStore.edit { it[SonarrKeys.BASE_URL] = url }
+    suspend fun updateSonarrUrl(url: String) = sonarrStore.edit { 
+        it[SonarrKeys.BASE_URL] = com.rpeters.jellyfin.utils.normalizeServerUrl(url) 
+    }
     suspend fun updateSonarrApiKey(key: String) = encryptedPreferences.putEncryptedString(KEY_SONARR_API_KEY, key.ifBlank { null })
     suspend fun setSonarrEnabled(enabled: Boolean) = sonarrStore.edit { it[SonarrKeys.IS_ENABLED] = enabled }
 
@@ -61,7 +63,9 @@ class ArrPreferencesRepository @Inject constructor(
             RadarrPreferences(baseUrl = url, apiKey = key.orEmpty(), isEnabled = enabled)
         }
 
-    suspend fun updateRadarrUrl(url: String) = radarrStore.edit { it[RadarrKeys.BASE_URL] = url }
+    suspend fun updateRadarrUrl(url: String) = radarrStore.edit { 
+        it[RadarrKeys.BASE_URL] = com.rpeters.jellyfin.utils.normalizeServerUrl(url) 
+    }
     suspend fun updateRadarrApiKey(key: String) = encryptedPreferences.putEncryptedString(KEY_RADARR_API_KEY, key.ifBlank { null })
     suspend fun setRadarrEnabled(enabled: Boolean) = radarrStore.edit { it[RadarrKeys.IS_ENABLED] = enabled }
 

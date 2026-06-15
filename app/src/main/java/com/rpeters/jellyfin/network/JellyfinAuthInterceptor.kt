@@ -64,7 +64,6 @@ class JellyfinAuthInterceptor @Inject constructor(
         val userAgent = "${deviceIdentityProvider.clientName()}/${deviceIdentityProvider.clientVersion()}"
         val builder = request.newBuilder()
             .header(HEADER_CONNECTION, "keep-alive")
-            .header(HEADER_ACCEPT_ENCODING, "gzip, deflate")
             .header(HEADER_USER_AGENT, userAgent)
 
         builder.header(HEADER_AUTHORIZATION, buildAuthorizationHeader(token))
@@ -145,7 +144,6 @@ class JellyfinAuthInterceptor @Inject constructor(
         private const val HEADER_AUTHORIZATION = "X-Emby-Authorization"
         private const val HEADER_MEDIA_BROWSER_AUTHORIZATION = "Authorization"
         private const val HEADER_CONNECTION = "Connection"
-        private const val HEADER_ACCEPT_ENCODING = "Accept-Encoding"
         private const val HEADER_USER_AGENT = "User-Agent"
         private const val MAX_AUTH_RETRIES = 3
         private val AUTH_PATHS = listOf("/Users/Authenticate", "/Sessions")

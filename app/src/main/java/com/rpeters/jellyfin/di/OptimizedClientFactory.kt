@@ -56,7 +56,6 @@ class OptimizedClientFactory @Inject constructor(
         return Interceptor { chain ->
             val request = chain.request().newBuilder()
                 .addHeader("Connection", "keep-alive")
-                .addHeader("Accept-Encoding", "gzip, deflate")
                 .addHeader("User-Agent", "JellyfinAndroid/1.0")
                 .build()
 

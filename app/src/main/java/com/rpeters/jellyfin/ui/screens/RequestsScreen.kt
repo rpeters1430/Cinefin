@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -43,6 +44,8 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
@@ -81,7 +84,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.foundation.focusable
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
@@ -116,6 +122,7 @@ fun RequestsScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     var showMyRequests by rememberSaveable { mutableStateOf(false) }
+    var activeDetailItem by remember { mutableStateOf<SeerrMediaItem?>(null) }
 
     LaunchedEffect(initialQuery) {
         if (!initialQuery.isNullOrBlank() && initialQuery != uiState.query) {
@@ -151,6 +158,51 @@ fun RequestsScreen(
             onConfirm = viewModel::confirmTvRequest,
             onDismiss = viewModel::dismissPendingRequest,
         )
+    }
+
+    activeDetailItem?.let { item ->
+        Dialog(onDismissRequest = { activeDetailItem = null }) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(28.dp))
+                    .background(MaterialTheme.colorScheme.background)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    RequestMediaHeroCard(
+                        item = item,
+                        tvAvailability = uiState.tvAvailabilityByMediaId[item.id],
+                        isLoadingAvailability = item.id in uiState.loadingAvailabilityIds,
+                        isTvChecked = item.id in uiState.checkedTvItemIds,
+                        isRequesting = uiState.requestingMediaId == item.id,
+                        requestingSeasonKey = uiState.requestingSeasonKey,
+                        isPluginConfigured = uiState.isPluginConfigured,
+                        pluginCapabilities = uiState.pluginCapabilities,
+                        isSonarrConfigured = uiState.isSonarrConfigured,
+                        onRequest = { viewModel.requestMedia(item) },
+                        onRequestSeason = { seasonNumber -> viewModel.requestSeason(item, seasonNumber) },
+                        onRequestEpisode = { seasonNumber, episodeNumber ->
+                            viewModel.requestMissingEpisode(item, seasonNumber, episodeNumber)
+                        },
+                        onRequestMissingSeasons = { viewModel.requestMissingSeasons(item) },
+                        onCheckAvailability = { viewModel.checkTvAvailability(item) },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(end = 16.dp, bottom = 16.dp),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        ExpressiveTonalButton(onClick = { activeDetailItem = null }) {
+                            Text("Close")
+                        }
+                    }
+                }
+            }
+        }
     }
 
     Scaffold(
@@ -204,72 +256,118 @@ fun RequestsScreen(
                         )
                     }
 
-                    // Loading shimmer (initial load only)
-                    if (uiState.isLoading && uiState.results.isEmpty()) {
-                        items(3, key = { "shimmer_$it" }) {
-                            RequestShimmerCard(modifier = Modifier.padding(horizontal = 16.dp))
+                    if (uiState.query.isBlank()) {
+                        // Discover Mode
+                        if (uiState.isLoading && uiState.trending.isEmpty() && uiState.upcomingMovies.isEmpty()) {
+                            items(3, key = { "discover_shimmer_$it" }) {
+                                DiscoveryShimmerRow(modifier = Modifier.padding(vertical = 8.dp))
+                            }
+                        } else {
+                            item(key = "discover_trending") {
+                                DiscoveryCategoryRow(
+                                    title = "Trending Today",
+                                    items = uiState.trending,
+                                    onItemClick = { activeDetailItem = it },
+                                    modifier = Modifier.padding(vertical = 8.dp)
+                                )
+                            }
+                            item(key = "discover_upcoming_movies") {
+                                DiscoveryCategoryRow(
+                                    title = "Upcoming Movies",
+                                    items = uiState.upcomingMovies,
+                                    onItemClick = { activeDetailItem = it },
+                                    modifier = Modifier.padding(vertical = 8.dp)
+                                )
+                            }
+                            item(key = "discover_upcoming_tv") {
+                                DiscoveryCategoryRow(
+                                    title = "Upcoming TV Shows",
+                                    items = uiState.upcomingTv,
+                                    onItemClick = { activeDetailItem = it },
+                                    modifier = Modifier.padding(vertical = 8.dp)
+                                )
+                            }
+                            item(key = "discover_popular_movies") {
+                                DiscoveryCategoryRow(
+                                    title = "Popular Movies",
+                                    items = uiState.popularMovies,
+                                    onItemClick = { activeDetailItem = it },
+                                    modifier = Modifier.padding(vertical = 8.dp)
+                                )
+                            }
+                            item(key = "discover_popular_tv") {
+                                DiscoveryCategoryRow(
+                                    title = "Popular TV Shows",
+                                    items = uiState.popularTv,
+                                    onItemClick = { activeDetailItem = it },
+                                    modifier = Modifier.padding(vertical = 8.dp)
+                                )
+                            }
                         }
-                    }
+                    } else {
+                        // Search Results Mode
+                        if (uiState.isLoading && uiState.results.isEmpty()) {
+                            items(3, key = { "shimmer_$it" }) {
+                                RequestShimmerCard(modifier = Modifier.padding(horizontal = 16.dp))
+                            }
+                        }
 
-                    // Section header
-                    if (uiState.results.isNotEmpty() && !uiState.isLoading) {
-                        item(key = "section_header") {
-                            Text(
-                                text = if (uiState.query.isBlank()) "Trending" else "Results",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        if (uiState.results.isNotEmpty() && !uiState.isLoading) {
+                            item(key = "section_header") {
+                                Text(
+                                    text = "Results",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(horizontal = 16.dp),
+                                )
+                            }
+                        }
+
+                        itemsIndexed(
+                            items = uiState.results,
+                            key = { index, item -> "result_${item.mediaType}_${item.id}_$index" },
+                        ) { _, item ->
+                            RequestMediaHeroCard(
+                                item = item,
+                                tvAvailability = uiState.tvAvailabilityByMediaId[item.id],
+                                isLoadingAvailability = item.id in uiState.loadingAvailabilityIds,
+                                isTvChecked = item.id in uiState.checkedTvItemIds,
+                                isRequesting = uiState.requestingMediaId == item.id,
+                                requestingSeasonKey = uiState.requestingSeasonKey,
+                                isPluginConfigured = uiState.isPluginConfigured,
+                                pluginCapabilities = uiState.pluginCapabilities,
+                                isSonarrConfigured = uiState.isSonarrConfigured,
+                                onRequest = { viewModel.requestMedia(item) },
+                                onRequestSeason = { seasonNumber -> viewModel.requestSeason(item, seasonNumber) },
+                                onRequestEpisode = { seasonNumber, episodeNumber ->
+                                    viewModel.requestMissingEpisode(item, seasonNumber, episodeNumber)
+                                },
+                                onRequestMissingSeasons = { viewModel.requestMissingSeasons(item) },
+                                onCheckAvailability = { viewModel.checkTvAvailability(item) },
                                 modifier = Modifier.padding(horizontal = 16.dp),
                             )
                         }
-                    }
 
-                    // Results
-                    itemsIndexed(
-                        items = uiState.results,
-                        key = { index, item -> "result_${item.mediaType}_${item.id}_$index" },
-                    ) { _, item ->
-                        RequestMediaHeroCard(
-                            item = item,
-                            tvAvailability = uiState.tvAvailabilityByMediaId[item.id],
-                            isLoadingAvailability = item.id in uiState.loadingAvailabilityIds,
-                            isTvChecked = item.id in uiState.checkedTvItemIds,
-                            isRequesting = uiState.requestingMediaId == item.id,
-                            requestingSeasonKey = uiState.requestingSeasonKey,
-                            isPluginConfigured = uiState.isPluginConfigured,
-                            pluginCapabilities = uiState.pluginCapabilities,
-                            isSonarrConfigured = uiState.isSonarrConfigured,
-                            onRequest = { viewModel.requestMedia(item) },
-                            onRequestSeason = { seasonNumber -> viewModel.requestSeason(item, seasonNumber) },
-                            onRequestEpisode = { seasonNumber, episodeNumber ->
-                                viewModel.requestMissingEpisode(item, seasonNumber, episodeNumber)
-                            },
-                            onRequestMissingSeasons = { viewModel.requestMissingSeasons(item) },
-                            onCheckAvailability = { viewModel.checkTvAvailability(item) },
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                        )
-                    }
-
-                    // Empty search state
-                    if (uiState.results.isEmpty() && uiState.query.isNotBlank() && !uiState.isLoading) {
-                        item(key = "empty_state") {
-                            EmptySearchState(query = uiState.query)
-                        }
-                    }
-
-                    // Load more trigger — composed once the user scrolls near the bottom
-                    if (uiState.results.isNotEmpty() && uiState.currentPage < uiState.totalPages) {
-                        item(key = "load_more") {
-                            LaunchedEffect(uiState.results.size) {
-                                viewModel.loadMoreResults()
+                        if (uiState.results.isEmpty() && !uiState.isLoading) {
+                            item(key = "empty_state") {
+                                EmptySearchState(query = uiState.query)
                             }
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 16.dp),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                        }
+
+                        if (uiState.results.isNotEmpty() && uiState.currentPage < uiState.totalPages) {
+                            item(key = "load_more") {
+                                LaunchedEffect(uiState.results.size) {
+                                    viewModel.loadMoreResults()
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 16.dp),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                                }
                             }
                         }
                     }
@@ -1533,5 +1631,211 @@ private fun com.rpeters.jellyfin.data.model.SeerrRequestItem.statusDescription()
         media.status == MEDIA_STATUS_PENDING || status == REQUEST_STATUS_APPROVED -> "Approved and queued for search or download."
         media.status == MEDIA_STATUS_UNKNOWN -> "Submitted, but no download activity has been reported yet."
         else -> "Status has not been reported by the request server."
+    }
+}
+
+@Composable
+private fun DiscoveryCategoryRow(
+    title: String,
+    items: List<SeerrMediaItem>,
+    onItemClick: (SeerrMediaItem) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (items.isEmpty()) return
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 8.dp),
+        )
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(items, key = { "${it.mediaType}_${it.id}" }) { item ->
+                DiscoverMediaCard(
+                    item = item,
+                    onClick = { onItemClick(item) }
+                )
+            }
+        }
+    }
+}
+
+@OptInAppExperimentalApis
+@Composable
+private fun DiscoverMediaCard(
+    item: SeerrMediaItem,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val posterUrl = item.posterPath?.let { "https://image.tmdb.org/t/p/w342$it" }
+    val mediaStatus = item.mediaInfo?.status ?: 1
+    val isAvailable = mediaStatus == 5
+    val isPending = mediaStatus in 2..3
+    val isPartial = mediaStatus == 4
+
+    val contentTypeColor = if (item.mediaType == "tv") {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.tertiary
+    }
+
+    Card(
+        modifier = modifier
+            .width(130.dp)
+            .height(200.dp)
+            .expressiveGlow(
+                color = contentTypeColor,
+                alpha = 0.08f,
+                borderRadius = 16.dp
+            )
+            .clickable(onClick = onClick)
+            .focusable(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            if (posterUrl != null) {
+                AsyncImage(
+                    model = posterUrl,
+                    contentDescription = item.displayTitle,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(contentTypeColor.copy(alpha = 0.1f)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "No image available",
+                        modifier = Modifier.size(36.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
+            // Bottom gradient overlay
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                Color.Black.copy(alpha = 0.3f),
+                                Color.Black.copy(alpha = 0.9f),
+                            ),
+                            startY = 100f
+                        )
+                    )
+            )
+
+            // Content
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(8.dp),
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
+                // Top row for badges
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(Color.Black.copy(alpha = 0.6f))
+                            .padding(horizontal = 5.dp, vertical = 2.dp),
+                    ) {
+                        Text(
+                            text = if (item.mediaType == "tv") "TV" else "Movie",
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+
+                    if (isAvailable || isPending || isPartial) {
+                        val badgeColor = when {
+                            isAvailable -> Color(0xFF4CAF50)
+                            isPartial -> Color(0xFF2196F3)
+                            else -> Color(0xFFFF9800)
+                        }
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(badgeColor)
+                        )
+                    }
+                }
+
+                // Bottom text (Title and Year)
+                Column {
+                    Text(
+                        text = item.displayTitle,
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                        color = Color.White,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = item.displayDate.take(4),
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.sp),
+                        color = Color.White.copy(alpha = 0.7f),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DiscoveryShimmerRow(
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        Box(
+            modifier = Modifier
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 8.dp)
+                .width(120.dp)
+                .height(20.dp)
+                .clip(RoundedCornerShape(4.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+        )
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            userScrollEnabled = false
+        ) {
+            items(4) {
+                Box(
+                    modifier = Modifier
+                        .width(130.dp)
+                        .height(200.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                ) {
+                    ShimmerBox(modifier = Modifier.fillMaxSize(), cornerRadius = 16)
+                }
+            }
+        }
     }
 }

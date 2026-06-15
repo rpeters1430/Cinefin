@@ -19,5 +19,7 @@ data class SeerrPreferences(
     /**
      * Checks if the Seerr configuration is valid (URL and API key present).
      */
-    val isValid: Boolean get() = baseUrl.isNotBlank() && apiKey.isNotBlank()
+    val isValid: Boolean get() = baseUrl.isNotBlank() && 
+                                 apiKey.isNotBlank() && 
+                                 runCatching { java.net.URL(baseUrl).host.isNotBlank() }.getOrDefault(false)
 }

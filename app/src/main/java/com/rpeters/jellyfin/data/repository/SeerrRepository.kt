@@ -125,6 +125,46 @@ open class SeerrRepository @Inject constructor(
         }
     }
 
+    suspend fun getUpcomingMovies(page: Int = 1): ApiResult<SeerrSearchResult> = retryNetworkCall {
+        val (service, apiKey) = getConnection() ?: return@retryNetworkCall notConfiguredError()
+        try {
+            handleResponse(service.getUpcomingMovies(apiKey, page))
+        } catch (e: Exception) {
+            SecureLogger.e(TAG, "Upcoming movies fetch failed", e)
+            ApiResult.Error("Network error during Seerr upcoming movies fetch", e, ErrorType.NETWORK)
+        }
+    }
+
+    suspend fun getUpcomingTv(page: Int = 1): ApiResult<SeerrSearchResult> = retryNetworkCall {
+        val (service, apiKey) = getConnection() ?: return@retryNetworkCall notConfiguredError()
+        try {
+            handleResponse(service.getUpcomingTv(apiKey, page))
+        } catch (e: Exception) {
+            SecureLogger.e(TAG, "Upcoming TV fetch failed", e)
+            ApiResult.Error("Network error during Seerr upcoming TV fetch", e, ErrorType.NETWORK)
+        }
+    }
+
+    suspend fun getPopularMovies(page: Int = 1): ApiResult<SeerrSearchResult> = retryNetworkCall {
+        val (service, apiKey) = getConnection() ?: return@retryNetworkCall notConfiguredError()
+        try {
+            handleResponse(service.getPopularMovies(apiKey, page))
+        } catch (e: Exception) {
+            SecureLogger.e(TAG, "Popular movies fetch failed", e)
+            ApiResult.Error("Network error during Seerr popular movies fetch", e, ErrorType.NETWORK)
+        }
+    }
+
+    suspend fun getPopularTv(page: Int = 1): ApiResult<SeerrSearchResult> = retryNetworkCall {
+        val (service, apiKey) = getConnection() ?: return@retryNetworkCall notConfiguredError()
+        try {
+            handleResponse(service.getPopularTv(apiKey, page))
+        } catch (e: Exception) {
+            SecureLogger.e(TAG, "Popular TV fetch failed", e)
+            ApiResult.Error("Network error during Seerr popular TV fetch", e, ErrorType.NETWORK)
+        }
+    }
+
     suspend fun request(request: SeerrRequestRequest): ApiResult<SeerrRequestResponse> = retryNetworkCall {
         val (service, apiKey) = getConnection() ?: return@retryNetworkCall notConfiguredError()
         try {

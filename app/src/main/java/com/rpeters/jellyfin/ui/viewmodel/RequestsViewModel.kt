@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
@@ -102,6 +103,11 @@ private data class SeerrEpisodeMetadata(
 data class RequestsUiState(
     val query: String = "",
     val results: List<SeerrMediaItem> = emptyList(),
+    val trending: List<SeerrMediaItem> = emptyList(),
+    val upcomingMovies: List<SeerrMediaItem> = emptyList(),
+    val upcomingTv: List<SeerrMediaItem> = emptyList(),
+    val popularMovies: List<SeerrMediaItem> = emptyList(),
+    val popularTv: List<SeerrMediaItem> = emptyList(),
     val isLoading: Boolean = false,
     val loadingAvailabilityIds: Set<Int> = emptySet(),
     val checkedTvItemIds: Set<Int> = emptySet(),
@@ -198,51 +204,167 @@ class RequestsViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
-            _searchQuery
-                .debounce(500)
-                .distinctUntilChanged()
-                .onEach { _uiState.update { state -> state.copy(isLoading = true, errorMessage = null) } }
-                .flatMapLatest { query ->
-                    val result = if (query.isNotBlank()) {
-                        seerrRepository.search(query)
+            combine(
+                _searchQuery,
+                preferencesRepository.seerrPreferencesFlow
+                    .map { it.isValid && it.isEnabled }
+                    .distinctUntilChanged()
+            ) { query, seerrEnabled ->
+                query to seerrEnabled
+            }
+            .debounce(500)
+            .distinctUntilChanged()
+            .collect { (query, seerrEnabled) ->
+                _uiState.update { state -> state.copy(isLoading = true, errorMessage = null) }
+                if (query.isNotBlank()) {
+                    val result = seerrRepository.search(query)
+                    handleSearchResult(result)
+                } else {
+                    if (seerrEnabled) {
+                        loadDiscoverSectionsInternal()
+                    }
+                    handleDiscoverResult()
+                }
+            }
+        }
+    }
+
+    private fun handleSearchResult(result: ApiResult<com.rpeters.jellyfin.data.model.SeerrSearchResult>) {
+        when (result) {
+            is ApiResult.Success -> {
+                _uiState.update { state ->
+                    val q = state.query.trim()
+                    val newRecent = if (q.isNotBlank()) {
+                        (listOf(q) + state.recentSearches.filter { it != q }).take(6)
                     } else {
-                        seerrRepository.getTrending()
+                        state.recentSearches
                     }
-                    kotlinx.coroutines.flow.flowOf(result)
+                    state.copy(
+                        results = result.data.results,
+                        isLoading = false,
+                        recentSearches = newRecent,
+                        tvAvailabilityByMediaId = emptyMap(),
+                        loadingAvailabilityIds = emptySet(),
+                        checkedTvItemIds = emptySet(),
+                        currentPage = result.data.page,
+                        totalPages = result.data.totalPages,
+                    )
                 }
-                .collect { result ->
-                    when (result) {
-                        is ApiResult.Success<*> -> {
-                            val searchResult = result.data as com.rpeters.jellyfin.data.model.SeerrSearchResult
-                            _uiState.update { state ->
-                                val q = state.query.trim()
-                                val newRecent = if (q.isNotBlank()) {
-                                    (listOf(q) + state.recentSearches.filter { it != q }).take(6)
-                                } else {
-                                    state.recentSearches
-                                }
-                                state.copy(
-                                    results = searchResult.results,
-                                    isLoading = false,
-                                    recentSearches = newRecent,
-                                    tvAvailabilityByMediaId = emptyMap(),
-                                    loadingAvailabilityIds = emptySet(),
-                                    checkedTvItemIds = emptySet(),
-                                    currentPage = searchResult.page,
-                                    totalPages = searchResult.totalPages,
-                                )
-                            }
-                        }
-                        is ApiResult.Error -> {
-                            // Don't show an error if it's just because Seerr isn't configured yet
-                            val errorMessage = if (result.message.contains("not configured")) null else result.message
-                            _uiState.update { it.copy(errorMessage = errorMessage, isLoading = false) }
-                        }
-                        is ApiResult.Loading -> {
-                            _uiState.update { it.copy(isLoading = true) }
-                        }
+            }
+            is ApiResult.Error -> {
+                val errorMessage = if (result.message.contains("not configured")) null else result.message
+                _uiState.update { it.copy(errorMessage = errorMessage, isLoading = false) }
+            }
+            is ApiResult.Loading -> {
+                _uiState.update { it.copy(isLoading = true) }
+            }
+        }
+    }
+
+    private fun handleDiscoverResult() {
+        _uiState.update { state ->
+            state.copy(
+                results = emptyList(),
+                isLoading = false,
+                tvAvailabilityByMediaId = emptyMap(),
+                loadingAvailabilityIds = emptySet(),
+                checkedTvItemIds = emptySet(),
+                currentPage = 1,
+                totalPages = 1,
+            )
+        }
+    }
+
+    private suspend fun loadDiscoverSectionsInternal() {
+        val prefs = seerrPreferences.value
+        if (!prefs.isValid || !prefs.isEnabled) {
+            _uiState.update { it.copy(isLoading = false) }
+            return
+        }
+
+        coroutineScope {
+            val trendingDeferred = async { seerrRepository.getTrending() }
+            val upcomingMoviesDeferred = async { seerrRepository.getUpcomingMovies() }
+            val upcomingTvDeferred = async { seerrRepository.getUpcomingTv() }
+            val popularMoviesDeferred = async { seerrRepository.getPopularMovies() }
+            val popularTvDeferred = async { seerrRepository.getPopularTv() }
+
+            val trendingResult = trendingDeferred.await()
+            val upcomingMoviesResult = upcomingMoviesDeferred.await()
+            val upcomingTvResult = upcomingTvDeferred.await()
+            val popularMoviesResult = popularMoviesDeferred.await()
+            val popularTvResult = popularTvDeferred.await()
+
+            var hasError = false
+            var errorMsg: String? = null
+
+            val trendingList = when (trendingResult) {
+                is ApiResult.Success -> trendingResult.data.results
+                is ApiResult.Error -> {
+                    if (trendingResult.message.contains("not configured").not()) {
+                        hasError = true
+                        errorMsg = trendingResult.message
                     }
+                    emptyList()
                 }
+                else -> emptyList()
+            }
+            val upcomingMoviesList = when (upcomingMoviesResult) {
+                is ApiResult.Success -> upcomingMoviesResult.data.results
+                is ApiResult.Error -> {
+                    if (upcomingMoviesResult.message.contains("not configured").not()) {
+                        hasError = true
+                        errorMsg = upcomingMoviesResult.message
+                    }
+                    emptyList()
+                }
+                else -> emptyList()
+            }
+            val upcomingTvList = when (upcomingTvResult) {
+                is ApiResult.Success -> upcomingTvResult.data.results
+                is ApiResult.Error -> {
+                    if (upcomingTvResult.message.contains("not configured").not()) {
+                        hasError = true
+                        errorMsg = upcomingTvResult.message
+                    }
+                    emptyList()
+                }
+                else -> emptyList()
+            }
+            val popularMoviesList = when (popularMoviesResult) {
+                is ApiResult.Success -> popularMoviesResult.data.results
+                is ApiResult.Error -> {
+                    if (popularMoviesResult.message.contains("not configured").not()) {
+                        hasError = true
+                        errorMsg = popularMoviesResult.message
+                    }
+                    emptyList()
+                }
+                else -> emptyList()
+            }
+            val popularTvList = when (popularTvResult) {
+                is ApiResult.Success -> popularTvResult.data.results
+                is ApiResult.Error -> {
+                    if (popularTvResult.message.contains("not configured").not()) {
+                        hasError = true
+                        errorMsg = popularTvResult.message
+                    }
+                    emptyList()
+                }
+                else -> emptyList()
+            }
+
+            _uiState.update { state ->
+                state.copy(
+                    trending = trendingList,
+                    upcomingMovies = upcomingMoviesList,
+                    upcomingTv = upcomingTvList,
+                    popularMovies = popularMoviesList,
+                    popularTv = popularTvList,
+                    isLoading = false,
+                    errorMessage = if (hasError) errorMsg else state.errorMessage
+                )
+            }
         }
     }
 
