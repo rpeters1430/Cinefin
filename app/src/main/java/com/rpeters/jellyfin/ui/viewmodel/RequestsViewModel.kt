@@ -2,6 +2,7 @@ package com.rpeters.jellyfin.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rpeters.jellyfin.data.model.CinefinPluginCredentialsResponse
 import com.rpeters.jellyfin.data.model.RadarrQualityProfile
 import com.rpeters.jellyfin.data.model.SeerrMediaInfo
 import com.rpeters.jellyfin.data.model.SeerrMediaItem
@@ -30,6 +31,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.onEach
@@ -191,14 +193,20 @@ class RequestsViewModel @Inject constructor(
     }
 
     init {
-        // Check plugin availability (optional — plugin is no longer required)
+        // Check plugin availability (optional — the plugin is only used to import
+        // Seerr/Sonarr/Radarr credentials; all request calls are made directly by the app).
         viewModelScope.launch {
             when (val infoResult = cinefinPluginRepository.getPluginInfo()) {
-                is ApiResult.Success -> _uiState.update {
-                    it.copy(
-                        isPluginConfigured = infoResult.data.isConfigured,
-                        pluginCapabilities = infoResult.data.capabilities,
-                    )
+                is ApiResult.Success -> {
+                    _uiState.update {
+                        it.copy(
+                            isPluginConfigured = infoResult.data.isConfigured,
+                            pluginCapabilities = infoResult.data.capabilities,
+                        )
+                    }
+                    if (infoResult.data.isConfigured) {
+                        syncCredentialsFromPluginIfNeeded()
+                    }
                 }
                 else -> _uiState.update { it.copy(isPluginConfigured = false) }
             }
@@ -226,6 +234,44 @@ class RequestsViewModel @Inject constructor(
                     handleDiscoverResult()
                 }
             }
+        }
+    }
+
+    /**
+     * Imports Seerr/Sonarr/Radarr credentials from the Cinefin plugin into this app's own
+     * preference stores so that request calls can be made directly to those services
+     * (the plugin is only used to simplify entering credentials, not to proxy requests).
+     * Services that are already configured locally are left untouched.
+     */
+    private suspend fun syncCredentialsFromPluginIfNeeded() {
+        val seerr = preferencesRepository.seerrPreferencesFlow.first()
+        val sonarr = arrPreferencesRepository.sonarrPreferencesFlow.first()
+        val radarr = arrPreferencesRepository.radarrPreferencesFlow.first()
+
+        val seerrNeedsSync = !(seerr.isValid && seerr.isEnabled)
+        val sonarrNeedsSync = !(sonarr.isValid && sonarr.isEnabled)
+        val radarrNeedsSync = !(radarr.isValid && radarr.isEnabled)
+        if (!seerrNeedsSync && !sonarrNeedsSync && !radarrNeedsSync) return
+
+        val credentials: CinefinPluginCredentialsResponse = when (val result = cinefinPluginRepository.getCredentials()) {
+            is ApiResult.Success -> result.data
+            else -> return
+        }
+
+        if (sonarrNeedsSync && credentials.sonarr.isConfigured) {
+            arrPreferencesRepository.updateSonarrUrl(credentials.sonarr.url)
+            arrPreferencesRepository.updateSonarrApiKey(credentials.sonarr.apiKey)
+            arrPreferencesRepository.setSonarrEnabled(true)
+        }
+        if (radarrNeedsSync && credentials.radarr.isConfigured) {
+            arrPreferencesRepository.updateRadarrUrl(credentials.radarr.url)
+            arrPreferencesRepository.updateRadarrApiKey(credentials.radarr.apiKey)
+            arrPreferencesRepository.setRadarrEnabled(true)
+        }
+        if (seerrNeedsSync && credentials.overseerr.isConfigured) {
+            preferencesRepository.updateBaseUrl(credentials.overseerr.url)
+            preferencesRepository.updateApiKey(credentials.overseerr.apiKey)
+            preferencesRepository.setEnabled(true)
         }
     }
 
@@ -404,15 +450,6 @@ class RequestsViewModel @Inject constructor(
 
     fun requestMedia(item: SeerrMediaItem) {
         val state = _uiState.value
-        if (state.isPluginConfigured) {
-            if (item.mediaType == "tv") {
-                // Let the user pick seasons even when routing through the plugin.
-                initiateTvSeasonRequest(item, useSeerr = true)
-            } else {
-                requestSeasons(item, null)
-            }
-            return
-        }
         val seerr = seerrPreferences.value
         val useSeerr = seerr.isValid && seerr.isEnabled
         when {
@@ -421,7 +458,7 @@ class RequestsViewModel @Inject constructor(
                     initiateMovieQualityRequest(item)
                 } else {
                     _uiState.update {
-                        it.copy(errorMessage = "No request service configured for movies. Enable Seerr, Radarr, or the Cinefin plugin in Settings → Media Requests.")
+                        it.copy(errorMessage = "No request service configured for movies. Enable Seerr or Radarr in Settings → Media Requests.")
                     }
                 }
             }
@@ -435,7 +472,7 @@ class RequestsViewModel @Inject constructor(
                     initiateTvSeasonRequest(item, useSeerr)
                 } else {
                     _uiState.update {
-                        it.copy(errorMessage = "No request service configured for TV shows. Enable Seerr, Sonarr, or the Cinefin plugin in Settings → Media Requests.")
+                        it.copy(errorMessage = "No request service configured for TV shows. Enable Seerr or Sonarr in Settings → Media Requests.")
                     }
                 }
             }
@@ -472,7 +509,7 @@ class RequestsViewModel @Inject constructor(
             }
             if (seasons.isEmpty()) {
                 // No season metadata available to build a selection dialog — fall back to
-                // requesting everything via the configured backend (plugin/Seerr/Sonarr).
+                // requesting everything via the configured backend (Seerr/Sonarr).
                 _uiState.update { it.copy(requestingMediaId = null) }
                 requestSeasons(item, null)
                 return@launch
@@ -604,9 +641,9 @@ class RequestsViewModel @Inject constructor(
         val tvdbId = item.tvdbId
             ?: _uiState.value.tvAvailabilityByMediaId[item.id]?.tvdbId
         val state = _uiState.value
-        if (!state.isPluginConfigured && !state.isSonarrConfigured) {
+        if (!state.isSonarrConfigured) {
             _uiState.update {
-                it.copy(errorMessage = "Configure Sonarr or the Cinefin plugin in Settings to request individual episodes")
+                it.copy(errorMessage = "Configure Sonarr in Settings to request individual episodes")
             }
             return
         }
@@ -621,12 +658,7 @@ class RequestsViewModel @Inject constructor(
             val episodeKey = "${item.id}:$seasonNumber:$episodeNumber"
             _uiState.update { it.copy(requestingMediaId = item.id, requestingSeasonKey = episodeKey) }
 
-            // Prefer plugin, fall back to direct Sonarr — both are keyed by TVDB ID.
-            val result: ApiResult<*> = if (_uiState.value.isPluginConfigured) {
-                cinefinPluginRepository.requestEpisode(tvdbId.toString(), seasonNumber, episodeNumber)
-            } else {
-                sonarrRepository.requestEpisode(tvdbId, seasonNumber, episodeNumber)
-            }
+            val result = sonarrRepository.requestEpisode(tvdbId, seasonNumber, episodeNumber)
 
             _uiState.update { state ->
                 when (result) {
@@ -653,35 +685,7 @@ class RequestsViewModel @Inject constructor(
             val mediaId = item.tmdbId ?: item.id
             val seerr = seerrPreferences.value
 
-            // 1. Plugin route (if installed and configured on the server)
-            if (_uiState.value.isPluginConfigured) {
-                val result = cinefinPluginRepository.requestMedia(mediaId.toString(), item.mediaType, requestedSeasons)
-                _uiState.update { state ->
-                    when (result) {
-                        is ApiResult.Success -> if (result.data.success) {
-                            state.copy(
-                                requestingMediaId = null,
-                                requestingSeasonKey = null,
-                                successMessage = "Request submitted for ${item.displayTitle}",
-                                results = state.results.map { r ->
-                                    if (r.id == item.id) r.copy(mediaInfo = updatedMediaInfo(r, null)) else r
-                                },
-                            )
-                        } else {
-                            state.copy(
-                                requestingMediaId = null,
-                                requestingSeasonKey = null,
-                                errorMessage = result.data.message.ifBlank { "Failed to request ${item.displayTitle}" },
-                            )
-                        }
-                        is ApiResult.Error -> state.copy(requestingMediaId = null, requestingSeasonKey = null, errorMessage = result.message)
-                        else -> state.copy(requestingMediaId = null, requestingSeasonKey = null)
-                    }
-                }
-                return@launch
-            }
-
-            // 2. Seerr/Overseerr direct (preferred when no plugin)
+            // 1. Seerr/Overseerr direct (preferred)
             if (seerr.isValid && seerr.isEnabled) {
                 val request = if (item.mediaType == "tv") {
                     val seasons = loadRequestableSeasons(
@@ -732,13 +736,13 @@ class RequestsViewModel @Inject constructor(
                 return@launch
             }
 
-            // 3. Direct Sonarr (TV only) — movies are handled via initiateMovieQualityRequest
+            // 2. Direct Sonarr (TV only) — movies are handled via initiateMovieQualityRequest
             // before requestSeasons is ever reached, so this branch only needs to cover TV.
             val tvdbId = item.tvdbId
             val directResult: ApiResult<Unit> = if (item.mediaType == "tv" && tvdbId != null) {
                 sonarrRepository.addSeries(tvdbId, requestedSeasons)
             } else {
-                ApiResult.Error("No request service configured. Enable Seerr, Sonarr, or the Cinefin plugin in Settings → Media Requests.")
+                ApiResult.Error("No request service configured. Enable Seerr or Sonarr in Settings → Media Requests.")
             }
 
             _uiState.update { state ->
