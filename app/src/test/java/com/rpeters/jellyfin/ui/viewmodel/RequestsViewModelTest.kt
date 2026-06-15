@@ -1,7 +1,6 @@
 package com.rpeters.jellyfin.ui.viewmodel
 
 import com.rpeters.jellyfin.data.model.CinefinPluginInfoResponse
-import com.rpeters.jellyfin.data.model.CinefinPluginRequestResponse
 import com.rpeters.jellyfin.data.model.SeerrExternalIds
 import com.rpeters.jellyfin.data.model.SeerrEpisode
 import com.rpeters.jellyfin.data.model.SeerrMediaItem
@@ -83,6 +82,7 @@ class RequestsViewModelTest {
         coEvery { cinefinPluginRepository.getPluginInfo() } returns ApiResult.Success(
             CinefinPluginInfoResponse(version = "1.0.0", capabilities = emptyList(), isConfigured = true),
         )
+        coEvery { cinefinPluginRepository.getCredentials() } returns ApiResult.Error("Plugin not configured")
 
         viewModel = RequestsViewModel(
             seerrRepository = seerrRepository,
@@ -102,7 +102,7 @@ class RequestsViewModelTest {
     }
 
     @Test
-    fun requestSeason_pluginConfiguredWithTmdbId_forwardsSeasonListAndShowsSuccess() = runTest(testDispatcher) {
+    fun requestSeason_seerrNotConfigured_requestsSonarrDirectlyByTvdbId() = runTest(testDispatcher) {
         val item = SeerrMediaItem(
             id = 101,
             mediaType = "tv",
@@ -110,35 +110,34 @@ class RequestsViewModelTest {
             tvdbId = 303,
             name = "Test Show",
         )
-        coEvery { cinefinPluginRepository.requestMedia("202", "tv", listOf(2)) } returns ApiResult.Success(
-            CinefinPluginRequestResponse(success = true, message = "ok"),
-        )
+        coEvery { sonarrRepository.addSeries(303, listOf(2)) } returns ApiResult.Success(Unit)
 
         advanceUntilIdle()
         viewModel.requestSeason(item, 2)
         advanceUntilIdle()
 
-        coVerify(exactly = 1) { cinefinPluginRepository.requestMedia("202", "tv", listOf(2)) }
+        coVerify(exactly = 1) { sonarrRepository.addSeries(303, listOf(2)) }
         assertEquals("Request submitted for Test Show", viewModel.uiState.value.successMessage)
+        coVerify(exactly = 0) { cinefinPluginRepository.requestMedia(any(), any(), any()) }
     }
 
     @Test
-    fun requestSeason_pluginReturnsSuccessFalse_showsErrorMessage() = runTest(testDispatcher) {
+    fun requestSeason_noTvdbIdAndSeerrNotConfigured_showsErrorMessage() = runTest(testDispatcher) {
         val item = SeerrMediaItem(
             id = 101,
             mediaType = "tv",
             tmdbId = 202,
             name = "Test Show",
         )
-        coEvery { cinefinPluginRepository.requestMedia("202", "tv", listOf(2)) } returns ApiResult.Success(
-            CinefinPluginRequestResponse(success = false, message = "Plugin rejected request"),
-        )
 
         advanceUntilIdle()
         viewModel.requestSeason(item, 2)
         advanceUntilIdle()
 
-        assertEquals("Plugin rejected request", viewModel.uiState.value.errorMessage)
+        assertEquals(
+            "No request service configured. Enable Seerr or Sonarr in Settings → Media Requests.",
+            viewModel.uiState.value.errorMessage,
+        )
         assertNull(viewModel.uiState.value.successMessage)
     }
 
