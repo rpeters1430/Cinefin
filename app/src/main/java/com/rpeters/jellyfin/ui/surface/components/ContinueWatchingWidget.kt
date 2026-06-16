@@ -10,8 +10,6 @@ import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
-import androidx.glance.appwidget.lazy.LazyColumn
-import androidx.glance.appwidget.lazy.items
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
 import androidx.glance.layout.Alignment
@@ -30,7 +28,6 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.compose.ui.graphics.Color
 import com.rpeters.jellyfin.R
-import org.jellyfin.sdk.model.api.BaseItemDto
 
 class ContinueWatchingWidget : GlanceAppWidget() {
 
@@ -74,18 +71,15 @@ class ContinueWatchingWidget : GlanceAppWidget() {
 
             Spacer(modifier = GlanceModifier.height(12.dp))
 
-            // Placeholder list
-            LazyColumn(modifier = GlanceModifier.fillMaxSize()) {
-                item {
-                    Text(
-                        text = "Sign in to see your media",
-                        style = TextStyle(
-                            fontSize = 14.sp,
-                            color = androidx.glance.unit.ColorProvider(Color(0xFF888888))
-                        ),
-                        modifier = GlanceModifier.padding(vertical = 8.dp)
-                    )
-                }
+            Column(modifier = GlanceModifier.fillMaxSize()) {
+                Text(
+                    text = "Sign in to see your media",
+                    style = TextStyle(
+                        fontSize = 14.sp,
+                        color = androidx.glance.unit.ColorProvider(Color(0xFF888888))
+                    ),
+                    modifier = GlanceModifier.padding(vertical = 8.dp)
+                )
             }
         }
     }
