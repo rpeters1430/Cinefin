@@ -322,12 +322,6 @@ class RequestsViewModel @Inject constructor(
     }
 
     private suspend fun loadDiscoverSectionsInternal() {
-        val prefs = seerrPreferences.value
-        if (!prefs.isValid || !prefs.isEnabled) {
-            _uiState.update { it.copy(isLoading = false) }
-            return
-        }
-
         coroutineScope {
             val trendingDeferred = async { seerrRepository.getTrending() }
             val upcomingMoviesDeferred = async { seerrRepository.getUpcomingMovies() }
@@ -345,7 +339,7 @@ class RequestsViewModel @Inject constructor(
             var errorMsg: String? = null
 
             val trendingList = when (trendingResult) {
-                is ApiResult.Success -> trendingResult.data.results
+                is ApiResult.Success -> trendingResult.data.results.filterRequestableDiscoverItems()
                 is ApiResult.Error -> {
                     if (trendingResult.message.contains("not configured").not()) {
                         hasError = true
@@ -356,7 +350,7 @@ class RequestsViewModel @Inject constructor(
                 else -> emptyList()
             }
             val upcomingMoviesList = when (upcomingMoviesResult) {
-                is ApiResult.Success -> upcomingMoviesResult.data.results
+                is ApiResult.Success -> upcomingMoviesResult.data.results.filterRequestableDiscoverItems()
                 is ApiResult.Error -> {
                     if (upcomingMoviesResult.message.contains("not configured").not()) {
                         hasError = true
@@ -367,7 +361,7 @@ class RequestsViewModel @Inject constructor(
                 else -> emptyList()
             }
             val upcomingTvList = when (upcomingTvResult) {
-                is ApiResult.Success -> upcomingTvResult.data.results
+                is ApiResult.Success -> upcomingTvResult.data.results.filterRequestableDiscoverItems()
                 is ApiResult.Error -> {
                     if (upcomingTvResult.message.contains("not configured").not()) {
                         hasError = true
@@ -378,7 +372,7 @@ class RequestsViewModel @Inject constructor(
                 else -> emptyList()
             }
             val popularMoviesList = when (popularMoviesResult) {
-                is ApiResult.Success -> popularMoviesResult.data.results
+                is ApiResult.Success -> popularMoviesResult.data.results.filterRequestableDiscoverItems()
                 is ApiResult.Error -> {
                     if (popularMoviesResult.message.contains("not configured").not()) {
                         hasError = true
@@ -389,7 +383,7 @@ class RequestsViewModel @Inject constructor(
                 else -> emptyList()
             }
             val popularTvList = when (popularTvResult) {
-                is ApiResult.Success -> popularTvResult.data.results
+                is ApiResult.Success -> popularTvResult.data.results.filterRequestableDiscoverItems()
                 is ApiResult.Error -> {
                     if (popularTvResult.message.contains("not configured").not()) {
                         hasError = true
@@ -738,7 +732,7 @@ class RequestsViewModel @Inject constructor(
 
             // 2. Direct Sonarr (TV only) — movies are handled via initiateMovieQualityRequest
             // before requestSeasons is ever reached, so this branch only needs to cover TV.
-            val tvdbId = item.tvdbId
+            val tvdbId = resolveTvdbId(item)
             val directResult: ApiResult<Unit> = if (item.mediaType == "tv" && tvdbId != null) {
                 sonarrRepository.addSeries(tvdbId, requestedSeasons)
             } else {
@@ -787,6 +781,9 @@ class RequestsViewModel @Inject constructor(
             is ApiResult.Loading -> emptyList()
         }
     }
+
+    private fun List<SeerrMediaItem>.filterRequestableDiscoverItems(): List<SeerrMediaItem> =
+        filter { item -> item.mediaInfo?.status != SEERR_STATUS_AVAILABLE }
 
     private suspend fun buildTvAvailability(item: SeerrMediaItem, localSeries: BaseItemDto): TvAvailability? {
         val mediaId = item.tmdbId ?: item.id

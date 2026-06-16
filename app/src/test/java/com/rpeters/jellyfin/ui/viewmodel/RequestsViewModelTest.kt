@@ -3,6 +3,7 @@ package com.rpeters.jellyfin.ui.viewmodel
 import com.rpeters.jellyfin.data.model.CinefinPluginInfoResponse
 import com.rpeters.jellyfin.data.model.SeerrExternalIds
 import com.rpeters.jellyfin.data.model.SeerrEpisode
+import com.rpeters.jellyfin.data.model.SeerrMediaInfo
 import com.rpeters.jellyfin.data.model.SeerrMediaItem
 import com.rpeters.jellyfin.data.model.SeerrSeason
 import com.rpeters.jellyfin.data.model.SeerrSearchResult
@@ -24,6 +25,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -66,6 +68,9 @@ class RequestsViewModelTest {
     private lateinit var cinefinPluginRepository: CinefinPluginRepository
 
     private val testDispatcher = StandardTestDispatcher()
+    private lateinit var seerrPreferencesFlow: MutableStateFlow<SeerrPreferences>
+    private lateinit var sonarrPreferencesFlow: MutableStateFlow<com.rpeters.jellyfin.data.preferences.SonarrPreferences>
+    private lateinit var radarrPreferencesFlow: MutableStateFlow<com.rpeters.jellyfin.data.preferences.RadarrPreferences>
     private lateinit var viewModel: RequestsViewModel
 
     @Before
@@ -73,9 +78,13 @@ class RequestsViewModelTest {
         MockKAnnotations.init(this, relaxUnitFun = true)
         Dispatchers.setMain(testDispatcher)
 
-        coEvery { preferencesRepository.seerrPreferencesFlow } returns MutableStateFlow(SeerrPreferences.DEFAULT)
-        coEvery { arrPreferencesRepository.sonarrPreferencesFlow } returns MutableStateFlow(com.rpeters.jellyfin.data.preferences.SonarrPreferences.DEFAULT)
-        coEvery { arrPreferencesRepository.radarrPreferencesFlow } returns MutableStateFlow(com.rpeters.jellyfin.data.preferences.RadarrPreferences.DEFAULT)
+        seerrPreferencesFlow = MutableStateFlow(SeerrPreferences.DEFAULT)
+        sonarrPreferencesFlow = MutableStateFlow(com.rpeters.jellyfin.data.preferences.SonarrPreferences.DEFAULT)
+        radarrPreferencesFlow = MutableStateFlow(com.rpeters.jellyfin.data.preferences.RadarrPreferences.DEFAULT)
+
+        coEvery { preferencesRepository.seerrPreferencesFlow } returns seerrPreferencesFlow
+        coEvery { arrPreferencesRepository.sonarrPreferencesFlow } returns sonarrPreferencesFlow
+        coEvery { arrPreferencesRepository.radarrPreferencesFlow } returns radarrPreferencesFlow
         coEvery { seerrRepository.getTrending(any()) } returns ApiResult.Success(
             SeerrSearchResult(page = 1, totalPages = 1, totalResults = 0, results = emptyList()),
         )
@@ -129,6 +138,7 @@ class RequestsViewModelTest {
             tmdbId = 202,
             name = "Test Show",
         )
+        coEvery { seerrRepository.getTvDetails(202) } returns ApiResult.Error("Seerr is not configured")
 
         advanceUntilIdle()
         viewModel.requestSeason(item, 2)
@@ -163,6 +173,102 @@ class RequestsViewModelTest {
         coVerify(exactly = 1) { sonarrRepository.addSeries(303, listOf(2), 7) }
         assertEquals("Request submitted for Test Show", viewModel.uiState.value.successMessage)
         assertNull(viewModel.uiState.value.errorMessage)
+    }
+
+    @Test
+    fun requestSeason_tvdbMissing_fetchesFromSeerrDetailsAndRequestsSonarr() = runTest(testDispatcher) {
+        val item = SeerrMediaItem(
+            id = 101,
+            mediaType = "tv",
+            tmdbId = 202,
+            tvdbId = null,
+            name = "Test Show",
+        )
+        coEvery { seerrRepository.getTvDetails(202) } returns ApiResult.Success(
+            SeerrTvDetails(externalIds = SeerrExternalIds(tvdbId = 303)),
+        )
+        coEvery { sonarrRepository.addSeries(303, listOf(2)) } returns ApiResult.Success(Unit)
+
+        advanceUntilIdle()
+        viewModel.requestSeason(item, 2)
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { seerrRepository.getTvDetails(202) }
+        coVerify(exactly = 1) { sonarrRepository.addSeries(303, listOf(2)) }
+        assertEquals("Request submitted for Test Show", viewModel.uiState.value.successMessage)
+        assertNull(viewModel.uiState.value.errorMessage)
+    }
+
+    @Test
+    fun discoverySections_excludeAlreadyAvailableItems() = runTest(testDispatcher) {
+        val missingMovie = SeerrMediaItem(
+            id = 101,
+            mediaType = "movie",
+            tmdbId = 201,
+            title = "Missing Movie",
+            mediaInfo = null,
+        )
+        val availableMovie = SeerrMediaItem(
+            id = 102,
+            mediaType = "movie",
+            tmdbId = 202,
+            title = "Available Movie",
+            mediaInfo = SeerrMediaInfo(status = 5),
+        )
+        val missingTv = SeerrMediaItem(
+            id = 103,
+            mediaType = "tv",
+            tmdbId = 203,
+            name = "Missing Show",
+            mediaInfo = SeerrMediaInfo(status = 1),
+        )
+        val availableTv = SeerrMediaItem(
+            id = 104,
+            mediaType = "tv",
+            tmdbId = 204,
+            name = "Available Show",
+            mediaInfo = SeerrMediaInfo(status = 5),
+        )
+
+        coEvery { seerrRepository.getTrending(any()) } returns ApiResult.Success(
+            SeerrSearchResult(page = 1, totalPages = 1, totalResults = 2, results = listOf(missingMovie, availableMovie)),
+        )
+        coEvery { seerrRepository.getUpcomingMovies(any()) } returns ApiResult.Success(
+            SeerrSearchResult(page = 1, totalPages = 1, totalResults = 2, results = listOf(availableMovie, missingMovie)),
+        )
+        coEvery { seerrRepository.getUpcomingTv(any()) } returns ApiResult.Success(
+            SeerrSearchResult(page = 1, totalPages = 1, totalResults = 2, results = listOf(availableTv, missingTv)),
+        )
+        coEvery { seerrRepository.getPopularMovies(any()) } returns ApiResult.Success(
+            SeerrSearchResult(page = 1, totalPages = 1, totalResults = 1, results = listOf(availableMovie)),
+        )
+        coEvery { seerrRepository.getPopularTv(any()) } returns ApiResult.Success(
+            SeerrSearchResult(page = 1, totalPages = 1, totalResults = 1, results = listOf(missingTv)),
+        )
+
+        seerrPreferencesFlow.value = SeerrPreferences(
+            baseUrl = "https://seerr.example.com",
+            apiKey = "api-key",
+            isEnabled = true,
+        )
+        viewModel = RequestsViewModel(
+            seerrRepository = seerrRepository,
+            sonarrRepository = sonarrRepository,
+            radarrRepository = radarrRepository,
+            jellyfinSearchRepository = jellyfinSearchRepository,
+            jellyfinMediaRepository = jellyfinMediaRepository,
+            preferencesRepository = preferencesRepository,
+            arrPreferencesRepository = arrPreferencesRepository,
+            cinefinPluginRepository = cinefinPluginRepository,
+        )
+        advanceTimeBy(500)
+        advanceUntilIdle()
+
+        assertEquals(listOf(missingMovie), viewModel.uiState.value.trending)
+        assertEquals(listOf(missingMovie), viewModel.uiState.value.upcomingMovies)
+        assertEquals(listOf(missingTv), viewModel.uiState.value.upcomingTv)
+        assertEquals(emptyList<SeerrMediaItem>(), viewModel.uiState.value.popularMovies)
+        assertEquals(listOf(missingTv), viewModel.uiState.value.popularTv)
     }
 
     @Test
