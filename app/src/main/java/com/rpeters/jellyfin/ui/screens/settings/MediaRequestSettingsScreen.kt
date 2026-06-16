@@ -64,6 +64,7 @@ fun MediaRequestSettingsScreen(
     val radarrPrefs by viewModel.radarrPreferences.collectAsStateWithLifecycle()
     val radarrTestState by viewModel.radarrTestState.collectAsStateWithLifecycle()
     val credentialImportState by viewModel.credentialImportState.collectAsStateWithLifecycle()
+    val isCurrentUserAdmin by viewModel.isCurrentUserAdmin.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -90,7 +91,7 @@ fun MediaRequestSettingsScreen(
             ) {
                 ExpressiveFilledButton(
                     onClick = viewModel::importCredentialsFromPlugin,
-                    enabled = credentialImportState !is CredentialImportState.Importing,
+                    enabled = isCurrentUserAdmin && credentialImportState !is CredentialImportState.Importing,
                 ) {
                     if (credentialImportState is CredentialImportState.Importing) {
                         CircularProgressIndicator(
@@ -103,6 +104,14 @@ fun MediaRequestSettingsScreen(
                     } else {
                         Text("Import from Jellyfin")
                     }
+                }
+
+                if (!isCurrentUserAdmin) {
+                    Text(
+                        text = "Requires a Jellyfin administrator account",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
                 }
 
                 when (val state = credentialImportState) {

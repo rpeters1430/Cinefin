@@ -17,6 +17,7 @@ data class JellyfinServer(
     // Normalized server URL for credential lookups
     @SerialName("originalServerUrl")
     val normalizedUrl: String? = null,
+    val isAdministrator: Boolean = false,
 )
 
 @Serializable

@@ -282,6 +282,7 @@ class JellyfinAuthRepository @Inject constructor(
             accessToken = authResult.accessToken,
             loginTimestamp = System.currentTimeMillis(),
             normalizedUrl = normalizedServerUrl,
+            isAdministrator = authResult.user?.policy?.isAdministrator == true,
         )
 
         _currentServer.update { server }
