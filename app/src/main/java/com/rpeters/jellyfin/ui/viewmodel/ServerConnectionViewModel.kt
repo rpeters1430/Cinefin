@@ -67,6 +67,7 @@ object PreferencesKeys {
     val REMEMBER_LOGIN = booleanPreferencesKey("remember_login")
     val BIOMETRIC_AUTH_ENABLED = booleanPreferencesKey("biometric_auth_enabled") // New preference
     val BIOMETRIC_REQUIRE_STRONG = booleanPreferencesKey("biometric_require_strong")
+    val SESSION_IS_ADMIN = booleanPreferencesKey("session_is_admin")
 }
 
 @HiltViewModel
@@ -185,6 +186,7 @@ class ServerConnectionViewModel @Inject constructor(
                     // this, getImageUrl() can produce double-slash URLs (e.g. "server//Items/…")
                     // that the server rejects with 404, causing all images to fail after upgrade.
                     val normalizedSavedUrl = normalizeServerUrl(savedServerUrl)
+                    val savedIsAdmin = preferences[PreferencesKeys.SESSION_IS_ADMIN] ?: false
                     val restoredServer = JellyfinServer(
                         id = savedSessionServerId,
                         name = savedSessionServerName ?: savedUsername,
@@ -195,6 +197,7 @@ class ServerConnectionViewModel @Inject constructor(
                         accessToken = savedSessionToken,
                         loginTimestamp = restoredLoginTimestamp,
                         normalizedUrl = normalizedSavedUrl,
+                        isAdministrator = savedIsAdmin,
                     )
                     authRepository.restorePersistedSession(restoredServer)
                     _connectionState.value = _connectionState.value.copy(
@@ -596,6 +599,7 @@ class ServerConnectionViewModel @Inject constructor(
                 preferences.remove(PreferencesKeys.SESSION_SERVER_ID)
                 preferences.remove(PreferencesKeys.SESSION_SERVER_NAME)
                 preferences.remove(PreferencesKeys.SESSION_LOGIN_TIMESTAMP)
+                preferences.remove(PreferencesKeys.SESSION_IS_ADMIN)
             }
             if (currentState.savedServerUrl.isNotBlank() && currentState.savedUsername.isNotBlank()) {
                 secureCredentialManager.clearPassword(currentState.savedServerUrl, currentState.savedUsername)
@@ -616,6 +620,7 @@ class ServerConnectionViewModel @Inject constructor(
                 preferences.remove(PreferencesKeys.SESSION_SERVER_ID)
                 preferences.remove(PreferencesKeys.SESSION_SERVER_NAME)
                 preferences.remove(PreferencesKeys.SESSION_LOGIN_TIMESTAMP)
+                preferences.remove(PreferencesKeys.SESSION_IS_ADMIN)
             }
         }
     }
@@ -635,6 +640,7 @@ class ServerConnectionViewModel @Inject constructor(
                 preferences[PreferencesKeys.SESSION_SERVER_ID] = server.id
                 preferences[PreferencesKeys.SESSION_SERVER_NAME] = server.name
                 preferences[PreferencesKeys.SESSION_LOGIN_TIMESTAMP] = server.loginTimestamp ?: System.currentTimeMillis()
+                preferences[PreferencesKeys.SESSION_IS_ADMIN] = server.isAdministrator
             }
         }
     }

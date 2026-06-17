@@ -86,8 +86,13 @@ class MediaRequestSettingsViewModel @Inject constructor(
 
                 is ApiResult.Error -> {
                     val message = when (result.errorType) {
-                        ErrorType.UNAUTHORIZED, ErrorType.FORBIDDEN ->
-                            "Administrator access is required to import plugin credentials"
+                        ErrorType.UNAUTHORIZED, ErrorType.FORBIDDEN -> {
+                            if (isCurrentUserAdmin.value) {
+                                "Session expired or access denied. Please try logging in again."
+                            } else {
+                                "Administrator access is required to import plugin credentials"
+                            }
+                        }
                         else -> result.message
                     }
                     _credentialImportState.value = CredentialImportState.Failure(message)
