@@ -6,6 +6,7 @@ import com.rpeters.jellyfin.data.model.CinefinPluginMediaRequest
 import com.rpeters.jellyfin.data.model.CinefinPluginRequestResponse
 import com.rpeters.jellyfin.data.model.CinefinPluginCredentialsResponse
 import com.rpeters.jellyfin.data.model.CinefinPluginTestRequest
+import com.rpeters.jellyfin.data.model.CinefinPluginConfigurationRequest
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.data.repository.common.ErrorType
 import com.rpeters.jellyfin.utils.SecureLogger
@@ -211,6 +212,17 @@ class CinefinPluginRepository(
             val body = json.parseToJsonElement(rawBody)
             (body as? JsonObject)?.get("message")?.jsonPrimitive?.content
         }.getOrNull() ?: rawBody
+    }
+
+    suspend fun updateConfiguration(allowNonAdminImports: Boolean): ApiResult<CinefinPluginRequestResponse> {
+        val service = getApiService() ?: return notConfiguredError()
+        val request = CinefinPluginConfigurationRequest(allowNonAdminImports)
+        return try {
+            handleResponse(service.updateConfiguration(request))
+        } catch (e: Exception) {
+            SecureLogger.e(TAG, "Failed to update plugin configuration", e)
+            ApiResult.Error("Network error updating plugin configuration", e, ErrorType.NETWORK)
+        }
     }
 
     companion object {

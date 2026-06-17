@@ -7,6 +7,12 @@ data class CinefinPluginInfoResponse(
     val version: String,
     val capabilities: List<String>,
     val isConfigured: Boolean,
+    val allowNonAdminImports: Boolean = false,
+)
+
+@Serializable
+data class CinefinPluginConfigurationRequest(
+    val allowNonAdminImports: Boolean,
 )
 
 @Serializable

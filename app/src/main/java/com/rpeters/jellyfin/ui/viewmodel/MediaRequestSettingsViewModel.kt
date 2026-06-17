@@ -42,10 +42,53 @@ class MediaRequestSettingsViewModel @Inject constructor(
     private val _credentialImportState = MutableStateFlow<CredentialImportState>(CredentialImportState.Idle)
     val credentialImportState: StateFlow<CredentialImportState> = _credentialImportState.asStateFlow()
 
+    private val _allowNonAdminImports = MutableStateFlow(false)
+    val allowNonAdminImports: StateFlow<Boolean> = _allowNonAdminImports.asStateFlow()
+
+    private val _isPluginConfigured = MutableStateFlow(false)
+    val isPluginConfigured: StateFlow<Boolean> = _isPluginConfigured.asStateFlow()
+
+    init {
+        fetchPluginInfo()
+    }
+
+    fun fetchPluginInfo() {
+        viewModelScope.launch {
+            when (val result = cinefinPluginRepository.getPluginInfo()) {
+                is ApiResult.Success -> {
+                    _isPluginConfigured.value = result.data.isConfigured
+                    _allowNonAdminImports.value = result.data.allowNonAdminImports
+                }
+                else -> {
+                    _isPluginConfigured.value = false
+                    _allowNonAdminImports.value = false
+                }
+            }
+        }
+    }
+
+    fun setAllowNonAdminImports(enabled: Boolean) {
+        viewModelScope.launch {
+            val previous = _allowNonAdminImports.value
+            _allowNonAdminImports.value = enabled
+            when (val result = cinefinPluginRepository.updateConfiguration(enabled)) {
+                is ApiResult.Success -> {
+                    // Stay enabled
+                }
+                is ApiResult.Error -> {
+                    // Revert
+                    _allowNonAdminImports.value = previous
+                    _credentialImportState.value = CredentialImportState.Failure(result.message)
+                }
+                else -> {}
+            }
+        }
+    }
+
     fun importCredentialsFromPlugin() {
         if (_credentialImportState.value is CredentialImportState.Importing) return
 
-        if (authRepository.currentServer.value?.isAdministrator != true) {
+        if (authRepository.currentServer.value?.isAdministrator != true && !_allowNonAdminImports.value) {
             _credentialImportState.value =
                 CredentialImportState.Failure("Administrator access is required to import plugin credentials")
             return
@@ -89,6 +132,8 @@ class MediaRequestSettingsViewModel @Inject constructor(
                         ErrorType.UNAUTHORIZED, ErrorType.FORBIDDEN -> {
                             if (isCurrentUserAdmin.value) {
                                 "Session expired or access denied. Please try logging in again."
+                            } else if (allowNonAdminImports.value) {
+                                "Access denied. The administrator may have revoked permission to import credentials."
                             } else {
                                 "Administrator access is required to import plugin credentials"
                             }

@@ -65,6 +65,8 @@ fun MediaRequestSettingsScreen(
     val radarrTestState by viewModel.radarrTestState.collectAsStateWithLifecycle()
     val credentialImportState by viewModel.credentialImportState.collectAsStateWithLifecycle()
     val isCurrentUserAdmin by viewModel.isCurrentUserAdmin.collectAsStateWithLifecycle()
+    val allowNonAdminImports by viewModel.allowNonAdminImports.collectAsStateWithLifecycle()
+    val isPluginConfigured by viewModel.isPluginConfigured.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -91,7 +93,7 @@ fun MediaRequestSettingsScreen(
             ) {
                 ExpressiveFilledButton(
                     onClick = viewModel::importCredentialsFromPlugin,
-                    enabled = isCurrentUserAdmin && credentialImportState !is CredentialImportState.Importing,
+                    enabled = (isCurrentUserAdmin || allowNonAdminImports) && credentialImportState !is CredentialImportState.Importing,
                 ) {
                     if (credentialImportState is CredentialImportState.Importing) {
                         CircularProgressIndicator(
@@ -106,10 +108,16 @@ fun MediaRequestSettingsScreen(
                     }
                 }
 
-                if (!isCurrentUserAdmin) {
+                if (!isCurrentUserAdmin && !allowNonAdminImports) {
                     Text(
                         text = "Requires a Jellyfin administrator account",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                } else if (!isCurrentUserAdmin && allowNonAdminImports) {
+                    Text(
+                        text = "Authorized by Jellyfin administrator",
+                        color = MaterialTheme.colorScheme.primary,
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
@@ -128,6 +136,16 @@ fun MediaRequestSettingsScreen(
                     )
 
                     else -> Unit
+                }
+
+                if (isCurrentUserAdmin && isPluginConfigured) {
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                    ExpressiveSwitchListItem(
+                        title = "Allow non-admins to import credentials",
+                        subtitle = "Let non-admin users sync these API keys onto their own devices.",
+                        checked = allowNonAdminImports,
+                        onCheckedChange = viewModel::setAllowNonAdminImports
+                    )
                 }
             }
 
