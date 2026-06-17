@@ -10,7 +10,6 @@ import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
-import androidx.glance.appwidget.lazy.LazyColumn
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
 import androidx.glance.layout.Alignment
@@ -69,17 +68,15 @@ class RecentlyAddedWidget : GlanceAppWidget() {
 
             Spacer(modifier = GlanceModifier.height(12.dp))
 
-            LazyColumn(modifier = GlanceModifier.fillMaxSize()) {
-                item {
-                    Text(
-                        text = "New movies and shows will appear here",
-                        style = TextStyle(
-                            fontSize = 14.sp,
-                            color = androidx.glance.unit.ColorProvider(Color(0xFF888888))
-                        ),
-                        modifier = GlanceModifier.padding(vertical = 8.dp)
-                    )
-                }
+            Column(modifier = GlanceModifier.fillMaxSize()) {
+                Text(
+                    text = "New movies and shows will appear here",
+                    style = TextStyle(
+                        fontSize = 14.sp,
+                        color = androidx.glance.unit.ColorProvider(Color(0xFF888888))
+                    ),
+                    modifier = GlanceModifier.padding(vertical = 8.dp)
+                )
             }
         }
     }

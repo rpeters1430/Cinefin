@@ -7,16 +7,19 @@ import com.rpeters.jellyfin.data.preferences.RadarrPreferences
 import com.rpeters.jellyfin.data.preferences.SeerrPreferences
 import com.rpeters.jellyfin.data.preferences.SeerrPreferencesRepository
 import com.rpeters.jellyfin.data.preferences.SonarrPreferences
+import com.rpeters.jellyfin.data.repository.IJellyfinAuthRepository
 import com.rpeters.jellyfin.data.repository.RadarrRepository
 import com.rpeters.jellyfin.data.repository.SonarrRepository
 import com.rpeters.jellyfin.data.repository.CinefinPluginRepository
 import com.rpeters.jellyfin.data.repository.SeerrRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
+import com.rpeters.jellyfin.data.repository.common.ErrorType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -29,13 +32,24 @@ class MediaRequestSettingsViewModel @Inject constructor(
     private val sonarrRepository: SonarrRepository,
     private val radarrRepository: RadarrRepository,
     private val cinefinPluginRepository: CinefinPluginRepository,
+    private val authRepository: IJellyfinAuthRepository,
 ) : ViewModel() {
+
+    val isCurrentUserAdmin: StateFlow<Boolean> = authRepository.currentServer
+        .map { it?.isAdministrator == true }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     private val _credentialImportState = MutableStateFlow<CredentialImportState>(CredentialImportState.Idle)
     val credentialImportState: StateFlow<CredentialImportState> = _credentialImportState.asStateFlow()
 
     fun importCredentialsFromPlugin() {
         if (_credentialImportState.value is CredentialImportState.Importing) return
+
+        if (authRepository.currentServer.value?.isAdministrator != true) {
+            _credentialImportState.value =
+                CredentialImportState.Failure("Administrator access is required to import plugin credentials")
+            return
+        }
 
         viewModelScope.launch {
             _credentialImportState.value = CredentialImportState.Importing
@@ -71,7 +85,17 @@ class MediaRequestSettingsViewModel @Inject constructor(
                 }
 
                 is ApiResult.Error -> {
-                    _credentialImportState.value = CredentialImportState.Failure(result.message)
+                    val message = when (result.errorType) {
+                        ErrorType.UNAUTHORIZED, ErrorType.FORBIDDEN -> {
+                            if (isCurrentUserAdmin.value) {
+                                "Session expired or access denied. Please try logging in again."
+                            } else {
+                                "Administrator access is required to import plugin credentials"
+                            }
+                        }
+                        else -> result.message
+                    }
+                    _credentialImportState.value = CredentialImportState.Failure(message)
                 }
 
                 is ApiResult.Loading -> {

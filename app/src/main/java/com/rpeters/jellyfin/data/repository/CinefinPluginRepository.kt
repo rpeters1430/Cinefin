@@ -11,6 +11,7 @@ import com.rpeters.jellyfin.data.repository.common.ErrorType
 import com.rpeters.jellyfin.utils.SecureLogger
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -75,6 +76,16 @@ class CinefinPluginRepository(
         return retryNetworkCall {
             try {
                 handleResponse(service.getCredentials())
+            } catch (e: SerializationException) {
+                SecureLogger.e(TAG, "Failed to parse plugin credentials response", e)
+                val isAdmin = authRepository.currentServer.value?.isAdministrator == true
+                val message = if (isAdmin) {
+                    "Failed to parse plugin credentials. Please ensure the Cinefin plugin is up to date."
+                } else {
+                    "Administrator access is required to import plugin credentials"
+                }
+                val errorType = if (isAdmin) ErrorType.SERVER_ERROR else ErrorType.FORBIDDEN
+                ApiResult.Error(message, e, errorType)
             } catch (e: Exception) {
                 SecureLogger.e(TAG, "Failed to get plugin credentials", e)
                 ApiResult.Error("Network error syncing plugin credentials", e, ErrorType.NETWORK)
