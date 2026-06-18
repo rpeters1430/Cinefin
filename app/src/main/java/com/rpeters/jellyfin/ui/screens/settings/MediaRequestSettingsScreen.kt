@@ -67,6 +67,7 @@ fun MediaRequestSettingsScreen(
     val isCurrentUserAdmin by viewModel.isCurrentUserAdmin.collectAsStateWithLifecycle()
     val allowNonAdminImports by viewModel.allowNonAdminImports.collectAsStateWithLifecycle()
     val isPluginConfigured by viewModel.isPluginConfigured.collectAsStateWithLifecycle()
+    val isPluginConfigurationSupported by viewModel.isPluginConfigurationSupported.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -93,7 +94,8 @@ fun MediaRequestSettingsScreen(
             ) {
                 ExpressiveFilledButton(
                     onClick = viewModel::importCredentialsFromPlugin,
-                    enabled = (isCurrentUserAdmin || allowNonAdminImports) && credentialImportState !is CredentialImportState.Importing,
+                    enabled = (isCurrentUserAdmin || allowNonAdminImports || isPluginConfigured) &&
+                        credentialImportState !is CredentialImportState.Importing,
                 ) {
                     if (credentialImportState is CredentialImportState.Importing) {
                         CircularProgressIndicator(
@@ -108,15 +110,15 @@ fun MediaRequestSettingsScreen(
                     }
                 }
 
-                if (!isCurrentUserAdmin && !allowNonAdminImports) {
+                if (!isCurrentUserAdmin && !allowNonAdminImports && !isPluginConfigured) {
                     Text(
                         text = "Requires a Jellyfin administrator account",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         style = MaterialTheme.typography.bodySmall,
                     )
-                } else if (!isCurrentUserAdmin && allowNonAdminImports) {
+                } else if (!isCurrentUserAdmin && (allowNonAdminImports || isPluginConfigured)) {
                     Text(
-                        text = "Authorized by Jellyfin administrator",
+                        text = "Plugin permissions are checked by Jellyfin",
                         color = MaterialTheme.colorScheme.primary,
                         style = MaterialTheme.typography.bodySmall,
                     )
@@ -138,7 +140,7 @@ fun MediaRequestSettingsScreen(
                     else -> Unit
                 }
 
-                if (isCurrentUserAdmin && isPluginConfigured) {
+                if (isCurrentUserAdmin && isPluginConfigured && isPluginConfigurationSupported) {
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                     ExpressiveSwitchListItem(
                         title = "Allow non-admins to import credentials",

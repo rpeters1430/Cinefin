@@ -144,13 +144,18 @@ class MediaRequestSettingsViewModelTest {
     }
 
     @Test
-    fun importCredentials_nonAdmin_failsImmediatelyWithoutCallingRepo() = runTest(testDispatcher) {
+    fun importCredentials_nonAdmin_withoutConfiguredPlugin_failsImmediatelyWithoutCallingRepo() = runTest(testDispatcher) {
         authRepository.currentServer.value = JellyfinServer(
             id = "server-id",
             name = "My Server",
             url = "http://localhost",
             isAdministrator = false
         )
+        coEvery { cinefinPluginRepository.getPluginInfo() } returns ApiResult.Error(
+            message = "Plugin not found",
+            errorType = ErrorType.NOT_FOUND
+        )
+        viewModel.fetchPluginInfo()
         advanceUntilIdle()
 
         viewModel.importCredentialsFromPlugin()
@@ -161,6 +166,40 @@ class MediaRequestSettingsViewModelTest {
         assertEquals("Administrator access is required to import plugin credentials", failureState.message)
 
         coVerify(exactly = 0) { cinefinPluginRepository.getCredentials() }
+    }
+
+    @Test
+    fun importCredentials_nonAdmin_withConfiguredPlugin_asksPluginEvenWhenAllowFlagIsFalse() = runTest(testDispatcher) {
+        authRepository.currentServer.value = JellyfinServer(
+            id = "server-id",
+            name = "My Server",
+            url = "http://localhost",
+            isAdministrator = false
+        )
+        coEvery { cinefinPluginRepository.getPluginInfo() } returns ApiResult.Success(
+            CinefinPluginInfoResponse(
+                version = "1.0.0",
+                capabilities = emptyList(),
+                isConfigured = true,
+                allowNonAdminImports = false
+            )
+        )
+        coEvery { cinefinPluginRepository.getCredentials() } returns ApiResult.Error(
+            message = "Forbidden",
+            errorType = ErrorType.FORBIDDEN
+        )
+        viewModel.fetchPluginInfo()
+        advanceUntilIdle()
+
+        viewModel.importCredentialsFromPlugin()
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { cinefinPluginRepository.getCredentials() }
+        assertTrue(viewModel.credentialImportState.value is CredentialImportState.Failure)
+        assertEquals(
+            "Administrator access is required to import plugin credentials",
+            (viewModel.credentialImportState.value as CredentialImportState.Failure).message
+        )
     }
 
     @Test
@@ -299,17 +338,76 @@ class MediaRequestSettingsViewModelTest {
     @Test
     fun fetchPluginInfo_updatesAllowNonAdminImportsAndPluginConfigured() = runTest(testDispatcher) {
         coEvery { cinefinPluginRepository.getPluginInfo() } returns ApiResult.Success(
-            CinefinPluginInfoResponse(version = "1.0.0", capabilities = emptyList(), isConfigured = true, allowNonAdminImports = true)
+            CinefinPluginInfoResponse(
+                version = "1.0.0",
+                capabilities = listOf("configuration"),
+                isConfigured = true,
+                allowNonAdminImports = true
+            )
         )
         viewModel.fetchPluginInfo()
         advanceUntilIdle()
 
         assertTrue(viewModel.isPluginConfigured.value)
         assertTrue(viewModel.allowNonAdminImports.value)
+        assertTrue(viewModel.isPluginConfigurationSupported.value)
+    }
+
+    @Test
+    fun fetchPluginInfo_withoutConfigurationCapability_marksConfigurationUnsupported() = runTest(testDispatcher) {
+        coEvery { cinefinPluginRepository.getPluginInfo() } returns ApiResult.Success(
+            CinefinPluginInfoResponse(
+                version = "1.0.0",
+                capabilities = emptyList(),
+                isConfigured = true,
+                allowNonAdminImports = false
+            )
+        )
+
+        viewModel.fetchPluginInfo()
+        advanceUntilIdle()
+
+        assertTrue(viewModel.isPluginConfigured.value)
+        assertFalse(viewModel.isPluginConfigurationSupported.value)
+    }
+
+    @Test
+    fun setAllowNonAdminImports_withoutConfigurationCapability_doesNotCallMissingEndpoint() = runTest(testDispatcher) {
+        coEvery { cinefinPluginRepository.getPluginInfo() } returns ApiResult.Success(
+            CinefinPluginInfoResponse(
+                version = "1.0.0",
+                capabilities = emptyList(),
+                isConfigured = true,
+                allowNonAdminImports = false
+            )
+        )
+        viewModel.fetchPluginInfo()
+        advanceUntilIdle()
+
+        viewModel.setAllowNonAdminImports(true)
+        advanceUntilIdle()
+
+        assertFalse(viewModel.allowNonAdminImports.value)
+        assertTrue(viewModel.credentialImportState.value is CredentialImportState.Failure)
+        assertEquals(
+            "Update the Cinefin server plugin to manage non-admin credential imports from the app.",
+            (viewModel.credentialImportState.value as CredentialImportState.Failure).message
+        )
+        coVerify(exactly = 0) { cinefinPluginRepository.updateConfiguration(any()) }
     }
 
     @Test
     fun setAllowNonAdminImports_admin_success_updatesLocalAndRemoteState() = runTest(testDispatcher) {
+        coEvery { cinefinPluginRepository.getPluginInfo() } returns ApiResult.Success(
+            CinefinPluginInfoResponse(
+                version = "1.0.0",
+                capabilities = listOf("configuration"),
+                isConfigured = true,
+                allowNonAdminImports = false
+            )
+        )
+        viewModel.fetchPluginInfo()
+        advanceUntilIdle()
         coEvery { cinefinPluginRepository.updateConfiguration(true) } returns ApiResult.Success(
             CinefinPluginRequestResponse(success = true, message = "Updated")
         )
@@ -323,6 +421,16 @@ class MediaRequestSettingsViewModelTest {
 
     @Test
     fun setAllowNonAdminImports_admin_failure_revertsLocalState() = runTest(testDispatcher) {
+        coEvery { cinefinPluginRepository.getPluginInfo() } returns ApiResult.Success(
+            CinefinPluginInfoResponse(
+                version = "1.0.0",
+                capabilities = listOf("configuration"),
+                isConfigured = true,
+                allowNonAdminImports = false
+            )
+        )
+        viewModel.fetchPluginInfo()
+        advanceUntilIdle()
         // Initially false
         assertFalse(viewModel.allowNonAdminImports.value)
 

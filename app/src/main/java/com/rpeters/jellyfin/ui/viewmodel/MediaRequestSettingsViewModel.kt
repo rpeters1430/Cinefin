@@ -2,6 +2,7 @@ package com.rpeters.jellyfin.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rpeters.jellyfin.data.model.CinefinPluginInfoResponse
 import com.rpeters.jellyfin.data.preferences.ArrPreferencesRepository
 import com.rpeters.jellyfin.data.preferences.RadarrPreferences
 import com.rpeters.jellyfin.data.preferences.SeerrPreferences
@@ -48,6 +49,9 @@ class MediaRequestSettingsViewModel @Inject constructor(
     private val _isPluginConfigured = MutableStateFlow(false)
     val isPluginConfigured: StateFlow<Boolean> = _isPluginConfigured.asStateFlow()
 
+    private val _isPluginConfigurationSupported = MutableStateFlow(false)
+    val isPluginConfigurationSupported: StateFlow<Boolean> = _isPluginConfigurationSupported.asStateFlow()
+
     init {
         fetchPluginInfo()
     }
@@ -58,10 +62,12 @@ class MediaRequestSettingsViewModel @Inject constructor(
                 is ApiResult.Success -> {
                     _isPluginConfigured.value = result.data.isConfigured
                     _allowNonAdminImports.value = result.data.allowNonAdminImports
+                    _isPluginConfigurationSupported.value = result.data.supportsRemoteConfiguration
                 }
                 else -> {
                     _isPluginConfigured.value = false
                     _allowNonAdminImports.value = false
+                    _isPluginConfigurationSupported.value = false
                 }
             }
         }
@@ -69,6 +75,11 @@ class MediaRequestSettingsViewModel @Inject constructor(
 
     fun setAllowNonAdminImports(enabled: Boolean) {
         viewModelScope.launch {
+            if (!_isPluginConfigurationSupported.value) {
+                _credentialImportState.value = CredentialImportState.Failure(PLUGIN_CONFIGURATION_UNSUPPORTED_MESSAGE)
+                return@launch
+            }
+
             val previous = _allowNonAdminImports.value
             _allowNonAdminImports.value = enabled
             when (val result = cinefinPluginRepository.updateConfiguration(enabled)) {
@@ -78,7 +89,12 @@ class MediaRequestSettingsViewModel @Inject constructor(
                 is ApiResult.Error -> {
                     // Revert
                     _allowNonAdminImports.value = previous
-                    _credentialImportState.value = CredentialImportState.Failure(result.message)
+                    val message = if (result.errorType == ErrorType.NOT_FOUND) {
+                        PLUGIN_CONFIGURATION_UNSUPPORTED_MESSAGE
+                    } else {
+                        result.message
+                    }
+                    _credentialImportState.value = CredentialImportState.Failure(message)
                 }
                 else -> {}
             }
@@ -88,7 +104,7 @@ class MediaRequestSettingsViewModel @Inject constructor(
     fun importCredentialsFromPlugin() {
         if (_credentialImportState.value is CredentialImportState.Importing) return
 
-        if (authRepository.currentServer.value?.isAdministrator != true && !_allowNonAdminImports.value) {
+        if (authRepository.currentServer.value?.isAdministrator != true && !_allowNonAdminImports.value && !_isPluginConfigured.value) {
             _credentialImportState.value =
                 CredentialImportState.Failure("Administrator access is required to import plugin credentials")
             return
@@ -241,6 +257,17 @@ class MediaRequestSettingsViewModel @Inject constructor(
     }
 
 }
+
+private val CinefinPluginInfoResponse.supportsRemoteConfiguration: Boolean
+    get() = capabilities.any { capability ->
+        capability.equals("configuration", ignoreCase = true) ||
+            capability.equals("remote_configuration", ignoreCase = true) ||
+            capability.equals("remoteConfiguration", ignoreCase = true) ||
+            capability.equals("updateConfiguration", ignoreCase = true)
+    }
+
+private const val PLUGIN_CONFIGURATION_UNSUPPORTED_MESSAGE =
+    "Update the Cinefin server plugin to manage non-admin credential imports from the app."
 
 sealed class CredentialImportState {
     object Idle : CredentialImportState()
