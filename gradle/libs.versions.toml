@@ -16,7 +16,7 @@ jellyfinSdk = "1.8.11"
 # Stable-first dependency policy:
 # - Prefer stable for all dependencies.
 # - Alpha/Beta/RC allowed only when blocked by required features documented in docs/plans/UPGRADE_PATH.md.
-material3 = "1.5.0-alpha21"
+material3 = "1.5.0-alpha22"
 material3AdaptiveNavigationSuite = "1.5.0-alpha22"
 material3Adaptive = "1.3.0-beta02"
 material3WindowSizeClassVersion = "1.5.0-alpha22"
