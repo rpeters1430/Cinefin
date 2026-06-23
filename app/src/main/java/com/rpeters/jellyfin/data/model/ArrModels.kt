@@ -64,12 +64,15 @@ data class SonarrAddSeriesRequest(
     @SerialName("images") val images: List<SonarrImage> = emptyList(),
 )
 
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
 data class SonarrAddOptions(
     // Tells Sonarr which seasons to monitor when the series is first added.
     // "all" monitors all episodes within already-monitored seasons (per-season flags still control
     // which seasons are active). Without this field Sonarr defaults to "unknown" and the series
     // is added in an unmonitored state regardless of the seasons array.
+    // ALWAYS encode this field so it reaches Sonarr regardless of the Json encodeDefaults setting.
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
     @SerialName("monitor") val monitor: String = "all",
     @SerialName("searchForMissingEpisodes") val searchForMissingEpisodes: Boolean = true,
 )

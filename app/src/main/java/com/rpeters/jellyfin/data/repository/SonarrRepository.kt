@@ -218,7 +218,12 @@ class SonarrRepository @Inject constructor(
                 val seriesId = addedBody?.get("id")?.jsonPrimitive?.content?.toIntOrNull()
                     ?: run {
                         SecureLogger.w(TAG, "Could not parse seriesId from addSeries response; refetching by TVDB ID")
-                        service.getSeriesByTvdbId(apiKey, tvdbId).body()?.firstOrNull()?.id
+                        try {
+                            service.getSeriesByTvdbId(apiKey, tvdbId).body()?.firstOrNull()?.id
+                        } catch (e: Exception) {
+                            SecureLogger.w(TAG, "Failed to refetch series by TVDB ID during fallback", e)
+                            null
+                        }
                     }
 
                 if (seriesId != null) {
@@ -312,8 +317,11 @@ class SonarrRepository @Inject constructor(
                 if (id != null) return id
             }
             val results = service.lookupSeriesByTvdb(apiKey, title).body() ?: return null
+            // Prefer an exact title match. Only use the sole result when there's no ambiguity;
+            // with multiple candidates and no exact match we return null rather than risk
+            // requesting the wrong series.
             results.firstOrNull { it.title.equals(title, ignoreCase = true) }?.tvdbId?.takeIf { it != 0 }
-                ?: results.firstOrNull()?.tvdbId?.takeIf { it != 0 }
+                ?: if (results.size == 1) results.first().tvdbId.takeIf { it != 0 } else null
         } catch (e: Exception) {
             SecureLogger.w(TAG, "Sonarr TVDB lookup failed for '$title'", e)
             null
