@@ -139,6 +139,7 @@ class RequestsViewModelTest {
             name = "Test Show",
         )
         coEvery { seerrRepository.getTvDetails(202) } returns ApiResult.Error("Seerr is not configured")
+        coEvery { sonarrRepository.findTvdbId(any(), any()) } returns null
 
         advanceUntilIdle()
         viewModel.requestSeason(item, 2)
@@ -149,6 +150,28 @@ class RequestsViewModelTest {
             viewModel.uiState.value.errorMessage,
         )
         assertNull(viewModel.uiState.value.successMessage)
+    }
+
+    @Test
+    fun requestSeason_noTvdbIdSeerrFailsSonarrLookupSucceeds_requestsSonarr() = runTest(testDispatcher) {
+        val item = SeerrMediaItem(
+            id = 101,
+            mediaType = "tv",
+            tmdbId = 202,
+            name = "Test Show",
+        )
+        coEvery { seerrRepository.getTvDetails(202) } returns ApiResult.Error("Seerr is not configured")
+        coEvery { sonarrRepository.findTvdbId(any(), any()) } returns 303
+        coEvery { sonarrRepository.addSeries(303, listOf(2)) } returns ApiResult.Success(Unit)
+
+        advanceUntilIdle()
+        viewModel.requestSeason(item, 2)
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { sonarrRepository.findTvdbId("Test Show", 202) }
+        coVerify(exactly = 1) { sonarrRepository.addSeries(303, listOf(2)) }
+        assertEquals("Request submitted for Test Show", viewModel.uiState.value.successMessage)
+        assertNull(viewModel.uiState.value.errorMessage)
     }
 
     @Test

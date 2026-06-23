@@ -212,8 +212,20 @@ class SonarrRepository @Inject constructor(
 
             val addResponse = service.addSeries(apiKey, addRequest)
             if (addResponse.isSuccessful) {
+                // Sonarr returns the newly created series object; extract the id so we can trigger
+                // an explicit search command. Fall back to a GET if the body can't be parsed.
                 val addedBody = addResponse.body()
-                val seriesId = (addedBody as? JsonObject)?.get("id")?.jsonPrimitive?.content?.toIntOrNull()
+                val seriesId = addedBody?.get("id")?.jsonPrimitive?.content?.toIntOrNull()
+                    ?: run {
+                        SecureLogger.w(TAG, "Could not parse seriesId from addSeries response; refetching by TVDB ID")
+                        try {
+                            service.getSeriesByTvdbId(apiKey, tvdbId).body()?.firstOrNull()?.id
+                        } catch (e: Exception) {
+                            SecureLogger.w(TAG, "Failed to refetch series by TVDB ID during fallback", e)
+                            null
+                        }
+                    }
+
                 if (seriesId != null) {
                     if (!requestedSeasons.isNullOrEmpty()) {
                         for (season in requestedSeasons) {
@@ -237,6 +249,8 @@ class SonarrRepository @Inject constructor(
                             )
                         )
                     }
+                } else {
+                    SecureLogger.w(TAG, "Series added but could not obtain seriesId to trigger search for TVDB:$tvdbId")
                 }
                 ApiResult.Success(Unit)
             } else {
@@ -286,6 +300,31 @@ class SonarrRepository @Inject constructor(
         } catch (e: Exception) {
             SecureLogger.e(TAG, "Sonarr requestEpisode failed", e)
             ApiResult.Error(e.message ?: "Failed to request episode", e, ErrorType.NETWORK)
+        }
+    }
+
+    /**
+     * Resolves a TVDB ID when it isn't already known. Tries the `tmdb:` prefix first (faster,
+     * more precise), then falls back to a title search. Returns null if Sonarr isn't configured
+     * or no match is found.
+     */
+    suspend fun findTvdbId(title: String, tmdbId: Int? = null): Int? {
+        val (service, apiKey) = getService() ?: return null
+        return try {
+            if (tmdbId != null) {
+                val result = service.lookupSeriesByTvdb(apiKey, "tmdb:$tmdbId").body()
+                val id = result?.firstOrNull()?.tvdbId?.takeIf { it != 0 }
+                if (id != null) return id
+            }
+            val results = service.lookupSeriesByTvdb(apiKey, title).body() ?: return null
+            // Prefer an exact title match. Only use the sole result when there's no ambiguity;
+            // with multiple candidates and no exact match we return null rather than risk
+            // requesting the wrong series.
+            results.firstOrNull { it.title.equals(title, ignoreCase = true) }?.tvdbId?.takeIf { it != 0 }
+                ?: if (results.size == 1) results.first().tvdbId.takeIf { it != 0 } else null
+        } catch (e: Exception) {
+            SecureLogger.w(TAG, "Sonarr TVDB lookup failed for '$title'", e)
+            null
         }
     }
 

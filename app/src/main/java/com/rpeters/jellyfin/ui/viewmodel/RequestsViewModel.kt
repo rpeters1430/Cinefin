@@ -608,10 +608,13 @@ class RequestsViewModel @Inject constructor(
         item.tvdbId?.let { return it }
         _uiState.value.tvAvailabilityByMediaId[item.id]?.tvdbId?.let { return it }
         val mediaId = item.tmdbId ?: item.id
-        return when (val result = seerrRepository.getTvDetails(mediaId)) {
+        val seerrId = when (val result = seerrRepository.getTvDetails(mediaId)) {
             is ApiResult.Success -> result.data.externalIds?.tvdbId
             else -> null
         }
+        if (seerrId != null) return seerrId
+        // Seerr unavailable or returned no TVDB ID — ask Sonarr directly via its own lookup.
+        return sonarrRepository.findTvdbId(title = item.displayTitle, tmdbId = item.tmdbId)
     }
 
     fun dismissPendingRequest() {
