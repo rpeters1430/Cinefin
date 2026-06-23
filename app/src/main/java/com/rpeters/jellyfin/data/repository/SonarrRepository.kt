@@ -298,6 +298,28 @@ class SonarrRepository @Inject constructor(
         }
     }
 
+    /**
+     * Resolves a TVDB ID when it isn't already known. Tries the `tmdb:` prefix first (faster,
+     * more precise), then falls back to a title search. Returns null if Sonarr isn't configured
+     * or no match is found.
+     */
+    suspend fun findTvdbId(title: String, tmdbId: Int? = null): Int? {
+        val (service, apiKey) = getService() ?: return null
+        return try {
+            if (tmdbId != null) {
+                val result = service.lookupSeriesByTvdb(apiKey, "tmdb:$tmdbId").body()
+                val id = result?.firstOrNull()?.tvdbId?.takeIf { it != 0 }
+                if (id != null) return id
+            }
+            val results = service.lookupSeriesByTvdb(apiKey, title).body() ?: return null
+            results.firstOrNull { it.title.equals(title, ignoreCase = true) }?.tvdbId?.takeIf { it != 0 }
+                ?: results.firstOrNull()?.tvdbId?.takeIf { it != 0 }
+        } catch (e: Exception) {
+            SecureLogger.w(TAG, "Sonarr TVDB lookup failed for '$title'", e)
+            null
+        }
+    }
+
     private suspend fun <T> retryNetworkCall(
         times: Int = 3,
         initialDelay: Long = 500,
