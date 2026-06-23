@@ -212,8 +212,15 @@ class SonarrRepository @Inject constructor(
 
             val addResponse = service.addSeries(apiKey, addRequest)
             if (addResponse.isSuccessful) {
+                // Sonarr returns the newly created series object; extract the id so we can trigger
+                // an explicit search command. Fall back to a GET if the body can't be parsed.
                 val addedBody = addResponse.body()
-                val seriesId = (addedBody as? JsonObject)?.get("id")?.jsonPrimitive?.content?.toIntOrNull()
+                val seriesId = addedBody?.get("id")?.jsonPrimitive?.content?.toIntOrNull()
+                    ?: run {
+                        SecureLogger.w(TAG, "Could not parse seriesId from addSeries response; refetching by TVDB ID")
+                        service.getSeriesByTvdbId(apiKey, tvdbId).body()?.firstOrNull()?.id
+                    }
+
                 if (seriesId != null) {
                     if (!requestedSeasons.isNullOrEmpty()) {
                         for (season in requestedSeasons) {
@@ -237,6 +244,8 @@ class SonarrRepository @Inject constructor(
                             )
                         )
                     }
+                } else {
+                    SecureLogger.w(TAG, "Series added but could not obtain seriesId to trigger search for TVDB:$tvdbId")
                 }
                 ApiResult.Success(Unit)
             } else {
