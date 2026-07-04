@@ -168,6 +168,10 @@
     public <fields>;
 }
 
+# Work around release-only VerifyError in ThemeKt.JellyfinAndroidTheme by
+# preventing R8 optimization/obfuscation of this generated Compose class.
+-keep class com.rpeters.jellyfin.ui.theme.ThemeKt { *; }
+
 # ================================
 # ANDROIDX & ANDROID CORE
 # ================================
