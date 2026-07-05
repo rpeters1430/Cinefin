@@ -168,6 +168,10 @@
     public <fields>;
 }
 
+# Work around release-only VerifyError in ThemeKt.JellyfinAndroidTheme by
+# preventing R8 optimization/obfuscation of the Kotlin file-facade class that contains the top-level theme composables.
+-keep class com.rpeters.jellyfin.ui.theme.ThemeKt { *; }
+
 # ================================
 # ANDROIDX & ANDROID CORE
 # ================================
