@@ -8,6 +8,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
+import org.jellyfin.sdk.model.api.MediaSegmentType
 import javax.inject.Inject
 
 /**
@@ -40,6 +41,28 @@ class VideoPlayerMetadataManager @Inject constructor(
                 return null
             }
 
+            fun ticksToMs(ticks: Long?): Long? = ticks?.let { it / 10_000 }
+
+            // Primary source: server-side Media Segments API (populated by the
+            // Intro Skipper plugin on Jellyfin 10.9+). Falls back to chapter-name
+            // matching below for servers/plugins that only expose chapter markers.
+            val segments = when (val result = repository.getMediaSegments(itemId)) {
+                is com.rpeters.jellyfin.data.repository.common.ApiResult.Success -> result.data
+                else -> emptyList()
+            }
+            val introSegment = segments.firstOrNull { it.type == MediaSegmentType.INTRO }
+            val outroSegment = segments.firstOrNull { it.type == MediaSegmentType.OUTRO }
+
+            if (introSegment != null || outroSegment != null) {
+                stateManager.updateState { it.copy(
+                    introStartMs = ticksToMs(introSegment?.startTicks),
+                    introEndMs = ticksToMs(introSegment?.endTicks),
+                    outroStartMs = ticksToMs(outroSegment?.startTicks),
+                    outroEndMs = ticksToMs(outroSegment?.endTicks),
+                ) }
+                return item
+            }
+
             val chapters = item.chapters ?: emptyList()
             if (chapters.isEmpty()) {
                 stateManager.updateState { it.copy(
@@ -50,8 +73,6 @@ class VideoPlayerMetadataManager @Inject constructor(
                 ) }
                 return item
             }
-
-            fun ticksToMs(ticks: Long?): Long? = ticks?.let { it / 10_000 }
 
             var introStart: Long? = null
             var introEnd: Long? = null

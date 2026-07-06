@@ -31,6 +31,7 @@ import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.extensions.itemsApi
 import org.jellyfin.sdk.api.client.extensions.libraryApi
 import org.jellyfin.sdk.api.client.extensions.mediaInfoApi
+import org.jellyfin.sdk.api.client.extensions.mediaSegmentsApi
 import org.jellyfin.sdk.api.client.extensions.sessionApi
 import org.jellyfin.sdk.api.client.extensions.systemApi
 import org.jellyfin.sdk.api.client.extensions.tvShowsApi
@@ -834,6 +835,19 @@ open class JellyfinRepository @Inject constructor(
      */
     override suspend fun getItemDetails(itemId: String): ApiResult<BaseItemDto> {
         return getItemDetailsById(itemId, "item")
+    }
+
+    override suspend fun getMediaSegments(itemId: String): ApiResult<List<org.jellyfin.sdk.model.api.MediaSegmentDto>> {
+        return withServerClient("getMediaSegments") { _, client ->
+            val itemUuid = parseUuid(itemId, "item")
+            client.mediaSegmentsApi.getItemSegments(
+                itemId = itemUuid,
+                includeSegmentTypes = listOf(
+                    org.jellyfin.sdk.model.api.MediaSegmentType.INTRO,
+                    org.jellyfin.sdk.model.api.MediaSegmentType.OUTRO,
+                ),
+            ).content.items.orEmpty()
+        }
     }
 
     // ===== SEARCH METHODS - Simplified implementation =====
