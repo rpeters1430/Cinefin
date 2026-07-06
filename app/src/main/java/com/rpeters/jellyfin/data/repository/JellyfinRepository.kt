@@ -31,6 +31,7 @@ import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.extensions.itemsApi
 import org.jellyfin.sdk.api.client.extensions.libraryApi
 import org.jellyfin.sdk.api.client.extensions.mediaInfoApi
+import org.jellyfin.sdk.api.client.extensions.mediaSegmentsApi
 import org.jellyfin.sdk.api.client.extensions.sessionApi
 import org.jellyfin.sdk.api.client.extensions.systemApi
 import org.jellyfin.sdk.api.client.extensions.tvShowsApi
@@ -834,6 +835,29 @@ open class JellyfinRepository @Inject constructor(
      */
     override suspend fun getItemDetails(itemId: String): ApiResult<BaseItemDto> {
         return getItemDetailsById(itemId, "item")
+    }
+
+    override suspend fun getMediaSegments(itemId: String): ApiResult<List<org.jellyfin.sdk.model.api.MediaSegmentDto>> {
+        return withServerClient("getMediaSegments") { _, client ->
+            // The Media Segments API is only available on Jellyfin 10.9+ with a
+            // segment provider (e.g. Intro Skipper) installed. Older/unconfigured
+            // servers respond with 404/503, which would otherwise flood error
+            // analytics on every playback for a large portion of users.
+            try {
+                val itemUuid = parseUuid(itemId, "item")
+                client.mediaSegmentsApi.getItemSegments(
+                    itemId = itemUuid,
+                    includeSegmentTypes = listOf(
+                        org.jellyfin.sdk.model.api.MediaSegmentType.INTRO,
+                        org.jellyfin.sdk.model.api.MediaSegmentType.OUTRO,
+                    ),
+                ).content.items.orEmpty()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                emptyList()
+            }
+        }
     }
 
     // ===== SEARCH METHODS - Simplified implementation =====
