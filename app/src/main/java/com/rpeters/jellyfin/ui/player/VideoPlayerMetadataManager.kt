@@ -51,34 +51,13 @@ class VideoPlayerMetadataManager @Inject constructor(
                 return item
             }
 
-            fun ticksToMs(ticks: Long?): Long? = ticks?.let { it / 10_000 }
-
-            var introStart: Long? = null
-            var introEnd: Long? = null
-            var outroStart: Long? = null
-            var outroEnd: Long? = null
-
-            chapters.forEachIndexed { index, ch ->
-                val name = ch.name?.lowercase() ?: ""
-                val startMs = ticksToMs(ch.startPositionTicks)
-                val nextStartMs = chapters.getOrNull(index + 1)?.startPositionTicks?.let { it / 10_000 }
-                val endMs = nextStartMs
-
-                if (introStart == null && ("intro" in name || "opening" in name)) {
-                    introStart = startMs
-                    introEnd = endMs
-                }
-                if (outroStart == null && ("credits" in name || "outro" in name || "ending" in name)) {
-                    outroStart = startMs
-                    outroEnd = endMs
-                }
-            }
+            val skipMarkers = extractSkipMarkersFromChapters(chapters)
 
             stateManager.updateState { it.copy(
-                introStartMs = introStart,
-                introEndMs = introEnd,
-                outroStartMs = outroStart,
-                outroEndMs = outroEnd,
+                introStartMs = skipMarkers.introStartMs,
+                introEndMs = skipMarkers.introEndMs,
+                outroStartMs = skipMarkers.outroStartMs,
+                outroEndMs = skipMarkers.outroEndMs,
             ) }
 
             item
@@ -241,4 +220,101 @@ class VideoPlayerMetadataManager @Inject constructor(
             nextEpisodeCountdown = 0,
         ) }
     }
+}
+
+internal data class SkipMarkers(
+    val introStartMs: Long? = null,
+    val introEndMs: Long? = null,
+    val outroStartMs: Long? = null,
+    val outroEndMs: Long? = null,
+)
+
+internal fun extractSkipMarkersFromChapters(chapters: List<Any?>): SkipMarkers {
+    data class ChapterMarker(
+        val name: String,
+        val markerType: String?,
+        val startMs: Long,
+    )
+
+    fun Any.readPropertyValue(propertyName: String): Any? {
+        val getterName = propertyName.replaceFirstChar { it.uppercase() }
+        val getters = listOf("get$getterName", "is$getterName")
+        for (getter in getters) {
+            val method = javaClass.methods.firstOrNull { it.name == getter && it.parameterCount == 0 } ?: continue
+            val value = runCatching { method.invoke(this) }.getOrNull()
+            if (value != null) return value
+        }
+        return runCatching { javaClass.getField(propertyName).get(this) }.getOrNull()
+    }
+
+    fun Any.readStartMs(): Long? =
+        when (val ticks = readPropertyValue("startPositionTicks")) {
+            is Number -> ticks.toLong() / 10_000
+            is String -> ticks.toLongOrNull()?.div(10_000)
+            else -> null
+        }
+
+    fun normalizeMarkerType(rawType: String): String =
+        rawType.lowercase().filter { it.isLetterOrDigit() }
+
+    val markers = chapters.mapNotNull { chapter ->
+        chapter ?: return@mapNotNull null
+        val startMs = chapter.readStartMs() ?: return@mapNotNull null
+        val name = (chapter.readPropertyValue("name") as? String)?.trim().orEmpty().lowercase()
+        val markerType = chapter.readPropertyValue("markerType")?.toString()?.trim()?.takeIf { it.isNotEmpty() }
+        ChapterMarker(
+            name = name,
+            markerType = markerType,
+            startMs = startMs,
+        )
+    }.sortedBy { it.startMs }
+
+    if (markers.isEmpty()) {
+        return SkipMarkers()
+    }
+
+    var introStart: Long? = null
+    var introEnd: Long? = null
+    var outroStart: Long? = null
+    var outroEnd: Long? = null
+
+    markers.forEachIndexed { index, chapter ->
+        val normalizedMarkerType = chapter.markerType?.let(::normalizeMarkerType)
+        val nextStartMs = markers.getOrNull(index + 1)?.startMs
+
+        when {
+            normalizedMarkerType?.contains("introstart") == true -> {
+                if (introStart == null) introStart = chapter.startMs
+                if (introEnd == null) introEnd = nextStartMs
+            }
+            normalizedMarkerType?.contains("introend") == true -> {
+                if (introEnd == null) introEnd = chapter.startMs
+            }
+            normalizedMarkerType?.contains("creditsstart") == true ||
+                normalizedMarkerType?.contains("outrostart") == true -> {
+                if (outroStart == null) outroStart = chapter.startMs
+                if (outroEnd == null) outroEnd = nextStartMs
+            }
+            normalizedMarkerType?.contains("creditsend") == true ||
+                normalizedMarkerType?.contains("outroend") == true -> {
+                if (outroEnd == null) outroEnd = chapter.startMs
+            }
+        }
+
+        if (introStart == null && ("intro" in chapter.name || "opening" in chapter.name)) {
+            introStart = chapter.startMs
+            if (introEnd == null) introEnd = nextStartMs
+        }
+        if (outroStart == null && ("credits" in chapter.name || "outro" in chapter.name || "ending" in chapter.name)) {
+            outroStart = chapter.startMs
+            if (outroEnd == null) outroEnd = nextStartMs
+        }
+    }
+
+    return SkipMarkers(
+        introStartMs = introStart,
+        introEndMs = introEnd,
+        outroStartMs = outroStart,
+        outroEndMs = outroEnd,
+    )
 }
