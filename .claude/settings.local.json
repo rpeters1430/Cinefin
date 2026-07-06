@@ -95,7 +95,8 @@
       "PowerShell(Select-String *)",
       "Bash(gh issue *)",
       "PowerShell(Get-Content *)",
-      "Bash(gh pr *)"
+      "Bash(gh pr *)",
+      "mcp__Claude_Code_Remote__send_later"
     ],
     "deny": [],
     "ask": [],
