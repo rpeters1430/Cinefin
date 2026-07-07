@@ -254,7 +254,11 @@ object ServerUrlValidator {
 
     /**
      * Adds default Jellyfin port if no port is specified.
-     * For reverse proxy setups (URLs with paths), don't add default ports.
+     *
+     * Only guesses a default port for bare IP addresses / localhost, which is how direct,
+     * non-proxied Jellyfin setups are typically reached. Domain names are commonly served
+     * through a reverse proxy on the standard web ports (443/80 - i.e. no explicit port),
+     * so appending :8096/:8920 to them breaks those connections.
      */
     private fun addDefaultPortIfMissing(url: String): String {
         return try {
@@ -265,12 +269,17 @@ object ServerUrlValidator {
                 return url
             }
 
-            // Check if this looks like a reverse proxy setup
+            val host = uri.host ?: return url
             val path = uri.path ?: ""
-            val isReverseProxy = path.isNotEmpty() && path != "/"
 
-            // For reverse proxy setups, don't add default Jellyfin ports
-            if (isReverseProxy) {
+            // Only direct IP/localhost connections default to the non-standard Jellyfin ports.
+            val looksLikeDirectConnection = host.equals("localhost", ignoreCase = true) || isValidIPAddress(host)
+            if (!looksLikeDirectConnection) {
+                return url
+            }
+
+            // For reverse proxy setups (URLs with paths), don't add default Jellyfin ports
+            if (path.isNotEmpty() && path != "/") {
                 return url
             }
 
@@ -281,7 +290,7 @@ object ServerUrlValidator {
                 else -> DEFAULT_HTTP_PORT
             }
 
-            "${uri.scheme}://${uri.host}:$defaultPort${uri.path ?: ""}"
+            "${uri.scheme}://$host:$defaultPort$path"
         } catch (e: URISyntaxException) {
             Log.w(TAG, "Failed to parse URI for port addition: $url", e)
             url
