@@ -35,8 +35,8 @@ android {
         applicationId = "com.rpeters.jellyfin"
         minSdk = 30
         targetSdk = 37
-        versionCode = 129
-        versionName = "14.97"
+        versionCode = 136
+        versionName = "15.04"
 
         testInstrumentationRunner = "com.rpeters.jellyfin.testing.HiltTestRunner"
 
@@ -294,7 +294,7 @@ dependencies {
     testImplementation(libs.robolectric)
     testImplementation(platform(libs.androidx.compose.bom))
     testImplementation(libs.androidx.ui.test.junit4)
-    testImplementation("androidx.compose.ui:ui-test")
+    testImplementation(libs.androidx.compose.ui.test)
 
     // Hilt testing
     testImplementation(libs.dagger.hilt.android.testing)
