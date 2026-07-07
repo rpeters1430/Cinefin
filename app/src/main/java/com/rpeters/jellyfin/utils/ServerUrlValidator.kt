@@ -252,9 +252,17 @@ object ServerUrlValidator {
         }
     }
 
+    // Local-network TLDs commonly used for direct (non-proxied) mDNS/DNS hostnames.
+    private val LOCAL_HOST_SUFFIXES = listOf(".local", ".lan", ".home", ".internal", ".private")
+
     /**
      * Adds default Jellyfin port if no port is specified.
-     * For reverse proxy setups (URLs with paths), don't add default ports.
+     *
+     * Only guesses a default port for hosts that look like a direct, non-proxied connection:
+     * bare IP addresses, localhost, single-label hostnames (e.g. "jellyfin"), and local
+     * network domains (e.g. "jellyfin.local", "nas.lan"). Public-looking domain names are
+     * commonly served through a reverse proxy on the standard web ports (443/80 - i.e. no
+     * explicit port), so appending :8096/:8920 to them breaks those connections.
      */
     private fun addDefaultPortIfMissing(url: String): String {
         return try {
@@ -265,12 +273,19 @@ object ServerUrlValidator {
                 return url
             }
 
-            // Check if this looks like a reverse proxy setup
+            val host = uri.host ?: return url
             val path = uri.path ?: ""
-            val isReverseProxy = path.isNotEmpty() && path != "/"
 
-            // For reverse proxy setups, don't add default Jellyfin ports
-            if (isReverseProxy) {
+            val looksLikeDirectConnection = host.equals("localhost", ignoreCase = true) ||
+                !host.contains(".") ||
+                LOCAL_HOST_SUFFIXES.any { host.endsWith(it, ignoreCase = true) } ||
+                isValidIPAddress(host)
+            if (!looksLikeDirectConnection) {
+                return url
+            }
+
+            // For reverse proxy setups (URLs with paths), don't add default Jellyfin ports
+            if (path.isNotEmpty() && path != "/") {
                 return url
             }
 
@@ -281,7 +296,7 @@ object ServerUrlValidator {
                 else -> DEFAULT_HTTP_PORT
             }
 
-            "${uri.scheme}://${uri.host}:$defaultPort${uri.path ?: ""}"
+            "${uri.scheme}://$host:$defaultPort$path"
         } catch (e: URISyntaxException) {
             Log.w(TAG, "Failed to parse URI for port addition: $url", e)
             url
