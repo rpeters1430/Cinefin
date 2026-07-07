@@ -8,6 +8,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
+import org.jellyfin.sdk.model.api.MediaSegmentType
 import javax.inject.Inject
 
 /**
@@ -40,37 +41,39 @@ class VideoPlayerMetadataManager @Inject constructor(
                 return null
             }
 
-            val chapters = item.chapters ?: emptyList()
-            if (chapters.isEmpty()) {
-                stateManager.updateState { it.copy(
-                    introStartMs = null,
-                    introEndMs = null,
-                    outroStartMs = null,
-                    outroEndMs = null,
-                ) }
-                return item
-            }
-
             fun ticksToMs(ticks: Long?): Long? = ticks?.let { it / 10_000 }
 
-            var introStart: Long? = null
-            var introEnd: Long? = null
-            var outroStart: Long? = null
-            var outroEnd: Long? = null
+            // Primary source: server-side Media Segments API (populated by the
+            // Intro Skipper plugin on Jellyfin 10.9+). Chapter-name matching below
+            // fills in whichever marker (intro/outro) the segments API didn't
+            // provide, rather than being skipped whenever any segment exists.
+            val segments = when (val result = repository.getMediaSegments(itemId)) {
+                is com.rpeters.jellyfin.data.repository.common.ApiResult.Success -> result.data
+                else -> emptyList()
+            }
+            val introSegment = segments.firstOrNull { it.type == MediaSegmentType.INTRO }
+            val outroSegment = segments.firstOrNull { it.type == MediaSegmentType.OUTRO }
 
-            chapters.forEachIndexed { index, ch ->
-                val name = ch.name?.lowercase() ?: ""
-                val startMs = ticksToMs(ch.startPositionTicks)
-                val nextStartMs = chapters.getOrNull(index + 1)?.startPositionTicks?.let { it / 10_000 }
-                val endMs = nextStartMs
+            var introStart: Long? = ticksToMs(introSegment?.startTicks)
+            var introEnd: Long? = ticksToMs(introSegment?.endTicks)
+            var outroStart: Long? = ticksToMs(outroSegment?.startTicks)
+            var outroEnd: Long? = ticksToMs(outroSegment?.endTicks)
 
-                if (introStart == null && ("intro" in name || "opening" in name)) {
-                    introStart = startMs
-                    introEnd = endMs
-                }
-                if (outroStart == null && ("credits" in name || "outro" in name || "ending" in name)) {
-                    outroStart = startMs
-                    outroEnd = endMs
+            if (introStart == null || outroStart == null) {
+                val chapters = item.chapters ?: emptyList()
+                chapters.forEachIndexed { index, ch ->
+                    val name = ch.name?.lowercase() ?: ""
+                    val startMs = ticksToMs(ch.startPositionTicks)
+                    val nextStartMs = chapters.getOrNull(index + 1)?.startPositionTicks?.let { it / 10_000 }
+
+                    if (introStart == null && ("intro" in name || "opening" in name)) {
+                        introStart = startMs
+                        introEnd = nextStartMs
+                    }
+                    if (outroStart == null && ("credits" in name || "outro" in name || "ending" in name)) {
+                        outroStart = startMs
+                        outroEnd = nextStartMs
+                    }
                 }
             }
 

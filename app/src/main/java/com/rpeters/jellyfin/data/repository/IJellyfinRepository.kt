@@ -9,6 +9,7 @@ import org.jellyfin.sdk.model.api.AuthenticationResult
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemFields
+import org.jellyfin.sdk.model.api.MediaSegmentDto
 import org.jellyfin.sdk.model.api.PlaybackInfoResponse
 
 data class TranscodingProgressInfo(
@@ -65,6 +66,7 @@ interface IJellyfinRepository {
     suspend fun getMovieDetails(movieId: String): ApiResult<BaseItemDto>
     suspend fun getEpisodeDetails(episodeId: String): ApiResult<BaseItemDto>
     suspend fun getItemDetails(itemId: String): ApiResult<BaseItemDto>
+    suspend fun getMediaSegments(itemId: String): ApiResult<List<MediaSegmentDto>>
     suspend fun getNextUp(
         limit: Int = 24,
     ): ApiResult<List<BaseItemDto>>
