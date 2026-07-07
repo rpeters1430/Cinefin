@@ -82,12 +82,15 @@ class ThemePreferencesViewModelTest {
             accentColor = AccentColor.MATERIAL_BLUE,
         )
 
-        // When
-        preferencesFlow.value = updatedPreferences
-        testDispatcher.scheduler.advanceUntilIdle()
-
         // Then
         viewModel.themePreferences.test {
+            // Consume initial emission
+            assertEquals(ThemePreferences.DEFAULT, awaitItem())
+
+            // When
+            preferencesFlow.value = updatedPreferences
+            testDispatcher.scheduler.advanceUntilIdle()
+
             val preferences = awaitItem()
             assertEquals(ThemeMode.DARK, preferences.themeMode)
             assertEquals(AccentColor.MATERIAL_BLUE, preferences.accentColor)

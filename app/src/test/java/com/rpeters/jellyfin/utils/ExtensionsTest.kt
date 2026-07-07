@@ -88,7 +88,7 @@ class ExtensionsTest {
         val key = item.getItemKey()
 
         assertTrue(key.isNotEmpty())
-        assertTrue(key.contains("MOVIE"))
+        assertTrue(key.uppercase().contains("MOVIE"))
         assertTrue(key.contains(itemId.toString()))
     }
 

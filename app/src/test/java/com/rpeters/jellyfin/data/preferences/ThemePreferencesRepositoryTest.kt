@@ -1,20 +1,20 @@
 package com.rpeters.jellyfin.data.preferences
 
 import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.emptyPreferences
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
-import org.junit.rules.TemporaryFolder
-import java.util.UUID
 
 /**
  * Comprehensive unit tests for ThemePreferencesRepository.
@@ -23,23 +23,10 @@ import java.util.UUID
 @OptIn(ExperimentalCoroutinesApi::class)
 class ThemePreferencesRepositoryTest {
 
-    @get:Rule
-    val tmpFolder: TemporaryFolder = TemporaryFolder.builder().assureDeletion().build()
-
     private lateinit var testDataStore: DataStore<Preferences>
 
-    @Before
-    fun setup() {
-        // No-op, initialized per test
-    }
-
-    private fun TestScope.createRepository(): ThemePreferencesRepository {
-        val testDir = tmpFolder.newFolder(UUID.randomUUID().toString())
-        val testFile = java.io.File(testDir, "test_theme.preferences_pb")
-        testDataStore = PreferenceDataStoreFactory.create(
-            scope = this,
-            produceFile = { testFile },
-        )
+    private fun createRepository(): ThemePreferencesRepository {
+        testDataStore = InMemoryDataStore()
         return ThemePreferencesRepository(testDataStore)
     }
 
@@ -228,5 +215,20 @@ class ThemePreferencesRepositoryTest {
 
         assertEquals(ThemeMode.AMOLED_BLACK, preferences.themeMode)
         assertEquals(AccentColor.JELLYFIN_BLUE, preferences.accentColor)
+    }
+
+    private class InMemoryDataStore : DataStore<Preferences> {
+        private val stateFlow = MutableStateFlow<Preferences>(emptyPreferences())
+        private val mutex = Mutex()
+
+        override val data: Flow<Preferences> = stateFlow
+
+        override suspend fun updateData(transform: suspend (t: Preferences) -> Preferences): Preferences {
+            return mutex.withLock {
+                val updated = transform(stateFlow.value)
+                stateFlow.value = updated
+                updated
+            }
+        }
     }
 }

@@ -19,6 +19,7 @@ class DevicePerformanceProfileTest {
     fun setUp() {
         DevicePerformanceProfile.clearCachedProfile()
         every { context.getSystemService(Context.ACTIVITY_SERVICE) } returns activityManager
+        every { context.getSystemService(ActivityManager::class.java) } returns activityManager
     }
 
     @After
@@ -34,8 +35,8 @@ class DevicePerformanceProfileTest {
         val profile = DevicePerformanceProfile.detect(context)
 
         assertEquals(DevicePerformanceProfile.Tier.HIGH, profile.tier)
-        assertEquals(0.22, profile.memoryCachePercent)
-        assertEquals(160, profile.diskCacheSizeMb)
+        assertEquals(0.22, profile.memoryCachePercent, 0.001)
+        assertEquals(160L, profile.diskCacheSizeMb)
     }
 
     @Test
@@ -46,8 +47,8 @@ class DevicePerformanceProfileTest {
         val profile = DevicePerformanceProfile.detect(context)
 
         assertEquals(DevicePerformanceProfile.Tier.MID, profile.tier)
-        assertEquals(0.18, profile.memoryCachePercent)
-        assertEquals(120, profile.diskCacheSizeMb)
+        assertEquals(0.18, profile.memoryCachePercent, 0.001)
+        assertEquals(120L, profile.diskCacheSizeMb)
     }
 
     @Test
@@ -58,8 +59,8 @@ class DevicePerformanceProfileTest {
         val profile = DevicePerformanceProfile.detect(context)
 
         assertEquals(DevicePerformanceProfile.Tier.LOW, profile.tier)
-        assertEquals(0.12, profile.memoryCachePercent)
-        assertEquals(80, profile.diskCacheSizeMb)
+        assertEquals(0.12, profile.memoryCachePercent, 0.001)
+        assertEquals(80L, profile.diskCacheSizeMb)
     }
 
     @Test

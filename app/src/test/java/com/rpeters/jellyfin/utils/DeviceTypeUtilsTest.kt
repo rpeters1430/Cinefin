@@ -11,6 +11,16 @@ import org.junit.Test
 
 class DeviceTypeUtilsTest {
 
+    @org.junit.Before
+    fun setUp() {
+        DeviceTypeUtils.clearCache()
+    }
+
+    @org.junit.After
+    fun tearDown() {
+        DeviceTypeUtils.clearCache()
+    }
+
     @Test
     fun getDeviceType_returnsTv_whenUiModeIsTelevision() {
         val context = createContext(

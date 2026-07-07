@@ -37,6 +37,11 @@ object DeviceTypeUtils {
 
     private var cachedDeviceType: DeviceType? = null
 
+    @androidx.annotation.VisibleForTesting
+    fun clearCache() {
+        cachedDeviceType = null
+    }
+
     fun getDeviceType(context: Context): DeviceType {
         cachedDeviceType?.let { return it }
 
