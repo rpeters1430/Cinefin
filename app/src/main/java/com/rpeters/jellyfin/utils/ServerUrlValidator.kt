@@ -252,13 +252,17 @@ object ServerUrlValidator {
         }
     }
 
+    // Local-network TLDs commonly used for direct (non-proxied) mDNS/DNS hostnames.
+    private val LOCAL_HOST_SUFFIXES = listOf(".local", ".lan", ".home", ".internal", ".private")
+
     /**
      * Adds default Jellyfin port if no port is specified.
      *
-     * Only guesses a default port for bare IP addresses / localhost, which is how direct,
-     * non-proxied Jellyfin setups are typically reached. Domain names are commonly served
-     * through a reverse proxy on the standard web ports (443/80 - i.e. no explicit port),
-     * so appending :8096/:8920 to them breaks those connections.
+     * Only guesses a default port for hosts that look like a direct, non-proxied connection:
+     * bare IP addresses, localhost, single-label hostnames (e.g. "jellyfin"), and local
+     * network domains (e.g. "jellyfin.local", "nas.lan"). Public-looking domain names are
+     * commonly served through a reverse proxy on the standard web ports (443/80 - i.e. no
+     * explicit port), so appending :8096/:8920 to them breaks those connections.
      */
     private fun addDefaultPortIfMissing(url: String): String {
         return try {
@@ -272,8 +276,10 @@ object ServerUrlValidator {
             val host = uri.host ?: return url
             val path = uri.path ?: ""
 
-            // Only direct IP/localhost connections default to the non-standard Jellyfin ports.
-            val looksLikeDirectConnection = host.equals("localhost", ignoreCase = true) || isValidIPAddress(host)
+            val looksLikeDirectConnection = host.equals("localhost", ignoreCase = true) ||
+                !host.contains(".") ||
+                LOCAL_HOST_SUFFIXES.any { host.endsWith(it, ignoreCase = true) } ||
+                isValidIPAddress(host)
             if (!looksLikeDirectConnection) {
                 return url
             }
