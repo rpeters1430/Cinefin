@@ -374,6 +374,8 @@ apply(plugin = "jacoco")
 
 tasks.withType<Test> {
     maxHeapSize = "4096m"
-    jvmArgs("-XX:+UseG1GC")
+    // MockK/ByteBuddy self-attach its inline-mocking agent at runtime; JDK 21+ restricts
+    // dynamic agent loading (JEP 451). Without this, mocking final Kotlin classes can fail.
+    jvmArgs("-XX:+UseG1GC", "-XX:+EnableDynamicAgentLoading", "-Djdk.attach.allowAttachSelf=true")
     forkEvery = 1
 }
