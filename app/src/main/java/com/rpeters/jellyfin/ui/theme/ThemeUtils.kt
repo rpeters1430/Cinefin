@@ -11,6 +11,7 @@ import com.rpeters.jellyfin.data.preferences.ThemeMode
  */
 fun getAccentColorForPreview(accentColor: AccentColor, customColor: Color = Color(0xFF6442D6)): Color {
     return when (accentColor) {
+        AccentColor.JELLYFIN_CLASSIC -> JellyfinClassicPrimary
         AccentColor.JELLYFIN_PURPLE -> JellyfinPurple40
         AccentColor.JELLYFIN_BLUE -> JellyfinBlue40
         AccentColor.JELLYFIN_TEAL -> JellyfinTeal40
@@ -74,6 +75,7 @@ fun getContrastLevelDescription(contrastLevel: ContrastLevel): String {
  */
 fun getAccentColorName(accentColor: AccentColor): String {
     return when (accentColor) {
+        AccentColor.JELLYFIN_CLASSIC -> "Jellyfin Classic"
         AccentColor.JELLYFIN_PURPLE -> "Jellyfin Purple"
         AccentColor.JELLYFIN_BLUE -> "Jellyfin Blue"
         AccentColor.JELLYFIN_TEAL -> "Jellyfin Teal"

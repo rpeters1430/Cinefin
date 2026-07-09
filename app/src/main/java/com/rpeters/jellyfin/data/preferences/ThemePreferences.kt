@@ -35,6 +35,9 @@ enum class ContrastLevel {
  * Custom accent color options when dynamic color is disabled.
  */
 enum class AccentColor {
+    /** Matches the actual jellyfin-web client palette (accent blue, near-black surfaces) */
+    JELLYFIN_CLASSIC,
+
     /** Default Jellyfin purple */
     JELLYFIN_PURPLE,
 

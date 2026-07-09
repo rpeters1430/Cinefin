@@ -10,6 +10,7 @@ import com.rpeters.jellyfin.data.preferences.AccentColor
  */
 fun getLightColorScheme(accentColor: AccentColor): androidx.compose.material3.ColorScheme {
     return when (accentColor) {
+        AccentColor.JELLYFIN_CLASSIC -> JellyfinClassicLightColorScheme
         AccentColor.JELLYFIN_PURPLE -> JellyfinPurpleLightColorScheme
         AccentColor.JELLYFIN_BLUE -> JellyfinBlueLightColorScheme
         AccentColor.JELLYFIN_TEAL -> JellyfinTealLightColorScheme
@@ -30,6 +31,7 @@ fun getLightColorScheme(accentColor: AccentColor): androidx.compose.material3.Co
  */
 fun getDarkColorScheme(accentColor: AccentColor): androidx.compose.material3.ColorScheme {
     return when (accentColor) {
+        AccentColor.JELLYFIN_CLASSIC -> JellyfinClassicDarkColorScheme
         AccentColor.JELLYFIN_PURPLE -> JellyfinPurpleDarkColorScheme
         AccentColor.JELLYFIN_BLUE -> JellyfinBlueDarkColorScheme
         AccentColor.JELLYFIN_TEAL -> JellyfinTealDarkColorScheme
@@ -48,6 +50,7 @@ fun getDarkColorScheme(accentColor: AccentColor): androidx.compose.material3.Col
  */
 fun getAmoledBlackColorScheme(accentColor: AccentColor): androidx.compose.material3.ColorScheme {
     return when (accentColor) {
+        AccentColor.JELLYFIN_CLASSIC -> JellyfinClassicAmoledColorScheme
         AccentColor.JELLYFIN_PURPLE -> JellyfinPurpleAmoledColorScheme
         AccentColor.JELLYFIN_BLUE -> JellyfinBlueAmoledColorScheme
         AccentColor.JELLYFIN_TEAL -> JellyfinTealAmoledColorScheme
@@ -59,6 +62,95 @@ fun getAmoledBlackColorScheme(accentColor: AccentColor): androidx.compose.materi
         AccentColor.CUSTOM -> JellyfinPurpleAmoledColorScheme
     }
 }
+
+// ============================================================================
+// JELLYFIN CLASSIC COLOR SCHEMES
+// ============================================================================
+// Reproduces jellyfin-web's actual shipped palette as closely as Material 3's
+// tonal-role system allows. Secondary/tertiary have no direct MUI equivalent
+// (jellyfin-web is effectively single-accent + grayscale), so they're muted,
+// low-saturation companions to the real accent rather than invented brand hues.
+
+private val JellyfinClassicLightColorScheme = lightColorScheme(
+    primary = JellyfinClassicPrimary,
+    onPrimary = JellyfinClassicOnPrimary,
+    primaryContainer = Color(0xFFB3E5FC),
+    onPrimaryContainer = Color(0xFF00323F),
+    secondary = Color(0xFF4A6572),
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFFCFE8F3),
+    onSecondaryContainer = Color(0xFF0A1F26),
+    tertiary = Color(0xFF8A6D1A),
+    onTertiary = Color.White,
+    tertiaryContainer = Color(0xFFF2DFA6),
+    onTertiaryContainer = Color(0xFF2B2205),
+    error = JellyfinClassicError,
+    onError = Color.White,
+    errorContainer = Color(0xFFFFDAD6),
+    onErrorContainer = JellyfinClassicErrorDark,
+    background = JellyfinClassicLightBackground,
+    onBackground = Color.Black,
+    surface = JellyfinClassicLightBackground,
+    onSurface = Color.Black,
+    surfaceVariant = JellyfinClassicLightPaper,
+    onSurfaceVariant = JellyfinClassicLightOnSurfaceVariant,
+    outline = JellyfinClassicLightOutline,
+    outlineVariant = JellyfinClassicLightOutlineVariant,
+)
+
+private val JellyfinClassicDarkColorScheme = darkColorScheme(
+    primary = JellyfinClassicPrimary,
+    onPrimary = JellyfinClassicOnPrimary,
+    primaryContainer = Color(0xFF00506B),
+    onPrimaryContainer = Color(0xFFB3E5FC),
+    secondary = Color(0xFF8FA6B3),
+    onSecondary = Color(0xFF16232A),
+    secondaryContainer = Color(0xFF2E4552),
+    onSecondaryContainer = Color(0xFFCBE0EC),
+    tertiary = Color(0xFFD4AF37),
+    onTertiary = Color(0xFF2B2205),
+    tertiaryContainer = Color(0xFF4A3B0A),
+    onTertiaryContainer = Color(0xFFF2DFA6),
+    error = JellyfinClassicError,
+    onError = Color.White,
+    errorContainer = JellyfinClassicErrorDark,
+    onErrorContainer = Color(0xFFFFDAD6),
+    background = JellyfinClassicDarkBackground,
+    onBackground = Color.White,
+    surface = JellyfinClassicDarkBackground,
+    onSurface = Color.White,
+    surfaceVariant = JellyfinClassicDarkPaper,
+    onSurfaceVariant = JellyfinClassicDarkOnSurfaceVariant,
+    outline = JellyfinClassicDarkOutline,
+    outlineVariant = JellyfinClassicDarkOutlineVariant,
+)
+
+private val JellyfinClassicAmoledColorScheme = darkColorScheme(
+    primary = JellyfinClassicPrimary,
+    onPrimary = JellyfinClassicOnPrimary,
+    primaryContainer = Color(0xFF00506B),
+    onPrimaryContainer = Color(0xFFB3E5FC),
+    secondary = Color(0xFF8FA6B3),
+    onSecondary = Color(0xFF16232A),
+    secondaryContainer = Color(0xFF1E2D34),
+    onSecondaryContainer = Color(0xFFCBE0EC),
+    tertiary = Color(0xFFD4AF37),
+    onTertiary = Color(0xFF2B2205),
+    tertiaryContainer = Color(0xFF332800),
+    onTertiaryContainer = Color(0xFFF2DFA6),
+    error = JellyfinClassicError,
+    onError = Color.White,
+    errorContainer = JellyfinClassicErrorDark,
+    onErrorContainer = Color(0xFFFFDAD6),
+    background = Color.Black,
+    onBackground = Color.White,
+    surface = Color.Black,
+    onSurface = Color.White,
+    surfaceVariant = Color(0xFF1A1A1A),
+    onSurfaceVariant = JellyfinClassicDarkOnSurfaceVariant,
+    outline = JellyfinClassicDarkOutline,
+    outlineVariant = Color(0xFF2A2A2A),
+)
 
 // ============================================================================
 // JELLYFIN PURPLE COLOR SCHEMES
