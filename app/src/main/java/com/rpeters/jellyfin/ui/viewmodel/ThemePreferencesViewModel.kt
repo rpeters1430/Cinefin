@@ -91,6 +91,23 @@ class ThemePreferencesViewModel @Inject constructor(
     }
 
     /**
+     * Update the user-picked custom seed color (ARGB), also switching accent color to CUSTOM.
+     */
+    fun setCustomAccentColor(argb: Int) {
+        viewModelScope.launch {
+            try {
+                themePreferencesRepository.setCustomAccentColorArgb(argb)
+                themePreferencesRepository.setAccentColor(AccentColor.CUSTOM)
+                SecureLogger.d(TAG, "Custom accent color updated")
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                SecureLogger.e(TAG, "Failed to update custom accent color", e)
+            }
+        }
+    }
+
+    /**
      * Update the contrast level.
      */
     fun setContrastLevel(contrastLevel: ContrastLevel) {

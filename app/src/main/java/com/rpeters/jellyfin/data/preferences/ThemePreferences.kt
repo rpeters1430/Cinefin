@@ -58,6 +58,9 @@ enum class AccentColor {
 
     /** Material orange */
     MATERIAL_ORANGE,
+
+    /** User-picked custom seed color (see [ThemePreferences.customAccentColorArgb]) */
+    CUSTOM,
 }
 
 /**
@@ -98,6 +101,12 @@ data class ThemePreferences(
     val accentColor: AccentColor = AccentColor.JELLYFIN_PURPLE,
 
     /**
+     * ARGB value of the user-picked seed color, used when [accentColor] is [AccentColor.CUSTOM].
+     * Defaults to the Jellyfin expressive primary purple.
+     */
+    val customAccentColorArgb: Int = DEFAULT_CUSTOM_ACCENT_ARGB,
+
+    /**
      * Contrast level for theme colors.
      */
     val contrastLevel: ContrastLevel = ContrastLevel.STANDARD,
@@ -130,3 +139,6 @@ data class ThemePreferences(
         val DEFAULT = ThemePreferences()
     }
 }
+
+/** ARGB for [ThemePreferences.customAccentColorArgb]'s default; matches ui.theme.ExpressivePrimary. */
+const val DEFAULT_CUSTOM_ACCENT_ARGB: Int = 0xFF6442D6.toInt()

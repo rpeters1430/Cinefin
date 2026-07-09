@@ -29,12 +29,14 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Accessibility
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ColorLens
+import androidx.compose.material.icons.filled.Colorize
 import androidx.compose.material.icons.filled.Contrast
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.FontDownload
@@ -43,22 +45,32 @@ import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Tonality
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
@@ -100,6 +112,18 @@ fun AppearanceSettingsScreen(
     viewModel: ThemePreferencesViewModel = hiltViewModel(),
 ) {
     val themePreferences by viewModel.themePreferences.collectAsStateWithLifecycle()
+    var showCustomColorPicker by remember { mutableStateOf(false) }
+
+    if (showCustomColorPicker) {
+        CustomColorPickerDialog(
+            initialColor = Color(themePreferences.customAccentColorArgb),
+            onDismiss = { showCustomColorPicker = false },
+            onConfirm = { color ->
+                viewModel.setCustomAccentColor(color.toArgb())
+                showCustomColorPicker = false
+            },
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -176,7 +200,9 @@ fun AppearanceSettingsScreen(
                             )
                             AccentColorRow(
                                 selectedColor = themePreferences.accentColor,
-                                onColorSelect = { viewModel.setAccentColor(it) }
+                                customColor = Color(themePreferences.customAccentColorArgb),
+                                onColorSelect = { viewModel.setAccentColor(it) },
+                                onCustomColorClick = { showCustomColorPicker = true },
                             )
                         }
                     }
@@ -204,7 +230,9 @@ fun AppearanceSettingsScreen(
                     )
                     AccentColorRow(
                         selectedColor = themePreferences.accentColor,
-                        onColorSelect = { viewModel.setAccentColor(it) }
+                        customColor = Color(themePreferences.customAccentColorArgb),
+                        onColorSelect = { viewModel.setAccentColor(it) },
+                        onCustomColorClick = { showCustomColorPicker = true },
                     )
                 }
             }
@@ -567,20 +595,172 @@ private fun ThemeModeCard(
 @Composable
 private fun AccentColorRow(
     selectedColor: AccentColor,
-    onColorSelect: (AccentColor) -> Unit
+    customColor: Color,
+    onColorSelect: (AccentColor) -> Unit,
+    onCustomColorClick: () -> Unit,
 ) {
     LazyRow(
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)
     ) {
-        items(AccentColor.entries) { color ->
+        items(AccentColor.entries.filter { it != AccentColor.CUSTOM }) { color ->
             AccentColorCircle(
                 color = color,
                 selected = selectedColor == color,
                 onClick = { onColorSelect(color) }
             )
         }
+        item {
+            CustomAccentColorCircle(
+                customColor = customColor,
+                selected = selectedColor == AccentColor.CUSTOM,
+                onClick = onCustomColorClick,
+            )
+        }
     }
+}
+
+@Composable
+private fun CustomAccentColorCircle(
+    customColor: Color,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    val size by animateDpAsState(targetValue = if (selected) 56.dp else 48.dp, label = "size")
+    val borderColor by animateColorAsState(
+        targetValue = if (selected) JellyfinExpressiveTheme.colors.selectionOutline else Color.Transparent,
+        label = "border"
+    )
+    val rainbowBrush = remember {
+        Brush.sweepGradient(
+            listOf(
+                Color(0xFFFF0000),
+                Color(0xFFFFFF00),
+                Color(0xFF00FF00),
+                Color(0xFF00FFFF),
+                Color(0xFF0000FF),
+                Color(0xFFFF00FF),
+                Color(0xFFFF0000),
+            )
+        )
+    }
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier.width(64.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(size)
+                .shadow(if (selected) 8.dp else 2.dp, CircleShape)
+                .clip(CircleShape)
+                .then(
+                    if (selected) Modifier.background(customColor)
+                    else Modifier.background(rainbowBrush)
+                )
+                .then(
+                    if (selected) Modifier.border(3.dp, borderColor, CircleShape)
+                    else Modifier
+                )
+                .clickable(onClick = onClick),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = if (selected) Icons.Default.Check else Icons.Default.Colorize,
+                contentDescription = "Pick a custom accent color",
+                tint = if (selected && customColor.luminance() > 0.5f) Color.Black else Color.White,
+                modifier = Modifier.size(if (selected) 24.dp else 20.dp)
+            )
+        }
+        Text(
+            text = "Custom",
+            style = MaterialTheme.typography.labelSmall,
+            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+            maxLines = 1
+        )
+    }
+}
+
+@Composable
+private fun CustomColorPickerDialog(
+    initialColor: Color,
+    onDismiss: () -> Unit,
+    onConfirm: (Color) -> Unit,
+) {
+    val initialHsv = remember(initialColor) {
+        val hsv = FloatArray(3)
+        android.graphics.Color.colorToHSV(initialColor.toArgb(), hsv)
+        hsv
+    }
+    var hue by remember { mutableFloatStateOf(initialHsv[0]) }
+    var saturation by remember { mutableFloatStateOf(initialHsv[1]) }
+    var brightness by remember { mutableFloatStateOf(initialHsv[2]) }
+    val previewColor = Color(android.graphics.Color.HSVToColor(floatArrayOf(hue, saturation, brightness)))
+    var hexText by remember(previewColor) {
+        mutableStateOf(
+            "#%06X".format(java.util.Locale.ROOT, 0xFFFFFF and previewColor.toArgb()),
+        )
+    }
+
+    fun applyHex(text: String) {
+        hexText = text
+        val normalized = if (text.startsWith("#")) text else "#$text"
+        val parsedArgb = runCatching { android.graphics.Color.parseColor(normalized) }.getOrNull()
+        if (parsedArgb != null) {
+            val hsv = FloatArray(3)
+            android.graphics.Color.colorToHSV(parsedArgb, hsv)
+            hue = hsv[0]
+            saturation = hsv[1]
+            brightness = hsv[2]
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Custom Accent Color") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(64.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(previewColor)
+                )
+                Column {
+                    Text("Hue", style = MaterialTheme.typography.labelMedium)
+                    Slider(value = hue, onValueChange = { hue = it }, valueRange = 0f..360f)
+                }
+                Column {
+                    Text("Saturation", style = MaterialTheme.typography.labelMedium)
+                    Slider(value = saturation, onValueChange = { saturation = it }, valueRange = 0f..1f)
+                }
+                Column {
+                    Text("Brightness", style = MaterialTheme.typography.labelMedium)
+                    Slider(value = brightness, onValueChange = { brightness = it }, valueRange = 0.05f..1f)
+                }
+                OutlinedTextField(
+                    value = hexText,
+                    onValueChange = { applyHex(it) },
+                    label = { Text("Hex") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(previewColor) }) {
+                Text("Apply")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        },
+    )
 }
 
 @Composable

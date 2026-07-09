@@ -18,6 +18,9 @@ fun getLightColorScheme(accentColor: AccentColor): androidx.compose.material3.Co
         AccentColor.MATERIAL_GREEN -> MaterialGreenLightColorScheme
         AccentColor.MATERIAL_RED -> MaterialRedLightColorScheme
         AccentColor.MATERIAL_ORANGE -> MaterialOrangeLightColorScheme
+        // CUSTOM is handled upstream in JellyfinAndroidTheme via rememberDynamicColorScheme;
+        // this fallback only matters if this function is called directly with CUSTOM.
+        AccentColor.CUSTOM -> JellyfinPurpleLightColorScheme
     }
 }
 
@@ -35,6 +38,7 @@ fun getDarkColorScheme(accentColor: AccentColor): androidx.compose.material3.Col
         AccentColor.MATERIAL_GREEN -> MaterialGreenDarkColorScheme
         AccentColor.MATERIAL_RED -> MaterialRedDarkColorScheme
         AccentColor.MATERIAL_ORANGE -> MaterialOrangeDarkColorScheme
+        AccentColor.CUSTOM -> JellyfinPurpleDarkColorScheme
     }
 }
 
@@ -52,6 +56,7 @@ fun getAmoledBlackColorScheme(accentColor: AccentColor): androidx.compose.materi
         AccentColor.MATERIAL_GREEN -> MaterialGreenAmoledColorScheme
         AccentColor.MATERIAL_RED -> MaterialRedAmoledColorScheme
         AccentColor.MATERIAL_ORANGE -> MaterialOrangeAmoledColorScheme
+        AccentColor.CUSTOM -> JellyfinPurpleAmoledColorScheme
     }
 }
 
