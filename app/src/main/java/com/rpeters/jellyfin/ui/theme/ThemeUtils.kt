@@ -9,8 +9,9 @@ import com.rpeters.jellyfin.data.preferences.ThemeMode
  * Get a preview color for an accent color selection.
  * Used in the accent color picker to show what each color looks like.
  */
-fun getAccentColorForPreview(accentColor: AccentColor): Color {
+fun getAccentColorForPreview(accentColor: AccentColor, customColor: Color = ExpressivePrimary): Color {
     return when (accentColor) {
+        AccentColor.JELLYFIN_CLASSIC -> JellyfinClassicPrimary
         AccentColor.JELLYFIN_PURPLE -> JellyfinPurple40
         AccentColor.JELLYFIN_BLUE -> JellyfinBlue40
         AccentColor.JELLYFIN_TEAL -> JellyfinTeal40
@@ -19,6 +20,7 @@ fun getAccentColorForPreview(accentColor: AccentColor): Color {
         AccentColor.MATERIAL_GREEN -> Color(0xFF006E1C)
         AccentColor.MATERIAL_RED -> Color(0xFFB3261E)
         AccentColor.MATERIAL_ORANGE -> Color(0xFF825500)
+        AccentColor.CUSTOM -> customColor
     }
 }
 
@@ -73,6 +75,7 @@ fun getContrastLevelDescription(contrastLevel: ContrastLevel): String {
  */
 fun getAccentColorName(accentColor: AccentColor): String {
     return when (accentColor) {
+        AccentColor.JELLYFIN_CLASSIC -> "Jellyfin Classic"
         AccentColor.JELLYFIN_PURPLE -> "Jellyfin Purple"
         AccentColor.JELLYFIN_BLUE -> "Jellyfin Blue"
         AccentColor.JELLYFIN_TEAL -> "Jellyfin Teal"
@@ -81,5 +84,6 @@ fun getAccentColorName(accentColor: AccentColor): String {
         AccentColor.MATERIAL_GREEN -> "Material Green"
         AccentColor.MATERIAL_RED -> "Material Red"
         AccentColor.MATERIAL_ORANGE -> "Material Orange"
+        AccentColor.CUSTOM -> "Custom"
     }
 }

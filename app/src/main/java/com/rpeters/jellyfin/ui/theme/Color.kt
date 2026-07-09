@@ -86,6 +86,39 @@ val SubtitlePreviewGradientStart = Color(0xFF1A1A1A)
 val SubtitlePreviewGradientEnd = Color(0xFF333333)
 
 // ============================================================================
+// JELLYFIN CLASSIC (WEB CLIENT) PALETTE
+// ============================================================================
+// Sourced directly from jellyfin-web's shipped theme so this preset matches
+// the actual server web UI, not a Material reinterpretation of the brand.
+// See: jellyfin/jellyfin-web src/themes/_base/_palette.scss, dark/theme.scss,
+// light/theme.scss.
+
+// Accent (MUI primary) — identical across light and dark in jellyfin-web
+val JellyfinClassicPrimary = Color(0xFF00A4DC)
+val JellyfinClassicPrimaryDark = Color(0xFF00729A)
+val JellyfinClassicPrimaryLight = Color(0xFF33B6E3)
+val JellyfinClassicOnPrimary = Color(0xFF0D1B1F) // MUI primary-contrastText: rgba(0,0,0,.87)
+
+// Error (MUI error palette)
+val JellyfinClassicError = Color(0xFFC62828)
+val JellyfinClassicErrorDark = Color(0xFF8A1C1C)
+val JellyfinClassicErrorLight = Color(0xFFD15353)
+
+// Dark theme surfaces (jellyfin-web default theme)
+val JellyfinClassicDarkBackground = Color(0xFF101010)
+val JellyfinClassicDarkPaper = Color(0xFF202020)
+val JellyfinClassicDarkOnSurfaceVariant = Color(0xFFB7B7B7) // text-secondary ~70% white
+val JellyfinClassicDarkOutline = Color(0xFF6B6B6B)
+val JellyfinClassicDarkOutlineVariant = Color(0xFF3B3B3B) // divider ~12% white
+
+// Light theme surfaces (jellyfin-web light theme)
+val JellyfinClassicLightBackground = Color(0xFFF2F2F2)
+val JellyfinClassicLightPaper = Color(0xFFE8E8E8)
+val JellyfinClassicLightOnSurfaceVariant = Color(0xFF5C5C5C)
+val JellyfinClassicLightOutline = Color(0xFF8A8A8A)
+val JellyfinClassicLightOutlineVariant = Color(0xFFC8C8C8)
+
+// ============================================================================
 // EXPRESSIVE COLOR SYSTEM
 // ============================================================================
 

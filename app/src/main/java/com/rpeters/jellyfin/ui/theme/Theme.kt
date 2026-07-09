@@ -5,12 +5,16 @@ package com.rpeters.jellyfin.ui.theme
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MaterialExpressiveTheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import com.materialkolor.PaletteStyle
+import com.materialkolor.rememberDynamicColorScheme
 import com.rpeters.jellyfin.OptInAppExperimentalApis
+import com.rpeters.jellyfin.data.preferences.AccentColor
 import com.rpeters.jellyfin.data.preferences.ContrastLevel
 import com.rpeters.jellyfin.data.preferences.ThemeMode
 import com.rpeters.jellyfin.data.preferences.ThemePreferences
@@ -81,6 +85,17 @@ fun JellyfinAndroidTheme(
             }
         }
 
+        // User-picked custom seed color: generate a full Material You palette from it,
+        // using the Expressive palette style for richer, more distinct tonal roles.
+        themePreferences.accentColor == AccentColor.CUSTOM -> {
+            rememberDynamicColorScheme(
+                seedColor = Color(themePreferences.customAccentColorArgb),
+                isDark = darkTheme,
+                isAmoled = themePreferences.themeMode == ThemeMode.AMOLED_BLACK,
+                style = PaletteStyle.Expressive,
+            )
+        }
+
         // Use AMOLED Black theme
         themePreferences.themeMode == ThemeMode.AMOLED_BLACK -> {
             getAmoledBlackColorScheme(themePreferences.accentColor)
@@ -107,7 +122,7 @@ fun JellyfinAndroidTheme(
 
     val fontFamily = themePreferences.appFont.toFontFamily()
 
-    MaterialTheme(
+    MaterialExpressiveTheme(
         colorScheme = tunedColorScheme,
         typography = getTypography(fontFamily),
         shapes = JellyfinShapes,

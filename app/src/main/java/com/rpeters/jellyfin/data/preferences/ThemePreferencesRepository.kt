@@ -5,6 +5,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.rpeters.jellyfin.utils.SecureLogger
@@ -62,6 +63,8 @@ open class ThemePreferencesRepository(
                     value = preferences[PreferencesKeys.ACCENT_COLOR],
                     default = defaults.accentColor,
                 ),
+                customAccentColorArgb = preferences[PreferencesKeys.CUSTOM_ACCENT_COLOR]
+                    ?: defaults.customAccentColorArgb,
                 contrastLevel = parseEnum(
                     value = preferences[PreferencesKeys.CONTRAST_LEVEL],
                     default = defaults.contrastLevel,
@@ -103,6 +106,19 @@ open class ThemePreferencesRepository(
     open suspend fun setAccentColor(accentColor: AccentColor) {
         dataStore.edit { preferences ->
             preferences[PreferencesKeys.ACCENT_COLOR] = accentColor.name
+        }
+    }
+
+    /**
+     * Update the user-picked custom seed color (ARGB) in a single DataStore write, optionally
+     * also selecting it as the active accent color to avoid a second write + flow emission.
+     */
+    open suspend fun setCustomAccentColor(argb: Int, selectAsActive: Boolean = true) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.CUSTOM_ACCENT_COLOR] = argb
+            if (selectAsActive) {
+                preferences[PreferencesKeys.ACCENT_COLOR] = AccentColor.CUSTOM.name
+            }
         }
     }
 
@@ -191,6 +207,7 @@ open class ThemePreferencesRepository(
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val USE_DYNAMIC_COLORS = booleanPreferencesKey("use_dynamic_colors")
         val ACCENT_COLOR = stringPreferencesKey("accent_color")
+        val CUSTOM_ACCENT_COLOR = intPreferencesKey("custom_accent_color_argb")
         val CONTRAST_LEVEL = stringPreferencesKey("contrast_level")
         val APP_FONT = stringPreferencesKey("app_font")
         val USE_THEMED_ICON = booleanPreferencesKey("use_themed_icon")

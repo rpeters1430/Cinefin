@@ -197,6 +197,7 @@ dependencies {
     implementation(libs.androidx.material3.window.size)
     implementation(libs.androidx.window)
     implementation(libs.google.material)
+    implementation(libs.material.kolor)
 
     // Navigation
     implementation(libs.androidx.navigation.compose)
