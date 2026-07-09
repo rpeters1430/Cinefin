@@ -58,6 +58,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -592,6 +593,8 @@ private fun ThemeModeCard(
     }
 }
 
+private val PresetAccentColors = AccentColor.entries.filter { it != AccentColor.CUSTOM }
+
 @Composable
 private fun AccentColorRow(
     selectedColor: AccentColor,
@@ -603,7 +606,7 @@ private fun AccentColorRow(
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)
     ) {
-        items(AccentColor.entries.filter { it != AccentColor.CUSTOM }) { color ->
+        items(PresetAccentColors) { color ->
             AccentColorCircle(
                 color = color,
                 selected = selectedColor == color,
@@ -694,14 +697,29 @@ private fun CustomColorPickerDialog(
         android.graphics.Color.colorToHSV(initialColor.toArgb(), hsv)
         hsv
     }
-    var hue by remember { mutableFloatStateOf(initialHsv[0]) }
-    var saturation by remember { mutableFloatStateOf(initialHsv[1]) }
-    var brightness by remember { mutableFloatStateOf(initialHsv[2]) }
-    val previewColor = Color(android.graphics.Color.HSVToColor(floatArrayOf(hue, saturation, brightness)))
-    var hexText by remember(previewColor) {
+    var hue by remember(initialHsv) { mutableFloatStateOf(initialHsv[0]) }
+    var saturation by remember(initialHsv) { mutableFloatStateOf(initialHsv[1]) }
+    var brightness by remember(initialHsv) { mutableFloatStateOf(initialHsv[2]) }
+    val hsvArray = remember { FloatArray(3) }
+    hsvArray[0] = hue
+    hsvArray[1] = saturation
+    hsvArray[2] = brightness
+    val previewColor = Color(android.graphics.Color.HSVToColor(hsvArray))
+    var hexText by remember(initialColor) {
         mutableStateOf(
-            "#%06X".format(java.util.Locale.ROOT, 0xFFFFFF and previewColor.toArgb()),
+            "#%06X".format(java.util.Locale.ROOT, 0xFFFFFF and initialColor.toArgb()),
         )
+    }
+
+    // Reflect slider-driven color changes into the hex field, but only when the
+    // parsed hex doesn't already match — otherwise typing a valid hex would
+    // recompose this state and jump the cursor to the end on every keystroke.
+    LaunchedEffect(previewColor) {
+        val normalized = if (hexText.startsWith("#")) hexText else "#$hexText"
+        val parsedArgb = runCatching { android.graphics.Color.parseColor(normalized) }.getOrNull()
+        if (parsedArgb != previewColor.toArgb()) {
+            hexText = "#%06X".format(java.util.Locale.ROOT, 0xFFFFFF and previewColor.toArgb())
+        }
     }
 
     fun applyHex(text: String) {

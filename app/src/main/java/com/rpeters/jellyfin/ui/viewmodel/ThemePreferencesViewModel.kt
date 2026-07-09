@@ -96,8 +96,7 @@ class ThemePreferencesViewModel @Inject constructor(
     fun setCustomAccentColor(argb: Int) {
         viewModelScope.launch {
             try {
-                themePreferencesRepository.setCustomAccentColorArgb(argb)
-                themePreferencesRepository.setAccentColor(AccentColor.CUSTOM)
+                themePreferencesRepository.setCustomAccentColor(argb, selectAsActive = true)
                 SecureLogger.d(TAG, "Custom accent color updated")
             } catch (e: CancellationException) {
                 throw e

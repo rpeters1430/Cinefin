@@ -108,6 +108,30 @@ class ThemePreferencesRepositoryTest {
     }
 
     @Test
+    fun `setCustomAccentColor persists argb and selects CUSTOM in a single write`() = runTest {
+        val repository = createRepository()
+        val argb = 0xFF33B6E3.toInt()
+
+        repository.setCustomAccentColor(argb)
+        val preferences = repository.themePreferencesFlow.first()
+
+        assertEquals(argb, preferences.customAccentColorArgb)
+        assertEquals(AccentColor.CUSTOM, preferences.accentColor)
+    }
+
+    @Test
+    fun `setCustomAccentColor with selectAsActive false only persists argb`() = runTest {
+        val repository = createRepository()
+        val argb = 0xFF33B6E3.toInt()
+
+        repository.setCustomAccentColor(argb, selectAsActive = false)
+        val preferences = repository.themePreferencesFlow.first()
+
+        assertEquals(argb, preferences.customAccentColorArgb)
+        assertEquals(AccentColor.JELLYFIN_PURPLE, preferences.accentColor)
+    }
+
+    @Test
     fun `setAccentColor persists all available colors`() = runTest {
         val repository = createRepository()
         AccentColor.entries.forEach { color ->

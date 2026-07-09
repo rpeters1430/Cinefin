@@ -225,6 +225,20 @@ class ThemePreferencesViewModelTest {
         }
     }
 
+    @Test
+    fun `setCustomAccentColor calls repository with argb and selectAsActive true`() = runTest {
+        // Given
+        val argb = 0xFF33B6E3.toInt()
+        coEvery { mockRepository.setCustomAccentColor(any(), any()) } returns Unit
+
+        // When
+        viewModel.setCustomAccentColor(argb)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Then
+        coVerify(exactly = 1) { mockRepository.setCustomAccentColor(argb, selectAsActive = true) }
+    }
+
     // ========================================================================
     // CONTRAST LEVEL TESTS
     // ========================================================================

@@ -110,11 +110,15 @@ open class ThemePreferencesRepository(
     }
 
     /**
-     * Update the user-picked custom seed color (ARGB), used when accent color is [AccentColor.CUSTOM].
+     * Update the user-picked custom seed color (ARGB) in a single DataStore write, optionally
+     * also selecting it as the active accent color to avoid a second write + flow emission.
      */
-    open suspend fun setCustomAccentColorArgb(argb: Int) {
+    open suspend fun setCustomAccentColor(argb: Int, selectAsActive: Boolean = true) {
         dataStore.edit { preferences ->
             preferences[PreferencesKeys.CUSTOM_ACCENT_COLOR] = argb
+            if (selectAsActive) {
+                preferences[PreferencesKeys.ACCENT_COLOR] = AccentColor.CUSTOM.name
+            }
         }
     }
 

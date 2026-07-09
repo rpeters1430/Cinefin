@@ -9,7 +9,7 @@ import com.rpeters.jellyfin.data.preferences.ThemeMode
  * Get a preview color for an accent color selection.
  * Used in the accent color picker to show what each color looks like.
  */
-fun getAccentColorForPreview(accentColor: AccentColor, customColor: Color = Color(0xFF6442D6)): Color {
+fun getAccentColorForPreview(accentColor: AccentColor, customColor: Color = ExpressivePrimary): Color {
     return when (accentColor) {
         AccentColor.JELLYFIN_CLASSIC -> JellyfinClassicPrimary
         AccentColor.JELLYFIN_PURPLE -> JellyfinPurple40
