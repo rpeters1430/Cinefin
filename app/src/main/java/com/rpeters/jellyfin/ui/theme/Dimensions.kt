@@ -49,6 +49,10 @@ object ImmersiveDimens {
     val CornerRadiusCard = 8.dp
     val CornerRadiusSmall = 4.dp
 
+    // Material 3 Expressive corner scale (matches ShapeTokens.CornerLargeIncreased / CornerMedium)
+    val CardCornerRadius = 20.dp
+    val RatingBadgeCornerRadius = 12.dp
+
     // Overlay gradients
     val GradientHeightHero = 200.dp
     val GradientHeightCard = 120.dp
