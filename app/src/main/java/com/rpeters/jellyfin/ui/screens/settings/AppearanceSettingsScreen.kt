@@ -894,6 +894,9 @@ private fun getAppFontName(font: AppFont): String {
         AppFont.SANS_SERIF -> "Sans-Serif"
         AppFont.SERIF -> "Serif"
         AppFont.MONOSPACE -> "Monospace"
+        AppFont.ROBOTO_FLEX -> "Roboto Flex"
+        AppFont.INTER -> "Inter"
+        AppFont.OUTFIT -> "Outfit"
     }
 }
 
@@ -903,5 +906,8 @@ private fun getAppFontDescription(font: AppFont): String {
         AppFont.SANS_SERIF -> "Clean and modern"
         AppFont.SERIF -> "Classic and elegant"
         AppFont.MONOSPACE -> "Fixed-width coding font"
+        AppFont.ROBOTO_FLEX -> "Official Google M3 variable font"
+        AppFont.INTER -> "Clean geometric sans-serif"
+        AppFont.OUTFIT -> "Premium warm geometric font"
     }
 }

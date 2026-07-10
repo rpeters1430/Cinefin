@@ -64,14 +64,6 @@ fun ExpressiveMediaListItem(
         )
 
     ListItem(
-        headlineContent = {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        },
         overlineContent = overline?.let {
             {
                 Text(
@@ -110,7 +102,14 @@ fun ExpressiveMediaListItem(
             leadingIconColor = MaterialTheme.colorScheme.primary,
         ),
         modifier = clickModifier,
-    )
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
 }
 
 /**
@@ -128,12 +127,6 @@ fun ExpressiveCheckableListItem(
     val haptics = rememberExpressiveHaptics()
 
     ListItem(
-        headlineContent = {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-            )
-        },
         modifier = modifier
             .fillMaxWidth()
             .combinedClickable(
@@ -164,7 +157,12 @@ fun ExpressiveCheckableListItem(
         colors = ListItemDefaults.colors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         ),
-    )
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+        )
+    }
 }
 
 /**
@@ -183,12 +181,6 @@ fun ExpressiveSwitchListItem(
     val haptics = rememberExpressiveHaptics()
 
     ListItem(
-        headlineContent = {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-            )
-        },
         modifier = modifier
             .fillMaxWidth()
             .combinedClickable(
@@ -229,7 +221,12 @@ fun ExpressiveSwitchListItem(
         colors = ListItemDefaults.colors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         ),
-    )
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+        )
+    }
 }
 
 /**
@@ -247,12 +244,6 @@ fun ExpressiveRadioListItem(
     val haptics = rememberExpressiveHaptics()
 
     ListItem(
-        headlineContent = {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-            )
-        },
         modifier = modifier
             .fillMaxWidth()
             .selectable(
@@ -291,7 +282,12 @@ fun ExpressiveRadioListItem(
         colors = ListItemDefaults.colors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         ),
-    )
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+        )
+    }
 }
 
 /**
@@ -316,31 +312,6 @@ fun ExpressiveSegmentedListItem(
     }
 
     ListItem(
-        headlineContent = {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Surface(
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                    shape = MaterialTheme.shapes.extraLarge,
-                ) {
-                    Text(
-                        text = segment,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
-                    )
-                }
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-        },
         supportingContent = subtitle?.let {
             {
                 Text(
@@ -362,5 +333,29 @@ fun ExpressiveSegmentedListItem(
                     onClick()
                 }
             ),
-    )
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Surface(
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                shape = MaterialTheme.shapes.extraLarge,
+            ) {
+                Text(
+                    text = segment,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                )
+            }
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
 }

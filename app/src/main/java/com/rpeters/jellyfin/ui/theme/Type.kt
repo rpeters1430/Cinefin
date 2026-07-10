@@ -8,6 +8,31 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.rpeters.jellyfin.data.preferences.AppFont
 
+import androidx.compose.ui.text.googlefonts.Font
+import androidx.compose.ui.text.googlefonts.GoogleFont
+import com.rpeters.jellyfin.R
+
+private val provider = GoogleFont.Provider(
+    providerAuthority = "com.google.android.gms.fonts",
+    providerPackage = "com.google.android.gms",
+    certificates = R.array.com_google_android_gms_fonts_certs
+)
+
+val RobotoFlexFont = GoogleFont("Roboto Flex")
+val RobotoFlexFontFamily = FontFamily(
+    Font(googleFont = RobotoFlexFont, fontProvider = provider)
+)
+
+val InterFont = GoogleFont("Inter")
+val InterFontFamily = FontFamily(
+    Font(googleFont = InterFont, fontProvider = provider)
+)
+
+val OutfitFont = GoogleFont("Outfit")
+val OutfitFontFamily = FontFamily(
+    Font(googleFont = OutfitFont, fontProvider = provider)
+)
+
 // Material 3 Expressive typography system for Jellyfin
 fun AppFont.toFontFamily(): FontFamily {
     return when (this) {
@@ -15,6 +40,9 @@ fun AppFont.toFontFamily(): FontFamily {
         AppFont.SANS_SERIF -> FontFamily.SansSerif
         AppFont.SERIF -> FontFamily.Serif
         AppFont.MONOSPACE -> FontFamily.Monospace
+        AppFont.ROBOTO_FLEX -> RobotoFlexFontFamily
+        AppFont.INTER -> InterFontFamily
+        AppFont.OUTFIT -> OutfitFontFamily
     }
 }
 

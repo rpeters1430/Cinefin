@@ -1,3 +1,5 @@
+@file:OptInAppExperimentalApis
+
 package com.rpeters.jellyfin.ui.components
 
 import androidx.compose.animation.core.LinearEasing
@@ -39,6 +41,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.utils.DeviceTypeUtils
 import kotlin.math.sin
 
@@ -79,68 +82,44 @@ fun ExpressiveCircularLoading(
     }
 }
 
-/**
- * Expressive linear loading with wave animation
- */
 @Composable
 fun ExpressiveLinearLoading(
     progress: Float? = null,
     modifier: Modifier = Modifier,
     showWave: Boolean = true,
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "linear_loading")
-    val waveColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
-
-    val waveOffset by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 2000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart,
-        ),
-        label = "wave_offset",
-    )
-
-    if (progress != null) {
-        // Determinate progress
-        LinearProgressIndicator(
-            progress = { progress },
-            modifier = modifier,
-            color = MaterialTheme.colorScheme.primary,
-            trackColor = MaterialTheme.colorScheme.surfaceVariant,
-            strokeCap = StrokeCap.Round,
-        )
-    } else {
-        // Indeterminate with wave effect
-        Box(modifier = modifier) {
+    if (DeviceTypeUtils.isEmulator()) {
+        if (progress != null) {
             LinearProgressIndicator(
-                modifier = Modifier.fillMaxWidth(),
+                progress = { progress },
+                modifier = modifier,
                 color = MaterialTheme.colorScheme.primary,
                 trackColor = MaterialTheme.colorScheme.surfaceVariant,
                 strokeCap = StrokeCap.Round,
             )
-
-            if (showWave) {
-                Canvas(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(4.dp),
-                ) {
-                    val width = size.width
-                    val height = size.height
-                    val waveLength = width / 3f
-                    val amplitude = height / 4f
-
-                    for (x in 0..width.toInt() step 2) {
-                        val y = amplitude * sin((x / waveLength + waveOffset * 2) * Math.PI).toFloat()
-                        drawCircle(
-                            color = waveColor,
-                            radius = 1.dp.toPx(),
-                            center = Offset(x.toFloat(), height / 2 + y),
-                        )
-                    }
-                }
-            }
+        } else {
+            LinearProgressIndicator(
+                modifier = modifier,
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                strokeCap = StrokeCap.Round,
+            )
+        }
+    } else {
+        if (progress != null) {
+            val nonNullProgress = progress
+            androidx.compose.material3.LinearWavyProgressIndicator(
+                progress = { nonNullProgress },
+                modifier = modifier,
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant,
+            )
+        } else {
+            androidx.compose.material3.LinearWavyProgressIndicator(
+                modifier = modifier,
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant,
+            )
         }
     }
 }

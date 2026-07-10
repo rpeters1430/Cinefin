@@ -81,6 +81,15 @@ enum class AppFont {
 
     /** Monospace font */
     MONOSPACE,
+
+    /** Official Google M3 variable font */
+    ROBOTO_FLEX,
+
+    /** Clean geometric sans-serif */
+    INTER,
+
+    /** Premium warm geometric font */
+    OUTFIT,
 }
 
 /**

@@ -5,6 +5,8 @@ import androidx.compose.animation.core.Easing
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.MotionScheme
 
 /**
  * Material 3 Expressive Motion tokens for consistent animations across the app
@@ -125,4 +127,37 @@ object MotionTokens {
         durationMillis = DurationShort4,
         easing = AccelerateEasing,
     )
+
+    // Material 3 MotionScheme API definitions
+    @OptIn(ExperimentalMaterial3ExpressiveApi::class)
+    val expressiveMotionScheme: MotionScheme = MotionScheme.expressive()
+
+    @OptIn(ExperimentalMaterial3ExpressiveApi::class)
+    val standardMotionScheme: MotionScheme = MotionScheme.standard()
+
+    /**
+     * A motion scheme designed for accessibility (reduced motion).
+     * Replaces spatial movement/bounds changes with immediate snaps (0ms)
+     * and reduces effects/fades to extremely short durations (50ms).
+     */
+    @OptIn(ExperimentalMaterial3ExpressiveApi::class)
+    val reducedMotionScheme: MotionScheme = object : MotionScheme {
+        override fun <T> defaultEffectsSpec(): androidx.compose.animation.core.FiniteAnimationSpec<T> =
+            androidx.compose.animation.core.tween(durationMillis = 50)
+        
+        override fun <T> fastEffectsSpec(): androidx.compose.animation.core.FiniteAnimationSpec<T> =
+            androidx.compose.animation.core.tween(durationMillis = 50)
+        
+        override fun <T> slowEffectsSpec(): androidx.compose.animation.core.FiniteAnimationSpec<T> =
+            androidx.compose.animation.core.tween(durationMillis = 100)
+
+        override fun <T> defaultSpatialSpec(): androidx.compose.animation.core.FiniteAnimationSpec<T> =
+            androidx.compose.animation.core.snap()
+        
+        override fun <T> fastSpatialSpec(): androidx.compose.animation.core.FiniteAnimationSpec<T> =
+            androidx.compose.animation.core.snap()
+        
+        override fun <T> slowSpatialSpec(): androidx.compose.animation.core.FiniteAnimationSpec<T> =
+            androidx.compose.animation.core.snap()
+    }
 }

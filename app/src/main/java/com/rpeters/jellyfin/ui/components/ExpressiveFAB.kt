@@ -31,6 +31,14 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.ui.theme.MotionTokens
 
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FloatingActionButtonMenu
+import androidx.compose.material3.ToggleFloatingActionButton
+import androidx.compose.material3.FloatingActionButtonMenuItem
+import com.rpeters.jellyfin.OptInAppExperimentalApis
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@OptInAppExperimentalApis
 @Composable
 fun ExpressiveFABMenu(
     modifier: Modifier = Modifier,
@@ -44,66 +52,57 @@ fun ExpressiveFABMenu(
 
     AnimatedVisibility(
         visible = isVisible,
-        enter = scaleIn(MotionTokens.fabMenuExpand) + fadeIn(),
-        exit = scaleOut(MotionTokens.fabMenuCollapse) + fadeOut(),
+        enter = scaleIn() + fadeIn(),
+        exit = scaleOut() + fadeOut(),
         modifier = modifier,
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            AnimatedVisibility(visible = isExpanded, enter = fadeIn(), exit = fadeOut()) {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    ExpressiveFabAction(
-                        icon = Icons.Default.PlayArrow,
-                        label = "Play Now",
-                        onClick = {
-                            onPlayClick()
-                            isExpanded = false
-                        },
-                    )
-                    ExpressiveFabAction(
-                        icon = Icons.Default.Queue,
-                        label = "Add to Queue",
-                        onClick = {
-                            onQueueClick()
-                            isExpanded = false
-                        },
-                    )
-                    ExpressiveFabAction(
-                        icon = Icons.Default.Download,
-                        label = "Download",
-                        onClick = {
-                            onDownloadClick()
-                            isExpanded = false
-                        },
-                    )
-                    ExpressiveFabAction(
-                        icon = Icons.Default.Favorite,
-                        label = "Add to Favorites",
-                        onClick = {
-                            onFavoriteClick()
-                            isExpanded = false
-                        },
+        FloatingActionButtonMenu(
+            expanded = isExpanded,
+            button = {
+                ToggleFloatingActionButton(
+                    checked = isExpanded,
+                    onCheckedChange = { isExpanded = it },
+                ) {
+                    Icon(
+                        imageVector = if (isExpanded) Icons.Default.Close else Icons.Default.Add,
+                        contentDescription = if (isExpanded) "Close menu" else "Open menu",
                     )
                 }
             }
-
-            FloatingActionButton(onClick = { isExpanded = !isExpanded }) {
-                Icon(
-                    imageVector = if (isExpanded) Icons.Default.Close else Icons.Default.Add,
-                    contentDescription = if (isExpanded) "Close menu" else "Open menu",
-                )
-            }
+        ) {
+            FloatingActionButtonMenuItem(
+                onClick = {
+                    onPlayClick()
+                    isExpanded = false
+                },
+                text = { Text("Play Now") },
+                icon = { Icon(Icons.Default.PlayArrow, contentDescription = "Play Now") }
+            )
+            FloatingActionButtonMenuItem(
+                onClick = {
+                    onQueueClick()
+                    isExpanded = false
+                },
+                text = { Text("Add to Queue") },
+                icon = { Icon(Icons.Default.Queue, contentDescription = "Add to Queue") }
+            )
+            FloatingActionButtonMenuItem(
+                onClick = {
+                    onDownloadClick()
+                    isExpanded = false
+                },
+                text = { Text("Download") },
+                icon = { Icon(Icons.Default.Download, contentDescription = "Download") }
+            )
+            FloatingActionButtonMenuItem(
+                onClick = {
+                    onFavoriteClick()
+                    isExpanded = false
+                },
+                text = { Text("Add to Favorites") },
+                icon = { Icon(Icons.Default.Favorite, contentDescription = "Add to Favorites") }
+            )
         }
-    }
-}
-
-@Composable
-private fun ExpressiveFabAction(
-    icon: ImageVector,
-    label: String,
-    onClick: () -> Unit,
-) {
-    SmallFloatingActionButton(onClick = onClick) {
-        Icon(imageVector = icon, contentDescription = label, modifier = Modifier.size(20.dp))
     }
 }
 

@@ -99,7 +99,9 @@
       "mcp__Claude_Code_Remote__send_later",
       "Bash(python3 -c ' *)",
       "Bash(rm -f /root/.claude/projects/-home-user-Cinefin/c641c31e-b76f-5a18-8fc2-2246cce1f99a/tool-results/mcp-github-get_job_logs-1783375795123.txt)",
-      "Bash(rm -f /root/.claude/projects/-home-user-Cinefin/c641c31e-b76f-5a18-8fc2-2246cce1f99a/tool-results/mcp-github-get_job_logs-1783376513510.txt)"
+      "Bash(rm -f /root/.claude/projects/-home-user-Cinefin/c641c31e-b76f-5a18-8fc2-2246cce1f99a/tool-results/mcp-github-get_job_logs-1783376513510.txt)",
+      "Read(//c/Users/rpete/.gradle/**)",
+      "Bash(cygpath -w /tmp/m3samples)"
     ],
     "deny": [],
     "ask": [],

@@ -6,6 +6,8 @@ import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialExpressiveTheme
+import androidx.compose.material3.MotionScheme
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
@@ -122,10 +124,17 @@ fun JellyfinAndroidTheme(
 
     val fontFamily = themePreferences.appFont.toFontFamily()
 
+    val motionScheme = if (themePreferences.respectReduceMotion) {
+        MotionTokens.reducedMotionScheme
+    } else {
+        MotionTokens.expressiveMotionScheme
+    }
+
     MaterialExpressiveTheme(
         colorScheme = tunedColorScheme,
         typography = getTypography(fontFamily),
         shapes = JellyfinShapes,
+        motionScheme = motionScheme,
     ) {
         ProvideJellyfinExpressiveTheme(content = content)
     }

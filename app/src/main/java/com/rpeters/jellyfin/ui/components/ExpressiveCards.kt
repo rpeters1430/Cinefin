@@ -80,10 +80,9 @@ fun ExpressiveMediaCard(
     cardType: ExpressiveCardType = ExpressiveCardType.ELEVATED,
 ) {
     var isPressed by remember { mutableStateOf(false) }
-    // Simplify animations to improve performance
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.98f else 1.0f,
-        animationSpec = MotionTokens.expressiveEnter,
+        animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
         label = "card_scale",
     )
 
@@ -496,7 +495,7 @@ fun ExpressiveContentCard(
     var isPressed by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
         targetValue = if (isPressed && onClick != null) 0.98f else 1.0f,
-        animationSpec = MotionTokens.expressiveEnter,
+        animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
         label = "content_card_scale",
     )
 

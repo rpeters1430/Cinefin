@@ -9,6 +9,7 @@ plugins {
     alias(libs.plugins.google.gms.google.services)
     alias(libs.plugins.google.firebase.crashlytics)
     alias(libs.plugins.google.firebase.perf)
+    id("jacoco")
 }
 
 
@@ -35,8 +36,8 @@ android {
         applicationId = "com.rpeters.jellyfin"
         minSdk = 30
         targetSdk = 37
-        versionCode = 139
-        versionName = "15.7"
+        versionCode = 140
+        versionName = "15.71"
 
         testInstrumentationRunner = "com.rpeters.jellyfin.testing.HiltTestRunner"
 
@@ -185,6 +186,7 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
+    implementation(libs.androidx.ui.text.google.fonts)
     implementation(libs.androidx.ui.tooling.preview)
 
     // Material 3
@@ -370,8 +372,6 @@ tasks.register<JacocoReport>("jacocoTestReport") {
         },
     )
 }
-
-apply(plugin = "jacoco")
 
 tasks.withType<Test> {
     maxHeapSize = "4096m"
