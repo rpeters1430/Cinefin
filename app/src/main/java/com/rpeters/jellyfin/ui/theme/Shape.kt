@@ -56,7 +56,7 @@ val JellyfinShapes = Shapes(
 
 /**
  * Expressive corner scale for the immersive (Netflix-style) UI layer.
- * Values match Material 3's own ShapeDefaults.large/largeIncreased/medium dp values.
+ * Values match Material 3's own ShapeDefaults.largeIncreased/medium dp values.
  */
 object ImmersiveShapes {
     val Card: CornerBasedShape = RoundedCornerShape(ImmersiveDimens.CardCornerRadius)

@@ -13,7 +13,6 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
@@ -113,10 +112,9 @@ fun FloatingActionGroup(
 
 /**
  * Primary FAB that morphs from a circle to a soft polygon while pressed.
- * [progress] is read as a State inside createOutline (not destructured with `by`) so the
- * shape animates on every draw frame without triggering full recomposition.
+ * The animated progress value is read as a State inside createOutline (not destructured with
+ * `by`) so the shape animates on every draw frame without triggering full recomposition.
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun MorphingPrimaryFab(action: FabAction) {
     val interactionSource = remember { MutableInteractionSource() }
