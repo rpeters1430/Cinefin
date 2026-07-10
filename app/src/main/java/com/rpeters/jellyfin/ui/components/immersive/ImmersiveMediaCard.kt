@@ -54,6 +54,7 @@ import com.rpeters.jellyfin.ui.image.ImageQuality
 import com.rpeters.jellyfin.ui.image.ImageSize
 import com.rpeters.jellyfin.ui.image.OptimizedImage
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
+import com.rpeters.jellyfin.ui.theme.ImmersiveShapes
 import com.rpeters.jellyfin.ui.theme.MotionTokens
 
 @Composable
@@ -102,7 +103,7 @@ fun ImmersiveMediaCard(
         ImmersiveCardSize.MEDIUM -> ImmersiveDimens.CardWidthMedium to ImmersiveDimens.CardHeightMedium
         ImmersiveCardSize.LARGE -> ImmersiveDimens.CardWidthLarge to ImmersiveDimens.CardHeightLarge
     }
-    val cardShape = RoundedCornerShape(ImmersiveDimens.CornerRadiusCinematic)
+    val cardShape = ImmersiveShapes.Card
 
     val sharedElementModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null && itemId != null) {
         with(sharedTransitionScope) {
@@ -127,7 +128,7 @@ fun ImmersiveMediaCard(
             .expressiveGlow(
                 color = MaterialTheme.colorScheme.primary,
                 alpha = glowAlpha,
-                borderRadius = ImmersiveDimens.CornerRadiusCinematic,
+                borderRadius = ImmersiveDimens.CardCornerRadius,
                 blurRadius = 24.dp,
                 offsetY = 10.dp,
             )
@@ -207,7 +208,7 @@ private fun ImmersiveCardContent(
             quality = imageQuality, // Adaptive quality based on device tier
             modifier = Modifier
                 .fillMaxSize()
-                .clip(RoundedCornerShape(ImmersiveDimens.CornerRadiusCinematic)),
+                .clip(ImmersiveShapes.Card),
         )
 
         // Gradient overlay for text readability - Use black-based gradient
@@ -239,7 +240,7 @@ private fun ImmersiveCardContent(
             // Rating on the left
             if (rating != null) {
                 Surface(
-                    shape = RoundedCornerShape(ImmersiveDimens.CornerRadiusCard),
+                    shape = ImmersiveShapes.RatingBadge,
                     color = Color.Black.copy(alpha = 0.7f),
                 ) {
                     Row(
