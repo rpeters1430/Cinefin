@@ -12,21 +12,28 @@ from pathlib import Path
 def validate_workflow(workflow_path):
     """Validate a single workflow file."""
     try:
-        with open(workflow_path, 'r') as f:
+        with open(workflow_path, 'r', encoding='utf-8') as f:
             workflow = yaml.safe_load(f)
+
         
         # Check for settings in workflow
         settings_found = False
         for job_name, job_data in workflow.get('jobs', {}).items():
             for step in job_data.get('steps', []):
+                settings_str = None
                 if 'with' in step and 'settings' in step.get('with', {}):
-                    settings_found = True
                     settings_str = step['with']['settings']
+                elif 'env' in step and 'SETTINGS' in step.get('env', {}):
+                    settings_str = step['env']['SETTINGS']
+
+                if settings_str is not None:
+                    settings_found = True
                     
                     # Validate JSON
                     try:
                         settings_obj = json.loads(settings_str)
                         print(f"  ✓ Job '{job_name}': Valid JSON settings ({len(settings_str)} chars)")
+
                         
                         # Check for required fields
                         if 'model' in settings_obj:

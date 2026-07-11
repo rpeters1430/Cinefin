@@ -55,32 +55,36 @@ jobs:
             core.info(`Found ${labelNames.length} labels: ${labelNames.join(', ')}`);
             return labelNames;
 
-      - name: 'Run Gemini issue analysis'
-        id: 'gemini_analysis'
+      - name: 'Set up Python'
+        uses: 'actions/setup-python@v5'
+        with:
+          python-version: '3.11'
+
+      - name: 'Install Antigravity SDK'
+        run: |
+          python -m pip install --upgrade pip
+          pip install google-antigravity
+
+      - name: 'Authenticate to Google Cloud'
+        if: |-
+          ${{ vars.GCP_WIF_PROVIDER && vars.SERVICE_ACCOUNT_EMAIL }}
+        uses: 'google-github-actions/auth@v2'
+        with:
+          workload_identity_provider: '${{ vars.GCP_WIF_PROVIDER }}'
+          service_account: '${{ vars.SERVICE_ACCOUNT_EMAIL }}'
+
+      - name: 'Run Antigravity Agent'
+        id: 'run_antigravity'
         if: |-
           ${{ steps.get_labels.outputs.available_labels != '' }}
-        uses: 'google-github-actions/run-gemini-cli@v0' # ratchet:exclude
         env:
-          GEMINI_CLI_TRUST_WORKSPACE: 'true'
           GITHUB_TOKEN: '' # Do NOT pass any auth tokens here since this runs on untrusted inputs
           ISSUE_TITLE: '${{ github.event.issue.title }}'
           ISSUE_BODY: '${{ github.event.issue.body }}'
           AVAILABLE_LABELS: '${{ steps.get_labels.outputs.available_labels }}'
-        with:
-          gcp_location: '${{ vars.GOOGLE_CLOUD_LOCATION }}'
-          gcp_project_id: '${{ vars.GOOGLE_CLOUD_PROJECT }}'
-          gcp_service_account: '${{ vars.SERVICE_ACCOUNT_EMAIL }}'
-          gcp_workload_identity_provider: '${{ vars.GCP_WIF_PROVIDER }}'
-          gemini_api_key: '${{ secrets.GEMINI_API_KEY }}'
-          gemini_cli_version: '${{ vars.GEMINI_CLI_VERSION }}'
-          gemini_debug: '${{ fromJSON(vars.GEMINI_DEBUG || vars.ACTIONS_STEP_DEBUG || false) }}'
-          gemini_model: '${{ vars.GEMINI_MODEL }}'
-          google_api_key: '${{ secrets.GOOGLE_API_KEY }}'
-          use_gemini_code_assist: '${{ vars.GOOGLE_GENAI_USE_GCA }}'
-          use_vertex_ai: '${{ vars.GOOGLE_GENAI_USE_VERTEXAI }}'
-          upload_artifacts: '${{ vars.UPLOAD_ARTIFACTS }}'
-          workflow_name: 'gemini-triage'
-          settings: |-
+          AV_API_KEY: '${{ secrets.AV_API_KEY || secrets.GEMINI_API_KEY || secrets.GOOGLE_API_KEY }}'
+          GEMINI_MODEL: '${{ vars.GEMINI_MODEL }}'
+          SETTINGS: |-
             {
               "model": {
                 "maxSessionTurns": 25
@@ -96,7 +100,14 @@ jobs:
                 ]
               }
             }
-          prompt: '/gemini-triage'
+        run: |
+          python scripts/run-antigravity-agent.py \
+            --prompt '/gemini-triage' \
+            --settings "$SETTINGS" \
+            ${{ vars.GOOGLE_GENAI_USE_VERTEXAI == 'true' && '--vertex' || '' }} \
+            ${{ vars.GOOGLE_CLOUD_PROJECT && format('--project {0}', vars.GOOGLE_CLOUD_PROJECT) || '' }} \
+            ${{ vars.GOOGLE_CLOUD_LOCATION && format('--location {0}', vars.GOOGLE_CLOUD_LOCATION) || '' }}
+
 
   label:
     runs-on: 'ubuntu-latest'

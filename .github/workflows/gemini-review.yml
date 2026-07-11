@@ -41,32 +41,37 @@ jobs:
       - name: 'Checkout repository'
         uses: 'actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8' # ratchet:actions/checkout@v6
 
-      - name: 'Run Gemini pull request review'
-        uses: 'google-github-actions/run-gemini-cli@v0' # ratchet:exclude
-        id: 'gemini_pr_review'
+      - name: 'Set up Python'
+        uses: 'actions/setup-python@v5'
+        with:
+          python-version: '3.11'
+
+      - name: 'Install Antigravity SDK'
+        run: |
+          python -m pip install --upgrade pip
+          pip install google-antigravity
+
+      - name: 'Authenticate to Google Cloud'
+        if: |-
+          ${{ vars.GCP_WIF_PROVIDER && vars.SERVICE_ACCOUNT_EMAIL }}
+        uses: 'google-github-actions/auth@v2'
+        with:
+          workload_identity_provider: '${{ vars.GCP_WIF_PROVIDER }}'
+          service_account: '${{ vars.SERVICE_ACCOUNT_EMAIL }}'
+
+      - name: 'Run Antigravity Agent'
+        id: 'run_antigravity'
         env:
-          GEMINI_CLI_TRUST_WORKSPACE: 'true'
           GITHUB_TOKEN: '${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN || github.token }}'
           ISSUE_TITLE: '${{ github.event.pull_request.title || github.event.issue.title }}'
           ISSUE_BODY: '${{ github.event.pull_request.body || github.event.issue.body }}'
+          ISSUE_NUMBER: '${{ github.event.pull_request.number || github.event.issue.number }}'
           PULL_REQUEST_NUMBER: '${{ github.event.pull_request.number || github.event.issue.number }}'
           REPOSITORY: '${{ github.repository }}'
           ADDITIONAL_CONTEXT: '${{ inputs.additional_context }}'
-        with:
-          gcp_location: '${{ vars.GOOGLE_CLOUD_LOCATION }}'
-          gcp_project_id: '${{ vars.GOOGLE_CLOUD_PROJECT }}'
-          gcp_service_account: '${{ vars.SERVICE_ACCOUNT_EMAIL }}'
-          gcp_workload_identity_provider: '${{ vars.GCP_WIF_PROVIDER }}'
-          gemini_api_key: '${{ secrets.GEMINI_API_KEY }}'
-          gemini_cli_version: '${{ vars.GEMINI_CLI_VERSION }}'
-          gemini_debug: '${{ fromJSON(vars.GEMINI_DEBUG || vars.ACTIONS_STEP_DEBUG || false) }}'
-          gemini_model: '${{ vars.GEMINI_MODEL }}'
-          google_api_key: '${{ secrets.GOOGLE_API_KEY }}'
-          use_gemini_code_assist: '${{ vars.GOOGLE_GENAI_USE_GCA }}'
-          use_vertex_ai: '${{ vars.GOOGLE_GENAI_USE_VERTEXAI }}'
-          upload_artifacts: '${{ vars.UPLOAD_ARTIFACTS }}'
-          workflow_name: 'gemini-review'
-          settings: |-
+          AV_API_KEY: '${{ secrets.AV_API_KEY || secrets.GEMINI_API_KEY || secrets.GOOGLE_API_KEY }}'
+          GEMINI_MODEL: '${{ vars.GEMINI_MODEL }}'
+          SETTINGS: |-
             {
               "model": {
                 "maxSessionTurns": 25
@@ -107,4 +112,11 @@ jobs:
                 ]
               }
             }
-          prompt: '/gemini-review'
+        run: |
+          python scripts/run-antigravity-agent.py \
+            --prompt '/gemini-review' \
+            --settings "$SETTINGS" \
+            ${{ vars.GOOGLE_GENAI_USE_VERTEXAI == 'true' && '--vertex' || '' }} \
+            ${{ vars.GOOGLE_CLOUD_PROJECT && format('--project {0}', vars.GOOGLE_CLOUD_PROJECT) || '' }} \
+            ${{ vars.GOOGLE_CLOUD_LOCATION && format('--location {0}', vars.GOOGLE_CLOUD_LOCATION) || '' }}
+
