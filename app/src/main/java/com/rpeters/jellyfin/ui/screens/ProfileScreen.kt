@@ -401,7 +401,7 @@ private fun LogoutButton(
             modifier = Modifier.size(18.dp),
         )
         Spacer(modifier = Modifier.width(8.dp))
-        Text(stringResource(id = R.string.sign_out))
+        Text(stringResource(id = R.string.switch_server))
     }
 }
 

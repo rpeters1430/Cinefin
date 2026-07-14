@@ -800,7 +800,7 @@ private fun AccountCard(
                     modifier = Modifier.size(18.dp),
                 )
                 Spacer(modifier = Modifier.width(4.dp))
-                Text(text = stringResource(id = R.string.sign_out))
+                Text(text = stringResource(id = R.string.switch_server))
             }
         }
     }

@@ -93,6 +93,7 @@
     
     <!-- Buttons -->
     <string name="sign_out">Sign Out</string>
+    <string name="switch_server">Switch Server</string>
     <string name="sign_in">Sign In</string>
     <string name="settings">Settings</string>
 
