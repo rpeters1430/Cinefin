@@ -52,6 +52,11 @@ def run_shell_command(command: str) -> str:
     except Exception as e:
         return f"Error executing command: {str(e)}"
 
+def is_transient_error(exc: Exception) -> bool:
+    """Return True if the exception looks like a transient 503 / UNAVAILABLE error."""
+    msg = str(exc)
+    return any(marker in msg for marker in ["503", "UNAVAILABLE", "high demand", "Service Unavailable", "model unreachable"])
+
 async def main():
     parser = argparse.ArgumentParser(description="Run Antigravity Agent inside GitHub Actions")
     parser.add_argument("--prompt", required=True, help="The prompt or slash command (e.g. /gemini-invoke)")
@@ -156,15 +161,31 @@ async def main():
         location=args.location or settings.get("gcp_location")
     )
     
-    print("Spawning Antigravity Agent...")
-    async with Agent(config) as agent:
-        response = await agent.chat(prompt_str)
-        # Stream response
-        print("--- Agent Response ---")
-        async for token in response:
-            sys.stdout.write(token)
-            sys.stdout.flush()
-        print("\n----------------------")
+    max_retries = 3
+    base_delay = 10
+    last_exc = None
+    for attempt in range(max_retries):
+        try:
+            print("Spawning Antigravity Agent...")
+            async with Agent(config) as agent:
+                response = await agent.chat(prompt_str)
+                # Stream response
+                print("--- Agent Response ---")
+                async for token in response:
+                    sys.stdout.write(token)
+                    sys.stdout.flush()
+                print("\n----------------------")
+            return  # success
+        except Exception as exc:
+            last_exc = exc
+            if is_transient_error(exc) and attempt < max_retries - 1:
+                delay = base_delay * (2 ** attempt)
+                print(f"\nTransient error on attempt {attempt + 1}/{max_retries}. Retrying in {delay}s...", file=sys.stderr)
+                await asyncio.sleep(delay)
+            else:
+                raise
+    if last_exc:
+        raise last_exc
 
 if __name__ == "__main__":
     asyncio.run(main())
