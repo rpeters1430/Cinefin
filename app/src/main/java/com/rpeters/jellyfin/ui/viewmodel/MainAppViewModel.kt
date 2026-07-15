@@ -2,6 +2,7 @@ package com.rpeters.jellyfin.ui.viewmodel
 
 import android.content.Context
 import androidx.annotation.VisibleForTesting
+import androidx.datastore.preferences.core.edit
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.util.UnstableApi
@@ -18,6 +19,7 @@ import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
 import com.rpeters.jellyfin.data.repository.JellyfinUserRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.data.repository.common.ErrorType
+import com.rpeters.jellyfin.di.ApplicationScope
 import com.rpeters.jellyfin.ui.player.CastManager
 import com.rpeters.jellyfin.ui.screens.LibraryType
 import com.rpeters.jellyfin.utils.SecureLogger
@@ -25,7 +27,10 @@ import com.rpeters.jellyfin.utils.isWatched
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -143,6 +148,7 @@ constructor(
     private val dispatchers: DispatcherProvider,
     private val generativeAiRepository: com.rpeters.jellyfin.data.repository.GenerativeAiRepository,
     private val analytics: com.rpeters.jellyfin.utils.AnalyticsHelper,
+    @ApplicationScope private val applicationScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
 ) : ViewModel() {
     companion object {
         // Pagination constants
@@ -828,11 +834,28 @@ constructor(
         }
     }
 
+    /**
+     * Runs on [applicationScope] rather than [viewModelScope]: callers navigate away and pop
+     * this ViewModel off the back stack right after invoking this, which cancels viewModelScope
+     * before the persisted "remember login" session below would reliably finish clearing —
+     * otherwise the server connection screen's auto-restore logic silently logs the user right
+     * back into the server they just tried to switch away from.
+     */
     fun logout() {
-        viewModelScope.launch {
+        applicationScope.launch {
             analytics.logUiEvent("Account", "logout")
             userRepository.logout()
             credentialManager.clearCredentials()
+            context.dataStore.edit { preferences ->
+                preferences.remove(PreferencesKeys.SERVER_URL)
+                preferences.remove(PreferencesKeys.USERNAME)
+                preferences.remove(PreferencesKeys.SESSION_TOKEN)
+                preferences.remove(PreferencesKeys.SESSION_USER_ID)
+                preferences.remove(PreferencesKeys.SESSION_SERVER_ID)
+                preferences.remove(PreferencesKeys.SESSION_SERVER_NAME)
+                preferences.remove(PreferencesKeys.SESSION_LOGIN_TIMESTAMP)
+                preferences.remove(PreferencesKeys.SESSION_IS_ADMIN)
+            }
         }
     }
 

@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rpeters.jellyfin.BuildConfig
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.components.tv.TvImmersiveBackground
 import com.rpeters.jellyfin.ui.theme.CinefinTvTheme
 import com.rpeters.jellyfin.ui.viewmodel.PlaybackPreferencesViewModel
@@ -153,8 +154,8 @@ fun TvSettingsScreen(
                         onSignOut()
                     },
                     colors = TvButtonDefaults.colors(
-                        containerColor = TvMaterialTheme.colorScheme.error,
-                        contentColor = TvMaterialTheme.colorScheme.onError,
+                        containerColor = TvMaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = TvMaterialTheme.colorScheme.onSecondaryContainer,
                     ),
                 ) {
                     TvText(stringResource(id = R.string.switch_server))

@@ -36,8 +36,11 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import com.rpeters.jellyfin.data.common.DispatcherProvider
 import com.rpeters.jellyfin.data.common.DefaultDispatcherProvider
+import com.rpeters.jellyfin.di.ApplicationScope
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -81,6 +84,7 @@ class ServerConnectionViewModel @Inject constructor(
     private val offlineDownloadManagerProvider: Provider<OfflineDownloadManager>,
     @ApplicationContext private val context: Context,
     private val dispatchers: DispatcherProvider = DefaultDispatcherProvider(),
+    @ApplicationScope private val applicationScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
 ) : ViewModel() {
 
     private val _connectionState = MutableStateFlow(ConnectionState())
@@ -1115,12 +1119,23 @@ class ServerConnectionViewModel @Inject constructor(
     }
 
     /**
-     * Explicit logout method that clears saved credentials and disconnects
+     * Explicit logout method that clears saved credentials and disconnects.
+     *
+     * Runs on [applicationScope] rather than [viewModelScope] because callers immediately
+     * navigate away and pop this ViewModel off the back stack, which cancels viewModelScope
+     * before a viewModelScope-launched coroutine would reliably finish clearing persisted
+     * session state — leaving a stale "remember login" session that silently restores the
+     * old server/user on the next screen.
      */
     fun logout() {
-        viewModelScope.launch {
+        applicationScope.launch {
             // Clear saved credentials when user explicitly logs out
             clearSavedCredentials()
+
+            // Clear the shared in-memory auth/session state as well, so no other
+            // component (e.g. repositories reading JellyfinAuthRepository directly)
+            // keeps treating the old server/token as active.
+            authRepository.logout()
 
             // Reset connection state
             _connectionState.value = ConnectionState()

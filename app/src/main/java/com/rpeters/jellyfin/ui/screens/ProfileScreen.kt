@@ -25,11 +25,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.Computer
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.FilledTonalButton
@@ -396,7 +396,7 @@ private fun LogoutButton(
         modifier = modifier.fillMaxWidth(),
     ) {
         Icon(
-            imageVector = Icons.AutoMirrored.Filled.Logout,
+            imageVector = Icons.Default.SwapHoriz,
             contentDescription = null,
             modifier = Modifier.size(18.dp),
         )
