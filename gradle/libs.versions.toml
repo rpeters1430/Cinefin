@@ -51,7 +51,7 @@ androidxTvFoundation = "1.0.0"
 # docs/plans/UPGRADE_PATH.md before any version change.
 paging = "3.5.0"
 sdk = "37"
-work = "2.11.2"
+work = "2.12.0-alpha01"
 hiltWork = "1.4.0"
 testServices = "1.6.0"
 turbine = "1.2.1"
