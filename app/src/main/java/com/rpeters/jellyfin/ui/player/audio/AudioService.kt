@@ -173,6 +173,11 @@ class AudioService : androidx.media3.session.MediaSessionService() {
 
                 override fun onIsPlayingChanged(isPlaying: Boolean) {
                     updateCurrentProgress(isPaused = !isPlaying)
+                    if (isPlaying) {
+                        startProgressUpdates()
+                    } else {
+                        stopProgressUpdates()
+                    }
                 }
 
                 override fun onPlaybackStateChanged(playbackState: Int) {
@@ -214,7 +219,7 @@ class AudioService : androidx.media3.session.MediaSessionService() {
         AudioSessionStateStore(this).persist(player)
         updateCurrentProgress(isPaused = true)
         playbackProgressManager.stopTrackingAsync()
-        progressUpdateJob?.cancel()
+        stopProgressUpdates()
         serviceScope.cancel()
         super.onDestroy()
         notificationProvider = null
@@ -331,24 +336,30 @@ class AudioService : androidx.media3.session.MediaSessionService() {
 
         trackingItemId = newItemId
         if (newItemId == null) {
-            progressUpdateJob?.cancel()
-            progressUpdateJob = null
+            stopProgressUpdates()
             return
         }
 
         playbackProgressManager.startTracking(newItemId, serviceScope)
         updateCurrentProgress(isPaused = !player.isPlaying)
-        startProgressUpdates()
+        if (player.isPlaying) {
+            startProgressUpdates()
+        }
     }
 
     private fun startProgressUpdates() {
         if (progressUpdateJob?.isActive == true) return
         progressUpdateJob = serviceScope.launch {
             while (isActive) {
-                updateCurrentProgress(isPaused = !player.isPlaying)
+                updateCurrentProgress(isPaused = false)
                 delay(PROGRESS_UPDATE_INTERVAL_MS)
             }
         }
+    }
+
+    private fun stopProgressUpdates() {
+        progressUpdateJob?.cancel()
+        progressUpdateJob = null
     }
 
     private fun updateCurrentProgress(isPaused: Boolean) {
@@ -365,8 +376,7 @@ class AudioService : androidx.media3.session.MediaSessionService() {
     private fun stopProgressTracking() {
         if (trackingItemId == null) return
         trackingItemId = null
-        progressUpdateJob?.cancel()
-        progressUpdateJob = null
+        stopProgressUpdates()
         playbackProgressManager.stopTrackingAsync()
     }
 
