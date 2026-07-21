@@ -68,8 +68,16 @@ class AudioPlaybackViewModel @Inject constructor(
         audioServiceConnection.seekBackward(amountMs)
     }
 
-    fun playMediaItem(mediaItem: MediaItem) {
-        audioServiceConnection.playNow(mediaItem)
+    fun playMediaItem(mediaItem: MediaItem, startPositionMs: Long = 0L) {
+        audioServiceConnection.playNow(mediaItem, startPositionMs)
+    }
+
+    fun playQueue(
+        mediaItems: List<MediaItem>,
+        startIndex: Int = 0,
+        startPositionMs: Long = 0L,
+    ) {
+        audioServiceConnection.playQueue(mediaItems, startIndex, startPositionMs)
     }
 
     fun addToQueue(mediaItem: MediaItem) {

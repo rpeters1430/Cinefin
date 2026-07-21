@@ -31,6 +31,7 @@ data class PlaybackProgress(
     val durationMs: Long = 0L,
     val percentageWatched: Float = 0f,
     val isWatched: Boolean = false,
+    val isPaused: Boolean = false,
     val lastSyncTime: Long = 0L,
 )
 
@@ -99,7 +100,7 @@ class PlaybackProgressManager @Inject constructor(
         }
     }
 
-    fun updateProgress(positionMs: Long, durationMs: Long) {
+    fun updateProgress(positionMs: Long, durationMs: Long, isPaused: Boolean = false) {
         if (currentItemId.isEmpty() || durationMs <= 0) return
 
         if (hasReportedStop) {
@@ -115,7 +116,8 @@ class PlaybackProgressManager @Inject constructor(
         // Throttle state updates to prevent excessive recompositions (max 2 per second)
         // Only update state if enough time has passed OR if there's a significant change
         val shouldUpdateState = (currentTime - lastStateUpdateTime >= STATE_UPDATE_THROTTLE_MS) ||
-            kotlin.math.abs(positionMs - _playbackProgress.value.positionMs) >= MIN_POSITION_CHANGE
+            kotlin.math.abs(positionMs - _playbackProgress.value.positionMs) >= MIN_POSITION_CHANGE ||
+            _playbackProgress.value.isPaused != isPaused
 
         if (shouldUpdateState) {
             _playbackProgress.update {
@@ -125,6 +127,7 @@ class PlaybackProgressManager @Inject constructor(
                     durationMs = durationMs,
                     percentageWatched = percentageWatched,
                     isWatched = isWatched,
+                    isPaused = isPaused,
                 )
             }
             lastStateUpdateTime = currentTime
@@ -134,7 +137,7 @@ class PlaybackProgressManager @Inject constructor(
             hasReportedStart = true
             // Use managed scope for fire-and-forget reporting
             managerScope.launch {
-                reportPlaybackStart(positionMs, durationMs)
+                reportPlaybackStart(positionMs, durationMs, isPaused)
             }
         }
 
@@ -148,7 +151,7 @@ class PlaybackProgressManager @Inject constructor(
         // Report progress to server if significant change
         if (kotlin.math.abs(positionMs - lastReportedPosition) >= MIN_POSITION_CHANGE) {
             managerScope.launch {
-                reportProgress(positionMs, durationMs, isWatched)
+                reportProgress(positionMs, durationMs, isWatched, isPaused)
             }
             lastReportedPosition = positionMs
         }
@@ -208,7 +211,7 @@ class PlaybackProgressManager @Inject constructor(
         // Final progress report
         val progress = _playbackProgress.value
         if (progress.itemId.isNotEmpty()) {
-            reportProgress(progress.positionMs, progress.durationMs, progress.isWatched)
+            reportProgress(progress.positionMs, progress.durationMs, progress.isWatched, progress.isPaused)
             if (reportStop && !hasReportedStop) {
                 reportPlaybackStop(progress.positionMs, progress.durationMs)
                 hasReportedStop = true
@@ -250,15 +253,13 @@ class PlaybackProgressManager @Inject constructor(
 
     override fun onPause(owner: LifecycleOwner) {
         super.onPause(owner)
-        // On backgrounding, emit both PROGRESS and STOPPED once so offline queue captures pause/stop transitions.
+        // The app moving to the background does not mean media playback stopped. Audio can
+        // continue in AudioService, so only flush the latest state here. Player owners are
+        // responsible for sending STOPPED when playback actually ends.
         managerScope.launch {
             val progress = _playbackProgress.value
             if (progress.itemId.isNotEmpty()) {
-                reportProgress(progress.positionMs, progress.durationMs, progress.isWatched)
-                if (!hasReportedStop) {
-                    reportPlaybackStop(progress.positionMs, progress.durationMs)
-                    hasReportedStop = true
-                }
+                reportProgress(progress.positionMs, progress.durationMs, progress.isWatched, progress.isPaused)
             }
         }
     }
@@ -278,7 +279,7 @@ class PlaybackProgressManager @Inject constructor(
                 delay(PROGRESS_SYNC_INTERVAL)
                 val progress = _playbackProgress.value
                 if (progress.itemId.isNotEmpty()) {
-                    reportProgress(progress.positionMs, progress.durationMs, progress.isWatched)
+                    reportProgress(progress.positionMs, progress.durationMs, progress.isWatched, progress.isPaused)
                 }
             }
         }
@@ -295,7 +296,12 @@ class PlaybackProgressManager @Inject constructor(
         }
     }
 
-    private suspend fun reportProgress(positionMs: Long, durationMs: Long, isWatched: Boolean) {
+    private suspend fun reportProgress(
+        positionMs: Long,
+        durationMs: Long,
+        isWatched: Boolean,
+        isPaused: Boolean,
+    ) {
         if (currentItemId.isEmpty()) return
 
         // Always save to offline manager for local resume support
@@ -309,7 +315,7 @@ class PlaybackProgressManager @Inject constructor(
                 positionTicks = ticks,
                 mediaSourceId = mediaSourceId,
                 playMethod = playMethod,
-                isPaused = false,
+                isPaused = isPaused,
                 canSeek = durationMs > 0,
             )
 
@@ -339,7 +345,7 @@ class PlaybackProgressManager @Inject constructor(
                         result.errorType == com.rpeters.jellyfin.data.repository.common.ErrorType.UNAUTHORIZED
                     ) {
                         Log.w("PlaybackProgressManager", "Session $sessionId timed out or not found, re-reporting start")
-                        reportPlaybackStart(positionMs, durationMs)
+                        reportPlaybackStart(positionMs, durationMs, isPaused)
                     }
                 }
                 else -> Unit
@@ -351,7 +357,7 @@ class PlaybackProgressManager @Inject constructor(
         }
     }
 
-    private suspend fun reportPlaybackStart(positionMs: Long, durationMs: Long) {
+    private suspend fun reportPlaybackStart(positionMs: Long, durationMs: Long, isPaused: Boolean = false) {
         if (currentItemId.isEmpty()) return
         try {
             val ticks = positionMs.toTicks()
@@ -361,7 +367,7 @@ class PlaybackProgressManager @Inject constructor(
                 positionTicks = ticks,
                 mediaSourceId = mediaSourceId,
                 playMethod = playMethod,
-                isPaused = false,
+                isPaused = isPaused,
                 canSeek = durationMs > 0,
             )
             if (result is ApiResult.Error) {

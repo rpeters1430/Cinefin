@@ -100,7 +100,12 @@ object MediaPlayerUtils {
         }
         val artworkUrl = entryPoint.jellyfinStreamRepository().getImageUrl(artworkItemId, "Primary", null)
         val mediaItem = buildAudioMediaItem(item, streamUrl, artworkUrl)
-        connection.playNow(mediaItem)
+        val resumePositionMs = if (item.type == BaseItemKind.AUDIO_BOOK) {
+            item.userData?.playbackPositionTicks?.div(10_000L) ?: 0L
+        } else {
+            0L
+        }
+        connection.playNow(mediaItem, resumePositionMs)
     }
 
     private fun buildAudioMediaItem(
@@ -116,6 +121,10 @@ object MediaPlayerUtils {
             putString(AudioService.EXTRA_ALBUM_NAME, item.album ?: item.albumId?.toString())
             putString(AudioService.EXTRA_ARTIST_NAME, item.albumArtist ?: item.artists?.firstOrNull())
             putLong(AudioService.EXTRA_DURATION, (item.runTimeTicks ?: 0L) / 10_000)
+            putString(
+                AudioService.EXTRA_MEDIA_KIND,
+                if (item.type == BaseItemKind.AUDIO_BOOK) AudioMediaKind.AUDIOBOOK.name else AudioMediaKind.MUSIC.name,
+            )
         }
 
         val mediaMetadata = MediaMetadata.Builder()
@@ -260,6 +269,11 @@ object MediaPlayerUtils {
             throw e
         }
     }
+}
+
+enum class AudioMediaKind {
+    MUSIC,
+    AUDIOBOOK,
 }
 
 class MediaPlayerException(message: String, cause: Throwable? = null) : Exception(message, cause)

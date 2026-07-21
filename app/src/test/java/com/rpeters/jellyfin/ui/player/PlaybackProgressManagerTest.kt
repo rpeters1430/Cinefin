@@ -93,6 +93,38 @@ class PlaybackProgressManagerTest {
     }
 
     @Test
+    fun `paused playback is reported as paused without stopping the session`() = runTest(testDispatcher) {
+        val itemId = "paused"
+        val sessionId = "paused-session"
+        coEvery { repository.getItemUserData(itemId) } returns ApiResult.Success(userData())
+        coEvery { repository.reportPlaybackStart(any(), any(), any(), any(), any(), any(), any()) } returns ApiResult.Success(Unit)
+        coEvery { repository.reportPlaybackProgress(any(), any(), any(), any(), any(), any(), any()) } returns ApiResult.Success(Unit)
+        coEvery { repository.reportPlaybackStopped(any(), any(), any(), any(), any()) } returns ApiResult.Success(Unit)
+
+        manager.startTracking(itemId, this, sessionId)
+        runCurrent()
+        manager.updateProgress(positionMs = 6_000L, durationMs = 20_000L, isPaused = true)
+        runCurrent()
+
+        assertTrue(manager.playbackProgress.value.isPaused)
+        coVerify {
+            repository.reportPlaybackProgress(
+                itemId,
+                sessionId,
+                60_000_000L,
+                null,
+                org.jellyfin.sdk.model.api.PlayMethod.DIRECT_PLAY,
+                true,
+                false,
+                true,
+            )
+        }
+
+        manager.stopTracking()
+        runCurrent()
+    }
+
+    @Test
     fun `markAsWatched updates state on success`() = runTest(testDispatcher) {
         val itemId = "watched"
         coEvery { repository.getItemUserData(itemId) } returns ApiResult.Success(userData())

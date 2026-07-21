@@ -577,7 +577,12 @@ private fun ActivePlaybackPanel(
             }
 
             ExpressiveWavyLinearProgress(
-                progress = if (playbackState.isPlaying) 0.42f else 0.18f,
+                progress = if (playbackState.duration > 0L) {
+                    (playbackState.currentPosition.toFloat() / playbackState.duration.toFloat())
+                        .coerceIn(0f, 1f)
+                } else {
+                    0f
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(6.dp),

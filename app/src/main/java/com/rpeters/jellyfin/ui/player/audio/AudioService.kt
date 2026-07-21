@@ -20,7 +20,17 @@ import androidx.media3.session.MediaSession
 import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionResult
 import com.google.common.util.concurrent.Futures
+import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
+import com.rpeters.jellyfin.ui.player.PlaybackProgressManager
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
 import javax.inject.Inject
@@ -32,9 +42,18 @@ class AudioService : androidx.media3.session.MediaSessionService() {
     @Inject
     lateinit var foregroundIntentProvider: AudioServiceForegroundIntentProvider
 
+    @Inject
+    lateinit var playbackProgressManager: PlaybackProgressManager
+
+    @Inject
+    lateinit var streamRepository: JellyfinStreamRepository
+
     private var mediaSession: MediaSession? = null
     private var notificationProvider: DefaultMediaNotificationProvider? = null
     private lateinit var player: ExoPlayer
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private var progressUpdateJob: Job? = null
+    private var trackingItemId: String? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -147,8 +166,27 @@ class AudioService : androidx.media3.session.MediaSessionService() {
                     syncSessionUiState()
                     AudioSessionStateStore(this@AudioService).persist(player)
                 }
+
+                override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                    serviceScope.launch { switchProgressTracking(mediaItem) }
+                }
+
+                override fun onIsPlayingChanged(isPlaying: Boolean) {
+                    updateCurrentProgress(isPaused = !isPlaying)
+                }
+
+                override fun onPlaybackStateChanged(playbackState: Int) {
+                    if (playbackState == Player.STATE_ENDED) {
+                        updateCurrentProgress(isPaused = true)
+                        stopProgressTracking()
+                    }
+                }
             },
         )
+
+        player.currentMediaItem?.let { restoredItem ->
+            serviceScope.launch { switchProgressTracking(restoredItem) }
+        }
 
         notificationProvider = AudioNotificationProvider(this).apply {
             // Use a valid monochrome small icon resource
@@ -174,6 +212,10 @@ class AudioService : androidx.media3.session.MediaSessionService() {
 
     override fun onDestroy() {
         AudioSessionStateStore(this).persist(player)
+        updateCurrentProgress(isPaused = true)
+        playbackProgressManager.stopTrackingAsync()
+        progressUpdateJob?.cancel()
+        serviceScope.cancel()
         super.onDestroy()
         notificationProvider = null
         mediaSession?.release()
@@ -183,7 +225,13 @@ class AudioService : androidx.media3.session.MediaSessionService() {
 
     private fun resolveMediaItem(item: MediaItem): MediaItem {
         val extras = item.mediaMetadata.extras ?: Bundle.EMPTY
-        val streamUrl = extras.getString(EXTRA_STREAM_URL)
+        val persistedStreamUrl = extras.getString(EXTRA_STREAM_URL)
+        val shouldRefreshStreamUrl = extras.getBoolean(EXTRA_REFRESH_STREAM_URL, false)
+        val streamUrl = if (shouldRefreshStreamUrl && item.mediaId.isNotBlank()) {
+            streamRepository.getStreamUrl(item.mediaId) ?: persistedStreamUrl
+        } else {
+            persistedStreamUrl
+        }
         val artworkUri = extras.getString(EXTRA_ARTWORK_URI)
         val metadataBuilder = item.mediaMetadata.buildUpon()
 
@@ -218,7 +266,7 @@ class AudioService : androidx.media3.session.MediaSessionService() {
             TransportCommand.SkipNext -> player.seekToNextMediaItem()
             TransportCommand.SkipPrevious -> player.seekToPreviousMediaItem()
             TransportCommand.SeekForward -> {
-                val boundedPosition = if (player.duration == C.TIME_UNSET) {
+                val boundedPosition = if (player.duration == C.TIME_UNSET || player.duration < 0L) {
                     player.currentPosition + SEEK_INTERVAL_MS
                 } else {
                     (player.currentPosition + SEEK_INTERVAL_MS).coerceAtMost(player.duration)
@@ -227,6 +275,8 @@ class AudioService : androidx.media3.session.MediaSessionService() {
             }
             TransportCommand.SeekBackward -> player.seekTo((player.currentPosition - SEEK_INTERVAL_MS).coerceAtLeast(0))
             TransportCommand.Stop -> {
+                updateCurrentProgress(isPaused = true)
+                stopProgressTracking()
                 player.pause()
                 player.stop()
                 player.clearMediaItems()
@@ -260,7 +310,7 @@ class AudioService : androidx.media3.session.MediaSessionService() {
     private fun restoreSessionState(state: PersistedAudioSessionState) {
         if (state.queue.isNotEmpty()) {
             player.setMediaItems(
-                state.queue,
+                state.queue.map(::resolveMediaItem),
                 state.currentIndex.coerceIn(0, state.queue.lastIndex),
                 state.currentPositionMs.coerceAtLeast(0L),
             )
@@ -269,6 +319,55 @@ class AudioService : androidx.media3.session.MediaSessionService() {
             player.playWhenReady = state.playWhenReady
             player.prepare()
         }
+    }
+
+    private suspend fun switchProgressTracking(mediaItem: MediaItem?) {
+        val newItemId = mediaItem?.mediaId?.takeIf { it.isNotBlank() }
+        if (trackingItemId == newItemId) return
+
+        if (trackingItemId != null) {
+            playbackProgressManager.stopTracking()
+        }
+
+        trackingItemId = newItemId
+        if (newItemId == null) {
+            progressUpdateJob?.cancel()
+            progressUpdateJob = null
+            return
+        }
+
+        playbackProgressManager.startTracking(newItemId, serviceScope)
+        updateCurrentProgress(isPaused = !player.isPlaying)
+        startProgressUpdates()
+    }
+
+    private fun startProgressUpdates() {
+        if (progressUpdateJob?.isActive == true) return
+        progressUpdateJob = serviceScope.launch {
+            while (isActive) {
+                updateCurrentProgress(isPaused = !player.isPlaying)
+                delay(PROGRESS_UPDATE_INTERVAL_MS)
+            }
+        }
+    }
+
+    private fun updateCurrentProgress(isPaused: Boolean) {
+        if (trackingItemId == null) return
+        val duration = player.duration
+        if (duration == C.TIME_UNSET || duration <= 0L) return
+        playbackProgressManager.updateProgress(
+            positionMs = player.currentPosition.coerceAtLeast(0L),
+            durationMs = duration,
+            isPaused = isPaused,
+        )
+    }
+
+    private fun stopProgressTracking() {
+        if (trackingItemId == null) return
+        trackingItemId = null
+        progressUpdateJob?.cancel()
+        progressUpdateJob = null
+        playbackProgressManager.stopTrackingAsync()
     }
 
     private fun buildMediaButtonPreferences(player: Player): List<CommandButton> {
@@ -327,8 +426,11 @@ class AudioService : androidx.media3.session.MediaSessionService() {
         const val EXTRA_DURATION = "com.rpeters.jellyfin.audio.DURATION"
         const val EXTRA_QUEUE_SIZE = "com.rpeters.jellyfin.audio.QUEUE_SIZE"
         const val EXTRA_QUEUE_INDEX = "com.rpeters.jellyfin.audio.QUEUE_INDEX"
+        const val EXTRA_MEDIA_KIND = "com.rpeters.jellyfin.audio.MEDIA_KIND"
+        internal const val EXTRA_REFRESH_STREAM_URL = "com.rpeters.jellyfin.audio.REFRESH_STREAM_URL"
 
         private const val SEEK_INTERVAL_MS = 10_000L
+        private const val PROGRESS_UPDATE_INTERVAL_MS = 1_000L
     }
 }
 
@@ -409,17 +511,25 @@ private class AudioSessionStateStore(
             put("albumTitle", metadata.albumTitle?.toString().orEmpty())
             put("artworkUri", metadata.artworkUri?.toString().orEmpty())
             put("streamUrl", extras?.getString(AudioService.EXTRA_STREAM_URL).orEmpty())
+            put("itemId", extras?.getString(AudioService.EXTRA_ITEM_ID).orEmpty())
+            put("duration", extras?.getLong(AudioService.EXTRA_DURATION) ?: 0L)
+            put("mediaKind", extras?.getString(AudioService.EXTRA_MEDIA_KIND).orEmpty())
         }
     }
 
     private fun jsonToMediaItem(json: JSONObject): MediaItem {
         val extras = Bundle().apply {
             putString(AudioService.EXTRA_STREAM_URL, json.optString("streamUrl"))
+            putString(AudioService.EXTRA_ITEM_ID, json.optString("itemId"))
+            putLong(AudioService.EXTRA_DURATION, json.optLong("duration"))
+            putString(AudioService.EXTRA_MEDIA_KIND, json.optString("mediaKind"))
+            putBoolean(AudioService.EXTRA_REFRESH_STREAM_URL, true)
         }
         val metadata = MediaMetadata.Builder()
             .setTitle(json.optString("title"))
             .setArtist(json.optString("artist"))
             .setAlbumTitle(json.optString("albumTitle"))
+            .setDurationMs(json.optLong("duration"))
             .setArtworkUri(json.optString("artworkUri").takeIf { it.isNotBlank() }?.let(Uri::parse))
             .setExtras(extras)
             .build()
