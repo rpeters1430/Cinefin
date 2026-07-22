@@ -922,9 +922,9 @@ private fun SeasonItem(
                             season.childCount?.takeIf { it > 0 }
                         }
 
-                        episodeCount?.let { count ->
+                        episodeCount.let { count ->
                             Text(
-                                text = "$count Episode${if (count != 1) "s" else ""}",
+                                text = "${count} Episode${if (count != 1) "s" else ""}",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
