@@ -197,7 +197,7 @@ class CinefinApplication : Application(), SingletonImageLoader.Factory, Configur
                 .checkAgeSignals(AgeSignalsRequest.builder().build())
                 .await()
 
-            val userStatus = result?.userStatus()
+            val userStatus = result?.userStatus
             
             // Persist the status to the repository
             userRepositoryProvider.get().updateAgeSignalsStatus(userStatus)
