@@ -9,10 +9,17 @@ import json
 import sys
 from pathlib import Path
 
+ALLOWED_WORKFLOWS = {'ci.yaml', 'ci.yml', 'build.yaml', 'build.yml'}
+
 def validate_workflow(workflow_path):
     """Validate a single workflow file."""
+    path_obj = Path(workflow_path)
+    if path_obj.name not in ALLOWED_WORKFLOWS:
+        print(f"Error: Workflow file '{path_obj.name}' is not allowed.")
+        sys.exit(1)
+    safe_path = path_obj if path_obj.is_absolute() else Path.cwd() / path_obj.name
     try:
-        with open(workflow_path, 'r', encoding='utf-8') as f:
+        with open(safe_path, 'r', encoding='utf-8') as f:
             workflow = yaml.safe_load(f)
 
         
