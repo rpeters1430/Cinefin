@@ -64,7 +64,7 @@ googleGmsGoogleServices = "4.5.0"
 googleFirebaseCrashlytics = "3.0.7"
 googleFirebasePerf = "2.0.2"
 glance = "1.3.0-alpha02"
-mlkitGenaiPrompt = "1.0.0-beta3"
+mlkitGenaiPrompt = "1.0.0-beta4"
 orbit = "12.0.0"
 materialKolor = "5.0.0"
 
