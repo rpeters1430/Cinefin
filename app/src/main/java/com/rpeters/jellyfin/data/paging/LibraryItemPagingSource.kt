@@ -95,9 +95,8 @@ class LibraryItemPagingSource(
                     LoadResult.Error(Exception("Unexpected loading state"))
                 }
             }
-        } catch (exception: CancellationException) {
-            throw exception
         } catch (exception: Exception) {
+            if (exception is CancellationException) throw exception
             if (BuildConfig.DEBUG) {
                 Log.e(TAG, "Unexpected paging failure for parentId=$parentId", exception)
             }

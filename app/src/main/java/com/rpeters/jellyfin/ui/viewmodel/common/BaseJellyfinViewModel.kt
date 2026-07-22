@@ -165,11 +165,6 @@ abstract class BaseJellyfinViewModel : ViewModel() {
                 }
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
-                // Catch unexpected exceptions that escaped from operation() to prevent app crashes.
-                val processedError = ErrorHandler.processError(e, operation = operationName)
-                Log.e(TAG, "Unexpected exception in refresh: $operationName - ${processedError.userMessage}", e)
-                onError(processedError)
             } finally {
                 _isRefreshing.value = false
             }

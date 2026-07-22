@@ -50,8 +50,6 @@ class ThemePreferencesViewModel @Inject constructor(
             try {
                 themePreferencesRepository.setThemeMode(themeMode)
                 SecureLogger.d(TAG, "Theme mode updated to: $themeMode")
-            } catch (e: CancellationException) {
-                throw e
             } catch (e: Exception) {
                 SecureLogger.e(TAG, "Failed to update theme mode to $themeMode", e)
             }
@@ -66,8 +64,6 @@ class ThemePreferencesViewModel @Inject constructor(
             try {
                 themePreferencesRepository.setUseDynamicColors(useDynamicColors)
                 SecureLogger.d(TAG, "Dynamic colors updated to: $useDynamicColors")
-            } catch (e: CancellationException) {
-                throw e
             } catch (e: Exception) {
                 SecureLogger.e(TAG, "Failed to update useDynamicColors to $useDynamicColors", e)
             }
@@ -82,8 +78,6 @@ class ThemePreferencesViewModel @Inject constructor(
             try {
                 themePreferencesRepository.setAccentColor(accentColor)
                 SecureLogger.d(TAG, "Accent color updated to: $accentColor")
-            } catch (e: CancellationException) {
-                throw e
             } catch (e: Exception) {
                 SecureLogger.e(TAG, "Failed to update accent color to $accentColor", e)
             }
@@ -98,9 +92,10 @@ class ThemePreferencesViewModel @Inject constructor(
             try {
                 themePreferencesRepository.setCustomAccentColor(argb, selectAsActive = true)
                 SecureLogger.d(TAG, "Custom accent color updated")
-            } catch (e: CancellationException) {
-                throw e
             } catch (e: Exception) {
+                if (e is CancellationException) {
+                    throw e
+                }
                 SecureLogger.e(TAG, "Failed to update custom accent color", e)
             }
         }
@@ -114,8 +109,6 @@ class ThemePreferencesViewModel @Inject constructor(
             try {
                 themePreferencesRepository.setContrastLevel(contrastLevel)
                 SecureLogger.d(TAG, "Contrast level updated to: $contrastLevel")
-            } catch (e: CancellationException) {
-                throw e
             } catch (e: Exception) {
                 SecureLogger.e(TAG, "Failed to update contrast level to $contrastLevel", e)
             }
@@ -132,8 +125,6 @@ class ThemePreferencesViewModel @Inject constructor(
                 SecureLogger.d(TAG, "App font updated to: $appFont")
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
-                SecureLogger.e(TAG, "Failed to update app font to $appFont", e)
             }
         }
     }
@@ -146,8 +137,6 @@ class ThemePreferencesViewModel @Inject constructor(
             try {
                 themePreferencesRepository.setUseThemedIcon(useThemedIcon)
                 SecureLogger.d(TAG, "Themed icon updated to: $useThemedIcon")
-            } catch (e: CancellationException) {
-                throw e
             } catch (e: Exception) {
                 SecureLogger.e(TAG, "Failed to update useThemedIcon to $useThemedIcon", e)
             }
@@ -162,9 +151,8 @@ class ThemePreferencesViewModel @Inject constructor(
             try {
                 themePreferencesRepository.setEnableEdgeToEdge(enableEdgeToEdge)
                 SecureLogger.d(TAG, "Edge-to-edge updated to: $enableEdgeToEdge")
-            } catch (e: CancellationException) {
-                throw e
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 SecureLogger.e(TAG, "Failed to update enableEdgeToEdge to $enableEdgeToEdge", e)
             }
         }
@@ -178,8 +166,6 @@ class ThemePreferencesViewModel @Inject constructor(
             try {
                 themePreferencesRepository.setRespectReduceMotion(respectReduceMotion)
                 SecureLogger.d(TAG, "Respect reduce motion updated to: $respectReduceMotion")
-            } catch (e: CancellationException) {
-                throw e
             } catch (e: Exception) {
                 SecureLogger.e(TAG, "Failed to update respectReduceMotion to $respectReduceMotion", e)
             }
@@ -194,9 +180,8 @@ class ThemePreferencesViewModel @Inject constructor(
             try {
                 themePreferencesRepository.resetToDefaults()
                 SecureLogger.d(TAG, "Theme preferences reset to defaults")
-            } catch (e: CancellationException) {
-                throw e
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 SecureLogger.e(TAG, "Failed to reset theme preferences to defaults", e)
             }
         }

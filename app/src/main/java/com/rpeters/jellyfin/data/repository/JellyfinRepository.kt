@@ -852,8 +852,6 @@ open class JellyfinRepository @Inject constructor(
                         org.jellyfin.sdk.model.api.MediaSegmentType.OUTRO,
                     ),
                 ).content.items.orEmpty()
-            } catch (e: CancellationException) {
-                throw e
             } catch (e: Exception) {
                 emptyList()
             }
@@ -1396,9 +1394,10 @@ open class JellyfinRepository @Inject constructor(
                     height = info.height,
                 )
             }
-        } catch (e: CancellationException) {
-            throw e
         } catch (e: Exception) {
+            if (e is CancellationException) {
+                throw e
+            }
             if (BuildConfig.DEBUG) {
                 Log.d(TAG, "Failed to get transcoding progress: ${e.message}")
             }

@@ -352,8 +352,6 @@ private suspend fun <T> ListenableFuture<T>.await(context: Context): T =
                     } else {
                         continuation.resumeWithException(cause ?: e)
                     }
-                } catch (e: Exception) {
-                    continuation.resumeWithException(e)
                 }
             },
             ContextCompat.getMainExecutor(context),

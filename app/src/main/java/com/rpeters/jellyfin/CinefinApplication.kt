@@ -215,8 +215,6 @@ class CinefinApplication : Application(), SingletonImageLoader.Factory, Configur
             throw e
         } catch (e: AgeSignalsException) {
             SecureLogger.w(TAG, "Play Age Signals unavailable (${e.errorCode}); continuing with default access")
-        } catch (e: Exception) {
-            SecureLogger.w(TAG, "Play Age Signals check failed; continuing with default access", e)
         }
     }
 
@@ -244,8 +242,6 @@ class CinefinApplication : Application(), SingletonImageLoader.Factory, Configur
                 modernSurfaceCoordinatorProvider.get().initialize()
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
-                SecureLogger.e(TAG, "Failed to initialize modern surfaces", e)
             }
         }
     }
@@ -302,8 +298,6 @@ class CinefinApplication : Application(), SingletonImageLoader.Factory, Configur
                 generativeAiRepositoryProvider.get().initialize()
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
-                SecureLogger.e(TAG, "Failed to initialize AI backend", e)
             }
         }
     }

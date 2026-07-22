@@ -297,9 +297,6 @@ class SecureCredentialManager @Inject constructor(
         } catch (e: UserNotAuthenticatedException) {
             logDebug { "decrypt: user authentication required before key use" }
             null
-        } catch (e: Exception) {
-            SecureLogger.w(TAG, "decrypt: failed to decrypt saved credential", e)
-            null
         }
     }
 

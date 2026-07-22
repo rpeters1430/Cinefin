@@ -346,6 +346,8 @@ constructor(
                 }
                 is ApiResult.Loading -> null
             }
+                is ApiResult.Loading -> null
+            }
 
             val currentUserResult = currentUserDeferred.await()
             val currentUser = when (currentUserResult) {
@@ -1661,11 +1663,6 @@ constructor(
                 )
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
-                _appState.value = _appState.value.copy(
-                    moodCollections = emptyMap(),
-                    isLoadingMoodCollections = false,
-                )
             }
         }
     }

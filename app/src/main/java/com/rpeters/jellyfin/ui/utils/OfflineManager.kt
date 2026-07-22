@@ -218,8 +218,6 @@ class OfflineManager @Inject constructor(
             val downloads = offlineDownloadManager.getCompletedDownloads()
             downloads.forEach { offlineDownloadManager.deleteDownload(it.id) }
             true
-        } catch (e: CancellationException) {
-            throw e
         } catch (_: Exception) {
             false
         }
@@ -282,7 +280,6 @@ class OfflineManager @Inject constructor(
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (_: Exception) {
         }
     }
 
