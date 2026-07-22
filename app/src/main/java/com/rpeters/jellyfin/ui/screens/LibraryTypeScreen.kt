@@ -155,11 +155,11 @@ fun LibraryTypeScreen(
     val libraryId = remember(libraryType, appState.libraries) {
         viewModel.getLibraryIdForType(libraryType)
     }
-    
+
     val effectiveParentId = folderId ?: libraryId
 
     val libraryItems = remember(effectiveParentId, appState.itemsByLibrary) {
-        effectiveParentId?.let { appState.itemsByLibrary[it] } ?: emptyList()
+        appState.itemsByLibrary[effectiveParentId] ?: emptyList()
     }
     val displayItems = remember(libraryItems, selectedFilter) {
         applyFilter(libraryItems, selectedFilter)
@@ -168,7 +168,7 @@ fun LibraryTypeScreen(
         libraryItems.sortedByDescending { it.dateCreated }.take(20)
     }
 
-    val libraryPagination = effectiveParentId?.let { appState.libraryPaginationState[it] }
+    val libraryPagination = appState.libraryPaginationState[effectiveParentId]
     val isLibraryLoadingMore = libraryPagination?.isLoadingMore ?: false
     val hasMoreLibraryItems = libraryPagination?.hasMore ?: false
 
@@ -315,7 +315,7 @@ fun LibraryTypeScreen(
                                 gridState = gridState,
                                 isLoadingMore = isLibraryLoadingMore,
                                 hasMoreItems = hasMoreLibraryItems,
-                                onLoadMore = { effectiveParentId?.let(viewModel::loadMoreLibraryItems) },
+                                onLoadMore = { effectiveParentId.let(viewModel::loadMoreLibraryItems) },
                                 isTablet = adaptiveConfig.isTablet,
                                 modifier = Modifier.weight(1f),
                             )
@@ -332,7 +332,7 @@ fun LibraryTypeScreen(
                                 listState = listState,
                                 isLoadingMore = isLibraryLoadingMore,
                                 hasMoreItems = hasMoreLibraryItems,
-                                onLoadMore = { effectiveParentId?.let(viewModel::loadMoreLibraryItems) },
+                                onLoadMore = { effectiveParentId.let(viewModel::loadMoreLibraryItems) },
                                 isTablet = adaptiveConfig.isTablet,
                                 modifier = Modifier.weight(1f),
                             )
@@ -348,7 +348,7 @@ fun LibraryTypeScreen(
                                     onItemLongPress = handleItemLongPress,
                                     isLoadingMore = isLibraryLoadingMore,
                                     hasMoreItems = hasMoreLibraryItems,
-                                    onLoadMore = { effectiveParentId?.let(viewModel::loadMoreLibraryItems) },
+                                    onLoadMore = { effectiveParentId.let(viewModel::loadMoreLibraryItems) },
                                     isTablet = adaptiveConfig.isTablet,
                                     modifier = Modifier.weight(1f),
                                 )
