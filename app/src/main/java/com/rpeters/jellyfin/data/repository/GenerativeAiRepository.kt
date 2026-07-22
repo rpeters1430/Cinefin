@@ -276,10 +276,6 @@ class GenerativeAiRepository @Inject constructor(
             Log.w("GenerativeAi", "Summary generation timed out after 15s for: $title")
             analytics.logAiEvent("summary", false, getBackendName(true))
             "Summary generation timed out. Please try again."
-        } catch (e: Exception) {
-            Log.e("GenerativeAi", "Summary generation failed for: $title", e)
-            analytics.logAiEvent("summary", false, getBackendName(true))
-            "Unable to generate summary right now."
         }
     }
 
@@ -296,10 +292,10 @@ class GenerativeAiRepository @Inject constructor(
         val finalLimit = if (keywordLimit <= 0) 5 else keywordLimit
 
         val prompt = """
-            Translate the following user request into a simple list of 3-$finalLimit specific keywords that would work well in a standard media server search engine.
+            Translate the following user request into a simple list of 3-${'$'}finalLimit specific keywords that would work well in a standard media server search engine.
             Ignore filler words. Focus on titles, genres, or key terms.
 
-            User Request: "$userQuery"
+            User Request: "${'$'}userQuery"
 
             Format: JSON Array of strings. Example: ["Matrix", "Sci-Fi", "Keanu Reeves"]
         """.trimIndent()
@@ -534,9 +530,8 @@ class GenerativeAiRepository @Inject constructor(
             val success = response.isNotBlank()
             analytics.logAiEvent("generate_previously_on", success, getBackendName(false))
             response.trim()
-        } catch (e: CancellationException) {
-            throw e
         } catch (e: Exception) {
+            if (e is CancellationException) throw e
             analytics.logAiEvent("generate_previously_on", false, getBackendName(false))
             ""
         }
@@ -582,9 +577,8 @@ class GenerativeAiRepository @Inject constructor(
                 }
                 .distinctBy { it.lowercase() }
                 .take(4)
-        } catch (e: CancellationException) {
-            throw e
         } catch (e: Exception) {
+            if (e is CancellationException) throw e
             analytics.logAiEvent("generate_content_warnings", false, getBackendName(false))
             emptyList()
         }
@@ -709,57 +703,7 @@ class GenerativeAiRepository @Inject constructor(
         try {
             val response = withTimeout(10_000L) {
                 getPrimaryModel().generateText(prompt)
-            }
-            val success = response.isNotBlank()
-            analytics.logAiEvent("theme_extraction", success, getBackendName(true))
-
-            if (response.isBlank()) return@withContext emptyList()
-
-            // Parse JSON array
-            val jsonString = response
-                .replace("```json", "")
-                .replace("```", "")
-                .trim()
-                .trim('[', ']')
-
-            val themes = jsonString
-                .split(",")
-                .map { it.trim().trim('"').lowercase() }
-                .filter { it.isNotBlank() && it.length >= 3 }
-                .distinct()
-                .take(maxThemes)
-
-            themes
-        } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
-            Log.w("GenerativeAi", "Theme extraction timed out for: $title")
-            analytics.logAiEvent("theme_extraction", false, getBackendName(true))
-            emptyList()
-        } catch (e: Exception) {
-            Log.e("GenerativeAi", "Theme extraction failed for: $title", e)
-            analytics.logAiEvent("theme_extraction", false, getBackendName(true))
-            emptyList()
-        }
-    }
-
-    /**
-     * Generates a personalized "Why You'll Love This" pitch for a movie/show.
-     * Analyzes user's viewing history to find connections and similarities.
-     *
-     * @param item The movie/show to generate a pitch for
-     * @param viewingHistory User's recent viewing history (max 20 items)
-     * @return Personalized pitch explaining why the user would enjoy this content
-     */
-    suspend fun generateWhyYoullLoveThis(
-        item: BaseItemDto,
-        viewingHistory: List<BaseItemDto>,
-    ): String = withContext(Dispatchers.IO) {
-        if (!isAiEnabled() || !remoteConfig.getBoolean("ai_why_youll_love_this")) return@withContext ""
-        
-        val itemTitle = item.name ?: "this content"
-        val itemGenres = item.genres?.joinToString(", ") ?: ""
-        val itemOverview = item.overview?.take(300) ?: ""
-
-        if (viewingHistory.isEmpty()) {
+    .replace("
             return@withContext generateGenericVibe(itemTitle, itemGenres, itemOverview)
         }
         
@@ -947,7 +891,7 @@ class GenerativeAiRepository @Inject constructor(
                 val titlesString = match.groupValues[2]
 
                 // Extract individual titles
-                val titles = """"([^"]+)"""".toRegex()
+                val titles = """([^\"]+)""".toRegex()
                     .findAll(titlesString)
                     .map { it.groupValues[1] }
                     .toList()
@@ -967,10 +911,6 @@ class GenerativeAiRepository @Inject constructor(
                 .associate { (name, items) -> name to items }
         } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
             Log.w("GenerativeAi", "Mood collections generation timed out")
-            analytics.logAiEvent("mood_collections", false, getBackendName(false))
-            emptyMap()
-        } catch (e: Exception) {
-            Log.e("GenerativeAi", "Mood collections generation failed", e)
             analytics.logAiEvent("mood_collections", false, getBackendName(false))
             emptyMap()
         }
@@ -1066,57 +1006,7 @@ class GenerativeAiRepository @Inject constructor(
 
             // Parse JSON array
             val jsonString = response
-                .replace("```json", "")
-                .replace("```", "")
-                .trim()
-                .trim('[', ']')
-
-            // Create title lookup map
-            val titleMap = library.associateBy { it.name?.lowercase()?.trim() }
-
-            // Extract and match titles
-            val recommendedTitles = """"([^"]+)"""".toRegex()
-                .findAll(jsonString)
-                .map { it.groupValues[1] }
-                .toList()
-
-            val recommendations = recommendedTitles
-                .mapNotNull { title -> titleMap[title.lowercase().trim()] }
-                .filter { it.id != currentItem.id } // Don't recommend the current item
-                .distinct()
-                .take(maxRecommendations)
-
-            recommendations
-        } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
-            Log.w("GenerativeAi", "Smart recommendations timed out for: $currentTitle")
-            analytics.logAiEvent("smart_recommendations", false, getBackendName(false))
-            emptyList()
-        } catch (e: Exception) {
-            Log.e("GenerativeAi", "Smart recommendations failed for: $currentTitle", e)
-            analytics.logAiEvent("smart_recommendations", false, getBackendName(false))
-            emptyList()
-        }
-    }
-
-    val downloadState: Flow<AiDownloadState> = (primaryModel as? HybridAiTextModel)?.downloadState 
-        ?: kotlinx.coroutines.flow.flowOf(AiDownloadState.NOT_SUPPORTED)
-
-    val isNanoActive: Flow<Boolean> = (primaryModel as? HybridAiTextModel)?.isNanoActive
-        ?: kotlinx.coroutines.flow.flowOf(false)
-
-    /**
-     * Triggers the initialization (availability check and download) of on-device AI.
-     */
-    suspend fun initialize() {
-        (primaryModel as? HybridAiTextModel)?.initialize()
-        (proModel as? HybridAiTextModel)?.initialize()
-    }
-
-    /**
-     * Manually retry the Nano model download.
-     */
-    suspend fun retryNanoDownload() {
-        (primaryModel as? HybridAiTextModel)?.retryDownload()
+    .replace("
         (proModel as? HybridAiTextModel)?.retryDownload()
     }
 

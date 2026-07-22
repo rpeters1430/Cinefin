@@ -398,10 +398,6 @@ class OfflineDownloadManager @Inject constructor(
             Log.w(TAG, "Transient download error for ${download.id}: ${e.message}")
             updateDownloadStatus(download.id, DownloadStatus.PENDING)
             DownloadExecutionResult.RETRY
-        } catch (e: Exception) {
-            Log.e(TAG, "Download failed for ${download.id}", e)
-            updateDownloadStatus(download.id, DownloadStatus.FAILED)
-            DownloadExecutionResult.FAILURE
         }
     }
 
@@ -602,10 +598,6 @@ class OfflineDownloadManager @Inject constructor(
                 }
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
-                if (BuildConfig.DEBUG) {
-                    Log.d(TAG, "Transcoding poller stopped: ${e.message}")
-                }
             }
         }
     }

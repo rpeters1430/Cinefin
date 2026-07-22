@@ -352,8 +352,6 @@ class PlaybackProgressManager @Inject constructor(
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            Log.e("PlaybackProgressManager", "Unexpected error reporting progress: ${e.message}")
         }
     }
 

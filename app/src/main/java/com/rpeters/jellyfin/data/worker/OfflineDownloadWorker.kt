@@ -131,9 +131,6 @@ class OfflineDownloadWorker @AssistedInject constructor(
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            SecureLogger.e(TAG, "Offline download work failed for $downloadId", e)
-            Result.retry()
         }
     }
 

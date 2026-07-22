@@ -101,8 +101,6 @@ class SettingsServerManagementViewModel @Inject constructor(
                         SettingsServerManagementState()
                     }
                 }
-            } catch (e: CancellationException) {
-                throw e
             } catch (e: Exception) {
                 SettingsServerManagementState(errorMessage = e.message ?: "Operation failed")
             }

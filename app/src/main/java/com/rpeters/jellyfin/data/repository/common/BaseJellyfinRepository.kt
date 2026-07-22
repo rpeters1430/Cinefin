@@ -131,9 +131,10 @@ open class BaseJellyfinRepository @Inject constructor(
         try {
             val result = executeWithClient(operationName, block)
             ApiResult.Success(result)
-        } catch (e: CancellationException) {
-            throw e
         } catch (e: Exception) {
+            if (e is CancellationException) {
+                throw e
+            }
             handleRepositoryException(e, operationName)
         }
 
@@ -174,9 +175,10 @@ open class BaseJellyfinRepository @Inject constructor(
             // ensure proactive check + 401-aware retry
             val result = executeWithTokenRefresh { block() }
             ApiResult.Success(result)
-        } catch (e: CancellationException) {
-            throw e
         } catch (e: Exception) {
+            if (e is CancellationException) {
+                throw e
+            }
             handleRepositoryException(e, operationName)
         }
     }
@@ -197,8 +199,6 @@ open class BaseJellyfinRepository @Inject constructor(
                 ApiResult.Success(result)
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
-                handleRepositoryException(e, operationName)
             }
         }
     }
@@ -220,8 +220,6 @@ open class BaseJellyfinRepository @Inject constructor(
                 ApiResult.Success(result)
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
-                handleRepositoryException(e, operationName)
             }
         }
     }

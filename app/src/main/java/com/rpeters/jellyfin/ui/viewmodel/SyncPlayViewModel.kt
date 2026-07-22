@@ -50,8 +50,6 @@ class SyncPlayViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 _state.value = _state.value.copy(isLoading = false)
                 throw e
-            } catch (e: Exception) {
-                _state.value = _state.value.copy(isLoading = false, errorMessage = e.message ?: "Unable to load groups")
             }
         }
     }
@@ -72,8 +70,6 @@ class SyncPlayViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 _state.value = _state.value.copy(isLoading = false)
                 throw e
-            } catch (e: Exception) {
-                _state.value = _state.value.copy(isLoading = false, errorMessage = e.message ?: "Unable to join group")
             }
         }
     }
@@ -106,9 +102,6 @@ class SyncPlayViewModel @Inject constructor(
             try {
                 repository.leaveGroup()
                 _state.value = SyncPlayState()
-            } catch (e: CancellationException) {
-                _state.value = _state.value.copy(isLoading = false)
-                throw e
             } catch (e: Exception) {
                 _state.value = _state.value.copy(isLoading = false, errorMessage = e.message ?: "Unable to leave group")
             }

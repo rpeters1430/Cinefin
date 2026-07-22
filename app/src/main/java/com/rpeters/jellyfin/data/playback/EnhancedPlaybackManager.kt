@@ -106,9 +106,10 @@ class EnhancedPlaybackManager @Inject constructor(
                 }
 
                 return@withContext decision
-            } catch (e: CancellationException) {
-                throw e
             } catch (e: Exception) {
+                if (e is CancellationException) {
+                    throw e
+                }
                 println("DEBUG: getOptimalPlaybackUrl error: ${e.message}")
                 e.printStackTrace()
                 SecureLogger.e(TAG, "Error determining optimal playback URL", e)

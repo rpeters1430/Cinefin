@@ -377,13 +377,9 @@ class TVSeasonViewModel @Inject constructor(
         whyYoullLoveThisJob = viewModelScope.launch {
             _state.value = _state.value.copy(isLoadingWhyYoullLoveThis = true)
             try {
-                val viewingHistory = try {
-                    when (val result = mediaRepository.getContinueWatching(limit = 20)) {
-                        is ApiResult.Success -> result.data
-                        else -> emptyList()
-                    }
-                } catch (e: Exception) {
-                    emptyList()
+                val viewingHistory = when (val result = mediaRepository.getContinueWatching(limit = 20)) {
+                    is ApiResult.Success -> result.data
+                    else -> emptyList()
                 }
 
                 if (viewingHistory.isNotEmpty()) {

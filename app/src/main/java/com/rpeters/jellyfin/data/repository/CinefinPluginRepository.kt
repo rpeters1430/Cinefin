@@ -87,9 +87,6 @@ class CinefinPluginRepository(
                 }
                 val errorType = if (isAdmin) ErrorType.SERVER_ERROR else ErrorType.FORBIDDEN
                 ApiResult.Error(message, e, errorType)
-            } catch (e: Exception) {
-                SecureLogger.e(TAG, "Failed to get plugin credentials", e)
-                ApiResult.Error("Network error syncing plugin credentials", e, ErrorType.NETWORK)
             }
         }
     }

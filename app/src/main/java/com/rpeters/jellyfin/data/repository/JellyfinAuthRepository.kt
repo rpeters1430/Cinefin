@@ -318,11 +318,6 @@ class JellyfinAuthRepository @Inject constructor(
                 val errorType = RepositoryUtils.getErrorType(e)
                 ApiResult.Error(throwableMessageOrFallback("Failed to check Quick Connect availability", e), e, errorType)
             }
-        } catch (e: Exception) {
-            if (e is kotlinx.coroutines.CancellationException) throw e
-            Log.e(TAG, "isQuickConnectEnabled: Error", e)
-            val errorType = RepositoryUtils.getErrorType(e)
-            ApiResult.Error(throwableMessageOrFallback("Failed to check Quick Connect availability", e), e, errorType)
         }
     }
 
