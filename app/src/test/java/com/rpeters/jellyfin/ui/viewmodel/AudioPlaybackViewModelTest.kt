@@ -238,7 +238,28 @@ class AudioPlaybackViewModelTest {
         viewModel.playMediaItem(mediaItem)
 
         // Then
-        verify(exactly = 1) { audioServiceConnection.playNow(mediaItem) }
+        verify(exactly = 1) { audioServiceConnection.playNow(mediaItem, 0L) }
+    }
+
+    @Test
+    fun `playMediaItem delegates resume position to service connection`() = runTest(testDispatcher) {
+        val mediaItem = mockk<MediaItem>(relaxed = true)
+
+        viewModel.playMediaItem(mediaItem, startPositionMs = 42_000L)
+
+        verify(exactly = 1) { audioServiceConnection.playNow(mediaItem, 42_000L) }
+    }
+
+    @Test
+    fun `playQueue delegates queue start information to service connection`() = runTest(testDispatcher) {
+        val mediaItems = listOf(
+            mockk<MediaItem>(relaxed = true),
+            mockk<MediaItem>(relaxed = true),
+        )
+
+        viewModel.playQueue(mediaItems, startIndex = 1, startPositionMs = 12_000L)
+
+        verify(exactly = 1) { audioServiceConnection.playQueue(mediaItems, 1, 12_000L) }
     }
 
     @Test
