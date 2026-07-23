@@ -160,12 +160,16 @@ fun NowPlayingScreen(
                     .fillMaxSize()
                     .padding(horizontal = 24.dp, vertical = 20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.SpaceBetween,
             ) {
+                // Equal flexible spacers above and below the content block center it as a
+                // whole in the available space, instead of a single flexible region above
+                // the artwork (which left the art sitting too close to the top bar).
+                Spacer(modifier = Modifier.weight(1f))
+
                 AlbumArtSection(
                     currentMediaItem = playbackState.currentMediaItem,
                     palette = palette,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.fillMaxWidth(),
                 )
 
                 Spacer(modifier = Modifier.height(28.dp))
@@ -204,7 +208,7 @@ fun NowPlayingScreen(
                     onSpeedChange = { viewModel.setPlaybackSpeed(it) },
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.weight(1f))
             }
         }
     }
