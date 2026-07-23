@@ -218,7 +218,10 @@ private fun AlbumArtSection(
 ) {
     Box(
         modifier = modifier.fillMaxWidth(),
-        contentAlignment = Alignment.Center,
+        // Anchor the artwork to the bottom of its weighted region (just above the track
+        // info) instead of centering it in the full leftover space above the fixed-height
+        // sections below — centering here made the art sit too close to the top bar.
+        contentAlignment = Alignment.BottomCenter,
     ) {
         Box(
             modifier = Modifier

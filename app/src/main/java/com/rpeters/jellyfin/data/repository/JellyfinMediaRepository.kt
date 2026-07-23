@@ -328,9 +328,15 @@ class JellyfinMediaRepository @Inject constructor(
         withServerClient("getAlbumsForArtist") { server, client ->
             val userUuid = parseUuid(server.userId ?: "", "user")
             val artistUuid = parseUuid(artistId, "artist")
+            // MusicArtist entities are virtual/aggregated in Jellyfin — they are not the
+            // literal folder parent of MusicAlbum items, so querying with parentId returns
+            // nothing. Use artistIds (matches the server's /Items?ArtistIds= query param)
+            // together with recursive = true, which is how the official web client and
+            // other Jellyfin clients (e.g. Finamp) look up an artist's albums.
             val response = client.itemsApi.getItems(
                 userId = userUuid,
-                parentId = artistUuid,
+                artistIds = listOf(artistUuid),
+                recursive = true,
                 includeItemTypes = listOf(BaseItemKind.MUSIC_ALBUM),
                 sortBy = listOf(ItemSortBy.SORT_NAME),
                 sortOrder = listOf(SortOrder.ASCENDING),

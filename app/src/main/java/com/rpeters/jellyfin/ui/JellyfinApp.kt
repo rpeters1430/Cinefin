@@ -399,9 +399,13 @@ fun JellyfinApp(
                 }
             }
         } else {
-            // No navigation for auth and detail screens
+            // No navigation for auth and detail screens.
+            // Detail screens (e.g. NowPlayingScreen) each own a Scaffold + top app bar that
+            // already consumes the status bar inset, so this outer Scaffold must not reserve
+            // it again - otherwise screens end up with two stacked status-bar-height gaps.
             Scaffold(
                 modifier = Modifier.fillMaxSize(),
+                contentWindowInsets = WindowInsets(0, 0, 0, 0),
                 bottomBar = {
                     // Still show mini player on detail screens if something is playing
                     // Positioned at the very bottom
