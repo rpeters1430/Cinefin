@@ -1,15 +1,20 @@
 package com.rpeters.jellyfin.data.repository
 
+import com.rpeters.jellyfin.data.JellyfinServer
 import com.rpeters.jellyfin.data.cache.JellyfinCache
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.data.session.JellyfinSessionManager
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.mockk
+import io.mockk.secondArg
 import io.mockk.spyk
 import kotlinx.coroutines.test.runTest
 import org.jellyfin.sdk.api.client.ApiClient
+import org.jellyfin.sdk.api.client.Response
 import org.jellyfin.sdk.api.client.extensions.itemsApi
 import org.jellyfin.sdk.api.operations.ItemsApi
 import org.jellyfin.sdk.model.api.BaseItemDto
@@ -19,6 +24,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.util.UUID
 
 class JellyfinMediaRepositoryTest {
 
@@ -294,5 +300,104 @@ class JellyfinMediaRepositoryTest {
         val errorResult = result as ApiResult.Error<List<BaseItemDto>>
         assertEquals(errorMessage, errorResult.message)
         assertEquals(com.rpeters.jellyfin.data.repository.common.ErrorType.NETWORK, errorResult.errorType)
+    }
+
+    // ========== getAlbumsForArtist regression tests (GitHub issue #1194) ==========
+    //
+    // MusicArtist entities in Jellyfin are virtual/aggregated - they are NOT the literal
+    // folder parent of MusicAlbum items, so querying with `parentId` always returned zero
+    // albums. The fix queries with `artistIds` + `recursive = true` instead. Unlike the
+    // tests above (which stub the repository method itself via `spyk`, never exercising the
+    // real method body), this test drives the REAL `getAlbumsForArtist()` implementation so
+    // the actual `ItemsApi.getItems(...)` call arguments can be verified with `coVerify`.
+
+    @Test
+    fun `getAlbumsForArtist queries itemsApi with artistIds and recursive, not parentId`() = runTest {
+        // Given
+        val artistId = "550e8400-e29b-41d4-a716-446655440000"
+        val artistUuid = UUID.fromString(artistId)
+        val userId = "11111111-1111-1111-1111-111111111111"
+        val userUuid = UUID.fromString(userId)
+
+        val testServer = JellyfinServer(
+            id = "server-1",
+            name = "Test Server",
+            url = "https://demo.jellyfin.org",
+            isConnected = true,
+            userId = userId,
+            username = "test-user",
+            accessToken = "test-access-token",
+        )
+
+        // Wire authRepository so BaseJellyfinRepository.validateServer() /
+        // validateTokenAndRefreshIfNeeded() resolve to our test server without reauthenticating.
+        every { authRepository.getCurrentServer() } returns testServer
+        every { authRepository.isTokenExpired() } returns false
+
+        // Wire sessionManager.executeWithAuth(...) - called internally by
+        // BaseJellyfinRepository.executeWithClient() - to invoke the real operation block with
+        // our mocked ApiClient, so the real getAlbumsForArtist() body actually runs.
+        coEvery {
+            sessionManager.executeWithAuth<List<BaseItemDto>?>(any(), any())
+        } coAnswers {
+            val block = secondArg<suspend (JellyfinServer, ApiClient) -> List<BaseItemDto>?>()
+            block(testServer, apiClient)
+        }
+
+        val mockAlbums = listOf(
+            mockk<BaseItemDto> {
+                coEvery { id } returns UUID.randomUUID()
+                coEvery { name } returns "Test Album"
+                coEvery { type } returns BaseItemKind.MUSIC_ALBUM
+            },
+        )
+        val queryResult = mockk<BaseItemDtoQueryResult> {
+            coEvery { items } returns mockAlbums
+            coEvery { totalRecordCount } returns mockAlbums.size
+        }
+
+        // Permissive stub: matches any argument shape so the "when" step always succeeds.
+        // Correctness of the actual query is asserted purely via coVerify below.
+        coEvery {
+            itemsApi.getItems(
+                userId = any(),
+                artistIds = any(),
+                recursive = any(),
+                parentId = any(),
+                includeItemTypes = any(),
+                sortBy = any(),
+                sortOrder = any(),
+                fields = any(),
+            )
+        } returns Response(queryResult, 200, emptyMap())
+
+        // Use a real (non-spyk) repository instance so getAlbumsForArtist()'s actual method
+        // body executes instead of being stubbed away.
+        val realRepository = JellyfinMediaRepository(authRepository, sessionManager, cache, healthChecker)
+
+        // When
+        val result = realRepository.getAlbumsForArtist(artistId)
+
+        // Then
+        assertTrue(result is ApiResult.Success<List<BaseItemDto>>)
+        val successResult = result as ApiResult.Success<List<BaseItemDto>>
+        assertEquals(1, successResult.data.size)
+        assertEquals("Test Album", successResult.data[0].name)
+
+        // Regression guard: must query by artistIds + recursive = true, and must NOT scope
+        // the query by parentId (that was the bug behind issue #1194 - MusicArtist is not the
+        // literal folder parent of its MusicAlbum items).
+        coVerify(exactly = 1) {
+            itemsApi.getItems(
+                userId = userUuid,
+                artistIds = listOf(artistUuid),
+                recursive = true,
+                parentId = null,
+                includeItemTypes = listOf(BaseItemKind.MUSIC_ALBUM),
+                sortBy = any(),
+                sortOrder = any(),
+                fields = any(),
+            )
+        }
     }
 }
