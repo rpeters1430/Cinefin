@@ -168,6 +168,12 @@ fun MusicScreen(
     val recentMusic = appState.recentlyAddedByTypes[BaseItemKind.AUDIO.name] ?: emptyList()
     val musicItems = (libraryMusic + recentMusic).distinctBy { it.id }
     val musicLibraryId = remember(appState.libraries) { viewModel.getLibraryIdForType(LibraryType.MUSIC) }
+    // Pagination is tracked per-library; the legacy appState.hasMoreItems/isLoadingMore
+    // fields are shared across whichever library last paginated, so reading them here would
+    // make this screen react to unrelated libraries' load-more activity.
+    val musicPagination = appState.libraryPaginationState[musicLibraryId]
+    val musicHasMoreItems = musicPagination?.hasMore ?: false
+    val musicIsLoadingMore = musicPagination?.isLoadingMore ?: false
 
     // Apply filtering and sorting
     val filteredAndSortedMusic = remember(musicItems, selectedFilter, sortOrder) {
@@ -225,15 +231,18 @@ fun MusicScreen(
     LaunchedEffect(
         selectedFilter,
         filteredAndSortedMusic.isEmpty(),
-        appState.hasMoreItems,
-        appState.isLoadingMore,
+        musicLibraryId,
+        musicHasMoreItems,
+        musicIsLoadingMore,
         appState.isLoading,
+        appState.errorMessage,
     ) {
         if (filteredAndSortedMusic.isEmpty() &&
             musicItems.isNotEmpty() &&
-            appState.hasMoreItems &&
-            !appState.isLoadingMore &&
-            !appState.isLoading
+            musicHasMoreItems &&
+            !musicIsLoadingMore &&
+            !appState.isLoading &&
+            appState.errorMessage == null
         ) {
             musicLibraryId?.let { viewModel.loadMoreLibraryItems(it) }
         }
@@ -463,7 +472,7 @@ fun MusicScreen(
                             }
                         }
 
-                        filteredAndSortedMusic.isEmpty() && appState.isLoadingMore -> {
+                        filteredAndSortedMusic.isEmpty() && musicIsLoadingMore -> {
                             // Still paging through the library looking for a match for the
                             // current filter (see the auto-continue LaunchedEffect above) -
                             // show a spinner instead of a premature "no music found".
@@ -515,8 +524,8 @@ fun MusicScreen(
                                 onItemClick = onItemClick,
                                 onFavoriteClick = { item -> viewModel.toggleFavorite(item) },
                                 onMoreClick = { item -> ShareUtils.shareMedia(context, item) },
-                                isLoadingMore = appState.isLoadingMore,
-                                hasMoreItems = appState.hasMoreItems,
+                                isLoadingMore = musicIsLoadingMore,
+                                hasMoreItems = musicHasMoreItems,
                                 onLoadMore = { musicLibraryId?.let { viewModel.loadMoreLibraryItems(it) } },
                                 gridState = gridState,
                             )
