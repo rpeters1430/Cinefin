@@ -10,7 +10,6 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.mockk
-import io.mockk.secondArg
 import io.mockk.spyk
 import kotlinx.coroutines.test.runTest
 import org.jellyfin.sdk.api.client.ApiClient
@@ -340,7 +339,8 @@ class JellyfinMediaRepositoryTest {
         coEvery {
             sessionManager.executeWithAuth<List<BaseItemDto>?>(any(), any())
         } coAnswers {
-            val block = secondArg<suspend (JellyfinServer, ApiClient) -> List<BaseItemDto>?>()
+            @Suppress("UNCHECKED_CAST")
+            val block = invocation.args[1] as suspend (JellyfinServer, ApiClient) -> List<BaseItemDto>?
             block(testServer, apiClient)
         }
 
