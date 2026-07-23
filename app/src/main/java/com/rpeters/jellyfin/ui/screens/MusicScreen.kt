@@ -1,11 +1,15 @@
 package com.rpeters.jellyfin.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.expandVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,8 +20,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -77,6 +83,8 @@ import com.rpeters.jellyfin.ui.components.ExpressivePullToRefreshBox
 import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBar
 import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBarAction
 import com.rpeters.jellyfin.ui.components.ExpressiveWavyLinearProgress
+import com.rpeters.jellyfin.ui.components.immersive.rememberAutoHideTopBarVisible
+import com.rpeters.jellyfin.ui.navigation.LocalNavBarVisible
 import com.rpeters.jellyfin.ui.theme.MusicGreen
 import com.rpeters.jellyfin.ui.utils.EnhancedPlaybackUtils
 import com.rpeters.jellyfin.ui.utils.ShareUtils
@@ -146,6 +154,13 @@ fun MusicScreen(
     var viewMode by remember { mutableStateOf(MusicViewMode.GRID) }
     var showSortMenu by remember { mutableStateOf(false) }
     val context = LocalContext.current
+
+    // Track scroll position so the filter/playback header can auto-hide, mirroring the
+    // immersive screens' auto-hide top bar behavior.
+    val gridState = rememberLazyGridState()
+    val headerVisible = rememberAutoHideTopBarVisible(gridState = gridState)
+    val globalNavBarVisible = LocalNavBarVisible.current
+    LaunchedEffect(headerVisible) { globalNavBarVisible.value = headerVisible }
 
     // Get music items via unified loader and enrich with recent audio
     // Don't use remember() here - we want fresh data on every recomposition
@@ -315,74 +330,78 @@ fun MusicScreen(
                 Column(
                     modifier = Modifier.fillMaxSize(),
                 ) {
-                    MusicHeroPanel(
-                        totalCount = filteredAndSortedMusic.size,
-                        selectedFilter = selectedFilter,
-                        sortOrder = sortOrder,
-                    )
-
-                    if (playbackState.isConnected && (playbackState.currentMediaItem != null || playbackQueue.isNotEmpty())) {
-                        ActivePlaybackPanel(
-                            modifier = Modifier
-                                .padding(horizontal = 16.dp, vertical = 8.dp)
-                                .fillMaxWidth(),
-                            playbackState = playbackState,
-                            playbackQueue = playbackQueue,
-                            onShuffleClick = audioPlaybackViewModel::toggleShuffle,
-                            onPlayPauseClick = audioPlaybackViewModel::togglePlayPause,
-                            onSkipNextClick = audioPlaybackViewModel::skipToNext,
-                        )
-                    }
-
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                    // Auto-hides on scroll down, reappears on scroll up (mirrors the immersive
+                    // screens' auto-hide top bar behavior) so the list gets more room to breathe.
+                    AnimatedVisibility(
+                        visible = headerVisible,
+                        enter = expandVertically() + fadeIn(),
+                        exit = shrinkVertically() + fadeOut(),
                     ) {
-                        items(
-                            items = MusicFilter.getAllFilters(),
-                            key = { it },
-                            contentType = { "music_filter" },
-                        ) { filter ->
-                            FilterChip(
-                                onClick = { selectedFilter = filter },
-                                label = { Text(stringResource(id = filter.displayNameResId)) },
-                                selected = selectedFilter == filter,
-                                leadingIcon = when (filter) {
-                                    MusicFilter.FAVORITES -> {
-                                        {
-                                            Icon(
-                                                imageVector = Icons.Default.Star,
-                                                contentDescription = null,
-                                                modifier = Modifier.padding(2.dp),
-                                            )
-                                        }
-                                    }
-                                    MusicFilter.ALBUMS -> {
-                                        {
-                                            Icon(
-                                                imageVector = Icons.Default.Album,
-                                                contentDescription = null,
-                                                modifier = Modifier.padding(2.dp),
-                                            )
-                                        }
-                                    }
-                                    MusicFilter.ARTISTS -> {
-                                        {
-                                            Icon(
-                                                imageVector = Icons.Default.Person,
-                                                contentDescription = null,
-                                                modifier = Modifier.padding(2.dp),
-                                            )
-                                        }
-                                    }
-                                    else -> null
-                                },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = MusicGreen.copy(alpha = 0.18f),
-                                    selectedLabelColor = MusicGreen,
-                                    selectedLeadingIconColor = MusicGreen,
-                                ),
-                            )
+                        Column {
+                            if (playbackState.isConnected && (playbackState.currentMediaItem != null || playbackQueue.isNotEmpty())) {
+                                ActivePlaybackPanel(
+                                    modifier = Modifier
+                                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                                        .fillMaxWidth(),
+                                    playbackState = playbackState,
+                                    playbackQueue = playbackQueue,
+                                    onShuffleClick = audioPlaybackViewModel::toggleShuffle,
+                                    onPlayPauseClick = audioPlaybackViewModel::togglePlayPause,
+                                    onSkipNextClick = audioPlaybackViewModel::skipToNext,
+                                )
+                            }
+
+                            LazyRow(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                            ) {
+                                items(
+                                    items = MusicFilter.getAllFilters(),
+                                    key = { it },
+                                    contentType = { "music_filter" },
+                                ) { filter ->
+                                    FilterChip(
+                                        onClick = { selectedFilter = filter },
+                                        label = { Text(stringResource(id = filter.displayNameResId)) },
+                                        selected = selectedFilter == filter,
+                                        leadingIcon = when (filter) {
+                                            MusicFilter.FAVORITES -> {
+                                                {
+                                                    Icon(
+                                                        imageVector = Icons.Default.Star,
+                                                        contentDescription = null,
+                                                        modifier = Modifier.padding(2.dp),
+                                                    )
+                                                }
+                                            }
+                                            MusicFilter.ALBUMS -> {
+                                                {
+                                                    Icon(
+                                                        imageVector = Icons.Default.Album,
+                                                        contentDescription = null,
+                                                        modifier = Modifier.padding(2.dp),
+                                                    )
+                                                }
+                                            }
+                                            MusicFilter.ARTISTS -> {
+                                                {
+                                                    Icon(
+                                                        imageVector = Icons.Default.Person,
+                                                        contentDescription = null,
+                                                        modifier = Modifier.padding(2.dp),
+                                                    )
+                                                }
+                                            }
+                                            else -> null
+                                        },
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            selectedContainerColor = MusicGreen.copy(alpha = 0.18f),
+                                            selectedLabelColor = MusicGreen,
+                                            selectedLeadingIconColor = MusicGreen,
+                                        ),
+                                    )
+                                }
+                            }
                         }
                     }
 
@@ -461,59 +480,11 @@ fun MusicScreen(
                                 isLoadingMore = appState.isLoadingMore,
                                 hasMoreItems = appState.hasMoreItems,
                                 onLoadMore = { viewModel.loadMoreItems() },
+                                gridState = gridState,
                             )
                         }
                     }
                 }
-            }
-        }
-    }
-}
-
-@Composable
-private fun MusicHeroPanel(
-    totalCount: Int,
-    selectedFilter: MusicFilter,
-    sortOrder: MusicSortOrder,
-) {
-    ExpressiveBlurSurface(
-        modifier = Modifier
-            .padding(horizontal = 16.dp, vertical = 12.dp)
-            .fillMaxWidth()
-            .border(
-                1.dp,
-                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.32f),
-                RoundedCornerShape(28.dp),
-            ),
-        shape = RoundedCornerShape(28.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.8f),
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
-            Text(
-                text = "Your soundtrack",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Text(
-                text = "Browse albums, artists, and tracks with the same expressive playback surfaces used across the player.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                MusicStatChip("$totalCount items")
-                MusicStatChip(stringResource(id = selectedFilter.displayNameResId))
-                MusicStatChip(
-                    stringResource(id = sortOrder.displayNameResId),
-                    accent = MaterialTheme.colorScheme.primary,
-                )
             }
         }
     }
@@ -654,6 +625,7 @@ private fun MusicContent(
     hasMoreItems: Boolean,
     onLoadMore: () -> Unit,
     modifier: Modifier = Modifier,
+    gridState: LazyGridState = rememberLazyGridState(),
 ) {
     when (viewMode) {
         MusicViewMode.GRID -> {
@@ -663,6 +635,7 @@ private fun MusicContent(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = modifier.fillMaxSize(),
+                state = gridState,
             ) {
                 items(
                     items = musicItems,
@@ -699,6 +672,7 @@ private fun MusicContent(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = modifier.fillMaxSize(),
+                state = gridState,
             ) {
                 items(
                     items = musicItems,

@@ -5,12 +5,18 @@ import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import kotlin.math.abs
+
+// Scales firstVisibleItemIndex into a synthetic scroll position so comparisons stay
+// monotonic past the first item, instead of collapsing every non-zero index into a single
+// Int.MAX_VALUE sentinel (which froze the hysteresis delta at 0 and left the bar stuck).
+// Comfortably larger than any realistic per-item pixel offset.
+private const val INDEX_POSITION_SCALE = 1_000_000L
 
 /**
  * Scroll-aware top bar visibility with hysteresis to avoid flicker at low scroll velocity.
@@ -26,29 +32,26 @@ fun rememberAutoHideTopBarVisible(
     toggleThresholdPx: Int = 50,
 ): Boolean {
     var isVisible by remember { mutableStateOf(true) }
-    var previousOffset by remember { mutableIntStateOf(0) }
+    var previousPosition by remember { mutableLongStateOf(0L) }
 
     LaunchedEffect(listState, nearTopOffsetPx, toggleThresholdPx) {
         snapshotFlow {
             listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset
         }.collect { (index, offset) ->
-            // Calculate total scroll position
-            val totalOffset = if (index == 0) offset else Int.MAX_VALUE
-
             // Always show at top
-            if (totalOffset <= nearTopOffsetPx) {
+            if (index == 0 && offset <= nearTopOffsetPx) {
                 isVisible = true
-                previousOffset = totalOffset
+                previousPosition = offset.toLong()
                 return@collect
             }
 
-            // Calculate scroll delta
-            val delta = totalOffset - previousOffset
+            val position = index.toLong() * INDEX_POSITION_SCALE + offset
+            val delta = position - previousPosition
 
             // Only toggle if scrolled enough
             if (abs(delta) >= toggleThresholdPx) {
                 isVisible = delta < 0 // Show when scrolling up, hide when scrolling down
-                previousOffset = totalOffset
+                previousPosition = position
             }
         }
     }
@@ -66,29 +69,26 @@ fun rememberAutoHideTopBarVisible(
     toggleThresholdPx: Int = 50,
 ): Boolean {
     var isVisible by remember { mutableStateOf(true) }
-    var previousOffset by remember { mutableIntStateOf(0) }
+    var previousPosition by remember { mutableLongStateOf(0L) }
 
     LaunchedEffect(gridState, nearTopOffsetPx, toggleThresholdPx) {
         snapshotFlow {
             gridState.firstVisibleItemIndex to gridState.firstVisibleItemScrollOffset
         }.collect { (index, offset) ->
-            // Calculate total scroll position
-            val totalOffset = if (index == 0) offset else Int.MAX_VALUE
-
             // Always show at top
-            if (totalOffset <= nearTopOffsetPx) {
+            if (index == 0 && offset <= nearTopOffsetPx) {
                 isVisible = true
-                previousOffset = totalOffset
+                previousPosition = offset.toLong()
                 return@collect
             }
 
-            // Calculate scroll delta
-            val delta = totalOffset - previousOffset
+            val position = index.toLong() * INDEX_POSITION_SCALE + offset
+            val delta = position - previousPosition
 
             // Only toggle if scrolled enough
             if (abs(delta) >= toggleThresholdPx) {
                 isVisible = delta < 0 // Show when scrolling up, hide when scrolling down
-                previousOffset = totalOffset
+                previousPosition = position
             }
         }
     }
