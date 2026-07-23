@@ -158,7 +158,7 @@ fun MusicScreen(
     // Track scroll position so the filter/playback header can auto-hide, mirroring the
     // immersive screens' auto-hide top bar behavior.
     val gridState = rememberLazyGridState()
-    val headerVisible = rememberAutoHideTopBarVisible(gridState = gridState, nearTopOffsetPx = 0)
+    val headerVisible = rememberAutoHideTopBarVisible(gridState = gridState)
     val globalNavBarVisible = LocalNavBarVisible.current
     LaunchedEffect(headerVisible) { globalNavBarVisible.value = headerVisible }
 

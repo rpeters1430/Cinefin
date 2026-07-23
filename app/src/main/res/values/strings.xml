@@ -199,6 +199,10 @@
     <string name="no_music_found">No music found</string>
     <string name="adjust_music_filters_hint">Try adjusting your filters or refresh the library</string>
 
+    <!-- Artist Detail Screen -->
+    <string name="no_albums_found">No albums found</string>
+    <string name="no_albums_found_hint">This artist doesn\'t have any albums in your library yet</string>
+
     <!-- Home Videos Screen -->
     <string name="no_home_videos_found">No home videos found</string>
     <string name="adjust_home_videos_filters_hint">Try adjusting your filters or refresh the library</string>

@@ -121,12 +121,12 @@ fun ArtistDetailScreen(
                             tint = MusicGreen.copy(alpha = 0.6f),
                         )
                         Text(
-                            text = "No albums found",
+                            text = stringResource(id = R.string.no_albums_found),
                             style = MaterialTheme.typography.headlineSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Text(
-                            text = "This artist doesn't have any albums in your library yet",
+                            text = stringResource(id = R.string.no_albums_found_hint),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center,
