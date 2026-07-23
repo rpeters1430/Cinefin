@@ -167,6 +167,7 @@ fun MusicScreen(
     val libraryMusic = viewModel.getLibraryTypeData(LibraryType.MUSIC)
     val recentMusic = appState.recentlyAddedByTypes[BaseItemKind.AUDIO.name] ?: emptyList()
     val musicItems = (libraryMusic + recentMusic).distinctBy { it.id }
+    val musicLibraryId = remember(appState.libraries) { viewModel.getLibraryIdForType(LibraryType.MUSIC) }
 
     // Apply filtering and sorting
     val filteredAndSortedMusic = remember(musicItems, selectedFilter, sortOrder) {
@@ -213,6 +214,28 @@ fun MusicScreen(
             MusicSortOrder.RUNTIME_ASC -> filtered.sortedBy {
                 it.runTimeTicks ?: 0L
             }
+        }
+    }
+
+    // The music library page is fetched with Audio/MusicAlbum/MusicArtist mixed together
+    // and sorted alphabetically, so a type filter (e.g. Albums/Artists) can easily come up
+    // empty on the currently-loaded page even though matching items exist further into the
+    // library. Keep paging automatically until the filter finds results or the library is
+    // exhausted, rather than leaving the user stuck on a false "no music found".
+    LaunchedEffect(
+        selectedFilter,
+        filteredAndSortedMusic.isEmpty(),
+        appState.hasMoreItems,
+        appState.isLoadingMore,
+        appState.isLoading,
+    ) {
+        if (filteredAndSortedMusic.isEmpty() &&
+            musicItems.isNotEmpty() &&
+            appState.hasMoreItems &&
+            !appState.isLoadingMore &&
+            !appState.isLoading
+        ) {
+            musicLibraryId?.let { viewModel.loadMoreLibraryItems(it) }
         }
     }
 
@@ -440,6 +463,21 @@ fun MusicScreen(
                             }
                         }
 
+                        filteredAndSortedMusic.isEmpty() && appState.isLoadingMore -> {
+                            // Still paging through the library looking for a match for the
+                            // current filter (see the auto-continue LaunchedEffect above) -
+                            // show a spinner instead of a premature "no music found".
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                ExpressiveCircularLoading(
+                                    size = 48.dp,
+                                    showPulse = true,
+                                )
+                            }
+                        }
+
                         filteredAndSortedMusic.isEmpty() -> {
                             Box(
                                 modifier = Modifier.fillMaxSize(),
@@ -479,7 +517,7 @@ fun MusicScreen(
                                 onMoreClick = { item -> ShareUtils.shareMedia(context, item) },
                                 isLoadingMore = appState.isLoadingMore,
                                 hasMoreItems = appState.hasMoreItems,
-                                onLoadMore = { viewModel.loadMoreItems() },
+                                onLoadMore = { musicLibraryId?.let { viewModel.loadMoreLibraryItems(it) } },
                                 gridState = gridState,
                             )
                         }
