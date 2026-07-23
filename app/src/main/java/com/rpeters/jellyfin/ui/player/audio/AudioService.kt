@@ -322,6 +322,7 @@ class AudioService : androidx.media3.session.MediaSessionService() {
             player.repeatMode = state.repeatMode
             player.shuffleModeEnabled = state.shuffleEnabled
             player.playWhenReady = state.playWhenReady
+            player.setPlaybackSpeed(state.playbackSpeed)
             player.prepare()
         }
     }
@@ -466,6 +467,7 @@ private data class PersistedAudioSessionState(
     val playWhenReady: Boolean,
     val shuffleEnabled: Boolean,
     val repeatMode: Int,
+    val playbackSpeed: Float = 1.0f,
 )
 
 private class AudioSessionStateStore(
@@ -486,6 +488,7 @@ private class AudioSessionStateStore(
             .putBoolean(KEY_PLAY_WHEN_READY, player.playWhenReady)
             .putBoolean(KEY_SHUFFLE_ENABLED, player.shuffleModeEnabled)
             .putInt(KEY_REPEAT_MODE, player.repeatMode)
+            .putFloat(KEY_PLAYBACK_SPEED, player.playbackParameters.speed)
             .apply()
     }
 
@@ -506,6 +509,7 @@ private class AudioSessionStateStore(
                 playWhenReady = prefs.getBoolean(KEY_PLAY_WHEN_READY, false),
                 shuffleEnabled = prefs.getBoolean(KEY_SHUFFLE_ENABLED, false),
                 repeatMode = prefs.getInt(KEY_REPEAT_MODE, Player.REPEAT_MODE_OFF),
+                playbackSpeed = prefs.getFloat(KEY_PLAYBACK_SPEED, 1.0f),
             )
         }.getOrNull()
     }
@@ -558,5 +562,6 @@ private class AudioSessionStateStore(
         private const val KEY_PLAY_WHEN_READY = "play_when_ready"
         private const val KEY_SHUFFLE_ENABLED = "shuffle_enabled"
         private const val KEY_REPEAT_MODE = "repeat_mode"
+        private const val KEY_PLAYBACK_SPEED = "playback_speed"
     }
 }

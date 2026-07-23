@@ -197,8 +197,8 @@ class CinefinApplication : Application(), SingletonImageLoader.Factory, Configur
                 .checkAgeSignals(AgeSignalsRequest.builder().build())
                 .await()
 
-            val userStatus = result?.userStatus
-            
+            val userStatus = result?.ageLower()
+
             // Persist the status to the repository
             userRepositoryProvider.get().updateAgeSignalsStatus(userStatus)
 
@@ -295,9 +295,11 @@ class CinefinApplication : Application(), SingletonImageLoader.Factory, Configur
         applicationScope.launch {
             try {
                 SecureLogger.i(TAG, "Initializing AI backend in background")
-                generativeAiRepositoryProvider.get().initialize()
+                generativeAiRepositoryProvider.get().checkCloudApiHealth()
             } catch (e: CancellationException) {
                 throw e
+            } catch (e: Exception) {
+                SecureLogger.w(TAG, "Failed background AI health check", e)
             }
         }
     }

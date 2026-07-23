@@ -29,6 +29,14 @@ class AudioPlaybackViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
+            try {
+                audioServiceConnection.ensureController()
+                audioServiceConnection.refreshState()
+            } catch (e: Exception) {
+                // Connection errors are handled gracefully
+            }
+        }
+        viewModelScope.launch {
             playbackState.collectLatest { state ->
                 _currentPosition.value = state.currentPosition
                 _duration.value = state.duration
@@ -46,6 +54,10 @@ class AudioPlaybackViewModel @Inject constructor(
 
     fun toggleRepeat() {
         audioServiceConnection.toggleRepeat()
+    }
+
+    fun setPlaybackSpeed(speed: Float) {
+        audioServiceConnection.setPlaybackSpeed(speed)
     }
 
     fun skipToNext() {

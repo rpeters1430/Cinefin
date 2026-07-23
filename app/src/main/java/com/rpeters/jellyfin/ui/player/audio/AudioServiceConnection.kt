@@ -184,6 +184,15 @@ class AudioServiceConnection @Inject constructor(
         }
     }
 
+    fun setPlaybackSpeed(speed: Float) {
+        val clampedSpeed = speed.coerceIn(0.25f, 3.0f)
+        controllerScope.launch {
+            val controller = ensureController()
+            controller.setPlaybackSpeed(clampedSpeed)
+            updatePlaybackState(controller)
+        }
+    }
+
     fun removeFromQueue(index: Int) {
         controllerScope.launch {
             val controller = ensureController()
@@ -289,6 +298,7 @@ class AudioServiceConnection @Inject constructor(
             repeatMode = controller.repeatMode,
             currentPosition = controller.currentPosition,
             duration = controller.duration,
+            playbackSpeed = controller.playbackParameters.speed,
         )
     }
 
@@ -330,6 +340,7 @@ data class AudioPlaybackState(
     val repeatMode: Int = androidx.media3.common.Player.REPEAT_MODE_OFF,
     val currentPosition: Long = 0L,
     val duration: Long = 0L,
+    val playbackSpeed: Float = 1.0f,
 )
 
 private suspend fun <T> ListenableFuture<T>.await(context: Context): T =

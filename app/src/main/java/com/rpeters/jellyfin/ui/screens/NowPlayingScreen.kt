@@ -195,11 +195,13 @@ fun NowPlayingScreen(
                     isPlaying = playbackState.isPlaying,
                     shuffleEnabled = playbackState.shuffleEnabled,
                     repeatMode = playbackState.repeatMode,
+                    playbackSpeed = playbackState.playbackSpeed,
                     onPlayPauseClick = { viewModel.togglePlayPause() },
                     onSkipPreviousClick = { viewModel.skipToPrevious() },
                     onSkipNextClick = { viewModel.skipToNext() },
                     onShuffleClick = { viewModel.toggleShuffle() },
                     onRepeatClick = { viewModel.toggleRepeat() },
+                    onSpeedChange = { viewModel.setPlaybackSpeed(it) },
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -416,13 +418,17 @@ private fun PlaybackControlsSection(
     isPlaying: Boolean,
     shuffleEnabled: Boolean,
     repeatMode: Int,
+    playbackSpeed: Float,
     onPlayPauseClick: () -> Unit,
     onSkipPreviousClick: () -> Unit,
     onSkipNextClick: () -> Unit,
     onShuffleClick: () -> Unit,
     onRepeatClick: () -> Unit,
+    onSpeedChange: (Float) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val speeds = remember { listOf(0.75f, 1.0f, 1.25f, 1.5f, 1.75f, 2.0f) }
+
     ExpressiveBlurSurface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(32.dp),
@@ -481,6 +487,37 @@ private fun PlaybackControlsSection(
                         else -> Icons.Filled.Repeat
                     },
                     contentDescription = "Repeat",
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Playback speed selector chip
+            val currentSpeedLabel = if (playbackSpeed == 1.0f) "1.0x" else "${String.format("%.2f", playbackSpeed).trimEnd('0').trimEnd('.')}x"
+            FilledIconButton(
+                onClick = {
+                    val nextIndex = (speeds.indexOfFirst { kotlin.math.abs(it - playbackSpeed) < 0.05f } + 1) % speeds.size
+                    onSpeedChange(speeds[nextIndex])
+                },
+                modifier = Modifier.height(36.dp),
+                colors = IconButtonDefaults.filledIconButtonColors(
+                    containerColor = if (playbackSpeed != 1.0f) {
+                        MaterialTheme.colorScheme.primaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.9f)
+                    },
+                    contentColor = if (playbackSpeed != 1.0f) {
+                        MaterialTheme.colorScheme.onPrimaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                ),
+            ) {
+                Text(
+                    text = currentSpeedLabel,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 12.dp),
                 )
             }
         }

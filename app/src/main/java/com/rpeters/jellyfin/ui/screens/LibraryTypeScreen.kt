@@ -315,7 +315,7 @@ fun LibraryTypeScreen(
                                 gridState = gridState,
                                 isLoadingMore = isLibraryLoadingMore,
                                 hasMoreItems = hasMoreLibraryItems,
-                                onLoadMore = { effectiveParentId.let(viewModel::loadMoreLibraryItems) },
+                                onLoadMore = { effectiveParentId?.let(viewModel::loadMoreLibraryItems) },
                                 isTablet = adaptiveConfig.isTablet,
                                 modifier = Modifier.weight(1f),
                             )
@@ -332,7 +332,7 @@ fun LibraryTypeScreen(
                                 listState = listState,
                                 isLoadingMore = isLibraryLoadingMore,
                                 hasMoreItems = hasMoreLibraryItems,
-                                onLoadMore = { effectiveParentId.let(viewModel::loadMoreLibraryItems) },
+                                onLoadMore = { effectiveParentId?.let(viewModel::loadMoreLibraryItems) },
                                 isTablet = adaptiveConfig.isTablet,
                                 modifier = Modifier.weight(1f),
                             )
@@ -348,7 +348,7 @@ fun LibraryTypeScreen(
                                     onItemLongPress = handleItemLongPress,
                                     isLoadingMore = isLibraryLoadingMore,
                                     hasMoreItems = hasMoreLibraryItems,
-                                    onLoadMore = { effectiveParentId.let(viewModel::loadMoreLibraryItems) },
+                                    onLoadMore = { effectiveParentId?.let(viewModel::loadMoreLibraryItems) },
                                     isTablet = adaptiveConfig.isTablet,
                                     modifier = Modifier.weight(1f),
                                 )

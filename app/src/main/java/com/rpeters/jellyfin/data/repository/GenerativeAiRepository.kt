@@ -703,10 +703,55 @@ class GenerativeAiRepository @Inject constructor(
         try {
             val response = withTimeout(10_000L) {
                 getPrimaryModel().generateText(prompt)
-    .replace("
+            }
+            val success = response.isNotBlank()
+            analytics.logAiEvent("extract_themes", success, getBackendName(true))
+            if (response.isBlank()) return@withContext emptyList()
+
+            val cleaned = response.trim()
+                .removeSurrounding("[", "]")
+                .replace("\"", "")
+                .replace("'", "")
+            cleaned.split(",")
+                .map { it.trim().lowercase() }
+                .filter { it.isNotBlank() }
+                .take(maxThemes)
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            analytics.logAiEvent("extract_themes", false, getBackendName(true))
+            emptyList()
+        }
+    }
+
+    /**
+     * Generates a personalized "Why You'll Love This" pitch based on viewing history.
+     */
+    suspend fun generateWhyYoullLoveThis(
+        item: BaseItemDto,
+        viewingHistory: List<BaseItemDto>,
+    ): String = withContext(Dispatchers.IO) {
+        val itemTitle = item.name.orEmpty()
+        val itemGenres = item.genres?.joinToString(", ").orEmpty()
+        val itemOverview = item.overview.orEmpty()
+        generateWhyYoullLoveThis(
+            itemTitle = itemTitle,
+            itemGenres = itemGenres,
+            itemOverview = itemOverview,
+            viewingHistory = viewingHistory,
+        )
+    }
+
+    suspend fun generateWhyYoullLoveThis(
+        itemTitle: String,
+        itemGenres: String,
+        itemOverview: String,
+        viewingHistory: List<BaseItemDto>,
+    ): String = withContext(Dispatchers.IO) {
+        if (!isAiEnabled()) return@withContext ""
+        if (viewingHistory.isEmpty()) {
             return@withContext generateGenericVibe(itemTitle, itemGenres, itemOverview)
         }
-        
+
         logModelUsage("whyYoullLoveThis", usesPrimaryModel = false)
         val historySize = remoteConfig.getLong("ai_history_context_size").toInt()
             .let { if (it <= 0) 10 else it }
@@ -1004,9 +1049,28 @@ class GenerativeAiRepository @Inject constructor(
 
             if (response.isBlank()) return@withContext emptyList()
 
-            // Parse JSON array
-            val jsonString = response
-    .replace("
+            val titles = response.lines()
+                .map { line -> line.replace(Regex("""^\d+[\.\)]\s*"""), "").trim() }
+                .filter { it.isNotBlank() && !it.startsWith("[") && !it.startsWith("{") }
+
+            library.filter { item ->
+                titles.any { title -> item.name?.contains(title, ignoreCase = true) == true }
+            }.take(maxRecommendations)
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            analytics.logAiEvent("smart_recommendations", false, getBackendName(false))
+            emptyList()
+        }
+    }
+
+    val downloadState: Flow<AiDownloadState> = (primaryModel as? HybridAiTextModel)?.downloadState 
+        ?: kotlinx.coroutines.flow.flowOf(AiDownloadState.NOT_SUPPORTED)
+        
+    val isNanoActive: Flow<Boolean> = (primaryModel as? HybridAiTextModel)?.isNanoActive 
+        ?: kotlinx.coroutines.flow.flowOf(false)
+
+    suspend fun retryNanoDownload() {
+        (primaryModel as? HybridAiTextModel)?.retryDownload()
         (proModel as? HybridAiTextModel)?.retryDownload()
     }
 

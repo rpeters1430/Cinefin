@@ -174,7 +174,7 @@ class DownloadsViewModel @Inject constructor(
             val itemId = item.id.toString()
             SecureLogger.i(
                 "DownloadsFlow",
-                "req=$reqId startDownload requested: itemId=$itemId, itemName=${item.name}, quality=${effectiveQuality.id ?: "default"}, wifiOnly=${prefs.wifiOnly}, networkType=$networkType",
+                "req=$reqId startDownload requested: itemId=$itemId, itemName=${item.name}, quality=${effectiveQuality?.id ?: "default"}, wifiOnly=${prefs.wifiOnly}, networkType=$networkType",
             )
             val url = withContext(Dispatchers.IO) {
                 if (effectiveQuality != null && effectiveQuality.id != "original") {
@@ -207,13 +207,13 @@ class DownloadsViewModel @Inject constructor(
 
             SecureLogger.i(
                 "DownloadsFlow",
-                "req=$reqId resolved source: itemId=$itemId, hasUrl=${!url.isNullOrBlank()}, quality=${effectiveQuality.id ?: "null"}",
+                "req=$reqId resolved source: itemId=$itemId, hasUrl=${!url.isNullOrBlank()}, quality=${effectiveQuality?.id ?: "null"}",
             )
             val downloadId = downloadManager.startDownload(item, effectiveQuality, url)
             val cid = downloadId.take(8)
             SecureLogger.i(
                 "DownloadsFlow",
-                "req=$reqId mapped to cid=$cid: itemId=$itemId, downloadId=$downloadId, quality=${effectiveQuality.id ?: "null"}",
+                "req=$reqId mapped to cid=$cid: itemId=$itemId, downloadId=$downloadId, quality=${effectiveQuality?.id ?: "null"}",
             )
         }
     }

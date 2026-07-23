@@ -117,9 +117,9 @@ class EnhancedPlaybackUtils @Inject constructor(
                 MediaPlayerUtils.playMedia(context, streamUrl, item)
             }
 
-            BaseItemKind.AUDIO, BaseItemKind.MUSIC_ALBUM -> {
+            BaseItemKind.AUDIO, BaseItemKind.MUSIC_ALBUM, BaseItemKind.AUDIO_BOOK -> {
                 if (BuildConfig.DEBUG) {
-                    Log.d(TAG, "Routing audio playback through MediaSession service for ${item.name}")
+                    Log.d(TAG, "Routing audio/audiobook playback through MediaSession service for ${item.name}")
                 }
                 MediaPlayerUtils.playMedia(context, streamUrl, item)
             }

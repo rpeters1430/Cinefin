@@ -158,6 +158,15 @@ class AudioPlaybackViewModelTest {
     }
 
     @Test
+    fun `setPlaybackSpeed delegates to service connection`() = runTest(testDispatcher) {
+        // When
+        viewModel.setPlaybackSpeed(1.25f)
+
+        // Then
+        verify(exactly = 1) { audioServiceConnection.setPlaybackSpeed(1.25f) }
+    }
+
+    @Test
     fun `skipToNext delegates to service connection`() = runTest(testDispatcher) {
         // When
         viewModel.skipToNext()

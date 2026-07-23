@@ -346,8 +346,6 @@ constructor(
                 }
                 is ApiResult.Loading -> null
             }
-                is ApiResult.Loading -> null
-            }
 
             val currentUserResult = currentUserDeferred.await()
             val currentUser = when (currentUserResult) {
