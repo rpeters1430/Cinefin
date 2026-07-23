@@ -35,7 +35,7 @@ android {
         )
         applicationId = "com.rpeters.jellyfin"
         minSdk = 30
-        targetSdk = 37
+        targetSdk = libs.versions.sdk.get().toInt()
         versionCode = 142
         versionName = "15.73"
 
