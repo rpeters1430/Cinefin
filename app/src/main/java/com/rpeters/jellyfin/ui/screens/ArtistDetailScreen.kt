@@ -147,9 +147,9 @@ fun ArtistDetailScreen(
                 ) {
                     items(state.albums, key = { it.id.toString() }) { album ->
                         ExpressiveMediaCard(
-                            title = album.name ?: "",
-                            subtitle = album.productionYear?.toString() ?: "",
-                            imageUrl = mainViewModel.getImageUrl(album) ?: "",
+                            title = album.name.orEmpty(),
+                            subtitle = album.productionYear?.toString().orEmpty(),
+                            imageUrl = mainViewModel.getImageUrl(album).orEmpty(),
                             onCardClick = { onAlbumClick(album) },
                         )
                     }
