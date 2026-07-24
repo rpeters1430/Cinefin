@@ -48,7 +48,7 @@
         android:banner="@drawable/tv_banner"
         android:enableOnBackInvokedCallback="true"
         android:resizeableActivity="true"
-        tools:targetApi="33">
+        tools:targetApi="36">
         <activity
             android:name=".MainActivity"
             android:exported="true"

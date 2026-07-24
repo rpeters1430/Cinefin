@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace = "com.rpeters.jellyfin.core.architecture"
-    compileSdk = libs.versions.sdk.get().toInt()
+    compileSdk = libs.versions.compileSdk.get().toInt()
 
     defaultConfig {
         minSdk = 30

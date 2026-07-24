@@ -19,7 +19,7 @@ composeCompiler {
 
 android {
     namespace = "com.rpeters.jellyfin"
-    compileSdk = libs.versions.sdk.get().toInt()
+    compileSdk = libs.versions.compileSdk.get().toInt()
 
     // Load local.properties if it exists
     val localProperties = Properties()
@@ -35,9 +35,9 @@ android {
         )
         applicationId = "com.rpeters.jellyfin"
         minSdk = 30
-        targetSdk = libs.versions.sdk.get().toInt()
-        versionCode = 144
-        versionName = "15.75"
+        targetSdk = 36
+        versionCode = 145
+        versionName = "15.76"
 
         testInstrumentationRunner = "com.rpeters.jellyfin.testing.HiltTestRunner"
 
@@ -147,10 +147,6 @@ android {
     }
 
     lint {
-        // CI consumes XML output for warning budget checks.
-        xmlReport = true
-        htmlReport = true
-        sarifReport = true
         abortOnError = true
         warningsAsErrors = false
         disable += "UnsafeOptInUsageError"

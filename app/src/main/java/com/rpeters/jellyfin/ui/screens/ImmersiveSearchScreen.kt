@@ -37,11 +37,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
-import androidx.compose.material3.SearchBar
-import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -508,49 +509,48 @@ fun ImmersiveSearchScreen(
                 color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
                 tonalElevation = 6.dp,
             ) {
-                SearchBar(
-                    inputField = {
-                        SearchBarDefaults.InputField(
-                            query = searchQuery,
-                            onQueryChange = { searchQuery = it },
-                            onSearch = { /* Search is handled by LaunchedEffect with debouncing */ },
-                            expanded = false,
-                            onExpandedChange = { },
-                            placeholder = { Text(stringResource(id = R.string.search_hint)) },
-                            leadingIcon = {
-                                IconButton(onClick = {
-                                    focusManager.clearFocus()
-                                    onBackClick()
-                                }) {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                        contentDescription = stringResource(id = R.string.navigate_up),
-                                    )
-                                }
-                            },
-                            trailingIcon = if (searchQuery.isNotEmpty()) {
-                                {
-                                    IconButton(onClick = {
-                                        searchQuery = ""
-                                        onClearSearch()
-                                    }) {
-                                        Icon(
-                                            imageVector = Icons.Default.Clear,
-                                            contentDescription = "Clear Search",
-                                        )
-                                    }
-                                }
-                            } else {
-                                null
-                            },
-                        )
+                TextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(focusRequester),
+                    placeholder = { Text(stringResource(id = R.string.search_hint)) },
+                    leadingIcon = {
+                        IconButton(onClick = {
+                            focusManager.clearFocus()
+                            onBackClick()
+                        }) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(id = R.string.navigate_up),
+                            )
+                        }
                     },
-                    expanded = false,
-                    onExpandedChange = { },
-                    modifier = Modifier.focusRequester(focusRequester),
-                ) {
-                    // Empty content - search results are shown in LazyColumn
-                }
+                    trailingIcon = if (searchQuery.isNotEmpty()) {
+                        {
+                            IconButton(onClick = {
+                                searchQuery = ""
+                                onClearSearch()
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Default.Clear,
+                                    contentDescription = "Clear Search",
+                                )
+                            }
+                        }
+                    } else {
+                        null
+                    },
+                    singleLine = true,
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        disabledContainerColor = Color.Transparent,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                    ),
+                )
             }
         }
 
