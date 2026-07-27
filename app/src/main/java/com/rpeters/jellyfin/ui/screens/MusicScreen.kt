@@ -84,7 +84,6 @@ import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBar
 import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBarAction
 import com.rpeters.jellyfin.ui.components.ExpressiveWavyLinearProgress
 import com.rpeters.jellyfin.ui.components.immersive.rememberAutoHideTopBarVisible
-import com.rpeters.jellyfin.ui.navigation.LocalNavBarVisible
 import com.rpeters.jellyfin.ui.theme.MusicGreen
 import com.rpeters.jellyfin.ui.utils.EnhancedPlaybackUtils
 import com.rpeters.jellyfin.ui.utils.ShareUtils
@@ -159,8 +158,6 @@ fun MusicScreen(
     // immersive screens' auto-hide top bar behavior.
     val gridState = rememberLazyGridState()
     val headerVisible = rememberAutoHideTopBarVisible(gridState = gridState)
-    val globalNavBarVisible = LocalNavBarVisible.current
-    LaunchedEffect(headerVisible) { globalNavBarVisible.value = headerVisible }
 
     // Get music items via unified loader and enrich with recent audio
     // Don't use remember() here - we want fresh data on every recomposition

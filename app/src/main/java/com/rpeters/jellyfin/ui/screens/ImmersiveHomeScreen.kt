@@ -2,7 +2,6 @@ package com.rpeters.jellyfin.ui.screens
 
 import androidx.annotation.OptIn
 import androidx.annotation.VisibleForTesting
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.lazy.grid.LazyGridState
@@ -28,7 +27,6 @@ import com.rpeters.jellyfin.data.JellyfinServer
 import com.rpeters.jellyfin.ui.components.*
 import com.rpeters.jellyfin.ui.components.aiAura
 import com.rpeters.jellyfin.ui.components.immersive.*
-import com.rpeters.jellyfin.ui.navigation.LocalNavBarVisible
 import com.rpeters.jellyfin.ui.screens.home.*
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
 import com.rpeters.jellyfin.ui.utils.MediaPlayerUtils
@@ -165,12 +163,6 @@ fun ImmersiveHomeScreen(
                 listState = listState,
                 nearTopOffsetPx = with(LocalDensity.current) { ImmersiveDimens.HeroHeightPhone.toPx().toInt() },
             )
-        }
-
-        // Drive global nav bar visibility from the same scroll state as the top bar.
-        val globalNavBarVisible = LocalNavBarVisible.current
-        LaunchedEffect(topBarVisible) {
-            globalNavBarVisible.value = topBarVisible
         }
 
         Box(modifier = modifier.fillMaxSize()) {
@@ -449,11 +441,10 @@ private fun ImmersiveHomeContent(
     val stableOnItemClick = remember(onItemClick) { onItemClick }
     val stableOnItemLongPress = remember(onItemLongPress) { onItemLongPress }
     val viewingMood = appState.viewingMood
-    val isGlobalNavBarVisible = LocalNavBarVisible.current.value
-    val homeContentBottomPadding by animateDpAsState(
-        targetValue = if (isGlobalNavBarVisible) 24.dp else 8.dp,
-        label = "homeContentBottomPadding",
-    )
+    // The global nav chrome (NavigationBar on phones, NavigationRail/NavigationDrawer on larger
+    // widths - see JellyfinApp.kt) is now permanently visible, so this is a fixed clearance
+    // rather than something that needs to react to a hide/show transition.
+    val homeContentBottomPadding = 24.dp
 
     val haptics = com.rpeters.jellyfin.ui.utils.rememberExpressiveHaptics()
     var previousHadFeaturedItems by remember { mutableStateOf(contentLists.featuredItems.isNotEmpty()) }
