@@ -1,15 +1,12 @@
 package com.rpeters.jellyfin.ui
 
 import androidx.activity.compose.LocalActivity
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -45,13 +42,11 @@ import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.rpeters.jellyfin.network.ConnectivityChecker
-import com.rpeters.jellyfin.ui.components.ExpressiveFloatingNavBar
 import com.rpeters.jellyfin.ui.components.MiniPlayer
 import com.rpeters.jellyfin.ui.components.OfflineIndicatorBanner
 import com.rpeters.jellyfin.ui.navigation.BottomNavItem
 import com.rpeters.jellyfin.ui.navigation.JellyfinNavGraph
 import com.rpeters.jellyfin.ui.navigation.Screen
-import com.rpeters.jellyfin.ui.navigation.LocalNavBarVisible
 import com.rpeters.jellyfin.ui.navigation.navigateToMainDestination
 import com.rpeters.jellyfin.ui.navigation.shouldShowNavigation
 import com.rpeters.jellyfin.ui.shortcuts.DynamicShortcutManager
@@ -116,16 +111,11 @@ fun JellyfinApp(
     val currentServer by mainAppViewModel.currentServer.collectAsStateWithLifecycle(initialValue = null)
     val isConnected by mainAppViewModel.isConnected.collectAsStateWithLifecycle(initialValue = false)
 
-    // Mutable state for nav bar scroll-hide. Immersive screens write to this via
-    // LocalNavBarVisible; JellyfinApp reads it for the ExpressiveFloatingNavBar visibility.
-    val navBarVisible = remember { mutableStateOf(true) }
-
     JellyfinAndroidTheme(themePreferences = themePreferences) {
         val windowSizeClass = calculateWindowSizeClass(activity = checkNotNull(LocalActivity.current))
         val adaptiveLayoutConfig = com.rpeters.jellyfin.ui.adaptive.rememberAdaptiveLayoutConfig(windowSizeClass)
-        
+
         CompositionLocalProvider(
-            LocalNavBarVisible provides navBarVisible,
             com.rpeters.jellyfin.ui.adaptive.LocalWindowSizeClass provides windowSizeClass,
             com.rpeters.jellyfin.ui.adaptive.LocalAdaptiveLayoutConfig provides adaptiveLayoutConfig
         ) {
@@ -230,20 +220,17 @@ fun JellyfinApp(
         val navBackStackEntry = navController.currentBackStackEntryAsState()
         val currentDestination = navBackStackEntry.value?.destination
 
-        // Reset nav bar visibility whenever the destination changes so hidden state from an
-        // immersive screen never bleeds into the next screen.
-        LaunchedEffect(currentDestination) {
-            navBarVisible.value = true
-        }
-
         val isCompactWidth = windowSizeClass.widthSizeClass == WindowWidthSizeClass.Compact
         var isNavExpanded by rememberSaveable(windowSizeClass.widthSizeClass) {
             mutableStateOf(windowSizeClass.widthSizeClass == WindowWidthSizeClass.Expanded)
         }
 
-        // Determine navigation type based on window width
+        // Determine navigation type based on window width. Compact width uses the standard,
+        // docked Material 3 NavigationBar (via NavigationSuiteScaffold) instead of a custom
+        // floating bar - no blur/translucency, no manual inset math, edge-to-edge handled by
+        // the component itself.
         val navigationType = when (windowSizeClass.widthSizeClass) {
-            WindowWidthSizeClass.Compact -> NavigationSuiteType.None // Use custom floating toolbar for phones
+            WindowWidthSizeClass.Compact -> NavigationSuiteType.NavigationBar
             else -> if (isNavExpanded) {
                 NavigationSuiteType.NavigationDrawer
             } else {
@@ -255,13 +242,12 @@ fun JellyfinApp(
 
         // Only show navigation on main screens
         val shouldShowNavigation = shouldShowNavigation(currentDestination?.route)
-        val compactBottomChromePadding by animateDpAsState(
-            targetValue = when {
-                !navBarVisible.value -> 12.dp
-                isMiniPlayerVisible -> 148.dp  // nav bar + mini player
-                else -> 92.dp                  // nav bar only (~88dp + breathing room)
-            },
-            label = "compactBottomChromePadding",
+
+        // The docked NavigationBar/rail/drawer already reserves its own space; content only
+        // needs to reserve room for the MiniPlayer overlay when something is playing.
+        val miniPlayerReservedSpace by animateDpAsState(
+            targetValue = if (isMiniPlayerVisible) 72.dp else 0.dp,
+            label = "miniPlayerReservedSpace",
         )
 
         // Pre-compute toggle item colors outside the non-composable navigationSuiteItems lambda.
@@ -328,20 +314,15 @@ fun JellyfinApp(
                 layoutType = navigationType,
                 modifier = Modifier.fillMaxSize(),
             ) {
+                // NavigationSuiteScaffold already lays this content out above/beside the docked
+                // NavigationBar, NavigationRail, or NavigationDrawer - no manual inset math needed
+                // for the nav chrome itself. The only thing this content area must still reserve
+                // space for is the floating MiniPlayer overlay.
                 Box(modifier = Modifier.fillMaxSize()) {
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .then(
-                                if (isCompactWidth) {
-                                    // Collapse the reserved bottom space when the floating phone chrome hides.
-                                    val navBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-                                    Modifier.padding(bottom = compactBottomChromePadding + navBarPadding)
-                                } else {
-                                    // Room for MiniPlayer on tablets
-                                    Modifier.padding(bottom = 80.dp)
-                                }
-                            )
+                            .padding(bottom = miniPlayerReservedSpace)
                     ) {
                         // Show offline indicator when not connected
                         OfflineIndicatorBanner(isVisible = !isOnline)
@@ -365,36 +346,20 @@ fun JellyfinApp(
                         )
                     }
 
-                    // Floating UI stack at the bottom
-                    Column(
+                    // Global Mini Player - only shows itself if something is playing.
+                    // MiniPlayer forwards its `modifier` to internal content inside its own
+                    // AnimatedVisibility rather than to that AnimatedVisibility call itself, so
+                    // BoxScope.align() must be applied on this wrapper - a genuine direct child
+                    // of the outer Box - rather than on MiniPlayer's modifier parameter directly.
+                    Box(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
                             .fillMaxWidth()
-                            .padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                            .padding(horizontal = 12.dp, vertical = 8.dp)
                     ) {
-                        // Global Mini Player - only show if something is playing
                         MiniPlayer(
                             onExpandClick = { navController.navigate(Screen.NowPlaying.route) },
-                            modifier = Modifier.padding(horizontal = 12.dp)
                         )
-
-                        // Expressive Floating Navigation Bar for phones
-                        if (isCompactWidth) {
-                            ExpressiveFloatingNavBar(
-                                items = activeNavItems,
-                                currentDestination = currentDestination,
-                                onNavigate = { item ->
-                                    navController.navigateToMainDestination(item.navigateTo)
-                                },
-                                isVisible = navBarVisible.value,
-                                modifier = Modifier.padding(bottom = 4.dp)
-                            )
-                        } else {
-                            // Extra padding for tablets to keep mini player above system bar
-                            Spacer(modifier = Modifier.height(8.dp))
-                        }
                     }
                 }
             }
@@ -450,6 +415,6 @@ fun JellyfinApp(
             }
             }
         }
-        } // CompositionLocalProvider(LocalNavBarVisible)
+        } // CompositionLocalProvider(LocalWindowSizeClass, LocalAdaptiveLayoutConfig)
     }
 }
