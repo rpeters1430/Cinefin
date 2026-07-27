@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuOpen
 import androidx.compose.material.icons.filled.Menu
@@ -21,11 +22,11 @@ import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffo
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -33,7 +34,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -244,11 +247,17 @@ fun JellyfinApp(
         val shouldShowNavigation = shouldShowNavigation(currentDestination?.route)
 
         // The docked NavigationBar/rail/drawer already reserves its own space; content only
-        // needs to reserve room for the MiniPlayer overlay when something is playing.
-        val miniPlayerReservedSpace by animateDpAsState(
-            targetValue = if (isMiniPlayerVisible) 72.dp else 0.dp,
-            label = "miniPlayerReservedSpace",
-        )
+        // needs to reserve room for the MiniPlayer overlay when something is playing. Reserve
+        // its actual measured height rather than a fixed guess - the player's height varies
+        // (it grows when a progress bar/timestamps are shown), so a hardcoded constant either
+        // under-reserves space (bottom content peeks out from behind it) or over-reserves it.
+        val density = LocalDensity.current
+        var miniPlayerHeightPx by remember { mutableIntStateOf(0) }
+        val miniPlayerReservedSpace = if (isMiniPlayerVisible) {
+            with(density) { miniPlayerHeightPx.toDp() }
+        } else {
+            0.dp
+        }
 
         // Pre-compute toggle item colors outside the non-composable navigationSuiteItems lambda.
         val toggleItemColors = NavigationSuiteDefaults.itemColors(
@@ -355,7 +364,23 @@ fun JellyfinApp(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
                             .fillMaxWidth()
+                            .then(
+                                if (isCompactWidth) {
+                                    // The docked NavigationBar below already pads its own content
+                                    // away from the system nav bar, so this content area (above
+                                    // it) never overlaps that inset - no extra padding needed.
+                                    Modifier
+                                } else {
+                                    // NavigationRail/NavigationDrawer sit at the side, so this
+                                    // content area fills the full screen height; without this the
+                                    // overlay sits under the system navigation bar.
+                                    Modifier.windowInsetsPadding(WindowInsets.navigationBars)
+                                }
+                            )
                             .padding(horizontal = 12.dp, vertical = 8.dp)
+                            .onGloballyPositioned { coordinates ->
+                                miniPlayerHeightPx = coordinates.size.height
+                            }
                     ) {
                         MiniPlayer(
                             onExpandClick = { navController.navigate(Screen.NowPlaying.route) },

@@ -441,8 +441,9 @@ private fun ImmersiveHomeContent(
     val stableOnItemClick = remember(onItemClick) { onItemClick }
     val stableOnItemLongPress = remember(onItemLongPress) { onItemLongPress }
     val viewingMood = appState.viewingMood
-    // The global nav bar is now a permanently-docked NavigationBar (see JellyfinApp.kt), so this
-    // is a fixed clearance rather than something that needs to react to a hide/show transition.
+    // The global nav chrome (NavigationBar on phones, NavigationRail/NavigationDrawer on larger
+    // widths - see JellyfinApp.kt) is now permanently visible, so this is a fixed clearance
+    // rather than something that needs to react to a hide/show transition.
     val homeContentBottomPadding = 24.dp
 
     val haptics = com.rpeters.jellyfin.ui.utils.rememberExpressiveHaptics()
