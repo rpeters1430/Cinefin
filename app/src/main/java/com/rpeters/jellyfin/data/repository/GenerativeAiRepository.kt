@@ -756,16 +756,30 @@ class GenerativeAiRepository @Inject constructor(
         val historySize = remoteConfig.getLong("ai_history_context_size").toInt()
             .let { if (it <= 0) 10 else it }
 
-        // Filter to Movies and Series only
+        // Filter to Movies, Series, and Episodes; extract series name for episodes so TV watch
+        // history is represented even when the continue-watching API returns episode items.
         val filteredHistory = viewingHistory.filter {
             it.type == org.jellyfin.sdk.model.api.BaseItemKind.MOVIE ||
-            it.type == org.jellyfin.sdk.model.api.BaseItemKind.SERIES
+            it.type == org.jellyfin.sdk.model.api.BaseItemKind.SERIES ||
+            it.type == org.jellyfin.sdk.model.api.BaseItemKind.EPISODE
         }
 
-        // Build viewing history context
+        // Build viewing history context - use series name for episode items to avoid noise
         val recentTitles = filteredHistory.take(historySize)
-            .mapNotNull { it.name }
+            .mapNotNull { item ->
+                if (item.type == org.jellyfin.sdk.model.api.BaseItemKind.EPISODE) {
+                    item.seriesName ?: item.name
+                } else {
+                    item.name
+                }
+            }
+            .distinct()
             .joinToString(", ")
+
+        // If no meaningful history remains after filtering, fall back to generic vibe
+        if (recentTitles.isBlank()) {
+            return@withContext generateGenericVibe(itemTitle, itemGenres, itemOverview)
+        }
 
         val template = remoteConfig.getString("ai_why_love_this_prompt_template").takeIf { it.isNotBlank() }
             ?: """
@@ -777,11 +791,12 @@ class GenerativeAiRepository @Inject constructor(
             - Genres: %s
             - Overview: %s
 
-            Find connections to their history (similar themes, genres, actors, tone, storytelling style).
+            Find connections between their watch history and this title (similar themes, genres, tone, storytelling style).
 
-            Format: "You loved [Title] and [Title] - this has the same [specific quality]."
+            Write ONE sentence starting with "You loved" followed by 1-2 ACTUAL titles from the "Their recent watches" list above, then explain the connection.
+            Example: "You loved Breaking Bad and The Wire - this has the same gripping crime drama with morally complex characters."
 
-            Be specific and engaging. Focus on WHY, not just WHAT.
+            IMPORTANT: Only use titles that appear in the "Their recent watches" list. Never output placeholder text like [Title].
             """.trimIndent()
 
         val prompt = try {
