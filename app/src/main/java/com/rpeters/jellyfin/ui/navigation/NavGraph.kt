@@ -31,28 +31,31 @@ fun JellyfinNavGraph(
 ) {
     val mainViewModel: MainAppViewModel = hiltViewModel()
 
+    // Slide (and predictive-back preview) fully off/on screen in the direction of travel so the
+    // transition unambiguously follows the swipe edge instead of reading as a center-anchored
+    // scale/fade when the offsets are only a small fraction of the screen width.
     val forwardNavigationEnter: AnimatedContentTransitionScope<*>.() -> EnterTransition = {
         slideIntoContainer(
             towards = AnimatedContentTransitionScope.SlideDirection.Start,
-            initialOffset = { fullWidth -> fullWidth / 6 },
+            initialOffset = { fullWidth -> fullWidth },
         ) + fadeIn()
     }
     val forwardNavigationExit: AnimatedContentTransitionScope<*>.() -> ExitTransition = {
         slideOutOfContainer(
             towards = AnimatedContentTransitionScope.SlideDirection.Start,
-            targetOffset = { fullWidth -> -fullWidth / 12 },
+            targetOffset = { fullWidth -> -fullWidth / 4 },
         ) + fadeOut()
     }
     val backwardNavigationEnter: AnimatedContentTransitionScope<*>.() -> EnterTransition = {
         slideIntoContainer(
             towards = AnimatedContentTransitionScope.SlideDirection.End,
-            initialOffset = { fullWidth -> -fullWidth / 12 },
+            initialOffset = { fullWidth -> -fullWidth / 4 },
         ) + fadeIn()
     }
     val backwardNavigationExit: AnimatedContentTransitionScope<*>.() -> ExitTransition = {
         slideOutOfContainer(
             towards = AnimatedContentTransitionScope.SlideDirection.End,
-            targetOffset = { fullWidth -> fullWidth / 6 },
+            targetOffset = { fullWidth -> fullWidth },
         ) + fadeOut()
     }
 

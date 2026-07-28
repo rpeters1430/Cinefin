@@ -54,6 +54,22 @@ import com.rpeters.jellyfin.ui.theme.getContentTypeColor
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 
+private val AIR_DATE_MONTH_ABBREVIATIONS = arrayOf(
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+)
+
+/** Formats a Jellyfin premiere date (e.g. "2024-01-23T00:00:00Z") as "Jan 23, 2024". */
+private fun formatShortAirDate(premiereDate: Any?): String? {
+    val dateStr = premiereDate?.toString()?.substringBefore('T') ?: return null
+    val parts = dateStr.split("-")
+    if (parts.size != 3) return null
+    val year = parts[0]
+    val month = parts[1].toIntOrNull() ?: return null
+    val day = parts[2].toIntOrNull() ?: return null
+    val monthName = AIR_DATE_MONTH_ABBREVIATIONS.getOrNull(month - 1) ?: return null
+    return "$monthName $day, $year"
+}
+
 @Composable
 fun MediaCard(
     item: BaseItemDto,
@@ -489,6 +505,16 @@ fun PosterMediaCard(
                             maxFontSize = MaterialTheme.typography.bodyMedium.fontSize,
                         )
 
+                        if (item.type == BaseItemKind.EPISODE && !item.seriesName.isNullOrBlank()) {
+                            Text(
+                                text = item.seriesName.orEmpty(),
+                                style = MaterialTheme.typography.bodySmall,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+
                         Spacer(modifier = Modifier.height(4.dp))
                     }
 
@@ -498,12 +524,22 @@ fun PosterMediaCard(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            item.productionYear?.let { year ->
-                                Text(
-                                    text = year.toString(),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
+                            if (item.type == BaseItemKind.EPISODE) {
+                                formatShortAirDate(item.premiereDate)?.let { airDate ->
+                                    Text(
+                                        text = airDate,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            } else {
+                                item.productionYear?.let { year ->
+                                    Text(
+                                        text = year.toString(),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
                             }
 
                             item.communityRating?.let { rating ->

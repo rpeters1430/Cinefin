@@ -122,7 +122,10 @@ fun ImmersiveLibraryScreen(
 
     val showFabs by remember {
         derivedStateOf {
-            gridState.firstVisibleItemIndex == 0 && gridState.firstVisibleItemScrollOffset < 100
+            // Hide the FABs before the scrolling "Your Libraries" header (offset by a 120dp
+            // spacer + 32dp content padding) reaches the fixed FAB row (top=28dp, height=56dp),
+            // which starts overlapping once scroll offset passes ~68dp.
+            gridState.firstVisibleItemIndex == 0 && gridState.firstVisibleItemScrollOffset < 40
         }
     }
 

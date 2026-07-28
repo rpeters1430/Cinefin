@@ -73,17 +73,18 @@ import com.rpeters.jellyfin.ui.components.AiSummaryCard
 import com.rpeters.jellyfin.ui.components.PlaybackBreakdownDetails
 import com.rpeters.jellyfin.ui.components.PlaybackStatusBadge
 import com.rpeters.jellyfin.ui.components.QualitySelectionDialog
+import com.rpeters.jellyfin.ui.components.immersive.AudioInfoCard
+import com.rpeters.jellyfin.ui.components.immersive.HdrType
+import com.rpeters.jellyfin.ui.components.immersive.ResolutionQuality
 import com.rpeters.jellyfin.ui.components.immersive.StaticHeroSection
+import com.rpeters.jellyfin.ui.components.immersive.VideoInfoCard
 import com.rpeters.jellyfin.ui.downloads.DownloadsViewModel
 import com.rpeters.jellyfin.ui.screens.details.components.ActionButton
 import com.rpeters.jellyfin.ui.screens.details.components.ChapterListSection
 import com.rpeters.jellyfin.ui.screens.details.components.DetailCastAndCrewSection
 import com.rpeters.jellyfin.ui.screens.details.components.DetailSubtitleRow
-import com.rpeters.jellyfin.ui.screens.details.components.DetailVideoInfoRow
 import com.rpeters.jellyfin.ui.screens.details.components.MovieHeroContent
 import com.rpeters.jellyfin.ui.screens.details.components.WhyYoullLoveThisCard
-import com.rpeters.jellyfin.ui.screens.details.components.getResolutionBadge
-import com.rpeters.jellyfin.ui.screens.details.components.getResolutionIcon
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
 import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
 import com.rpeters.jellyfin.ui.theme.JellyfinTeal80
@@ -119,6 +120,7 @@ fun ImmersiveMovieDetailScreen(
     onRefresh: () -> Unit,
     isRefreshing: Boolean,
     playbackAnalysis: PlaybackCapabilityAnalysis? = null,
+    onGenerateWhyYoullLoveThis: () -> Unit = {},
     whyYoullLoveThis: String? = null,
     isLoadingWhyYoullLoveThis: Boolean = false,
     contentWarnings: List<String> = emptyList(),
@@ -159,6 +161,7 @@ fun ImmersiveMovieDetailScreen(
         onRefresh = onRefresh,
         isRefreshing = isRefreshing,
         playbackAnalysis = playbackAnalysis,
+        onGenerateWhyYoullLoveThis = onGenerateWhyYoullLoveThis,
         whyYoullLoveThis = whyYoullLoveThis,
         isLoadingWhyYoullLoveThis = isLoadingWhyYoullLoveThis,
         contentWarnings = contentWarnings,
@@ -178,6 +181,9 @@ fun ImmersiveMovieDetailScreen(
         downloadsViewModel = downloadsViewModel,
     )
 }
+
+/** Taller than the shared default so the hero image has room to breathe and feels less crowded. */
+private val MovieDetailHeroHeight = ImmersiveDimens.HeroHeightPhone + 100.dp
 
 @OptIn(UnstableApi::class)
 @OptInAppExperimentalApis
@@ -204,6 +210,7 @@ private fun ImmersiveMovieDetailContent(
     onRefresh: () -> Unit,
     isRefreshing: Boolean,
     playbackAnalysis: PlaybackCapabilityAnalysis? = null,
+    onGenerateWhyYoullLoveThis: () -> Unit = {},
     whyYoullLoveThis: String? = null,
     isLoadingWhyYoullLoveThis: Boolean = false,
     contentWarnings: List<String> = emptyList(),
@@ -251,7 +258,7 @@ private fun ImmersiveMovieDetailContent(
                 // 1. Background Backdrop (Hero)
                 StaticHeroSection(
                     imageUrl = getBackdropUrl(movie),
-                    height = ImmersiveDimens.HeroHeightPhone,
+                    height = MovieDetailHeroHeight,
                     itemId = movie.id.toString(),
                     animatedVisibilityScope = animatedVisibilityScope,
                 )
@@ -342,6 +349,12 @@ private fun ImmersiveMovieDetailContent(
                                         pitch = whyYoullLoveThis,
                                         isLoading = isLoadingWhyYoullLoveThis,
                                     )
+                                } else {
+                                    TextButton(onClick = onGenerateWhyYoullLoveThis) {
+                                        Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text("Why You'll Love This")
+                                    }
                                 }
 
                                 Row(
@@ -517,21 +530,29 @@ private fun ImmersiveMovieDetailContent(
                             ) {
                                 Column {
                                     if (movieChapters.isEmpty() && aiChapterMarkers.isNotEmpty()) {
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                                        Column(
+                                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                                         ) {
-                                            Icon(
-                                                imageVector = Icons.Default.AutoAwesome,
-                                                contentDescription = "AI Generated",
-                                                tint = MaterialTheme.colorScheme.secondary,
-                                                modifier = Modifier.size(16.dp)
-                                            )
-                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Icon(
+                                                    imageVector = Icons.Default.AutoAwesome,
+                                                    contentDescription = "AI Generated",
+                                                    tint = MaterialTheme.colorScheme.secondary,
+                                                    modifier = Modifier.size(16.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Text(
+                                                    text = "AI Generated Chapters",
+                                                    style = MaterialTheme.typography.labelMedium,
+                                                    color = MaterialTheme.colorScheme.secondary
+                                                )
+                                            }
                                             Text(
-                                                text = "AI Generated Chapters",
-                                                style = MaterialTheme.typography.labelMedium,
-                                                color = MaterialTheme.colorScheme.secondary
+                                                text = "This movie has no chapter markers from the server, " +
+                                                    "so these approximate scene breaks were estimated from its runtime.",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                modifier = Modifier.padding(top = 2.dp),
                                             )
                                         }
                                     }
@@ -594,9 +615,9 @@ private fun ImmersiveMovieDetailContent(
                                             com.rpeters.jellyfin.ui.components.immersive.ImmersiveMediaCard(
                                                 title = relatedMovie.name ?: "Unknown",
                                                 imageUrl = getImageUrl(relatedMovie) ?: "",
+                                                rating = relatedMovie.communityRating,
                                                 onCardClick = { onRelatedMovieClick(relatedMovie.id.toString()) },
-                                                cardSize = com.rpeters.jellyfin.ui.components.immersive.ImmersiveCardSize.X_SMALL,
-                                                modifier = Modifier.width(ImmersiveDimens.CardWidthXSmall),
+                                                cardSize = com.rpeters.jellyfin.ui.components.immersive.ImmersiveCardSize.SMALL,
                                             )
                                         }
                                     }
@@ -877,22 +898,64 @@ private fun MovieTechSpecsSection(movie: BaseItemDto) {
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                // Video Row
-                DetailVideoInfoRow(
-                    label = "Video",
-                    codec = videoStream?.codec?.uppercase(),
-                    icon = getResolutionIcon(videoStream?.width, videoStream?.height),
-                    resolutionBadge = getResolutionBadge(videoStream?.width, videoStream?.height),
-                )
+                // Video Info Card
+                videoStream?.let { stream ->
+                    val resolution = ResolutionQuality.fromResolution(stream.width, stream.height)
+                    val codecText = when (stream.codec?.lowercase()) {
+                        "hevc", "h265" -> "HEVC"
+                        "h264", "avc" -> "AVC"
+                        "av1" -> "AV1"
+                        "vp9" -> "VP9"
+                        else -> stream.codec?.uppercase() ?: ""
+                    }
+                    val hdrType = HdrType.detect(
+                        stream.videoRange.toString(),
+                        stream.videoRangeType.toString(),
+                    )
 
-                // Audio Row
-                DetailVideoInfoRow(
-                    label = "Audio",
-                    codec = audioStream?.codec?.uppercase() ?: "Unknown",
-                    icon = Icons.Rounded.Public, // Placeholder for audio icon
-                )
+                    VideoInfoCard(
+                        resolution = resolution,
+                        codec = codecText,
+                        bitDepth = stream.bitDepth,
+                        frameRate = stream.averageFrameRate?.toDouble(),
+                        isHdr = hdrType != null,
+                        hdrType = hdrType ?: HdrType.HDR,
+                    )
+                }
+
+                // Audio Info Card
+                audioStream?.let { stream ->
+                    val channelText = when (stream.channels) {
+                        8 -> "7.1"
+                        6 -> "5.1"
+                        2 -> "Stereo"
+                        1 -> "Mono"
+                        else -> stream.channels?.toString()?.let { "$it.0" } ?: ""
+                    }
+
+                    val codecText = when (stream.codec?.lowercase()) {
+                        "truehd" -> "TrueHD"
+                        "eac3" -> "DD+"
+                        "aac" -> "AAC"
+                        "ac3" -> "DD"
+                        "dca", "dts" -> "DTS"
+                        "dtshd" -> "DTS-HD"
+                        "flac" -> "FLAC"
+                        else -> stream.codec?.uppercase() ?: ""
+                    }
+
+                    val isAtmos = stream.title?.contains("atmos", ignoreCase = true) == true ||
+                        stream.codec?.contains("atmos", ignoreCase = true) == true
+
+                    AudioInfoCard(
+                        channels = channelText,
+                        codec = codecText,
+                        isAtmos = isAtmos,
+                        language = stream.language?.uppercase(),
+                    )
+                }
 
                 // Subtitles Row
                 if (subtitles.isNotEmpty()) {

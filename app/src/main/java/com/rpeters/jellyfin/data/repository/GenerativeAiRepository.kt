@@ -783,7 +783,7 @@ class GenerativeAiRepository @Inject constructor(
 
         val template = remoteConfig.getString("ai_why_love_this_prompt_template").takeIf { it.isNotBlank() }
             ?: """
-            Based on the user's viewing history, explain why they would enjoy "%s" in ONE compelling sentence (max 40 words).
+            Based on the user's viewing history, explain why they would enjoy "%s" in ONE short, punchy sentence (max 25 words).
 
             Their recent watches: %s
 
@@ -793,10 +793,10 @@ class GenerativeAiRepository @Inject constructor(
 
             Find connections between their watch history and this title (similar themes, genres, tone, storytelling style).
 
-            Write ONE sentence starting with "You loved" followed by 1-2 ACTUAL titles from the "Their recent watches" list above, then explain the connection.
+            Write ONE concise sentence starting with "You loved" followed by 1-2 ACTUAL titles from the "Their recent watches" list above, then briefly explain the connection.
             Example: "You loved Breaking Bad and The Wire - this has the same gripping crime drama with morally complex characters."
 
-            IMPORTANT: Only use titles that appear in the "Their recent watches" list. Never output placeholder text like [Title].
+            IMPORTANT: Only use titles that appear in the "Their recent watches" list. Never output placeholder text like [Title]. Keep it to one sentence, no preamble.
             """.trimIndent()
 
         val prompt = try {

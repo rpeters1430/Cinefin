@@ -386,6 +386,7 @@ data class CarouselItem(
     val subtitle: String = "",
     val imageUrl: String,
     val type: MediaType = MediaType.MOVIE,
+    val rating: Float? = null,
 )
 
 enum class MediaType {

@@ -113,7 +113,7 @@ class TVSeasonViewModel @Inject constructor(
             // Load seasons
             when (val seasonsResult = mediaRepository.getSeasonsForSeries(seriesId)) {
                 is ApiResult.Success -> {
-                    seasons = seasonsResult.data
+                    seasons = seasonsResult.data.sortedBy { it.indexNumber ?: Int.MAX_VALUE }
 
                     // Validate that the series has content only if no previous errors
                     // If no seasons exist AND the series has no child count (episodes), show error
@@ -162,10 +162,6 @@ class TVSeasonViewModel @Inject constructor(
                 errorMessage = errorMessage,
                 isEpisodeNotificationsFollowed = seriesDetails?.id?.toString() in followedEpisodeNotificationSeriesIds,
             )
-
-            if (seriesDetails != null) {
-                generateWhyYoullLoveThis(seriesDetails)
-            }
         }
     }
 
@@ -371,7 +367,12 @@ class TVSeasonViewModel @Inject constructor(
         }
     }
 
-    private fun generateWhyYoullLoveThis(series: BaseItemDto) {
+    /**
+     * Generate the "Why You'll Love This" pitch. Triggered explicitly by the user
+     * (not automatically on load) since it costs an AI generation call.
+     */
+    fun generateWhyYoullLoveThis() {
+        val series = _state.value.seriesDetails ?: return
         whyYoullLoveThisJob?.cancel()
         val seriesId = series.id.toString()
         whyYoullLoveThisJob = viewModelScope.launch {

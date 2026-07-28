@@ -40,6 +40,7 @@ import com.rpeters.jellyfin.ui.components.CarouselItem
 import com.rpeters.jellyfin.ui.image.ImageSize
 import com.rpeters.jellyfin.ui.image.OptimizedImage
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
+import com.rpeters.jellyfin.ui.theme.ImmersiveShapes
 import com.rpeters.jellyfin.utils.SecureLogger
 
 /**
@@ -252,6 +253,33 @@ private fun ImmersiveHeroCard(
                     top = safeTopPadding, // Keep content below top bar
                 ),
         ) {
+            item.rating?.let { rating ->
+                Surface(
+                    shape = ImmersiveShapes.RatingBadge,
+                    color = Color.Black.copy(alpha = 0.6f),
+                    modifier = Modifier.padding(bottom = 8.dp),
+                ) {
+                    androidx.compose.foundation.layout.Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                    ) {
+                        androidx.compose.material3.Icon(
+                            imageVector = androidx.compose.material.icons.Icons.Default.Star,
+                            contentDescription = null,
+                            tint = Color(0xFFFFD700),
+                            modifier = Modifier.size(16.dp),
+                        )
+                        Text(
+                            text = String.format(java.util.Locale.ROOT, "%.1f", rating),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            modifier = Modifier.padding(start = 4.dp),
+                        )
+                    }
+                }
+            }
+
             Text(
                 text = item.title,
                 style = MaterialTheme.typography.displaySmall,

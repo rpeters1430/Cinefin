@@ -340,21 +340,29 @@ fun ImmersiveTVEpisodeDetailScreen(
                         Box(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)) {
                             Column {
                                 if (chapters.isEmpty() && aiChapterMarkers.isNotEmpty()) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                                    Column(
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                                     ) {
-                                        Icon(
-                                            imageVector = Icons.Default.AutoAwesome,
-                                            contentDescription = "AI Generated",
-                                            tint = MaterialTheme.colorScheme.secondary,
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(
+                                                imageVector = Icons.Default.AutoAwesome,
+                                                contentDescription = "AI Generated",
+                                                tint = MaterialTheme.colorScheme.secondary,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(
+                                                text = "AI Generated Chapters",
+                                                style = MaterialTheme.typography.labelMedium,
+                                                color = MaterialTheme.colorScheme.secondary
+                                            )
+                                        }
                                         Text(
-                                            text = "AI Generated Chapters",
-                                            style = MaterialTheme.typography.labelMedium,
-                                            color = MaterialTheme.colorScheme.secondary
+                                            text = "This episode has no chapter markers from the server, " +
+                                                "so these approximate scene breaks were estimated from its runtime.",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.padding(top = 2.dp),
                                         )
                                     }
                                 }
