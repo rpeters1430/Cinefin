@@ -102,7 +102,7 @@ class MovieDetailViewModelTest {
     }
 
     @Test
-    fun `loadMovieDetails clears why youll love this while reloading a different movie`() = runTest {
+    fun `loadMovieDetails does not auto-generate why youll love this, and clears it when reloading a different movie`() = runTest {
         val firstMovie = BaseItemDto(id = UUID.randomUUID(), name = "First", type = BaseItemKind.MOVIE)
         val secondMovie = BaseItemDto(id = UUID.randomUUID(), name = "Second", type = BaseItemKind.MOVIE)
         val history = listOf(BaseItemDto(id = UUID.randomUUID(), name = "History", type = BaseItemKind.MOVIE))
@@ -119,7 +119,13 @@ class MovieDetailViewModelTest {
         coEvery { generativeAiRepository.generateWhyYoullLoveThis(match { it.id == firstMovie.id }, any()) } returns "First pitch"
         coEvery { generativeAiRepository.generateWhyYoullLoveThis(match { it.id == secondMovie.id }, any()) } returns "Second pitch"
 
+        // Loading a movie no longer auto-generates the pitch - it's only fetched when the
+        // user explicitly requests it via generateWhyYoullLoveThis().
         viewModel.loadMovieDetails(firstMovie.id.toString())
+        dispatcher.scheduler.advanceUntilIdle()
+        assertNull(viewModel.state.value.whyYoullLoveThis)
+
+        viewModel.generateWhyYoullLoveThis()
         dispatcher.scheduler.advanceUntilIdle()
         assertEquals("First pitch", viewModel.state.value.whyYoullLoveThis)
 
@@ -131,6 +137,10 @@ class MovieDetailViewModelTest {
         assertNull(reloadingState.whyYoullLoveThis)
         assertFalse(reloadingState.isLoadingWhyYoullLoveThis)
 
+        dispatcher.scheduler.advanceUntilIdle()
+        assertNull(viewModel.state.value.whyYoullLoveThis)
+
+        viewModel.generateWhyYoullLoveThis()
         dispatcher.scheduler.advanceUntilIdle()
         assertEquals("Second pitch", viewModel.state.value.whyYoullLoveThis)
     }
@@ -147,6 +157,9 @@ class MovieDetailViewModelTest {
         coEvery { generativeAiRepository.generateWhyYoullLoveThis(movie, history) } returns "   "
 
         viewModel.loadMovieDetails(movie.id.toString())
+        dispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.generateWhyYoullLoveThis()
         dispatcher.scheduler.advanceUntilIdle()
 
         assertNull(viewModel.state.value.whyYoullLoveThis)
