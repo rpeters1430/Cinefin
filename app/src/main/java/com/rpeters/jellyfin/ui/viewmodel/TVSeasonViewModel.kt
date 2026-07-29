@@ -89,6 +89,12 @@ class TVSeasonViewModel @Inject constructor(
                 episodesBySeasonId = if (isNewSeries) emptyMap() else _state.value.episodesBySeasonId,
                 loadingSeasonIds = if (isNewSeries) emptySet() else _state.value.loadingSeasonIds,
                 seasonEpisodeErrors = if (isNewSeries) emptyMap() else _state.value.seasonEpisodeErrors,
+                // Clear the previous series' AI pitch/summary so a reused ViewModel (e.g. tapping
+                // a "similar show" navigates with launchSingleTop) doesn't show stale content.
+                whyYoullLoveThis = if (isNewSeries) null else _state.value.whyYoullLoveThis,
+                isLoadingWhyYoullLoveThis = if (isNewSeries) false else _state.value.isLoadingWhyYoullLoveThis,
+                aiSummary = if (isNewSeries) null else _state.value.aiSummary,
+                isLoadingAiSummary = if (isNewSeries) false else _state.value.isLoadingAiSummary,
             )
 
             var seriesDetails = _state.value.seriesDetails

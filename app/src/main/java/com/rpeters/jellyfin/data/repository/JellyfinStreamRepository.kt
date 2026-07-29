@@ -471,14 +471,14 @@ class JellyfinStreamRepository @Inject constructor(
      */
     fun getChapterImageUrl(itemId: String, chapterIndex: Int, tag: String?): String? {
         return try {
-            if (tag.isNullOrBlank()) return null
+            val safeTag = tag?.takeIf { it.isNotBlank() } ?: return null
             val server = authRepository.getCurrentServer() ?: return null
             if (server.accessToken.isNullOrBlank() || server.url.isNullOrBlank()) {
                 Log.w("JellyfinStreamRepository", "getChapterImageUrl: Server not available or missing credentials")
                 return null
             }
 
-            "${server.url}/Items/$itemId/Images/Chapter/$chapterIndex?tag=$tag&maxHeight=$DEFAULT_IMAGE_MAX_HEIGHT&maxWidth=$DEFAULT_IMAGE_MAX_WIDTH"
+            "${server.url}/Items/$itemId/Images/Chapter/$chapterIndex?tag=$safeTag&maxHeight=$DEFAULT_IMAGE_MAX_HEIGHT&maxWidth=$DEFAULT_IMAGE_MAX_WIDTH"
         } catch (e: CancellationException) {
             throw e
         }

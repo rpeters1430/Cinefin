@@ -224,8 +224,10 @@ fun PlaybackCapabilityDetails(
     }
 }
 
-/** Component actions that indicate the stream is being re-encoded rather than passed through as-is. */
-private val TRANSCODING_ACTIONS = setOf("transcode", "remux", "package", "limit")
+// "remux" is deliberately excluded: it repackages the container without re-encoding audio/video,
+// so it's cheap and lossless, unlike the other actions below - showing it as "Yes" here would
+// wrongly suggest a costly/quality-affecting transcode is happening.
+private val TRANSCODING_ACTIONS = setOf("transcode", "package", "limit")
 
 /**
  * Compact Video/Audio/Container transcoding summary: just whether each is being

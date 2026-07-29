@@ -43,13 +43,13 @@ fun JellyfinNavGraph(
     val forwardNavigationExit: AnimatedContentTransitionScope<*>.() -> ExitTransition = {
         slideOutOfContainer(
             towards = AnimatedContentTransitionScope.SlideDirection.Start,
-            targetOffset = { fullWidth -> -fullWidth / 4 },
+            targetOffset = { fullWidth -> -fullWidth },
         ) + fadeOut()
     }
     val backwardNavigationEnter: AnimatedContentTransitionScope<*>.() -> EnterTransition = {
         slideIntoContainer(
             towards = AnimatedContentTransitionScope.SlideDirection.End,
-            initialOffset = { fullWidth -> -fullWidth / 4 },
+            initialOffset = { fullWidth -> -fullWidth },
         ) + fadeIn()
     }
     val backwardNavigationExit: AnimatedContentTransitionScope<*>.() -> ExitTransition = {

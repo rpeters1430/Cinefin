@@ -120,12 +120,15 @@ fun ImmersiveLibraryScreen(
         intervalMs = 30000,
     )
 
-    val showFabs by remember {
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    // Hide the FABs before the scrolling "Your Libraries" header (offset by a 120dp spacer +
+    // 32dp content padding) reaches the fixed FAB row (top=28dp, height=56dp), which starts
+    // overlapping once scroll offset passes ~68dp. firstVisibleItemScrollOffset is in raw
+    // pixels, so convert the dp threshold with the current density instead of comparing directly.
+    val hideFabsThresholdPx = with(density) { 40.dp.toPx() }
+    val showFabs by remember(hideFabsThresholdPx) {
         derivedStateOf {
-            // Hide the FABs before the scrolling "Your Libraries" header (offset by a 120dp
-            // spacer + 32dp content padding) reaches the fixed FAB row (top=28dp, height=56dp),
-            // which starts overlapping once scroll offset passes ~68dp.
-            gridState.firstVisibleItemIndex == 0 && gridState.firstVisibleItemScrollOffset < 40
+            gridState.firstVisibleItemIndex == 0 && gridState.firstVisibleItemScrollOffset < hideFabsThresholdPx
         }
     }
 

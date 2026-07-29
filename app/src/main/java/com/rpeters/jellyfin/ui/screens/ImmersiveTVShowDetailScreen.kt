@@ -523,8 +523,10 @@ private fun ShowHeroContent(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 // Rating
+                // Note: Jellyfin's communityRating doesn't identify which metadata provider
+                // (TVDB, TMDB, etc.) supplied it, so we can't show an accurate source badge.
                 series.communityRating?.let { rating ->
-                    RatingBadge(rating, source = "TVDB")
+                    RatingBadge(rating)
                 }
 
                 // Year Range (e.g., "2020-2024" or "2020-Present")
@@ -1080,7 +1082,7 @@ private fun RatingBadge(rating: Float, source: String? = null) {
         )
         if (!source.isNullOrBlank()) {
             Surface(
-                shape = RoundedCornerShape(Dimens.CornerRadiusSmall),
+                shape = RoundedCornerShape(ImmersiveDimens.CornerRadiusSmall),
                 color = Color.White.copy(alpha = 0.18f),
             ) {
                 Text(
@@ -1121,7 +1123,7 @@ private fun ImmersiveCastSection(
             items(cast) { person ->
                 Column(
                     modifier = Modifier
-                        .width(152.dp)
+                        .width(ImmersiveDimens.CastMemberWidth)
                         .clickable {
                             onPersonClick(person.id.toString(), person.name ?: "Unknown")
                         },
@@ -1129,7 +1131,7 @@ private fun ImmersiveCastSection(
                 ) {
                     Surface(
                         shape = CircleShape,
-                        modifier = Modifier.size(152.dp),
+                        modifier = Modifier.size(ImmersiveDimens.CastMemberImageSize),
                         color = MaterialTheme.colorScheme.surfaceVariant,
                     ) {
                         val personItem = BaseItemDto(
