@@ -63,6 +63,25 @@ fun ChapterListSection(
 }
 
 @Composable
+private fun ChapterImagePlaceholder() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .size(width = 200.dp, height = 96.dp)
+            .background(MaterialTheme.colorScheme.surfaceVariant),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = Icons.Default.PlayArrow,
+            contentDescription = null,
+            modifier = Modifier.size(24.dp),
+            tint = MaterialTheme.colorScheme.primary,
+        )
+    }
+}
+
+@Composable
 private fun ChapterCard(
     name: String,
     startMs: Long,
@@ -94,24 +113,12 @@ private fun ChapterCard(
                         .size(width = 200.dp, height = 96.dp)
                         .clip(MaterialTheme.shapes.medium),
                     loading = { ShimmerBox() },
-                    error = {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .size(width = 200.dp, height = 96.dp)
-                                .background(MaterialTheme.colorScheme.surfaceVariant),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.PlayArrow,
-                                contentDescription = null,
-                                modifier = Modifier.size(24.dp),
-                                tint = MaterialTheme.colorScheme.primary,
-                            )
-                        }
-                    },
+                    error = { ChapterImagePlaceholder() },
                 )
+            } else {
+                // No extracted thumbnail for this chapter - show a consistent placeholder
+                // instead of leaving a blank gap where the image would go.
+                ChapterImagePlaceholder()
             }
 
             Row(

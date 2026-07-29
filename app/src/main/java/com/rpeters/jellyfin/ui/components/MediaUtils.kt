@@ -224,11 +224,26 @@ fun PlaybackCapabilityDetails(
     }
 }
 
+// "remux" is deliberately excluded: it repackages the container without re-encoding audio/video,
+// so it's cheap and lossless, unlike the other actions below - showing it as "Yes" here would
+// wrongly suggest a costly/quality-affecting transcode is happening.
+private val TRANSCODING_ACTIONS = setOf("transcode", "package", "limit")
+
+/**
+ * Compact Video/Audio/Container transcoding summary: just whether each is being
+ * transcoded (Yes) or played/passed through as-is (No).
+ */
 @Composable
 fun PlaybackBreakdownDetails(
     breakdown: List<PlaybackBreakdownItem>,
     modifier: Modifier = Modifier,
 ) {
+    val primaryComponents = listOf("Video", "Audio", "Container")
+    val items = breakdown
+        .filter { it.component in primaryComponents }
+        .sortedBy { primaryComponents.indexOf(it.component) }
+    if (items.isEmpty()) return
+
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -238,39 +253,43 @@ fun PlaybackBreakdownDetails(
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurface,
         )
-        breakdown.forEach { item ->
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.55f),
-                ),
-                shape = RoundedCornerShape(12.dp),
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            items.forEach { item ->
+                val isTranscoded = item.action.trim().lowercase() in TRANSCODING_ACTIONS
+                val statusColor = if (isTranscoded) {
+                    MaterialTheme.colorScheme.tertiary
+                } else {
+                    MaterialTheme.colorScheme.primary
+                }
+                Card(
+                    modifier = Modifier.weight(1f),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.55f),
+                    ),
+                    shape = RoundedCornerShape(12.dp),
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 10.dp, horizontal = 8.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(2.dp),
                     ) {
                         Text(
                             text = item.component,
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Text(
-                            text = item.action,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.primary,
+                            text = if (isTranscoded) "Yes" else "No",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = statusColor,
                         )
                     }
-                    Text(
-                        text = item.reason,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
                 }
             }
         }

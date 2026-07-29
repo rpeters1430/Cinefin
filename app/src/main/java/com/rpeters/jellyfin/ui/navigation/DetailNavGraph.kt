@@ -393,6 +393,7 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                 onRefresh = { detailViewModel.refresh() },
                 isRefreshing = detailState.isLoading || detailState.isSimilarMoviesLoading,
                 playbackAnalysis = detailState.playbackAnalysis,
+                onGenerateWhyYoullLoveThis = { detailViewModel.generateWhyYoullLoveThis() },
                 whyYoullLoveThis = detailState.whyYoullLoveThis,
                 isLoadingWhyYoullLoveThis = detailState.isLoadingWhyYoullLoveThis,
                 contentWarnings = detailState.contentWarnings,

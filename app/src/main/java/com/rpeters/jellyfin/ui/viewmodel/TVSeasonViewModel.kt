@@ -89,6 +89,12 @@ class TVSeasonViewModel @Inject constructor(
                 episodesBySeasonId = if (isNewSeries) emptyMap() else _state.value.episodesBySeasonId,
                 loadingSeasonIds = if (isNewSeries) emptySet() else _state.value.loadingSeasonIds,
                 seasonEpisodeErrors = if (isNewSeries) emptyMap() else _state.value.seasonEpisodeErrors,
+                // Clear the previous series' AI pitch/summary so a reused ViewModel (e.g. tapping
+                // a "similar show" navigates with launchSingleTop) doesn't show stale content.
+                whyYoullLoveThis = if (isNewSeries) null else _state.value.whyYoullLoveThis,
+                isLoadingWhyYoullLoveThis = if (isNewSeries) false else _state.value.isLoadingWhyYoullLoveThis,
+                aiSummary = if (isNewSeries) null else _state.value.aiSummary,
+                isLoadingAiSummary = if (isNewSeries) false else _state.value.isLoadingAiSummary,
             )
 
             var seriesDetails = _state.value.seriesDetails
@@ -113,7 +119,7 @@ class TVSeasonViewModel @Inject constructor(
             // Load seasons
             when (val seasonsResult = mediaRepository.getSeasonsForSeries(seriesId)) {
                 is ApiResult.Success -> {
-                    seasons = seasonsResult.data
+                    seasons = seasonsResult.data.sortedBy { it.indexNumber ?: Int.MAX_VALUE }
 
                     // Validate that the series has content only if no previous errors
                     // If no seasons exist AND the series has no child count (episodes), show error
@@ -162,10 +168,6 @@ class TVSeasonViewModel @Inject constructor(
                 errorMessage = errorMessage,
                 isEpisodeNotificationsFollowed = seriesDetails?.id?.toString() in followedEpisodeNotificationSeriesIds,
             )
-
-            if (seriesDetails != null) {
-                generateWhyYoullLoveThis(seriesDetails)
-            }
         }
     }
 
@@ -371,7 +373,12 @@ class TVSeasonViewModel @Inject constructor(
         }
     }
 
-    private fun generateWhyYoullLoveThis(series: BaseItemDto) {
+    /**
+     * Generate the "Why You'll Love This" pitch. Triggered explicitly by the user
+     * (not automatically on load) since it costs an AI generation call.
+     */
+    fun generateWhyYoullLoveThis() {
+        val series = _state.value.seriesDetails ?: return
         whyYoullLoveThisJob?.cancel()
         val seriesId = series.id.toString()
         whyYoullLoveThisJob = viewModelScope.launch {

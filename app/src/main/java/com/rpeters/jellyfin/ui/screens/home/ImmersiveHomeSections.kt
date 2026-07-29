@@ -59,7 +59,8 @@ internal fun MobileExpressiveHomeContent(
     val unknownText = androidx.compose.ui.res.stringResource(id = R.string.unknown)
     val libraryRows = remember(appState.libraries, appState.itemsByLibrary, currentServer) {
         appState.libraries.mapNotNull { library ->
-            if (library.toLibraryTypeOrNull() == LibraryType.STUFF) return@mapNotNull null
+            val libraryType = library.toLibraryTypeOrNull()
+            if (libraryType == LibraryType.STUFF || libraryType == LibraryType.TV_SHOWS) return@mapNotNull null
             val libraryId = library.id.toString()
             val items = appState.itemsByLibrary[libraryId]
                 .orEmpty()
@@ -98,6 +99,7 @@ internal fun MobileExpressiveHomeContent(
                                 subtitle = item.productionYear?.toString() ?: "",
                                 imageUrl = getBackdropUrl(item) ?: getSeriesImageUrl(item) ?: getImageUrl(item) ?: "",
                                 type = if (item.type == BaseItemKind.SERIES) MediaType.TV_SHOW else MediaType.MOVIE,
+                                rating = item.communityRating,
                             )
                         }
                     }
@@ -221,7 +223,8 @@ private fun LibraryNavigationCarousel(
     getImageUrl: (BaseItemDto) -> String?,
     onLibraryClick: (BaseItemDto) -> Unit,
 ) {
-    if (libraries.isEmpty()) return
+    val visibleLibraries = libraries.filterNot { it.collectionType == CollectionType.PLAYLISTS }
+    if (visibleLibraries.isEmpty()) return
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         HomeSectionTitle(
@@ -229,7 +232,7 @@ private fun LibraryNavigationCarousel(
             modifier = Modifier.padding(top = 8.dp),
         )
 
-        val carouselState = rememberCarouselState { libraries.size }
+        val carouselState = rememberCarouselState { visibleLibraries.size }
         androidx.compose.material3.carousel.HorizontalUncontainedCarousel(
             state = carouselState,
             itemWidth = 220.dp,
@@ -239,7 +242,7 @@ private fun LibraryNavigationCarousel(
                 .fillMaxWidth()
                 .height(220.dp),
         ) { index ->
-            val library = libraries[index]
+            val library = visibleLibraries[index]
             LibraryExpressiveCard(
                 library = library,
                 imageUrl = getImageUrl(library),
@@ -386,10 +389,21 @@ private fun LibraryExpressiveCard(
             haptics.lightClick()
             onClick()
         },
-        modifier = modifier.then(sharedElementModifier),
+        modifier = modifier
+            .then(sharedElementModifier)
+            .expressiveGlow(
+                color = MaterialTheme.colorScheme.primary,
+                alpha = 0.18f,
+                borderRadius = 28.dp,
+            ),
         shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.elevatedCardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.82f),
+        ),
+        elevation = CardDefaults.elevatedCardElevation(
+            defaultElevation = 8.dp,
+            pressedElevation = 4.dp,
+            hoveredElevation = 12.dp,
         ),
     ) {
         Box(modifier = Modifier.fillMaxSize()) {

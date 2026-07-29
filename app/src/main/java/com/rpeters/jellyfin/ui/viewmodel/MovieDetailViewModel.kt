@@ -140,9 +140,6 @@ class MovieDetailViewModel @Inject constructor(
                     // Load similar movies in background (uses Jellyfin's built-in recommendations)
                     loadSimilarMovies(movieId)
 
-                    // Generate personalized "Why You'll Love This" pitch in background
-                    // This is the only AI feature on detail screens to keep it simple
-                    generateWhyYoullLoveThis(result.data)
                     generateAiMetadata(result.data)
                 }
                 is ApiResult.Error -> {
@@ -233,7 +230,12 @@ class MovieDetailViewModel @Inject constructor(
         }
     }
 
-    private fun generateWhyYoullLoveThis(movie: BaseItemDto) {
+    /**
+     * Generate the "Why You'll Love This" pitch. Triggered explicitly by the user
+     * (not automatically on load) since it costs an AI generation call.
+     */
+    fun generateWhyYoullLoveThis() {
+        val movie = _state.value.movie ?: return
         whyYoullLoveThisJob?.cancel()
         val movieId = movie.id.toString()
         whyYoullLoveThisJob = viewModelScope.launch {

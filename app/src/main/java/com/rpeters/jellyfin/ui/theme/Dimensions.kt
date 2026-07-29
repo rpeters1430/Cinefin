@@ -63,6 +63,6 @@ object ImmersiveDimens {
     val FabBottomOffset = 80.dp
 
     // Cast Member dimensions
-    val CastMemberWidth = 100.dp
-    val CastMemberImageSize = 80.dp
+    val CastMemberWidth = 128.dp
+    val CastMemberImageSize = 108.dp
 }

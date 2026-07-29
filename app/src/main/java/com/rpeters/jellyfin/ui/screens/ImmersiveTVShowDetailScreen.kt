@@ -122,6 +122,9 @@ private enum class ImmersiveShowDetailState {
     CONTENT,
 }
 
+/** Taller than the shared default so the hero carousel has room to breathe and feels less crowded. */
+private val TvShowDetailHeroHeight = ImmersiveDimens.HeroHeightPhone + 100.dp
+
 /**
  * Immersive TV Show/Series Detail screen.
  * High-end cinematic view for series overview, seasons, and discovery.
@@ -211,6 +214,7 @@ fun ImmersiveTVShowDetailScreen(
                         onGenerateAiSummary = { viewModel.generateAiSummary() },
                         aiSummary = state.aiSummary,
                         isLoadingAiSummary = state.isLoadingAiSummary,
+                        onGenerateWhyYoullLoveThis = { viewModel.generateWhyYoullLoveThis() },
                         whyYoullLoveThis = state.whyYoullLoveThis,
                         isLoadingWhyYoullLoveThis = state.isLoadingWhyYoullLoveThis,
                         isEpisodeNotificationsFollowed = state.isEpisodeNotificationsFollowed,
@@ -264,6 +268,7 @@ private fun ImmersiveShowDetailContent(
     onGenerateAiSummary: () -> Unit = {},
     aiSummary: String? = null,
     isLoadingAiSummary: Boolean = false,
+    onGenerateWhyYoullLoveThis: () -> Unit = {},
     whyYoullLoveThis: String? = null,
     isLoadingWhyYoullLoveThis: Boolean = false,
     isEpisodeNotificationsFollowed: Boolean = false,
@@ -279,7 +284,7 @@ private fun ImmersiveShowDetailContent(
         state.seriesDetails?.let { series ->
             StaticHeroSection(
                 imageUrl = getBackdropUrl(series),
-                height = ImmersiveDimens.HeroHeightPhone,
+                height = TvShowDetailHeroHeight,
                 modifier = Modifier
                     .fillMaxWidth(),
                 content = {}, // Content moved to LazyColumn
@@ -330,6 +335,7 @@ private fun ImmersiveShowDetailContent(
                             onGenerateAiSummary = onGenerateAiSummary,
                             aiSummary = aiSummary,
                             isLoadingAiSummary = isLoadingAiSummary,
+                            onGenerateWhyYoullLoveThis = onGenerateWhyYoullLoveThis,
                             whyYoullLoveThis = whyYoullLoveThis,
                             isLoadingWhyYoullLoveThis = isLoadingWhyYoullLoveThis,
                         )
@@ -454,7 +460,7 @@ private fun ImmersiveShowDetailContent(
                                 onCardClick = {
                                     onSeriesClick(similarShow.id.toString())
                                 },
-                                cardSize = ImmersiveCardSize.X_SMALL,
+                                cardSize = ImmersiveCardSize.SMALL,
                             )
                         }
                     }
@@ -482,7 +488,7 @@ private fun ShowHeroContent(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(ImmersiveDimens.HeroHeightPhone)
+            .height(TvShowDetailHeroHeight)
             .padding(16.dp),
         contentAlignment = Alignment.BottomCenter,
     ) {
@@ -517,6 +523,8 @@ private fun ShowHeroContent(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 // Rating
+                // Note: Jellyfin's communityRating doesn't identify which metadata provider
+                // (TVDB, TMDB, etc.) supplied it, so we can't show an accurate source badge.
                 series.communityRating?.let { rating ->
                     RatingBadge(rating)
                 }
@@ -631,6 +639,7 @@ private fun ShowMetadataSection(
     onGenerateAiSummary: () -> Unit = {},
     aiSummary: String? = null,
     isLoadingAiSummary: Boolean = false,
+    onGenerateWhyYoullLoveThis: () -> Unit = {},
     whyYoullLoveThis: String? = null,
     isLoadingWhyYoullLoveThis: Boolean = false,
 ) {
@@ -729,6 +738,16 @@ private fun ShowMetadataSection(
                         pitch = whyYoullLoveThis,
                         isLoading = isLoadingWhyYoullLoveThis,
                     )
+                } else {
+                    TextButton(onClick = onGenerateWhyYoullLoveThis) {
+                        Icon(
+                            imageVector = Icons.Default.AutoAwesome,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Why You'll Love This")
+                    }
                 }
 
                 // App-styled media info cards built from shared card primitives
@@ -1049,10 +1068,10 @@ private fun EpisodeRow(
 }
 
 @Composable
-private fun RatingBadge(rating: Float) {
+private fun RatingBadge(rating: Float, source: String? = null) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Icon(Icons.Default.Star, contentDescription = null, tint = RatingGold, modifier = Modifier.size(Dimens.Size16))
         Text(
@@ -1061,6 +1080,20 @@ private fun RatingBadge(rating: Float) {
             fontWeight = FontWeight.Bold,
             color = Color.White,
         )
+        if (!source.isNullOrBlank()) {
+            Surface(
+                shape = RoundedCornerShape(ImmersiveDimens.CornerRadiusSmall),
+                color = Color.White.copy(alpha = 0.18f),
+            ) {
+                Text(
+                    text = source,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White.copy(alpha = 0.85f),
+                    modifier = Modifier.padding(horizontal = Dimens.Spacing6, vertical = 2.dp),
+                )
+            }
+        }
     }
 }
 
@@ -1090,7 +1123,7 @@ private fun ImmersiveCastSection(
             items(cast) { person ->
                 Column(
                     modifier = Modifier
-                        .width(120.dp)
+                        .width(ImmersiveDimens.CastMemberWidth)
                         .clickable {
                             onPersonClick(person.id.toString(), person.name ?: "Unknown")
                         },
@@ -1098,7 +1131,7 @@ private fun ImmersiveCastSection(
                 ) {
                     Surface(
                         shape = CircleShape,
-                        modifier = Modifier.size(120.dp),
+                        modifier = Modifier.size(ImmersiveDimens.CastMemberImageSize),
                         color = MaterialTheme.colorScheme.surfaceVariant,
                     ) {
                         val personItem = BaseItemDto(

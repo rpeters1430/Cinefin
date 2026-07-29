@@ -82,6 +82,8 @@ fun WhyYoullLoveThisCard(
                         color = MaterialTheme.colorScheme.onTertiaryContainer,
                         lineHeight = MaterialTheme.typography.bodyMedium.lineHeight.times(1.5f),
                         textAlign = TextAlign.Center,
+                        maxLines = 3,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                     )
                 }
             }

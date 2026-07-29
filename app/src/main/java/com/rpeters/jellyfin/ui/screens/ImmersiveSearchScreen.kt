@@ -171,10 +171,6 @@ fun ImmersiveSearchScreen(
         genres + years
     }
 
-    LaunchedEffect(Unit) {
-        focusRequester.requestFocus()
-    }
-
     LaunchedEffect(debouncedQuery, aiSearchEnabled) {
         if (debouncedQuery.isBlank()) {
             onClearSearch()
