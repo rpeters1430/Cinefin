@@ -34,19 +34,23 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil3.compose.SubcomposeAsyncImage
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.ui.ShimmerBox
 import com.rpeters.jellyfin.ui.components.UnwatchedEpisodeCountBadge
 import com.rpeters.jellyfin.ui.components.WatchProgressBar
 import com.rpeters.jellyfin.ui.components.WatchedIndicatorBadge
+import com.rpeters.jellyfin.ui.components.immersive.ResolutionQuality
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
+import org.jellyfin.sdk.model.api.MediaStreamType
 
 /** Card representation of a library item used in multiple views. */
 @OptInAppExperimentalApis
@@ -184,6 +188,35 @@ fun LibraryItemCard(
                             WatchedIndicatorBadge(item = item)
                         }
                         WatchProgressBar(item = item, modifier = Modifier.align(Alignment.BottomCenter))
+
+                        // Quality badge in bottom-left corner (4K / FHD / HD only)
+                        val videoStream = item.mediaSources
+                            ?.firstOrNull()
+                            ?.mediaStreams
+                            ?.firstOrNull { it.type == MediaStreamType.VIDEO }
+                        val resolution = videoStream?.let {
+                            ResolutionQuality.fromResolution(it.width, it.height)
+                        }
+                        if (resolution != null && resolution != ResolutionQuality.SD) {
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.BottomStart)
+                                    .padding(start = 4.dp, bottom = 4.dp)
+                                    .background(
+                                        Brush.horizontalGradient(colors = resolution.gradientColors),
+                                        shape = MaterialTheme.shapes.extraSmall,
+                                    )
+                                    .padding(horizontal = 6.dp, vertical = 2.dp),
+                            ) {
+                                Text(
+                                    text = resolution.label,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = resolution.textColor,
+                                    fontSize = 10.sp,
+                                )
+                            }
+                        }
                     }
 
                     Column(modifier = Modifier.padding(8.dp)) {

@@ -87,6 +87,7 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
             getImageUrl = { item -> viewModel.getImageUrl(item) },
             getBackdropUrl = { item -> viewModel.getBackdropUrl(item) },
             getLogoUrl = { item -> viewModel.getLogoUrl(item) },
+            getPersonImageUrl = { person -> viewModel.getPersonImageUrl(person) },
             onSeriesClick = { targetSeriesId ->
                 navController.navigate(Screen.TVSeasons.createRoute(targetSeriesId)) {
                     launchSingleTop = true

@@ -63,6 +63,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -137,6 +138,10 @@ fun ImmersiveTVShowDetailScreen(
     getImageUrl: (BaseItemDto) -> String?,
     getBackdropUrl: (BaseItemDto) -> String?,
     getLogoUrl: (BaseItemDto) -> String? = { null },
+    getPersonImageUrl: (BaseItemPerson) -> String? = { person ->
+        // Default: build URL from person ID and primaryImageTag (no tag = URL still works)
+        null
+    },
     onSeriesClick: (String) -> Unit,
     onEpisodeClick: (BaseItemDto) -> Unit,
     onPlayEpisode: (BaseItemDto) -> Unit,
@@ -202,6 +207,7 @@ fun ImmersiveTVShowDetailScreen(
                         getImageUrl = getImageUrl,
                         getBackdropUrl = getBackdropUrl,
                         getLogoUrl = getLogoUrl,
+                        getPersonImageUrl = getPersonImageUrl,
                         onSeriesClick = onSeriesClick,
                         onSeasonExpand = viewModel::loadSeasonEpisodes,
                         onEpisodeClick = onEpisodeClick,
@@ -256,6 +262,7 @@ private fun ImmersiveShowDetailContent(
     getImageUrl: (BaseItemDto) -> String?,
     getBackdropUrl: (BaseItemDto) -> String?,
     getLogoUrl: (BaseItemDto) -> String?,
+    getPersonImageUrl: (BaseItemPerson) -> String?,
     onSeriesClick: (String) -> Unit,
     onSeasonExpand: (String) -> Unit,
     onEpisodeClick: (BaseItemDto) -> Unit,
@@ -418,7 +425,7 @@ private fun ImmersiveShowDetailContent(
                     Box(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)) {
                         ImmersiveCastSection(
                             people = people,
-                            getImageUrl = getImageUrl,
+                            getPersonImageUrl = getPersonImageUrl,
                             onPersonClick = onPersonClick,
                             modifier = Modifier.padding(top = 24.dp),
                         )
@@ -1073,25 +1080,35 @@ private fun RatingBadge(rating: Float, source: String? = null) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Icon(Icons.Default.Star, contentDescription = null, tint = RatingGold, modifier = Modifier.size(Dimens.Size16))
-        Text(
-            text = String.format(Locale.ROOT, "%.1f", rating),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = Color.White,
-        )
-        if (!source.isNullOrBlank()) {
-            Surface(
-                shape = RoundedCornerShape(ImmersiveDimens.CornerRadiusSmall),
-                color = Color.White.copy(alpha = 0.18f),
-            ) {
-                Text(
-                    text = source,
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White.copy(alpha = 0.85f),
-                    modifier = Modifier.padding(horizontal = Dimens.Spacing6, vertical = 2.dp),
+        Box(
+            modifier = Modifier
+                .background(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(Color(0xFFFF8C00), Color(0xFFFFD700)),
+                    ),
+                    shape = RoundedCornerShape(ImmersiveDimens.CornerRadiusSmall),
                 )
+                .padding(horizontal = 10.dp, vertical = 5.dp),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Icon(Icons.Default.Star, contentDescription = null, tint = Color.White, modifier = Modifier.size(Dimens.Size16))
+                Text(
+                    text = String.format(Locale.ROOT, "%.1f", rating),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color.White,
+                )
+                if (!source.isNullOrBlank()) {
+                    Text(
+                        text = "· $source",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White.copy(alpha = 0.85f),
+                    )
+                }
             }
         }
     }
@@ -1100,7 +1117,7 @@ private fun RatingBadge(rating: Float, source: String? = null) {
 @Composable
 private fun ImmersiveCastSection(
     people: List<BaseItemPerson>,
-    getImageUrl: (BaseItemDto) -> String?,
+    getPersonImageUrl: (BaseItemPerson) -> String?,
     onPersonClick: (String, String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -1134,15 +1151,27 @@ private fun ImmersiveCastSection(
                         modifier = Modifier.size(ImmersiveDimens.CastMemberImageSize),
                         color = MaterialTheme.colorScheme.surfaceVariant,
                     ) {
-                        val personItem = BaseItemDto(
-                            id = person.id,
-                            type = org.jellyfin.sdk.model.api.BaseItemKind.PERSON,
-                            imageTags = person.primaryImageTag?.let { mapOf(org.jellyfin.sdk.model.api.ImageType.PRIMARY to it) },
-                        )
-                        JellyfinAsyncImage(
-                            model = getImageUrl(personItem),
+                        coil3.compose.SubcomposeAsyncImage(
+                            model = coil3.request.ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
+                                .data(getPersonImageUrl(person))
+                                .crossfade(true)
+                                .build(),
                             contentDescription = person.name,
                             contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize(),
+                            error = {
+                                androidx.compose.foundation.layout.Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Icon(
+                                        imageVector = androidx.compose.material.icons.Icons.Rounded.Person,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                                        modifier = Modifier.size(36.dp),
+                                    )
+                                }
+                            },
                         )
                     }
                     Spacer(modifier = Modifier.height(8.dp))

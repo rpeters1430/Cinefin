@@ -13,7 +13,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material3.*
-import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -232,23 +231,28 @@ private fun LibraryNavigationCarousel(
             modifier = Modifier.padding(top = 8.dp),
         )
 
-        val carouselState = rememberCarouselState { visibleLibraries.size }
-        androidx.compose.material3.carousel.HorizontalUncontainedCarousel(
-            state = carouselState,
-            itemWidth = 220.dp,
-            itemSpacing = 16.dp,
-            contentPadding = PaddingValues(horizontal = 16.dp),
+        // Display libraries in a 2-column grid so all cards are fully visible.
+        // HorizontalUncontainedCarousel is intentionally avoided here because it
+        // clips the last visible card, causing the "Shows card cut off" issue.
+        @OptIn(ExperimentalLayoutApi::class)
+        FlowRow(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(220.dp),
-        ) { index ->
-            val library = visibleLibraries[index]
-            LibraryExpressiveCard(
-                library = library,
-                imageUrl = getImageUrl(library),
-                onClick = { onLibraryClick(library) },
-                modifier = Modifier.fillMaxSize(),
-            )
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            maxItemsInEachRow = 2,
+        ) {
+            visibleLibraries.forEach { library ->
+                LibraryExpressiveCard(
+                    library = library,
+                    imageUrl = getImageUrl(library),
+                    onClick = { onLibraryClick(library) },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(160.dp),
+                )
+            }
         }
     }
 }

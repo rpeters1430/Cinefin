@@ -54,11 +54,13 @@ import com.rpeters.jellyfin.ui.components.immersive.ImmersiveCardSize
 import com.rpeters.jellyfin.ui.components.immersive.ImmersiveHeroCarousel
 import com.rpeters.jellyfin.ui.components.immersive.ImmersiveMediaCard
 import com.rpeters.jellyfin.ui.components.immersive.ImmersiveScaffold
+import com.rpeters.jellyfin.ui.components.immersive.ResolutionQuality
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
 import com.rpeters.jellyfin.utils.getUnwatchedEpisodeCount
 import com.rpeters.jellyfin.utils.isWatched
 import kotlinx.coroutines.flow.distinctUntilChanged
 import org.jellyfin.sdk.model.api.BaseItemDto
+import org.jellyfin.sdk.model.api.MediaStreamType
 
 /** Theme and empty-state configuration for [ImmersiveLibraryBrowserScreen]. */
 data class ImmersiveLibraryConfig(
@@ -214,12 +216,20 @@ fun ImmersiveLibraryBrowserScreen(
                                 items = items,
                                 key = { it.id.toString() },
                             ) { item ->
+                                val videoStream = item.mediaSources
+                                    ?.firstOrNull()
+                                    ?.mediaStreams
+                                    ?.firstOrNull { it.type == MediaStreamType.VIDEO }
+                                val resolution = videoStream?.let {
+                                    ResolutionQuality.fromResolution(it.width, it.height)
+                                }
                                 ImmersiveMediaCard(
                                     modifier = Modifier.padding(horizontal = 8.dp),
                                     title = item.name ?: "Unknown",
-                                    subtitle = item.productionYear?.toString() ?: "",
+                                    subtitle = buildItemSubtitle(item),
                                     imageUrl = getImageUrl(item) ?: "",
                                     rating = item.communityRating,
+                                    resolution = resolution,
                                     onCardClick = { onItemClick(item.id.toString()) },
                                     onPlayClick = { onItemClick(item.id.toString()) },
                                     isWatched = item.isWatched(),
@@ -300,5 +310,20 @@ fun ImmersiveLibraryBrowserScreen(
                 }
             }
         }
+    }
+}
+
+/**
+ * Builds a human-readable subtitle for a library item.
+ * For TV shows this shows a year range (e.g. "2020–Present" or "2020–2024").
+ * For movies and other items this falls back to the production year.
+ */
+private fun buildItemSubtitle(item: org.jellyfin.sdk.model.api.BaseItemDto): String {
+    val startYear = item.productionYear ?: return ""
+    val endYear = item.endDate?.year
+    return when {
+        item.status == "Continuing" -> "$startYear\u2013Present"
+        endYear != null && endYear != startYear -> "$startYear\u2013$endYear"
+        else -> startYear.toString()
     }
 }

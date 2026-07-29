@@ -70,6 +70,7 @@ fun ImmersiveMediaCard(
     itemId: String? = null,
     subtitle: String = "",
     rating: Float? = null,
+    resolution: ResolutionQuality? = null,
     isFavorite: Boolean = false,
     isWatched: Boolean = false,
     watchProgress: Float = 0f,
@@ -150,6 +151,7 @@ fun ImmersiveMediaCard(
             subtitle = subtitle,
             imageUrl = imageUrl,
             rating = rating,
+            resolution = resolution,
             isFavorite = isFavorite,
             isWatched = isWatched,
             watchProgress = watchProgress,
@@ -170,6 +172,7 @@ private fun ImmersiveCardContent(
     subtitle: String,
     imageUrl: String,
     rating: Float?,
+    resolution: ResolutionQuality?,
     isFavorite: Boolean,
     isWatched: Boolean,
     watchProgress: Float,
@@ -241,28 +244,35 @@ private fun ImmersiveCardContent(
                 .padding(12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            // Rating on the left
+            // Rating on the left – vibrant amber-gold gradient badge
             if (rating != null) {
                 Surface(
                     shape = ImmersiveShapes.RatingBadge,
-                    color = Color.Black.copy(alpha = 0.7f),
+                    color = Color.Transparent,
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        modifier = Modifier
+                            .background(
+                                Brush.horizontalGradient(
+                                    colors = listOf(Color(0xFFFF8C00), Color(0xFFFFD700)),
+                                ),
+                                shape = ImmersiveShapes.RatingBadge,
+                            )
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
                     ) {
                         Icon(
                             imageVector = Icons.Default.Star,
                             contentDescription = null,
-                            tint = Color(0xFFFFD700), // Gold color
-                            modifier = Modifier.size(16.dp),
+                            tint = Color.White,
+                            modifier = Modifier.size(14.dp),
                         )
                         Text(
                             text = String.format(java.util.Locale.ROOT, "%.1f", rating),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.ExtraBold,
                             color = Color.White,
-                            modifier = Modifier.padding(start = 4.dp),
+                            modifier = Modifier.padding(start = 3.dp),
                         )
                     }
                 }
@@ -270,39 +280,54 @@ private fun ImmersiveCardContent(
                 Spacer(modifier = Modifier.width(1.dp))
             }
 
-            // Watch status on the right
-            if (unwatchedEpisodeCount != null && unwatchedEpisodeCount > 0) {
-                Surface(
-                    shape = MaterialShapes.Cookie4Sided.toShape(),
-                    color = MaterialTheme.colorScheme.primary,
-                ) {
-                    val countText = if (unwatchedEpisodeCount > 99) "99+" else unwatchedEpisodeCount.toString()
-                    Box(
-                        modifier = Modifier.defaultMinSize(minWidth = 32.dp, minHeight = 32.dp),
-                        contentAlignment = Alignment.Center,
+            // Right side: quality badge + watch status stacked vertically
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                // Quality badge (4K/FHD/HD) – skip SD to keep cards clean
+                if (resolution != null && resolution != ResolutionQuality.SD) {
+                    QualityBadge(
+                        resolution = resolution,
+                        showIcon = false,
+                        animate = false,
+                    )
+                }
+
+                // Watch status
+                if (unwatchedEpisodeCount != null && unwatchedEpisodeCount > 0) {
+                    Surface(
+                        shape = MaterialShapes.Cookie4Sided.toShape(),
+                        color = MaterialTheme.colorScheme.primary,
                     ) {
-                        Text(
-                            text = countText,
-                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.padding(horizontal = 10.dp),
+                        val countText = if (unwatchedEpisodeCount > 99) "99+" else unwatchedEpisodeCount.toString()
+                        Box(
+                            modifier = Modifier.defaultMinSize(minWidth = 32.dp, minHeight = 32.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                text = countText,
+                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.padding(horizontal = 10.dp),
+                            )
+                        }
+                    }
+                } else if (isWatched) {
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = "Watched",
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier
+                                .size(24.dp)
+                                .padding(4.dp),
                         )
                     }
-                }
-            } else if (isWatched) {
-                Surface(
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp),
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Check,
-                        contentDescription = "Watched",
-                        tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier
-                            .size(24.dp)
-                            .padding(4.dp),
-                    )
                 }
             }
         }
