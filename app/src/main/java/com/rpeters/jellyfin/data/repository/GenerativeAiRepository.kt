@@ -258,8 +258,8 @@ class GenerativeAiRepository @Inject constructor(
         }
 
         try {
-            // Apply 15-second timeout to prevent indefinite loading
-            val response = withTimeout(15_000L) {
+            // Apply 30-second timeout — cloud API can be slow on first invocation
+            val response = withTimeout(30_000L) {
                 getPrimaryModel().generateText(prompt)
             }
             val success = response.isNotBlank()
@@ -273,7 +273,7 @@ class GenerativeAiRepository @Inject constructor(
 
             finalResponse
         } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
-            Log.w("GenerativeAi", "Summary generation timed out after 15s for: $title")
+            Log.w("GenerativeAi", "Summary generation timed out after 30s for: $title")
             analytics.logAiEvent("summary", false, getBackendName(true))
             "Summary generation timed out. Please try again."
         }

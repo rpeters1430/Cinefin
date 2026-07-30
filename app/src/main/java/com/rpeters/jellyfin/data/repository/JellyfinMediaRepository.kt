@@ -154,6 +154,7 @@ class JellyfinMediaRepository @Inject constructor(
                     org.jellyfin.sdk.model.api.ItemFields.DATE_CREATED,
                     org.jellyfin.sdk.model.api.ItemFields.STUDIOS,
                     org.jellyfin.sdk.model.api.ItemFields.TAGS,
+                    org.jellyfin.sdk.model.api.ItemFields.MEDIA_SOURCES,
                 )
 
                 val response = client.itemsApi.getItems(

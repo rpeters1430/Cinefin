@@ -166,10 +166,10 @@ fun ImmersiveLibraryScreen(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 item(key = "header", span = { GridItemSpan(maxLineSpan) }) {
-                    Spacer(modifier = Modifier.height(120.dp))
+                    Spacer(modifier = Modifier.height(148.dp))
                     Text(
                         text = stringResource(id = R.string.your_libraries),
-                        style = MaterialTheme.typography.displaySmall,
+                        style = MaterialTheme.typography.headlineLarge,
                         fontWeight = FontWeight.Bold,
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                         modifier = Modifier
