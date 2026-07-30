@@ -215,7 +215,7 @@ internal fun MobileExpressiveHomeContent(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 private fun LibraryNavigationCarousel(
     libraries: List<BaseItemDto>,
@@ -234,7 +234,6 @@ private fun LibraryNavigationCarousel(
         // Display libraries in a 2-column grid so all cards are fully visible.
         // HorizontalUncontainedCarousel is intentionally avoided here because it
         // clips the last visible card, causing the "Shows card cut off" issue.
-        @OptIn(ExperimentalLayoutApi::class)
         FlowRow(
             modifier = Modifier
                 .fillMaxWidth()
