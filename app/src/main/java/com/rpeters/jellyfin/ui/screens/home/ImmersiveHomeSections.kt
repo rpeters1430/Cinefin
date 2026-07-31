@@ -234,23 +234,39 @@ private fun LibraryNavigationCarousel(
         // Display libraries in a 2-column grid so all cards are fully visible.
         // HorizontalUncontainedCarousel is intentionally avoided here because it
         // clips the last visible card, causing the "Shows card cut off" issue.
-        FlowRow(
+        //
+        // A manually chunked Row/Column is used instead of FlowRow.weight() because
+        // FlowRowScope.weight() requires intrinsic measurements of its children, and
+        // LibraryExpressiveCard's content (HeroImageWithGradient) contains
+        // BoxWithConstraints/SubcomposeAsyncImage, which are SubcomposeLayout-based and
+        // do not support intrinsic measurement. Combining the two crashes with
+        // "Asking for intrinsic measurements of SubcomposeLayout layouts is not
+        // supported." Plain RowScope.weight() does not require intrinsics, so it is safe.
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
-            maxItemsInEachRow = 2,
         ) {
-            visibleLibraries.forEach { library ->
-                LibraryExpressiveCard(
-                    library = library,
-                    imageUrl = getImageUrl(library),
-                    onClick = { onLibraryClick(library) },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(160.dp),
-                )
+            visibleLibraries.chunked(2).forEach { rowLibraries ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    rowLibraries.forEach { library ->
+                        LibraryExpressiveCard(
+                            library = library,
+                            imageUrl = getImageUrl(library),
+                            onClick = { onLibraryClick(library) },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(160.dp),
+                        )
+                    }
+                    if (rowLibraries.size == 1) {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                }
             }
         }
     }
