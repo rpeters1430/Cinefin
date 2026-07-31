@@ -300,6 +300,24 @@ fun getOfficialRatingColor(officialRating: String): Color {
     }
 }
 
+/**
+ * Tier color for a 0-10 scale community rating (e.g. TMDb/IMDb-style).
+ */
+fun getCommunityRatingColor(rating: Float): Color {
+    return when {
+        rating >= 7.0f -> OfficialRatingGreen
+        rating >= 5.0f -> OfficialRatingAmber
+        else -> OfficialRatingRed
+    }
+}
+
+/**
+ * Tier color for a 0-100 scale critic rating (e.g. Rotten Tomatoes-style).
+ */
+fun getCriticRatingColor(rating: Float): Color {
+    return if (rating >= 60f) OfficialRatingGreen else OfficialRatingRed
+}
+
 // ============================================================================
 // HERO IMAGE GRADIENTS
 // ============================================================================
