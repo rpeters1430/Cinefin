@@ -3,6 +3,7 @@ package com.rpeters.jellyfin.ui.components.immersive
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -18,6 +19,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Memory
+import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material.icons.outlined.GraphicEq
 import androidx.compose.material.icons.outlined.HdrOn
 import androidx.compose.material.icons.outlined.SurroundSound
@@ -245,6 +249,74 @@ fun CodecBadge(
 }
 
 /**
+ * Video codec categories with a distinct accent color + icon each.
+ */
+enum class VideoCodecType(
+    val accentColor: Color,
+    val materialIcon: ImageVector?,
+    val drawableRes: Int?,
+) {
+    HEVC(Color(0xFF43E97B), Icons.Default.Speed, null),
+    AVC(Color(0xFF4FACFE), null, R.drawable.avc_24px),
+    AV1(Color(0xFF9B59B6), Icons.Default.Memory, null),
+    VP9(Color(0xFF00BFA5), Icons.Default.VideoLibrary, null),
+    OTHER(Color(0xFF9E9E9E), Icons.Outlined.VideoFile, null),
+    ;
+
+    companion object {
+        fun fromCodecName(codec: String): VideoCodecType = when (codec.uppercase(java.util.Locale.ROOT)) {
+            "HEVC" -> HEVC
+            "AVC" -> AVC
+            "AV1" -> AV1
+            "VP9" -> VP9
+            else -> OTHER
+        }
+    }
+}
+
+/**
+ * Codec badge colored + iconed per [VideoCodecType]. [codecText] is shown verbatim
+ * (already normalized to e.g. "HEVC"/"AVC"/"AV1"/"VP9" by callers).
+ */
+@Composable
+fun CodecTypeBadge(
+    codecText: String,
+    modifier: Modifier = Modifier,
+) {
+    val type = VideoCodecType.fromCodecName(codecText)
+    val icon = type.drawableRes?.let { ImageVector.vectorResource(id = it) } ?: type.materialIcon
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(6.dp),
+        color = type.accentColor.copy(alpha = 0.18f),
+        border = BorderStroke(1.dp, type.accentColor.copy(alpha = 0.5f)),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(5.dp),
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+        ) {
+            icon?.let {
+                Icon(
+                    imageVector = it,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = type.accentColor,
+                )
+            }
+            Text(
+                text = codecText,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = type.accentColor,
+                fontSize = 12.sp,
+                letterSpacing = 0.3.sp,
+            )
+        }
+    }
+}
+
+/**
  * Premium media info card with Material 3 Expressive styling
  * Displays video or audio information with beautiful cards
  */
@@ -350,7 +422,6 @@ fun VideoInfoCard(
     isHdr: Boolean = false,
     hdrType: HdrType = HdrType.HDR,
     is3D: Boolean = false,
-    codecIcon: ImageVector? = null,
     modifier: Modifier = Modifier,
 ) {
     MediaInfoCard(
@@ -370,7 +441,7 @@ fun VideoInfoCard(
                 HdrBadge(hdrType = hdrType)
             }
 
-            CodecBadge(text = codec, icon = codecIcon)
+            CodecTypeBadge(codecText = codec)
 
             bitDepth?.let {
                 CodecBadge(text = "$it-bit")
