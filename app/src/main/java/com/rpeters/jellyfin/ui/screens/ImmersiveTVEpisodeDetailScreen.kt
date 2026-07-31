@@ -38,7 +38,6 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.WifiOff
@@ -60,11 +59,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -94,12 +91,12 @@ import com.rpeters.jellyfin.ui.components.immersive.ResolutionQuality
 import com.rpeters.jellyfin.ui.components.immersive.StaticHeroSection
 import com.rpeters.jellyfin.ui.components.immersive.VideoInfoCard
 import com.rpeters.jellyfin.ui.components.immersive.rememberImmersivePerformanceConfig
+import com.rpeters.jellyfin.ui.components.RatingRow
 import com.rpeters.jellyfin.ui.downloads.DownloadsViewModel
 import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
 import com.rpeters.jellyfin.ui.screens.details.components.ChapterListSection
 import com.rpeters.jellyfin.ui.theme.Dimens
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
-import com.rpeters.jellyfin.ui.theme.RatingGold
 import com.rpeters.jellyfin.ui.theme.SeriesBlue
 import com.rpeters.jellyfin.ui.utils.PlaybackCapabilityAnalysis
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
@@ -599,17 +596,10 @@ private fun EpisodeHeroContent(
                 }
 
                 // Rating
-                episode.communityRating?.let { rating ->
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Dimens.Spacing4)) {
-                        Icon(Icons.Default.Star, contentDescription = null, tint = RatingGold, modifier = Modifier.size(Dimens.Size18))
-                        Text(
-                            text = String.format(Locale.ROOT, "%.1f", rating),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                        )
-                    }
-                }
+                RatingRow(
+                    communityRating = episode.communityRating,
+                    criticRating = episode.criticRating,
+                )
 
                 // Runtime
                 episode.runTimeTicks?.let { ticks ->
@@ -817,12 +807,6 @@ private fun EpisodeOverviewSection(
                                 stream.videoRangeType.toString(),
                             )
 
-                            val codecIcon = if (codecText == "AVC") {
-                                ImageVector.vectorResource(id = R.drawable.avc_24px)
-                            } else {
-                                null
-                            }
-
                             VideoInfoCard(
                                 resolution = resolution,
                                 codec = codecText,
@@ -830,7 +814,6 @@ private fun EpisodeOverviewSection(
                                 frameRate = stream.averageFrameRate?.toDouble(),
                                 isHdr = hdrType != null,
                                 hdrType = hdrType ?: HdrType.HDR,
-                                codecIcon = codecIcon,
                             )
                         }
 
