@@ -44,7 +44,6 @@ import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -65,12 +64,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -81,6 +77,8 @@ import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
 import com.rpeters.jellyfin.ui.components.AiSummaryCard
+import com.rpeters.jellyfin.ui.components.OfficialRatingBadge
+import com.rpeters.jellyfin.ui.components.RatingRow
 import com.rpeters.jellyfin.ui.screens.details.components.WhyYoullLoveThisCard
 import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
 import com.rpeters.jellyfin.ui.components.ExpressiveEmptyState
@@ -105,9 +103,7 @@ import com.rpeters.jellyfin.ui.theme.Dimens
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
 import com.rpeters.jellyfin.ui.theme.MotionTokens
 import com.rpeters.jellyfin.ui.theme.OfficialRatingGreen
-import com.rpeters.jellyfin.ui.theme.RatingGold
 import com.rpeters.jellyfin.ui.theme.SeriesBlue
-import com.rpeters.jellyfin.ui.theme.getOfficialRatingColor
 import com.rpeters.jellyfin.ui.viewmodel.TVSeasonState
 import com.rpeters.jellyfin.ui.viewmodel.TVSeasonViewModel
 import com.rpeters.jellyfin.utils.getItemKey
@@ -532,11 +528,10 @@ private fun ShowHeroContent(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 // Rating
-                // Note: Jellyfin's communityRating doesn't identify which metadata provider
-                // (TVDB, TMDB, etc.) supplied it, so we can't show an accurate source badge.
-                series.communityRating?.let { rating ->
-                    RatingBadge(rating)
-                }
+                RatingRow(
+                    communityRating = series.communityRating,
+                    criticRating = series.criticRating,
+                )
 
                 // Year Range (e.g., "2020-2024" or "2020-Present")
                 val yearText = buildYearRangeText(
@@ -664,20 +659,7 @@ private fun ShowMetadataSection(
         ) {
             series.officialRating?.let { rating ->
                 val normalized = normalizeOfficialRating(rating) ?: return@let
-                val tintColor = getOfficialRatingColor(normalized)
-                Surface(
-                    shape = RoundedCornerShape(Dimens.Corner6),
-                    color = tintColor.copy(alpha = 0.2f),
-                    border = BorderStroke(1.dp, tintColor.copy(alpha = 0.6f)),
-                ) {
-                    Text(
-                        text = normalized,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                        modifier = Modifier.padding(horizontal = Dimens.Spacing10, vertical = Dimens.Spacing6),
-                    )
-                }
+                OfficialRatingBadge(rating = normalized)
             }
 
             if (series.status == "Continuing") {
@@ -783,12 +765,6 @@ private fun ShowMetadataSection(
                                 stream.videoRangeType.toString(),
                             )
 
-                            val codecIcon = if (codecText == "AVC") {
-                                ImageVector.vectorResource(id = R.drawable.avc_24px)
-                            } else {
-                                null
-                            }
-
                             VideoInfoCard(
                                 resolution = resolution,
                                 codec = codecText,
@@ -796,7 +772,6 @@ private fun ShowMetadataSection(
                                 frameRate = stream.averageFrameRate?.toDouble(),
                                 isHdr = hdrType != null,
                                 hdrType = hdrType ?: HdrType.HDR,
-                                codecIcon = codecIcon,
                             )
                         }
 
@@ -1072,46 +1047,6 @@ private fun EpisodeRow(
                 item = episode,
                 modifier = Modifier.padding(start = 8.dp),
             )
-        }
-    }
-}
-
-@Composable
-private fun RatingBadge(rating: Float, source: String? = null) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        Box(
-            modifier = Modifier
-                .background(
-                    brush = Brush.horizontalGradient(
-                        colors = listOf(Color(0xFFFF8C00), Color(0xFFFFD700)),
-                    ),
-                    shape = RoundedCornerShape(ImmersiveDimens.CornerRadiusSmall),
-                )
-                .padding(horizontal = 10.dp, vertical = 5.dp),
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                Icon(Icons.Default.Star, contentDescription = null, tint = Color.White, modifier = Modifier.size(Dimens.Size16))
-                Text(
-                    text = String.format(Locale.ROOT, "%.1f", rating),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color.White,
-                )
-                if (!source.isNullOrBlank()) {
-                    Text(
-                        text = "· $source",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White.copy(alpha = 0.85f),
-                    )
-                }
-            }
         }
     }
 }
