@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -215,7 +216,7 @@ internal fun MobileExpressiveHomeContent(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun LibraryNavigationCarousel(
     libraries: List<BaseItemDto>,
@@ -254,14 +255,16 @@ private fun LibraryNavigationCarousel(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     rowLibraries.forEach { library ->
-                        LibraryExpressiveCard(
-                            library = library,
-                            imageUrl = getImageUrl(library),
-                            onClick = { onLibraryClick(library) },
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(160.dp),
-                        )
+                        key(library.id) {
+                            LibraryExpressiveCard(
+                                library = library,
+                                imageUrl = getImageUrl(library),
+                                onClick = { onLibraryClick(library) },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(160.dp),
+                            )
+                        }
                     }
                     if (rowLibraries.size == 1) {
                         Spacer(modifier = Modifier.weight(1f))
