@@ -1,7 +1,6 @@
 package com.rpeters.jellyfin.ui.screens
 
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.ui.test.assertDoesNotExist
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -71,6 +70,7 @@ class ImmersiveHomeScreenTest {
                 MobileExpressiveHomeContent(
                     appState = appState,
                     contentLists = contentLists,
+                    currentServer = null,
                     getImageUrl = { null },
                     getBackdropUrl = { null },
                     getSeriesImageUrl = { null },

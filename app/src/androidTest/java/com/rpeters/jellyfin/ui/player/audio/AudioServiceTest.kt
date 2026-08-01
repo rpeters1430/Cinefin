@@ -100,16 +100,22 @@ class AudioServiceTest {
         controller.prepare()
         InstrumentationRegistry.getInstrumentation().waitForIdleSync()
 
-        controller.dispatchMediaButtonEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MEDIA_PLAY))
+        dispatchMediaButton(KeyEvent.KEYCODE_MEDIA_PLAY)
         InstrumentationRegistry.getInstrumentation().waitForIdleSync()
         assertTrue(controller.playWhenReady)
 
-        controller.dispatchMediaButtonEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MEDIA_PAUSE))
+        dispatchMediaButton(KeyEvent.KEYCODE_MEDIA_PAUSE)
         InstrumentationRegistry.getInstrumentation().waitForIdleSync()
         assertTrue(!controller.playWhenReady)
 
         controller.release()
         context.stopService(Intent(context, AudioService::class.java))
+    }
+
+    private fun dispatchMediaButton(keyCode: Int) {
+        InstrumentationRegistry.getInstrumentation().uiAutomation
+            .executeShellCommand("input keyevent $keyCode")
+            .close()
     }
 
     @Test
