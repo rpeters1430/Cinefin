@@ -1,3 +1,5 @@
+@file:Suppress("LateinitUsage")
+
 package com.rpeters.jellyfin.data.repository
 
 import android.os.Build
