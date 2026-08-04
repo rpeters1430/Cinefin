@@ -1,5 +1,3 @@
-@file:Suppress("LateinitUsage")
-
 package com.rpeters.jellyfin.data.repository
 
 import android.os.Build
@@ -32,13 +30,28 @@ import org.robolectric.util.ReflectionHelpers
 @Config(sdk = [33])
 class GenerativeAiRepositoryTest {
 
+    @Suppress("LateinitUsage")
     private lateinit var remoteConfig: RemoteConfigRepository
+
+    @Suppress("LateinitUsage")
     private lateinit var analytics: AnalyticsHelper
+
+    @Suppress("LateinitUsage")
     private lateinit var primaryNanoModel: MlKitAiTextModel
+
+    @Suppress("LateinitUsage")
     private lateinit var primaryCloudModel: com.rpeters.jellyfin.data.ai.AiTextModel
+
+    @Suppress("LateinitUsage")
     private lateinit var proNanoModel: MlKitAiTextModel
+
+    @Suppress("LateinitUsage")
     private lateinit var proCloudModel: com.rpeters.jellyfin.data.ai.AiTextModel
+
+    @Suppress("LateinitUsage")
     private lateinit var primaryModel: HybridAiTextModel
+
+    @Suppress("LateinitUsage")
     private lateinit var proModel: HybridAiTextModel
 
     @Before

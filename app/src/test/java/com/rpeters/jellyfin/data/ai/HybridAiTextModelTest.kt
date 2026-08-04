@@ -1,5 +1,3 @@
-@file:Suppress("LateinitUsage")
-
 package com.rpeters.jellyfin.data.ai
 
 import android.os.Build
@@ -10,7 +8,7 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -26,6 +24,8 @@ import org.robolectric.util.ReflectionHelpers
 private const val PROMPT = "prompt"
 private const val CLOUD_RESPONSE = "cloud response"
 private const val NANO_RESPONSE = "nano response"
+private const val NANO_BOOM = "nano boom"
+private val STREAM_CHUNKS = listOf("cloud", "stream")
 
 /**
  * Covers HybridAiTextModel's routing logic: the forceCloud bypass, falling back to cloud
@@ -37,8 +37,13 @@ private const val NANO_RESPONSE = "nano response"
 @Config(sdk = [33])
 class HybridAiTextModelTest {
 
+    @Suppress("LateinitUsage")
     private lateinit var remoteConfig: RemoteConfigRepository
+
+    @Suppress("LateinitUsage")
     private lateinit var cloudModel: AiTextModel
+
+    @Suppress("LateinitUsage")
     private lateinit var nanoModel: MlKitAiTextModel
 
     private fun setDeviceIsPixel(isPixel: Boolean) {
@@ -76,12 +81,12 @@ class HybridAiTextModelTest {
 
     @Test
     fun `forceCloud true on stream skips Nano`() = runTest {
-        every { cloudModel.generateTextStream(any(), any()) } returns flowOf("cloud", "stream")
+        every { cloudModel.generateTextStream(any(), any()) } returns STREAM_CHUNKS.asFlow()
         val model = buildModel()
 
         val result = model.generateTextStream(PROMPT, forceCloud = true).toList()
 
-        assertEquals(listOf("cloud", "stream"), result)
+        assertEquals(STREAM_CHUNKS, result)
     }
 
     @Test
@@ -123,7 +128,7 @@ class HybridAiTextModelTest {
 
     @Test
     fun `single Nano failure falls back to cloud for that request but keeps Nano active`() = runTest {
-        coEvery { nanoModel.generateText(any(), any()) } throws RuntimeException("nano boom")
+        coEvery { nanoModel.generateText(any(), any()) } throws RuntimeException(NANO_BOOM)
         coEvery { cloudModel.generateText(any(), any()) } returns CLOUD_RESPONSE
         val model = buildModel()
 
@@ -135,7 +140,7 @@ class HybridAiTextModelTest {
 
     @Test
     fun `circuit breaks after three consecutive Nano failures and stays on cloud`() = runTest {
-        coEvery { nanoModel.generateText(any(), any()) } throws RuntimeException("nano boom")
+        coEvery { nanoModel.generateText(any(), any()) } throws RuntimeException(NANO_BOOM)
         coEvery { cloudModel.generateText(any(), any()) } returns CLOUD_RESPONSE
         val model = buildModel()
 
@@ -152,7 +157,7 @@ class HybridAiTextModelTest {
 
     @Test
     fun `retryDownload resets the circuit breaker`() = runTest {
-        coEvery { nanoModel.generateText(any(), any()) } throws RuntimeException("nano boom")
+        coEvery { nanoModel.generateText(any(), any()) } throws RuntimeException(NANO_BOOM)
         coEvery { cloudModel.generateText(any(), any()) } returns CLOUD_RESPONSE
         coEvery { nanoModel.downloadModel() } returns Unit
         val model = buildModel()
