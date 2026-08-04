@@ -303,7 +303,10 @@ class GenerativeAiRepository @Inject constructor(
      */
     suspend fun smartSearchQuery(userQuery: String): List<String> = withContext(Dispatchers.IO) {
         if (!isAiEnabled()) return@withContext listOf(userQuery)
-        logModelUsage("smartSearchQuery", usesPrimaryModel = false)
+        // Force cloud: this needs reliable JSON/instruction-following, which Nano's smaller
+        // model can't guarantee, and AGENTS.md documents the pro model as cloud-only ("Gemini
+        // 2.5 Flash for complex reasoning").
+        logModelUsage("smartSearchQuery", usesPrimaryModel = false, forceCloud = true)
 
         val keywordLimit = remoteConfig.getLong("ai_search_keyword_limit").toInt()
         val finalLimit = if (keywordLimit <= 0) 5 else keywordLimit
@@ -319,9 +322,9 @@ class GenerativeAiRepository @Inject constructor(
 
         try {
             // Using Pro model for better instruction following on JSON format
-            val text = proModel.generateText(prompt)
+            val text = proModel.generateText(prompt, forceCloud = true)
             val success = text.isNotBlank()
-            analytics.logAiEvent("smart_search", success, getBackendName(false))
+            analytics.logAiEvent("smart_search", success, getBackendName(false, forceCloud = true))
 
             if (text.isBlank()) return@withContext listOf(userQuery)
 

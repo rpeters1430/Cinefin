@@ -100,7 +100,7 @@ class HybridAiTextModel(
 
     override suspend fun generateText(prompt: String, forceCloud: Boolean): String {
         if (forceCloud) {
-            return cloudModel.generateText(prompt)
+            return cloudModel.generateText(prompt, forceCloud = true)
         }
         val model = getActiveModel()
         val isNano = model is MlKitAiTextModel
@@ -132,7 +132,7 @@ class HybridAiTextModel(
 
     override fun generateTextStream(prompt: String, forceCloud: Boolean): Flow<String> {
         if (forceCloud) {
-            return cloudModel.generateTextStream(prompt)
+            return cloudModel.generateTextStream(prompt, forceCloud = true)
         }
         val model = getActiveModel()
         val isNano = model is MlKitAiTextModel
