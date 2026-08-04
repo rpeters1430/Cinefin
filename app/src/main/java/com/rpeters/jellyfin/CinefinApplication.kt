@@ -323,8 +323,9 @@ class CinefinApplication : Application(), SingletonImageLoader.Factory, Configur
             // supported) so HybridAiTextModel can actually route to it instead of always
             // falling back to the cloud API.
             generativeAiRepository.initialize()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            if (e is CancellationException) throw e
             SecureLogger.w(TAG, "Failed to initialize on-device AI backend", e)
         }
     }
