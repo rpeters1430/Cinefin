@@ -2,6 +2,7 @@ package com.rpeters.jellyfin.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rpeters.jellyfin.data.ai.AiDownloadState
 import com.rpeters.jellyfin.data.repository.GenerativeAiRepository
 import com.rpeters.jellyfin.data.repository.IJellyfinRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
@@ -10,6 +11,8 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
 import javax.inject.Inject
@@ -47,24 +50,42 @@ class AiAssistantViewModel @Inject constructor(
             content = "Hello! I'm your Cinefin AI Assistant. Ask me to find movies, recommend something based on your mood, or just chat about your library!",
             isUser = false,
         )
-        _uiState.value = _uiState.value.copy(
-            messages = listOf(welcomeMessage),
-            isOnDeviceAI = false,
-            nanoStatus = "Cloud API only",
-            isDownloadingNano = false,
-            canRetryDownload = false,
-            errorCode = null,
-        )
+        _uiState.update { it.copy(messages = listOf(welcomeMessage)) }
+
+        viewModelScope.launch {
+            combine(
+                generativeAiRepository.downloadState,
+                generativeAiRepository.isNanoActive,
+            ) { state, active -> state to active }
+                .collect { (state, active) ->
+                    // Use update {} (atomic read-modify-write) rather than a plain value=
+                    // read/copy/write: this collector fires independently of sendMessage()'s
+                    // own writes to _uiState, and a plain set here could race with it and
+                    // silently drop a concurrent chat-state update (or vice versa).
+                    _uiState.update { current ->
+                        current.copy(
+                            isOnDeviceAI = active,
+                            nanoStatus = when {
+                                active -> "On-Device (Nano)"
+                                state == AiDownloadState.DOWNLOADING -> "Downloading AI Model..."
+                                state == AiDownloadState.SUPPORTED_NOT_DOWNLOADED -> "AI Model Needs Download"
+                                state == AiDownloadState.FAILED -> "AI Download Failed"
+                                else -> "Cloud API"
+                            },
+                            isDownloadingNano = state == AiDownloadState.DOWNLOADING,
+                            canRetryDownload = state == AiDownloadState.FAILED ||
+                                state == AiDownloadState.SUPPORTED_NOT_DOWNLOADED,
+                        )
+                    }
+                }
+        }
     }
 
     fun sendMessage(query: String) {
         if (query.isBlank()) return
 
         val userMessage = AiMessage(content = query, isUser = true)
-        _uiState.value = _uiState.value.copy(
-            messages = _uiState.value.messages + userMessage,
-            isLoading = true,
-        )
+        _uiState.update { it.copy(messages = it.messages + userMessage, isLoading = true) }
 
         viewModelScope.launch {
             try {
@@ -111,19 +132,13 @@ class AiAssistantViewModel @Inject constructor(
                     recommendedItems = mergedResults.take(10),
                 )
 
-                _uiState.value = _uiState.value.copy(
-                    messages = _uiState.value.messages + aiMessage,
-                    isLoading = false,
-                )
+                _uiState.update { it.copy(messages = it.messages + aiMessage, isLoading = false) }
             } catch (e: Exception) {
                 val errorMessage = AiMessage(
                     content = "Sorry, I encountered an error: ${e.message}",
                     isUser = false,
                 )
-                _uiState.value = _uiState.value.copy(
-                    messages = _uiState.value.messages + errorMessage,
-                    isLoading = false,
-                )
+                _uiState.update { it.copy(messages = it.messages + errorMessage, isLoading = false) }
             }
         }
     }
@@ -131,6 +146,8 @@ class AiAssistantViewModel @Inject constructor(
     fun getImageUrl(item: BaseItemDto): String? = jellyfinRepository.getImageUrl(item.id.toString())
 
     fun retryNanoDownload() {
-        // No-op in cloud-only mode.
+        viewModelScope.launch {
+            generativeAiRepository.retryNanoDownload()
+        }
     }
 }

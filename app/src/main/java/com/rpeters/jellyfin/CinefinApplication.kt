@@ -293,14 +293,40 @@ class CinefinApplication : Application(), SingletonImageLoader.Factory, Configur
 
     private fun initializeAiBackend() {
         applicationScope.launch {
+            val generativeAiRepository = generativeAiRepositoryProvider.get()
+
+            // Runs in its own coroutine: on a fresh install this suspends for the full
+            // Nano download (can take minutes), which must not delay the cloud health
+            // check below — the two are independent signals.
+            launch { initializeOnDeviceAiBackend(generativeAiRepository) }
+
             try {
-                SecureLogger.i(TAG, "Initializing AI backend in background")
-                generativeAiRepositoryProvider.get().checkCloudApiHealth()
+                generativeAiRepository.checkCloudApiHealth()
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 SecureLogger.w(TAG, "Failed background AI health check", e)
             }
+        }
+    }
+
+    // client.checkStatus()/download() (invoked transitively via initialize()) don't document
+    // specific thrown exception types, and this is a best-effort background startup task that
+    // must not crash the app regardless of failure cause.
+    @Suppress("TooGenericExceptionCaught")
+    private suspend fun initializeOnDeviceAiBackend(
+        generativeAiRepository: com.rpeters.jellyfin.data.repository.GenerativeAiRepository,
+    ) {
+        try {
+            SecureLogger.i(TAG, "Initializing on-device AI backend in background")
+            // Checks Gemini Nano availability (and starts the on-device download if
+            // supported) so HybridAiTextModel can actually route to it instead of always
+            // falling back to the cloud API.
+            generativeAiRepository.initialize()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            SecureLogger.w(TAG, "Failed to initialize on-device AI backend", e)
         }
     }
 
