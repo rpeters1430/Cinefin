@@ -144,10 +144,14 @@ class MlKitAiTextModel : AiTextModel {
         }
     }
 
-    override fun generateTextStream(prompt: String, forceCloud: Boolean): Flow<String> =
-        client.generateContentStream(prompt).map { response ->
+    override fun generateTextStream(prompt: String, forceCloud: Boolean): Flow<String> {
+        if (_downloadState.value != AiDownloadState.READY) {
+            throw IllegalStateException("ML Kit model not ready. Current state: ${_downloadState.value}")
+        }
+        return client.generateContentStream(prompt).map { response ->
             response.candidates.firstOrNull()?.text ?: ""
         }
+    }
 
     fun close() {
         client.close()
