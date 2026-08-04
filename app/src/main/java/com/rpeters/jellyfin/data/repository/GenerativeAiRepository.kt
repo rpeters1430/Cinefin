@@ -40,13 +40,30 @@ class GenerativeAiRepository @Inject constructor(
     // Simple memory cache for AI summaries to avoid redundant API calls
     private val summaryCache = mutableMapOf<String, String>()
 
-    private fun getBackendName(usesPrimaryModel: Boolean): String {
+    private fun getBackendName(usesPrimaryModel: Boolean, forceCloud: Boolean = false): String {
+        if (!forceCloud) {
+            val model = if (usesPrimaryModel) getPrimaryModel() else proModel
+            if ((model as? HybridAiTextModel)?.isNanoActive?.value == true) {
+                return if (usesPrimaryModel) "nano" else "pro_nano"
+            }
+        }
         return if (usesPrimaryModel) "cloud" else "pro_cloud"
     }
 
-    private fun logModelUsage(operation: String, usesPrimaryModel: Boolean) {
-        val backend = getBackendName(usesPrimaryModel)
+    private fun logModelUsage(operation: String, usesPrimaryModel: Boolean, forceCloud: Boolean = false) {
+        val backend = getBackendName(usesPrimaryModel, forceCloud)
         Log.d("GenerativeAi", "AI request [$operation] using $backend")
+    }
+
+    /**
+     * Kicks off the on-device Nano availability check (and download, if needed) for both
+     * the primary and pro backends. Must be called once during app startup — otherwise
+     * [HybridAiTextModel] never learns Nano is ready and silently uses the cloud API forever,
+     * even on devices that support on-device inference.
+     */
+    suspend fun initialize() {
+        (primaryModel as? HybridAiTextModel)?.initialize()
+        (proModel as? HybridAiTextModel)?.initialize()
     }
 
     private fun isAiEnabled(): Boolean {
@@ -75,13 +92,13 @@ class GenerativeAiRepository @Inject constructor(
      */
     suspend fun checkCloudApiHealth(): AiHealthResult = withContext(Dispatchers.IO) {
         val prompt = "Reply with exactly: OK"
-        val backend = getBackendName(usesPrimaryModel = true)
+        val backend = getBackendName(usesPrimaryModel = true, forceCloud = true)
         Log.i(
             "GenerativeAi",
             "[GenerativeAiRepository.kt] checkCloudApiHealth start backend=$backend promptChars=${prompt.length}",
         )
         return@withContext try {
-            val response = withTimeout(15_000L) { getPrimaryModel().generateText(prompt).trim() }
+            val response = withTimeout(15_000L) { getPrimaryModel().generateText(prompt, forceCloud = true).trim() }
             val isHealthy = response.contains("OK", ignoreCase = true)
             val normalized = response.take(120)
             Log.i(
@@ -161,7 +178,7 @@ class GenerativeAiRepository @Inject constructor(
     suspend fun analyzeViewingHabits(recentItems: List<BaseItemDto>): String = withContext(Dispatchers.IO) {
         if (!isAiEnabled()) return@withContext "AI analysis disabled."
         if (recentItems.isEmpty()) return@withContext "No viewing history available to analyze."
-        logModelUsage("analyzeViewingHabits", usesPrimaryModel = false)
+        logModelUsage("analyzeViewingHabits", usesPrimaryModel = false, forceCloud = true)
 
         val contextSize = remoteConfig.getLong("ai_history_context_size").toInt().coerceAtLeast(1)
         // Fallback to 10 if config is 0 (which is default for missing numbers)
@@ -196,12 +213,12 @@ class GenerativeAiRepository @Inject constructor(
 
         try {
             // Always use cloud model for user content analysis to avoid Nano safety filter issues
-            val response = proModel.generateText(prompt)
+            val response = proModel.generateText(prompt, forceCloud = true)
             val success = response.isNotBlank()
-            analytics.logAiEvent("mood_analysis", success, getBackendName(false))
+            analytics.logAiEvent("mood_analysis", success, getBackendName(false, forceCloud = true))
             response.ifBlank { "Enjoying the library!" }
         } catch (e: Exception) {
-            analytics.logAiEvent("mood_analysis", false, getBackendName(false))
+            analytics.logAiEvent("mood_analysis", false, getBackendName(false, forceCloud = true))
             "Enjoying the library!"
         }
     }
@@ -333,7 +350,7 @@ class GenerativeAiRepository @Inject constructor(
         userPreferences: String? = null,
     ): String = withContext(Dispatchers.IO) {
         if (!isAiEnabled()) return@withContext "AI recommendations disabled."
-        logModelUsage("generateRecommendations", usesPrimaryModel = false)
+        logModelUsage("generateRecommendations", usesPrimaryModel = false, forceCloud = true)
 
         val contextSize = remoteConfig.getLong("ai_history_context_size").toInt().coerceAtLeast(1)
         val finalContextSize = if (contextSize == 0) 10 else contextSize
@@ -362,12 +379,12 @@ class GenerativeAiRepository @Inject constructor(
 
         try {
             // Use cloud model for user content to avoid Nano safety filter issues
-            val response = proModel.generateText(prompt)
+            val response = proModel.generateText(prompt, forceCloud = true)
             val success = response.isNotBlank()
-            analytics.logAiEvent("recommendations", success, getBackendName(false))
+            analytics.logAiEvent("recommendations", success, getBackendName(false, forceCloud = true))
             response.ifBlank { "No recommendations available." }
         } catch (e: Exception) {
-            analytics.logAiEvent("recommendations", false, getBackendName(false))
+            analytics.logAiEvent("recommendations", false, getBackendName(false, forceCloud = true))
             "Unable to generate recommendations at this time."
         }
     }
@@ -752,7 +769,7 @@ class GenerativeAiRepository @Inject constructor(
             return@withContext generateGenericVibe(itemTitle, itemGenres, itemOverview)
         }
 
-        logModelUsage("whyYoullLoveThis", usesPrimaryModel = false)
+        logModelUsage("whyYoullLoveThis", usesPrimaryModel = false, forceCloud = true)
         val historySize = remoteConfig.getLong("ai_history_context_size").toInt()
             .let { if (it <= 0) 10 else it }
 
@@ -812,10 +829,10 @@ class GenerativeAiRepository @Inject constructor(
         try {
             // Use cloud model for user content to avoid Nano safety filter issues
             val response = withTimeout(30_000L) {
-                proModel.generateText(prompt)
+                proModel.generateText(prompt, forceCloud = true)
             }
             val success = response.isNotBlank()
-            analytics.logAiEvent("why_youll_love_this", success, getBackendName(false))
+            analytics.logAiEvent("why_youll_love_this", success, getBackendName(false, forceCloud = true))
             
             if (response.isNotBlank()) {
                 response.trim()
@@ -825,7 +842,7 @@ class GenerativeAiRepository @Inject constructor(
         } catch (e: Exception) {
             if (e is kotlinx.coroutines.CancellationException) throw e
             Log.e("GenerativeAi", "Why you'll love this failed for: $itemTitle", e)
-            analytics.logAiEvent("why_youll_love_this", false, getBackendName(false))
+            analytics.logAiEvent("why_youll_love_this", false, getBackendName(false, forceCloud = true))
             
             // Fallback to generic vibe if personalized pitch fails
             generateGenericVibe(itemTitle, itemGenres, itemOverview)
@@ -869,7 +886,7 @@ class GenerativeAiRepository @Inject constructor(
     ): Map<String, List<BaseItemDto>> = withContext(Dispatchers.IO) {
         if (!isAiEnabled() || !remoteConfig.getBoolean("ai_mood_collections")) return@withContext emptyMap()
         if (library.isEmpty()) return@withContext emptyMap()
-        logModelUsage("moodCollections", usesPrimaryModel = false)
+        logModelUsage("moodCollections", usesPrimaryModel = false, forceCloud = true)
 
         val maxCollections = remoteConfig.getLong("ai_mood_collections_count").toInt()
             .let { if (it <= 0) 3 else it }
@@ -925,10 +942,10 @@ class GenerativeAiRepository @Inject constructor(
         try {
             // Use cloud model for user content to avoid Nano safety filter issues
             val response = withTimeout(15_000L) {
-                proModel.generateText(prompt)
+                proModel.generateText(prompt, forceCloud = true)
             }
             val success = response.isNotBlank()
-            analytics.logAiEvent("mood_collections", success, getBackendName(false))
+            analytics.logAiEvent("mood_collections", success, getBackendName(false, forceCloud = true))
 
             if (response.isBlank()) return@withContext emptyMap()
 
@@ -971,7 +988,7 @@ class GenerativeAiRepository @Inject constructor(
                 .associate { (name, items) -> name to items }
         } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
             Log.w("GenerativeAi", "Mood collections generation timed out")
-            analytics.logAiEvent("mood_collections", false, getBackendName(false))
+            analytics.logAiEvent("mood_collections", false, getBackendName(false, forceCloud = true))
             emptyMap()
         }
     }
@@ -995,7 +1012,7 @@ class GenerativeAiRepository @Inject constructor(
     ): List<BaseItemDto> = withContext(Dispatchers.IO) {
         if (!isAiEnabled() || !remoteConfig.getBoolean("ai_smart_recommendations")) return@withContext emptyList()
         if (library.isEmpty()) return@withContext emptyList()
-        logModelUsage("smartRecommendations", usesPrimaryModel = false)
+        logModelUsage("smartRecommendations", usesPrimaryModel = false, forceCloud = true)
 
         val maxRecommendations = remoteConfig.getLong("ai_smart_recommendations_limit").toInt()
             .let { if (it <= 0) 10 else it }
@@ -1057,10 +1074,10 @@ class GenerativeAiRepository @Inject constructor(
             // Use cloud model for user content to avoid Nano safety filter issues
             // Increased timeout to 30s for Firebase AI API (can be slow on first calls)
             val response = withTimeout(30_000L) {
-                proModel.generateText(prompt)
+                proModel.generateText(prompt, forceCloud = true)
             }
             val success = response.isNotBlank()
-            analytics.logAiEvent("smart_recommendations", success, getBackendName(false))
+            analytics.logAiEvent("smart_recommendations", success, getBackendName(false, forceCloud = true))
 
             if (response.isBlank()) return@withContext emptyList()
 
@@ -1073,7 +1090,7 @@ class GenerativeAiRepository @Inject constructor(
             }.take(maxRecommendations)
         } catch (e: Exception) {
             if (e is CancellationException) throw e
-            analytics.logAiEvent("smart_recommendations", false, getBackendName(false))
+            analytics.logAiEvent("smart_recommendations", false, getBackendName(false, forceCloud = true))
             emptyList()
         }
     }

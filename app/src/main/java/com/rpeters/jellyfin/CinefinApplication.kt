@@ -295,7 +295,12 @@ class CinefinApplication : Application(), SingletonImageLoader.Factory, Configur
         applicationScope.launch {
             try {
                 SecureLogger.i(TAG, "Initializing AI backend in background")
-                generativeAiRepositoryProvider.get().checkCloudApiHealth()
+                val generativeAiRepository = generativeAiRepositoryProvider.get()
+                // Checks Gemini Nano availability (and starts the on-device download if
+                // supported) so HybridAiTextModel can actually route to it instead of
+                // always falling back to the cloud API.
+                generativeAiRepository.initialize()
+                generativeAiRepository.checkCloudApiHealth()
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

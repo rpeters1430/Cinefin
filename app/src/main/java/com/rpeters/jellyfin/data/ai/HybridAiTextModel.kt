@@ -20,9 +20,9 @@ class HybridAiTextModel(
     private val remoteConfig: RemoteConfigRepository,
     private val cloudModel: AiTextModel,
     private val label: String,
+    private val nanoModel: MlKitAiTextModel,
 ) : AiTextModel {
 
-    private val nanoModel = MlKitAiTextModel()
     private val failureCount = AtomicInteger(0)
     private var circuitBroken = false
 
@@ -98,7 +98,10 @@ class HybridAiTextModel(
         return if (_isNanoActive.value) nanoModel else cloudModel
     }
 
-    override suspend fun generateText(prompt: String): String {
+    override suspend fun generateText(prompt: String, forceCloud: Boolean): String {
+        if (forceCloud) {
+            return cloudModel.generateText(prompt)
+        }
         val model = getActiveModel()
         val isNano = model is MlKitAiTextModel
 
@@ -127,7 +130,10 @@ class HybridAiTextModel(
         }
     }
 
-    override fun generateTextStream(prompt: String): Flow<String> {
+    override fun generateTextStream(prompt: String, forceCloud: Boolean): Flow<String> {
+        if (forceCloud) {
+            return cloudModel.generateTextStream(prompt)
+        }
         val model = getActiveModel()
         val isNano = model is MlKitAiTextModel
 

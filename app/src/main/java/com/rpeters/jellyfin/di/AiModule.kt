@@ -8,6 +8,7 @@ import com.google.firebase.ai.type.RequestOptions
 import com.google.firebase.ai.type.generationConfig
 import com.rpeters.jellyfin.data.ai.AiTextModel
 import com.rpeters.jellyfin.data.ai.HybridAiTextModel
+import com.rpeters.jellyfin.data.ai.MlKitAiTextModel
 import com.rpeters.jellyfin.data.repository.RemoteConfigRepository
 import dagger.Module
 import dagger.Provides
@@ -25,11 +26,19 @@ object AiModule {
     private const val TAG = "AiModule"
     private const val BASELINE_MODEL = "gemini-3-flash-preview"
 
+    // Shared by both HybridAiTextModel wrappers below: Nano's download/readiness state is a
+    // single on-device resource, so primary and pro must not each drive their own separate
+    // download.
+    @Provides
+    @Singleton
+    fun provideMlKitAiTextModel(): MlKitAiTextModel = MlKitAiTextModel()
+
     @Provides
     @Singleton
     @Named("primary-model")
     fun providePrimaryModel(
         remoteConfig: RemoteConfigRepository,
+        nanoModel: MlKitAiTextModel,
     ): AiTextModel {
         val cloudModel = FirebaseAiTextModel(
             remoteConfig = remoteConfig,
@@ -42,6 +51,7 @@ object AiModule {
             remoteConfig = remoteConfig,
             cloudModel = cloudModel,
             label = "primary",
+            nanoModel = nanoModel,
         )
     }
 
@@ -50,6 +60,7 @@ object AiModule {
     @Named("pro-model")
     fun provideProModel(
         remoteConfig: RemoteConfigRepository,
+        nanoModel: MlKitAiTextModel,
     ): AiTextModel {
         val cloudModel = FirebaseAiTextModel(
             remoteConfig = remoteConfig,
@@ -63,6 +74,7 @@ object AiModule {
             remoteConfig = remoteConfig,
             cloudModel = cloudModel,
             label = "pro",
+            nanoModel = nanoModel,
         )
     }
 
@@ -96,7 +108,7 @@ object AiModule {
             )
         }
 
-        override suspend fun generateText(prompt: String): String {
+        override suspend fun generateText(prompt: String, forceCloud: Boolean): String {
             val model = getModel()
             val currentModelName = remoteConfig.getString(modelNameKey).ifBlank { BASELINE_MODEL }
             Log.i(
@@ -121,7 +133,7 @@ object AiModule {
             }
         }
 
-        override fun generateTextStream(prompt: String): Flow<String> {
+        override fun generateTextStream(prompt: String, forceCloud: Boolean): Flow<String> {
             val model = getModel()
             val currentModelName = remoteConfig.getString(modelNameKey).ifBlank { BASELINE_MODEL }
             Log.i(

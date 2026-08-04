@@ -10,6 +10,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 /**
@@ -35,44 +37,51 @@ class MlKitAiTextModel : AiTextModel {
 
     private val client = Generation.getClient()
 
+    // Shared between the primary and pro HybridAiTextModel wrappers, which may both
+    // call initialize() around the same time on app startup.
+    private val initMutex = Mutex()
+
     /**
      * Initializes the model: checks availability and triggers download if supported.
      * Suspends until the model is either READY, FAILED, or NOT_SUPPORTED.
      */
     suspend fun initialize() = withContext(Dispatchers.IO) {
         if (_downloadState.value == AiDownloadState.READY) return@withContext
+        initMutex.withLock {
+            if (_downloadState.value == AiDownloadState.READY) return@withLock
 
-        try {
-            Log.d("MlKitAi", "Checking Gemini Nano status...")
-            val status = client.checkStatus()
+            try {
+                Log.d("MlKitAi", "Checking Gemini Nano status...")
+                val status = client.checkStatus()
 
-            when (status) {
-                FeatureStatus.AVAILABLE -> {
-                    _downloadState.value = AiDownloadState.READY
-                    Log.i("MlKitAi", "Gemini Nano is READY")
+                when (status) {
+                    FeatureStatus.AVAILABLE -> {
+                        _downloadState.value = AiDownloadState.READY
+                        Log.i("MlKitAi", "Gemini Nano is READY")
+                    }
+                    FeatureStatus.DOWNLOADABLE -> {
+                        _downloadState.value = AiDownloadState.SUPPORTED_NOT_DOWNLOADED
+                        Log.i("MlKitAi", "Gemini Nano is SUPPORTED but needs download")
+                        downloadModel()
+                    }
+                    FeatureStatus.DOWNLOADING -> {
+                        Log.i("MlKitAi", "Gemini Nano is ALREADY DOWNLOADING — waiting for completion")
+                        _downloadState.value = AiDownloadState.DOWNLOADING
+                        collectDownloadFlow()
+                    }
+                    FeatureStatus.UNAVAILABLE -> {
+                        _downloadState.value = AiDownloadState.NOT_SUPPORTED
+                        Log.w("MlKitAi", "Gemini Nano is NOT SUPPORTED on this device")
+                    }
+                    else -> {
+                        _downloadState.value = AiDownloadState.FAILED
+                        Log.e("MlKitAi", "Unexpected Gemini Nano status: $status")
+                    }
                 }
-                FeatureStatus.DOWNLOADABLE -> {
-                    _downloadState.value = AiDownloadState.SUPPORTED_NOT_DOWNLOADED
-                    Log.i("MlKitAi", "Gemini Nano is SUPPORTED but needs download")
-                    downloadModel()
-                }
-                FeatureStatus.DOWNLOADING -> {
-                    Log.i("MlKitAi", "Gemini Nano is ALREADY DOWNLOADING — waiting for completion")
-                    _downloadState.value = AiDownloadState.DOWNLOADING
-                    collectDownloadFlow()
-                }
-                FeatureStatus.UNAVAILABLE -> {
-                    _downloadState.value = AiDownloadState.NOT_SUPPORTED
-                    Log.w("MlKitAi", "Gemini Nano is NOT SUPPORTED on this device")
-                }
-                else -> {
-                    _downloadState.value = AiDownloadState.FAILED
-                    Log.e("MlKitAi", "Unexpected Gemini Nano status: $status")
-                }
+            } catch (e: Exception) {
+                Log.e("MlKitAi", "Failed to check Gemini Nano status", e)
+                _downloadState.value = AiDownloadState.FAILED
             }
-        } catch (e: Exception) {
-            Log.e("MlKitAi", "Failed to check Gemini Nano status", e)
-            _downloadState.value = AiDownloadState.FAILED
         }
     }
 
@@ -114,7 +123,7 @@ class MlKitAiTextModel : AiTextModel {
         }
     }
 
-    override suspend fun generateText(prompt: String): String = withContext(Dispatchers.IO) {
+    override suspend fun generateText(prompt: String, forceCloud: Boolean): String = withContext(Dispatchers.IO) {
         if (_downloadState.value != AiDownloadState.READY) {
             throw IllegalStateException("ML Kit model not ready. Current state: ${_downloadState.value}")
         }
@@ -128,7 +137,7 @@ class MlKitAiTextModel : AiTextModel {
         }
     }
 
-    override fun generateTextStream(prompt: String): Flow<String> =
+    override fun generateTextStream(prompt: String, forceCloud: Boolean): Flow<String> =
         client.generateContentStream(prompt).map { response ->
             response.candidates.firstOrNull()?.text ?: ""
         }

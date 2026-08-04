@@ -2,6 +2,7 @@ package com.rpeters.jellyfin.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rpeters.jellyfin.data.ai.AiDownloadState
 import com.rpeters.jellyfin.data.repository.GenerativeAiRepository
 import com.rpeters.jellyfin.data.repository.IJellyfinRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
@@ -10,6 +11,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
 import javax.inject.Inject
@@ -47,14 +49,29 @@ class AiAssistantViewModel @Inject constructor(
             content = "Hello! I'm your Cinefin AI Assistant. Ask me to find movies, recommend something based on your mood, or just chat about your library!",
             isUser = false,
         )
-        _uiState.value = _uiState.value.copy(
-            messages = listOf(welcomeMessage),
-            isOnDeviceAI = false,
-            nanoStatus = "Cloud API only",
-            isDownloadingNano = false,
-            canRetryDownload = false,
-            errorCode = null,
-        )
+        _uiState.value = _uiState.value.copy(messages = listOf(welcomeMessage))
+
+        viewModelScope.launch {
+            combine(
+                generativeAiRepository.downloadState,
+                generativeAiRepository.isNanoActive,
+            ) { state, active -> state to active }
+                .collect { (state, active) ->
+                    _uiState.value = _uiState.value.copy(
+                        isOnDeviceAI = active,
+                        nanoStatus = when {
+                            active -> "On-Device (Nano)"
+                            state == AiDownloadState.DOWNLOADING -> "Downloading AI Model..."
+                            state == AiDownloadState.SUPPORTED_NOT_DOWNLOADED -> "AI Model Needs Download"
+                            state == AiDownloadState.FAILED -> "AI Download Failed"
+                            else -> "Cloud API"
+                        },
+                        isDownloadingNano = state == AiDownloadState.DOWNLOADING,
+                        canRetryDownload = state == AiDownloadState.FAILED ||
+                            state == AiDownloadState.SUPPORTED_NOT_DOWNLOADED,
+                    )
+                }
+        }
     }
 
     fun sendMessage(query: String) {
@@ -131,6 +148,8 @@ class AiAssistantViewModel @Inject constructor(
     fun getImageUrl(item: BaseItemDto): String? = jellyfinRepository.getImageUrl(item.id.toString())
 
     fun retryNanoDownload() {
-        // No-op in cloud-only mode.
+        viewModelScope.launch {
+            generativeAiRepository.retryNanoDownload()
+        }
     }
 }
