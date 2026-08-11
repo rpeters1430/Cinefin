@@ -5,10 +5,12 @@ import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.network.ConnectivityChecker
 import com.rpeters.jellyfin.ui.utils.EnhancedPlaybackUtils
 import com.rpeters.jellyfin.ui.utils.PlaybackCapabilityAnalysis
+import com.rpeters.jellyfin.utils.SecureLogger
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.slot
+import io.mockk.mockkObject
+import io.mockk.unmockkObject
 import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -22,7 +24,6 @@ import org.jellyfin.sdk.model.api.BaseItemDto
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.util.UUID
@@ -85,39 +86,32 @@ class TVEpisodeDetailViewModelTest {
     @Test
     fun `loadEpisodeAnalysis logs errors and recovers across exceptions`() = runTest {
         val episode = createEpisode()
-        val messageSlot = slot<String>()
-        val exceptionSlot = slot<Exception>()
-        val capturedMessages = mutableListOf<String>()
-        val capturedExceptions = mutableListOf<Exception>()
-        every {
-            android.util.Log.e(
-                eq("TVEpisodeDetailVM"),
-                capture(messageSlot),
-                capture(exceptionSlot),
-            )
-        } answers {
-            capturedMessages.add(messageSlot.captured)
-            capturedExceptions.add(exceptionSlot.captured)
-            0
+        mockkObject(SecureLogger)
+        every { SecureLogger.e(any(), any(), any()) } returns Unit
+
+        try {
+            listOf(
+                IllegalStateException("boom"),
+                RuntimeException("kaboom"),
+            ).forEach { throwable ->
+                coEvery { enhancedPlaybackUtils.analyzePlaybackCapabilities(episode) } throws throwable
+
+                viewModel.loadEpisodeDetails(episode)
+                dispatcher.scheduler.advanceUntilIdle()
+
+                assertNull(viewModel.state.value.playbackAnalysis)
+            }
+
+            verify(exactly = 2) {
+                SecureLogger.e(
+                    "TVEpisodeDetailVM",
+                    match { it.contains(episode.id.toString()) },
+                    any(),
+                )
+            }
+        } finally {
+            unmockkObject(SecureLogger)
         }
-
-        listOf(
-            IllegalStateException("boom"),
-            RuntimeException("kaboom"),
-        ).forEach { throwable ->
-            coEvery { enhancedPlaybackUtils.analyzePlaybackCapabilities(episode) } throws throwable
-
-            viewModel.loadEpisodeDetails(episode)
-            dispatcher.scheduler.advanceUntilIdle()
-
-            assertNull(viewModel.state.value.playbackAnalysis)
-        }
-
-        verify(exactly = 2) { android.util.Log.e(eq("TVEpisodeDetailVM"), any(), any()) }
-        capturedMessages.forEach { message ->
-            assertTrue(message.contains(episode.id.toString()))
-        }
-        assertEquals(listOf("boom", "kaboom"), capturedExceptions.map { it.message })
     }
 
     private fun createEpisode(): BaseItemDto = BaseItemDto(

@@ -210,6 +210,13 @@ class TVEpisodeDetailViewModel @Inject constructor(
                 enhancedPlaybackUtils.analyzePlaybackCapabilities(episode)
             } catch (e: CancellationException) {
                 throw e
+            } catch (e: Exception) {
+                SecureLogger.e(
+                    "TVEpisodeDetailVM",
+                    "Failed to analyze playback capabilities for episode ${episode.id}",
+                    e,
+                )
+                null
             }
             _state.value = _state.value.copy(playbackAnalysis = analysis)
         }
