@@ -101,7 +101,15 @@ class CastSessionController @Inject constructor(
 
             override fun onSessionStarting(session: CastSession) {}
             override fun onSessionStartFailed(session: CastSession, error: Int) {
-                stateStore.setError("Failed to start Cast session (error $error)")
+                val errorMessage = when (error) {
+                    com.google.android.gms.cast.CastStatusCodes.NETWORK_ERROR -> "Cast network connection failed"
+                    com.google.android.gms.cast.CastStatusCodes.TIMEOUT -> "Cast connection timed out"
+                    com.google.android.gms.cast.CastStatusCodes.AUTHENTICATION_FAILED -> "Cast authentication failed"
+                    com.google.android.gms.cast.CastStatusCodes.FAILED -> "Failed to connect to Cast device"
+                    com.google.android.gms.cast.CastStatusCodes.INVALID_REQUEST -> "Invalid Cast session request"
+                    else -> "Failed to start Cast session (error $error)"
+                }
+                stateStore.setError(errorMessage)
             }
             override fun onSessionEnding(session: CastSession) {}
             override fun onSessionResuming(session: CastSession, sessionId: String) {}

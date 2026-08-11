@@ -107,9 +107,12 @@ class VideoPlayerPlaybackManager @Inject constructor(
             .setEnableMediaCodecVideoRendererDurationToProgressUs(true)
             .setAllowedVideoJoiningTimeMs(5000)
 
+        val extractorsFactory = androidx.media3.extractor.DefaultExtractorsFactory()
+            .setDisableArtworkMetadata(true)
+
         val httpFactory = androidx.media3.datasource.okhttp.OkHttpDataSource.Factory(okHttpClient)
         val dataSourceFactory = androidx.media3.datasource.DefaultDataSource.Factory(applicationContext, httpFactory)
-        val mediaSourceFactory = androidx.media3.exoplayer.source.DefaultMediaSourceFactory(dataSourceFactory)
+        val mediaSourceFactory = androidx.media3.exoplayer.source.DefaultMediaSourceFactory(dataSourceFactory, extractorsFactory)
 
         trackSelector = DefaultTrackSelector(applicationContext).apply {
             val params = buildUponParameters()
@@ -130,6 +133,7 @@ class VideoPlayerPlaybackManager @Inject constructor(
             .build()
 
         exoPlayer = ExoPlayer.Builder(applicationContext)
+            .enablePerStreamMediaProgression(true)
             .setSeekBackIncrementMs(10_000)
             .setSeekForwardIncrementMs(10_000)
             .setMediaSourceFactory(mediaSourceFactory)

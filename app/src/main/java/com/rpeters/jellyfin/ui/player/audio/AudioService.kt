@@ -63,7 +63,13 @@ class AudioService : androidx.media3.session.MediaSessionService() {
             .setContentType(androidx.media3.common.C.AUDIO_CONTENT_TYPE_MUSIC)
             .build()
 
+        val extractorsFactory = androidx.media3.extractor.DefaultExtractorsFactory()
+            .setDisableArtworkMetadata(true)
+        val mediaSourceFactory = androidx.media3.exoplayer.source.DefaultMediaSourceFactory(this, extractorsFactory)
+
         player = ExoPlayer.Builder(this)
+            .setMediaSourceFactory(mediaSourceFactory)
+            .enablePerStreamMediaProgression(true)
             .setAudioAttributes(audioAttributes, true)
             .setHandleAudioBecomingNoisy(true)
             .build().apply {
