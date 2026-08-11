@@ -30,6 +30,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
@@ -85,6 +86,9 @@ class ServerConnectionViewModelTest {
         discoveryRepository = mockk(relaxed = true)
         offlineDownloadManager = mockk(relaxed = true)
         offlineDownloadManagerProvider = Provider { offlineDownloadManager }
+        every { discoveryRepository.discoverServers() } returns flowOf(emptyList())
+        every { connectivityChecker.observeNetworkConnectivity() } returns flowOf(true)
+        every { connectivityChecker.isOnline() } returns true
         every { offlineDownloadManager.downloads } returns MutableStateFlow(emptyList())
 
         every { repository.isConnectedFlow } returns MutableStateFlow(false)
