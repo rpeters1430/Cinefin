@@ -108,8 +108,8 @@ class MainAppViewModelHomeVideosTest {
 
     @Test
     fun `home video library only exposes its own items`() = runTest {
-        val libraryA = "libA"
-        val libraryB = "libB"
+        val libraryA = UUID.randomUUID().toString()
+        val libraryB = UUID.randomUUID().toString()
         val itemA = BaseItemDto(id = UUID.randomUUID(), name = "A", type = BaseItemKind.VIDEO)
         val itemB = BaseItemDto(id = UUID.randomUUID(), name = "B", type = BaseItemKind.VIDEO)
 

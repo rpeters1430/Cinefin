@@ -128,7 +128,7 @@ class HomeViewModel @Inject constructor(
                     Log.w(TAG, "Failed to load libraries: ${result.message}")
                 }
                 _homeState.value = _homeState.value.copy(
-                    errorMessage = "Failed to load libraries: ${result.message}",
+                    errorMessage = result.message,
                 )
             }
             is ApiResult.Loading -> {

@@ -41,14 +41,14 @@ class PlaybackProgressManager @Inject constructor(
     private val connectivityChecker: ConnectivityChecker,
     private val userRepository: JellyfinUserRepository,
     private val offlineDownloadManager: com.rpeters.jellyfin.data.offline.OfflineDownloadManager,
+    private val ioDispatcher: kotlinx.coroutines.CoroutineDispatcher = Dispatchers.IO,
 ) : DefaultLifecycleObserver {
 
     private val _playbackProgress = MutableStateFlow(PlaybackProgress())
     val playbackProgress: StateFlow<PlaybackProgress> = _playbackProgress.asStateFlow()
 
     // Create a managed scope for fire-and-forget operations
-    // This is a singleton, so the scope lives as long as the app
-    private val managerScope = CoroutineScope(Dispatchers.Default + Job())
+    private val managerScope = CoroutineScope(ioDispatcher + Job())
     private var progressSyncJob: Job? = null
 
     private var currentItemId: String = ""

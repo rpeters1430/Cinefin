@@ -103,6 +103,9 @@ class MainAppViewModelLibraryLoadTest {
         every { repository.currentServerFlow } returns currentServerFlow
         every { repository.isConnectedFlow } returns isConnectedFlow
 
+        every { authRepository.currentServer } returns currentServerFlow
+        every { authRepository.isConnected } returns isConnectedFlow
+
         every { authRepository.isTokenExpired() } returns false
         coEvery { authRepository.reAuthenticate() } returns true
 
@@ -538,6 +541,7 @@ class MainAppViewModelLibraryLoadTest {
         coEvery { mediaRepository.getUserLibraries(any()) } returns ApiResult.Success(listOf(library))
         coEvery { mediaRepository.getRecentlyAdded(any(), any()) } returns ApiResult.Success(listOf(recentlyAdded))
         coEvery { mediaRepository.getContinueWatching(any()) } returns ApiResult.Success(listOf(continueWatching))
+        coEvery { mediaRepository.getNextUp() } returns ApiResult.Success(emptyList())
         coEvery { userRepository.getCurrentUser() } returns ApiResult.Success(userDetails)
         coEvery { mediaRepository.getRecentlyAddedByType(any(), any(), any()) } returns ApiResult.Success(emptyList())
 
@@ -569,6 +573,7 @@ class MainAppViewModelLibraryLoadTest {
             accessToken = "token",
             userId = "user",
             isConnected = true,
+            loginTimestamp = System.currentTimeMillis(),
         )
         currentServerFlow.value = server
 
@@ -576,7 +581,6 @@ class MainAppViewModelLibraryLoadTest {
         coEvery { authRepository.reAuthenticate() } returns false
         every { authRepository.isTokenExpired() } returns true
         every { authRepository.isUserAuthenticated() } returns true
-        every { authRepository.getCurrentServer() } returns server
 
         val library = BaseItemDto(
             id = UUID.randomUUID(),
@@ -588,6 +592,7 @@ class MainAppViewModelLibraryLoadTest {
         coEvery { mediaRepository.getUserLibraries(any()) } returns ApiResult.Success(listOf(library))
         coEvery { mediaRepository.getRecentlyAdded(any(), any()) } returns ApiResult.Success(emptyList())
         coEvery { mediaRepository.getContinueWatching(any()) } returns ApiResult.Success(emptyList())
+        coEvery { mediaRepository.getNextUp() } returns ApiResult.Success(emptyList())
         coEvery { userRepository.getCurrentUser() } returns ApiResult.Error("Fail")
         coEvery { mediaRepository.getRecentlyAddedByType(any(), any(), any()) } returns ApiResult.Success(emptyList())
 

@@ -205,7 +205,7 @@ class CertificatePinningManagerTest {
         certPinningManager.validatePins(hostname, listOf(mockCert))
     }
 
-    @Test(expected = PinningValidationException::class)
+    @Test
     fun `validatePins throws exception when certificate does not match stored pin`() = runTest {
         val hostname = "jellyfin.example.com"
         val mockCert: X509Certificate = mockk()
@@ -228,7 +228,10 @@ class CertificatePinningManagerTest {
         } returns flowOf(json.toString())
 
         // Should throw PinningValidationException for pin mismatch
-        certPinningManager.validatePins(hostname, listOf(mockCert))
+        val error = runCatching {
+            certPinningManager.validatePins(hostname, listOf(mockCert))
+        }.exceptionOrNull()
+        assertTrue("Should throw PinningValidationException", error is PinningValidationException)
     }
 
     @Test

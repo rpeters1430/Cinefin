@@ -18,6 +18,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -56,16 +57,21 @@ class JellyfinAuthRefreshManagerTest {
     @Test
     fun `simultaneous unauthorized refresh requests execute a single refresh`() = runBlocking {
         coEvery { authRepository.forceReAuthenticate() } coAnswers {
-            delay(100)
+            delay(50)
             true
         }
         every { authRepository.getCurrentServer() } returns mockk {
             every { accessToken } returns "shared-token"
         }
 
+        val testRefreshManager = JellyfinAuthRefreshManager(
+            authRepository = authRepository,
+            applicationScope = CoroutineScope(Dispatchers.Default + Job()),
+        )
+
         val tokens = (1..10).map {
             async(Dispatchers.Default) {
-                refreshManager.refreshAfterUnauthorized(attempt = 1)
+                testRefreshManager.refreshAfterUnauthorized(attempt = 1)
             }
         }.awaitAll()
 
@@ -76,8 +82,14 @@ class JellyfinAuthRefreshManagerTest {
     @Test
     fun `returns null when all refresh attempts fail`() = runBlocking {
         coEvery { authRepository.forceReAuthenticate() } returns false
+        every { authRepository.getCurrentServer() } returns null
 
-        val token = refreshManager.refreshAfterUnauthorized(attempt = 1)
+        val testRefreshManager = JellyfinAuthRefreshManager(
+            authRepository = authRepository,
+            applicationScope = CoroutineScope(Dispatchers.Default + Job()),
+        )
+
+        val token = testRefreshManager.refreshAfterUnauthorized(attempt = 1)
 
         assertNull(token)
         coVerify(exactly = 3) { authRepository.forceReAuthenticate() }

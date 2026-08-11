@@ -244,9 +244,7 @@ class PinningTrustManagerTest {
         val storedPin = "sha256/original_pin"
         val actualPin = "sha256/different_pin"
 
-        coEvery {
-            mockCertPinningManager.getStoredPinRecord(hostname)
-        } returns PinnedCertificateRecord(
+        val record = PinnedCertificateRecord(
             hostname = hostname,
             primaryPin = storedPin,
             backupPins = emptyList(),
@@ -254,7 +252,16 @@ class PinningTrustManagerTest {
             lastValidatedEpochMillis = 1L,
             expiresAtEpochMillis = Long.MAX_VALUE,
         )
+        coEvery {
+            mockCertPinningManager.getStoredPinRecord(hostname)
+        } returns record
         coEvery { mockCertPinningManager.computeCertificatePin(mockCert) } returns actualPin
+        coEvery { mockCertPinningManager.validatePins(hostname, any()) } throws PinningValidationException.PinMismatch(
+            hostname = hostname,
+            pinRecord = record,
+            attemptedPins = listOf(actualPin),
+            certificateDetails = emptyList(),
+        )
 
         // Should throw CertificateException for pin mismatch
         val error = runCatching {

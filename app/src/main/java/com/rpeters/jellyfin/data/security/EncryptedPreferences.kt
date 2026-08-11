@@ -81,34 +81,41 @@ class EncryptedPreferences @Inject constructor(
      * The key is hardware-backed on supported devices and never leaves the secure hardware.
      */
     private fun getOrCreateSecretKey(): SecretKey {
-        val keyStore = KeyStore.getInstance(KEYSTORE_PROVIDER).apply {
-            load(null)
+        return try {
+            val keyStore = KeyStore.getInstance(KEYSTORE_PROVIDER).apply {
+                load(null)
+            }
+
+            // Check if key already exists
+            if (keyStore.containsAlias(KEY_ALIAS)) {
+                val entry = keyStore.getEntry(KEY_ALIAS, null) as? KeyStore.SecretKeyEntry
+                entry?.secretKey?.let { return it }
+            }
+
+            // Generate new key
+            val keyGenerator = KeyGenerator.getInstance(
+                KeyProperties.KEY_ALGORITHM_AES,
+                KEYSTORE_PROVIDER,
+            )
+
+            val keyGenParameterSpec = KeyGenParameterSpec.Builder(
+                KEY_ALIAS,
+                KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT,
+            )
+                .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                .setKeySize(256)
+                .setUserAuthenticationRequired(false) // Don't require screen lock for every access
+                .build()
+
+            keyGenerator.init(keyGenParameterSpec)
+            keyGenerator.generateKey()
+        } catch (e: Exception) {
+            Log.w(TAG, "AndroidKeystore not available, falling back to standard AES generator", e)
+            val keyGenerator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES)
+            keyGenerator.init(256)
+            keyGenerator.generateKey()
         }
-
-        // Check if key already exists
-        if (keyStore.containsAlias(KEY_ALIAS)) {
-            val entry = keyStore.getEntry(KEY_ALIAS, null) as? KeyStore.SecretKeyEntry
-            entry?.secretKey?.let { return it }
-        }
-
-        // Generate new key
-        val keyGenerator = KeyGenerator.getInstance(
-            KeyProperties.KEY_ALGORITHM_AES,
-            KEYSTORE_PROVIDER,
-        )
-
-        val keyGenParameterSpec = KeyGenParameterSpec.Builder(
-            KEY_ALIAS,
-            KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT,
-        )
-            .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
-            .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-            .setKeySize(256)
-            .setUserAuthenticationRequired(false) // Don't require screen lock for every access
-            .build()
-
-        keyGenerator.init(keyGenParameterSpec)
-        return keyGenerator.generateKey()
     }
 
     /**

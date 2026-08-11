@@ -229,6 +229,13 @@ class ConnectionOptimizer @Inject constructor(
     }
 
     /**
+     * Invalidate all cached API clients
+     */
+    fun invalidateClients() {
+        sessionManager.invalidateClients()
+    }
+
+    /**
      * Helper function for debug logging that only logs in debug builds
      */
     private fun logDebug(message: String) {
@@ -237,3 +244,4 @@ class ConnectionOptimizer @Inject constructor(
         }
     }
 }
+

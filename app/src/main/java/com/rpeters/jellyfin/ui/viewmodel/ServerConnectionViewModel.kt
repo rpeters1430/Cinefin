@@ -590,6 +590,7 @@ class ServerConnectionViewModel @Inject constructor(
 
     private suspend fun clearSavedCredentials() {
         val currentState = _connectionState.value
+        val currentServer = authRepository.getCurrentServer()
         withContext(dispatchers.io) {
             context.dataStore.edit { preferences ->
                 preferences.remove(PreferencesKeys.SERVER_URL)
@@ -601,15 +602,18 @@ class ServerConnectionViewModel @Inject constructor(
                 preferences.remove(PreferencesKeys.SESSION_LOGIN_TIMESTAMP)
                 preferences.remove(PreferencesKeys.SESSION_IS_ADMIN)
             }
+            if (currentServer != null && !currentServer.username.isNullOrBlank()) {
+                runCatching {
+                    secureCredentialManager.clearPassword(currentServer.url, currentServer.username)
+                }
+            }
             if (currentState.savedServerUrl.isNotBlank() && currentState.savedUsername.isNotBlank()) {
-                secureCredentialManager.clearPassword(currentState.savedServerUrl, currentState.savedUsername)
+                runCatching {
+                    secureCredentialManager.clearPassword(currentState.savedServerUrl, currentState.savedUsername)
+                }
             }
         }
-        _connectionState.value = _connectionState.value.copy(
-            savedServerUrl = "",
-            savedUsername = "",
-            hasSavedPassword = false,
-        )
+        _connectionState.value = ConnectionState()
     }
 
     private suspend fun clearPersistedSessionToken() {
@@ -1118,12 +1122,10 @@ class ServerConnectionViewModel @Inject constructor(
      * Explicit logout method that clears saved credentials and disconnects
      */
     fun logout() {
+        _connectionState.value = ConnectionState()
         viewModelScope.launch {
             // Clear saved credentials when user explicitly logs out
             clearSavedCredentials()
-
-            // Reset connection state
-            _connectionState.value = ConnectionState()
         }
     }
 

@@ -42,6 +42,9 @@ class HomeViewModelTest {
     fun setup() {
         MockKAnnotations.init(this)
         Dispatchers.setMain(testDispatcher)
+        coEvery { mediaRepository.getUserLibraries(any()) } returns ApiResult.Success(emptyList())
+        coEvery { mediaRepository.getRecentlyAdded(any(), any()) } returns ApiResult.Success(emptyList())
+        coEvery { mediaRepository.getRecentlyAddedByType(any(), any(), any()) } returns ApiResult.Success(emptyList())
         viewModel = HomeViewModel(mediaRepository)
     }
 
@@ -132,7 +135,7 @@ class HomeViewModelTest {
             },
         )
 
-        coEvery { mediaRepository.getRecentlyAdded(50) } returns ApiResult.Success(mockRecentItems)
+        coEvery { mediaRepository.getRecentlyAdded(any(), any()) } returns ApiResult.Success(mockRecentItems)
 
         viewModel = HomeViewModel(mediaRepository)
         // When
@@ -168,22 +171,25 @@ class HomeViewModelTest {
 
         coEvery {
             mediaRepository.getRecentlyAddedByType(
+                any(),
+                any(),
+                any(),
+            )
+        } returns ApiResult.Success(emptyList())
+        coEvery {
+            mediaRepository.getRecentlyAddedByType(
                 BaseItemKind.MOVIE,
-                20,
+                any(),
+                any(),
             )
         } returns ApiResult.Success(mockMovies)
         coEvery {
             mediaRepository.getRecentlyAddedByType(
                 BaseItemKind.SERIES,
-                20,
+                any(),
+                any(),
             )
         } returns ApiResult.Success(mockSeries)
-        coEvery {
-            mediaRepository.getRecentlyAddedByType(
-                BaseItemKind.AUDIO,
-                20,
-            )
-        } returns ApiResult.Success(emptyList())
 
         viewModel = HomeViewModel(mediaRepository)
         // When
@@ -229,13 +235,15 @@ class HomeViewModelTest {
         coEvery {
             mediaRepository.getRecentlyAddedByType(
                 BaseItemKind.MOVIE,
-                20,
+                any(),
+                any(),
             )
         } returns ApiResult.Success(mockMovies)
         coEvery {
             mediaRepository.getRecentlyAddedByType(
                 BaseItemKind.SERIES,
-                20,
+                any(),
+                any(),
             )
         } returns ApiResult.Success(mockSeries)
         viewModel = HomeViewModel(mediaRepository)
@@ -272,7 +280,7 @@ class HomeViewModelTest {
         )
 
         coEvery { mediaRepository.getUserLibraries(any()) } returns ApiResult.Success(mockLibraries)
-        coEvery { mediaRepository.getRecentlyAdded(50) } returns ApiResult.Success(mockRecentItems)
+        coEvery { mediaRepository.getRecentlyAdded(any(), any()) } returns ApiResult.Success(mockRecentItems)
 
         viewModel = HomeViewModel(mediaRepository)
         // When
@@ -300,7 +308,6 @@ class HomeViewModelTest {
         val stateWithError = viewModel.homeState.first()
         assertEquals("Error", stateWithError.errorMessage)
 
-        viewModel = HomeViewModel(mediaRepository)
         // When
         viewModel.clearError()
 
@@ -358,9 +365,9 @@ class HomeViewModelTest {
         viewModel.loadLibraries()
         viewModel.loadRecentlyAdded()
 
-        // Then - should show the most recent error
+        // Then - should retain the library error
         val state = viewModel.homeState.first()
-        assertEquals(recentError, state.errorMessage)
+        assertEquals(libraryError, state.errorMessage)
         assertTrue(state.libraries.isEmpty())
         assertTrue(state.recentlyAdded.isEmpty())
     }

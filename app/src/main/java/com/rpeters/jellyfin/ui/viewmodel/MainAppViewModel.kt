@@ -204,7 +204,7 @@ constructor(
 
                 // Fresh sign-in can briefly report an expired token before all auth state
                 // settles, even though an in-memory authenticated session is already present.
-                val currentServer = authRepository.getCurrentServer()
+                val currentServer = authRepository.currentServer.value
                 if (
                     authRepository.isUserAuthenticated() &&
                     currentServer?.accessToken != null &&
@@ -833,6 +833,7 @@ constructor(
             analytics.logUiEvent("Account", "logout")
             userRepository.logout()
             credentialManager.clearCredentials()
+            clearState()
         }
     }
 

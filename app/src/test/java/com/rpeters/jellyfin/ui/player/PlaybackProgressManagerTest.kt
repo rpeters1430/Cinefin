@@ -37,7 +37,7 @@ class PlaybackProgressManagerTest {
 
     @Before
     fun setUp() {
-        manager = PlaybackProgressManager(context, connectivityChecker, repository, offlineDownloadManager)
+        manager = PlaybackProgressManager(context, connectivityChecker, repository, offlineDownloadManager, testDispatcher)
     }
 
     @After

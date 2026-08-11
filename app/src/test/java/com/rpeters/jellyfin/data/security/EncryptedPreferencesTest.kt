@@ -1,6 +1,7 @@
 package com.rpeters.jellyfin.data.security
 
 import android.content.Context
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -34,11 +35,12 @@ class EncryptedPreferencesTest {
 
     @Before
     fun setup() {
-        // Mock context - EncryptedPreferences uses it for DataStore
+        val tempDir = java.io.File(System.getProperty("java.io.tmpdir"), "test_prefs_${System.currentTimeMillis()}")
+        tempDir.mkdirs()
         context = mockk(relaxed = true)
+        every { context.filesDir } returns tempDir
+        every { context.applicationContext } returns context
 
-        // Create instance - it will use real Android Keystore in test environment
-        // Note: This requires Android test environment, not pure JVM
         encryptedPreferences = EncryptedPreferences(context)
     }
 
@@ -112,8 +114,10 @@ class EncryptedPreferencesTest {
         val encrypted = encryptedPreferences.encryptValue(plaintext)
         assertNotNull("Encryption should succeed", encrypted)
 
-        // Tamper with the ciphertext by changing one character
-        val tamperedCiphertext = encrypted!!.replaceFirst('A', 'B')
+        // Tamper with the ciphertext by mutating bytes
+        val bytes = android.util.Base64.decode(encrypted, android.util.Base64.NO_WRAP)
+        bytes[bytes.size - 1] = (bytes[bytes.size - 1].toInt() xor 0xFF).toByte()
+        val tamperedCiphertext = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
 
         val decrypted = encryptedPreferences.decryptValue(tamperedCiphertext)
 

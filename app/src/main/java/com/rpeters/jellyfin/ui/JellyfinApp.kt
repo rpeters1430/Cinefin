@@ -209,7 +209,8 @@ fun JellyfinApp(
             val hasError = connectionState.errorMessage != null
             val isNotConnected = !connectionState.isConnected
             val isNotOnLoginScreens = currentRoute != Screen.ServerConnection.route &&
-                currentRoute != Screen.QuickConnect.route
+                currentRoute != Screen.QuickConnect.route &&
+                currentRoute != Screen.OfflineLibrary.route
 
             if (hasError && isNotConnected && isNotOnLoginScreens) {
                 navController.navigate(Screen.ServerConnection.route) {
@@ -342,6 +343,8 @@ fun JellyfinApp(
                             startDestination = startDestination,
                             modifier = Modifier.fillMaxSize(),
                             onLogout = {
+                                connectionViewModel.logout()
+                                mainAppViewModel.logout()
                                 DynamicShortcutManager.updateContinueWatchingShortcuts(
                                     applicationContext,
                                     emptyList(),
@@ -425,6 +428,8 @@ fun JellyfinApp(
                         startDestination = startDestination,
                         modifier = Modifier.fillMaxSize(),
                         onLogout = {
+                            connectionViewModel.logout()
+                            mainAppViewModel.logout()
                             DynamicShortcutManager.updateContinueWatchingShortcuts(
                                 applicationContext,
                                 emptyList(),

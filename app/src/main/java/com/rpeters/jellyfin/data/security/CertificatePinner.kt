@@ -175,9 +175,11 @@ class CertificatePinningManager @Inject constructor(
     fun extractHostname(serverUrl: String): String {
         return try {
             val url = java.net.URL(serverUrl)
-            url.host
+            url.host.takeIf { !it.isNullOrEmpty() } ?: serverUrl
         } catch (e: CancellationException) {
             throw e
+        } catch (e: Exception) {
+            serverUrl
         }
     }
 

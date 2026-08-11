@@ -254,6 +254,11 @@ class JellyfinAuthRepository @Inject constructor(
             saveNewToken(null)
             _currentServer.update { null }
             _isConnected.update { false }
+            try {
+                connectionOptimizerProvider.get().invalidateClients()
+            } catch (e: Exception) {
+                Log.w(TAG, "logout: Failed to invalidate clients", e)
+            }
             Log.d(TAG, "logout: User logged out successfully")
         }
     }

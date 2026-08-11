@@ -187,7 +187,7 @@ class ServerConnectionViewModelTest {
             allowsDeviceCredentialFallback = true,
             status = BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED,
         )
-        every { secureCredentialManager.getBiometricCapability(true) } returns weakOnlyCapability
+        every { secureCredentialManager.getBiometricCapability(any()) } returns weakOnlyCapability
 
         viewModel = ServerConnectionViewModel(
             repository,
@@ -323,7 +323,7 @@ class ServerConnectionViewModelTest {
         coEvery {
             authRepository.authenticateUser("https://example.com", "user", "password")
         } returns ApiResult.Success(mockk<AuthenticationResult>(relaxed = true))
-        coEvery { secureCredentialManager.savePassword(any(), any(), any()) } returns Unit
+        coJustRun { secureCredentialManager.savePassword(any(), any(), any()) }
 
         viewModel = ServerConnectionViewModel(
             repository,
