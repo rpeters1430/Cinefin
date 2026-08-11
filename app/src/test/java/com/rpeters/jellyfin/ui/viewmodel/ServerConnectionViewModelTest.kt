@@ -27,7 +27,9 @@ import com.rpeters.jellyfin.ui.components.ConnectionPhase
 import io.mockk.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
@@ -124,9 +126,9 @@ class ServerConnectionViewModelTest {
     }
 
     @After
-    fun tearDown() {
+    fun tearDown() = runTest(mainDispatcherRule.dispatcher) {
         if (::viewModel.isInitialized) {
-            viewModel.viewModelScope.cancel()
+            viewModel.viewModelScope.coroutineContext[Job]?.cancelAndJoin()
         }
         unmockkAll()
     }
@@ -213,11 +215,10 @@ class ServerConnectionViewModelTest {
 
         viewModel.setRequireStrongBiometric(true)
 
-        advanceUntilIdle()
+        val connectionState = viewModel.connectionState.first { it.requireStrongBiometric }
 
         val preferences = context.dataStore.data.first()
         assertTrue(preferences[BIOMETRIC_REQUIRE_STRONG] == true)
-        val connectionState = viewModel.connectionState.value
         assertTrue(connectionState.requireStrongBiometric)
         assertFalse(connectionState.isUsingWeakBiometric)
 
