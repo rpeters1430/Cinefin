@@ -30,6 +30,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -192,6 +193,7 @@ class ServerConnectionViewModelTest {
             status = BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED,
         )
         every { secureCredentialManager.getBiometricCapability(any()) } returns weakOnlyCapability
+        every { connectivityChecker.observeNetworkConnectivity() } returns emptyFlow()
 
         viewModel = ServerConnectionViewModel(
             repository,
