@@ -63,8 +63,8 @@ class CastMediaLoadBuilder @Inject constructor(
                 forceTranscode = forceTranscode,
             )
             val mediaSource = playbackInfo.mediaSources.firstOrNull() ?: return null
-            val serverUrl = authRepository.getCurrentServer()?.url ?: return null
-            val token = authRepository.getCurrentServer()?.accessToken
+            val serverUrl = authRepository.getCurrentServerSync()?.url ?: return null
+            val token = authRepository.getCurrentServerSync()?.accessToken
 
             val streamPath = when {
                 !mediaSource.transcodingUrl.isNullOrBlank() -> mediaSource.transcodingUrl!!

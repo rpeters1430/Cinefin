@@ -39,7 +39,7 @@ open class BaseJellyfinRepository @Inject constructor(
         sessionManager.getClientForUrl(serverUrl)
 
     fun validateServer(): JellyfinServer {
-        val currentServer = authRepository.getCurrentServer()
+        val currentServer = authRepository.getCurrentServerSync()
         return RepositoryUtils.validateServer(currentServer)
     }
 

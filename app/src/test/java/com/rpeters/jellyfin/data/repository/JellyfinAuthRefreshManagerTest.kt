@@ -60,7 +60,7 @@ class JellyfinAuthRefreshManagerTest {
             delay(50)
             true
         }
-        every { authRepository.getCurrentServer() } returns mockk {
+        every { authRepository.getCurrentServerSync() } returns mockk {
             every { accessToken } returns "shared-token"
         }
 
@@ -82,7 +82,7 @@ class JellyfinAuthRefreshManagerTest {
     @Test
     fun `returns null when all refresh attempts fail`() = runBlocking {
         coEvery { authRepository.forceReAuthenticate() } returns false
-        every { authRepository.getCurrentServer() } returns null
+        every { authRepository.getCurrentServerSync() } returns null
 
         val testRefreshManager = JellyfinAuthRefreshManager(
             authRepository = authRepository,

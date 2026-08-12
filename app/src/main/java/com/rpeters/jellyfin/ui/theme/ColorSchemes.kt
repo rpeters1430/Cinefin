@@ -234,6 +234,11 @@ private val JellyfinPurpleAmoledColorScheme = darkColorScheme(
     onSurface = Color(0xFFE6E1E6),
     surfaceVariant = Color(0xFF1A1A1A),
     onSurfaceVariant = Color(0xFFCAC4D0),
+    surfaceContainerLowest = Color.Black,
+    surfaceContainerLow = Color(0xFF0D0D0D),
+    surfaceContainer = Color(0xFF1A1A1A),
+    surfaceContainerHigh = Color(0xFF262626),
+    surfaceContainerHighest = Color(0xFF333333),
     outline = Color(0xFF938F99),
     outlineVariant = Color(0xFF2A2A2A),
 )

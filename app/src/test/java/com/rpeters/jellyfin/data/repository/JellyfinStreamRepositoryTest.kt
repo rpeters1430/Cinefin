@@ -53,7 +53,7 @@ class JellyfinStreamRepositoryTest {
     fun `getStreamUrl returns correct URL for valid item`() {
         // Given
         val itemId = UUID.randomUUID().toString()
-        every { authRepository.getCurrentServer() } returns testServer
+        every { authRepository.getCurrentServerSync() } returns testServer
 
         // When
         val result = streamRepository.getStreamUrl(itemId)
@@ -71,7 +71,7 @@ class JellyfinStreamRepositoryTest {
     fun `getStreamUrl returns null when no server available`() {
         // Given
         val itemId = UUID.randomUUID().toString()
-        every { authRepository.getCurrentServer() } returns null
+        every { authRepository.getCurrentServerSync() } returns null
 
         // When
         val result = streamRepository.getStreamUrl(itemId)
@@ -85,7 +85,7 @@ class JellyfinStreamRepositoryTest {
         // Given
         val itemId = UUID.randomUUID().toString()
         val serverWithoutToken = testServer.copy(accessToken = null)
-        every { authRepository.getCurrentServer() } returns serverWithoutToken
+        every { authRepository.getCurrentServerSync() } returns serverWithoutToken
 
         // When
         val result = streamRepository.getStreamUrl(itemId)
@@ -97,7 +97,7 @@ class JellyfinStreamRepositoryTest {
     @Test
     fun `getStreamUrl returns null for blank item ID`() {
         // Given
-        every { authRepository.getCurrentServer() } returns testServer
+        every { authRepository.getCurrentServerSync() } returns testServer
 
         // When
         val result = streamRepository.getStreamUrl("")
@@ -109,7 +109,7 @@ class JellyfinStreamRepositoryTest {
     @Test
     fun `getStreamUrl returns null for invalid UUID format`() {
         // Given
-        every { authRepository.getCurrentServer() } returns testServer
+        every { authRepository.getCurrentServerSync() } returns testServer
 
         // When
         val result = streamRepository.getStreamUrl("invalid-uuid")
@@ -122,7 +122,7 @@ class JellyfinStreamRepositoryTest {
     fun `getTranscodedStreamUrl returns progressive URL with parameters by default`() {
         // Given
         val itemId = UUID.randomUUID().toString()
-        every { authRepository.getCurrentServer() } returns testServer
+        every { authRepository.getCurrentServerSync() } returns testServer
 
         // When
         val result = streamRepository.getTranscodedStreamUrl(
@@ -151,7 +151,7 @@ class JellyfinStreamRepositoryTest {
     @Test
     fun `getTranscodedStreamUrl returns HLS URL when requested`() {
         val itemId = UUID.randomUUID().toString()
-        every { authRepository.getCurrentServer() } returns testServer
+        every { authRepository.getCurrentServerSync() } returns testServer
 
         val result = streamRepository.getTranscodedStreamUrl(
             itemId = itemId,
@@ -170,7 +170,7 @@ class JellyfinStreamRepositoryTest {
     fun `getTranscodedStreamUrl with allowAudioStreamCopy false includes correct parameters`() {
         // Given
         val itemId = UUID.randomUUID().toString()
-        every { authRepository.getCurrentServer() } returns testServer
+        every { authRepository.getCurrentServerSync() } returns testServer
 
         // When
         val result = streamRepository.getTranscodedStreamUrl(
@@ -193,7 +193,7 @@ class JellyfinStreamRepositoryTest {
     fun `getHlsStreamUrl returns correct adaptive streaming URL`() {
         // Given
         val itemId = UUID.randomUUID().toString()
-        every { authRepository.getCurrentServer() } returns testServer
+        every { authRepository.getCurrentServerSync() } returns testServer
 
         // When
         val result = streamRepository.getHlsStreamUrl(itemId)
@@ -211,7 +211,7 @@ class JellyfinStreamRepositoryTest {
     fun `getDashStreamUrl returns correct DASH URL`() {
         // Given
         val itemId = UUID.randomUUID().toString()
-        every { authRepository.getCurrentServer() } returns testServer
+        every { authRepository.getCurrentServerSync() } returns testServer
 
         // When
         val result = streamRepository.getDashStreamUrl(itemId)
@@ -228,7 +228,7 @@ class JellyfinStreamRepositoryTest {
     fun `getDownloadUrl returns correct download URL`() {
         // Given
         val itemId = UUID.randomUUID().toString()
-        every { authRepository.getCurrentServer() } returns testServer
+        every { authRepository.getCurrentServerSync() } returns testServer
 
         // When
         val result = streamRepository.getDownloadUrl(itemId)
@@ -246,7 +246,7 @@ class JellyfinStreamRepositoryTest {
     fun `getDirectStreamUrl returns correct direct stream URL`() {
         // Given
         val itemId = UUID.randomUUID().toString()
-        every { authRepository.getCurrentServer() } returns testServer
+        every { authRepository.getCurrentServerSync() } returns testServer
 
         // When
         val result = streamRepository.getDirectStreamUrl(itemId, "mkv")
@@ -266,7 +266,7 @@ class JellyfinStreamRepositoryTest {
     fun `getDirectStreamUrl uses default mp4 container when none specified`() {
         // Given
         val itemId = UUID.randomUUID().toString()
-        every { authRepository.getCurrentServer() } returns testServer
+        every { authRepository.getCurrentServerSync() } returns testServer
 
         // When
         val result = streamRepository.getDirectStreamUrl(itemId)
@@ -282,7 +282,7 @@ class JellyfinStreamRepositoryTest {
     fun `getImageUrl returns correct image URL`() {
         // Given
         val itemId = UUID.randomUUID().toString()
-        every { authRepository.getCurrentServer() } returns testServer
+        every { authRepository.getCurrentServerSync() } returns testServer
 
         // When
         val result = streamRepository.getImageUrl(itemId, "Primary", "test-tag")
@@ -292,8 +292,8 @@ class JellyfinStreamRepositoryTest {
         assertTrue("URL should contain server URL", result!!.contains(testServer.url))
         assertTrue("URL should contain item ID", result.contains(itemId))
         assertTrue("URL should contain image type", result.contains("/Images/Primary"))
-        assertTrue("URL should contain dimensions", result.contains("maxHeight=400"))
-        assertTrue("URL should contain dimensions", result.contains("maxWidth=400"))
+        assertTrue("URL should contain dimensions", result.contains("maxHeight=800"))
+        assertTrue("URL should contain dimensions", result.contains("maxWidth=800"))
         assertTrue("URL should contain tag", result.contains("tag=test-tag"))
     }
 
@@ -306,7 +306,7 @@ class JellyfinStreamRepositoryTest {
             every { seriesId } returns testSeriesId
             every { id } returns UUID.randomUUID()
         }
-        every { authRepository.getCurrentServer() } returns testServer
+        every { authRepository.getCurrentServerSync() } returns testServer
 
         // When
         val result = streamRepository.getSeriesImageUrl(episodeItem)
@@ -326,7 +326,7 @@ class JellyfinStreamRepositoryTest {
             every { type } returns BaseItemKind.MOVIE
             every { id } returns testItemId
         }
-        every { authRepository.getCurrentServer() } returns testServer
+        every { authRepository.getCurrentServerSync() } returns testServer
 
         // When
         val result = streamRepository.getSeriesImageUrl(movieItem)
@@ -347,7 +347,7 @@ class JellyfinStreamRepositoryTest {
             every { id } returns itemId
             every { backdropImageTags } returns listOf(backdropTag)
         }
-        every { authRepository.getCurrentServer() } returns testServer
+        every { authRepository.getCurrentServerSync() } returns testServer
 
         // When
         val result = streamRepository.getBackdropUrl(item)
@@ -358,8 +358,8 @@ class JellyfinStreamRepositoryTest {
         assertTrue("URL should contain item ID", result.contains(itemId.toString()))
         assertTrue("URL should be Backdrop image", result.contains("/Images/Backdrop"))
         assertTrue("URL should contain backdrop tag", result.contains("tag=$backdropTag"))
-        assertTrue("URL should contain backdrop dimensions", result.contains("maxHeight=400"))
-        assertTrue("URL should contain backdrop dimensions", result.contains("maxWidth=800"))
+        assertTrue("URL should contain backdrop dimensions", result.contains("maxHeight=1080"))
+        assertTrue("URL should contain backdrop dimensions", result.contains("maxWidth=1920"))
     }
 
     @Test
@@ -372,7 +372,7 @@ class JellyfinStreamRepositoryTest {
             every { backdropImageTags } returns null
             every { imageTags } returns mapOf(org.jellyfin.sdk.model.api.ImageType.PRIMARY to primaryTag)
         }
-        every { authRepository.getCurrentServer() } returns testServer
+        every { authRepository.getCurrentServerSync() } returns testServer
 
         // When
         val result = streamRepository.getBackdropUrl(item)
@@ -389,7 +389,7 @@ class JellyfinStreamRepositoryTest {
     fun `stream repository methods return null when no server available`() {
         // Given
         val itemId = UUID.randomUUID().toString()
-        every { authRepository.getCurrentServer() } returns null
+        every { authRepository.getCurrentServerSync() } returns null
 
         // When & Then
         assertNull("Stream URL should be null", streamRepository.getStreamUrl(itemId))

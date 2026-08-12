@@ -36,7 +36,7 @@ class JellyfinRepositoryTest {
         override val isConnected: StateFlow<Boolean>
     ) : IJellyfinAuthRepository {
         override val isAuthenticating = MutableStateFlow(false)
-        override fun getCurrentServer(): JellyfinServer? = currentServer.value
+        override fun getCurrentServerSync(): JellyfinServer? = currentServer.value
         override fun isUserAuthenticated(): Boolean = isConnected.value
         override suspend fun token(): String? = currentServer.value?.accessToken
         override fun isTokenExpired(): Boolean = false

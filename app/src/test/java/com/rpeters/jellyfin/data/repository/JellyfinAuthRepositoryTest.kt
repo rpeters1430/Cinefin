@@ -10,6 +10,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
+import io.mockk.spyk
 import io.mockk.unmockkAll
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -62,18 +63,18 @@ class JellyfinAuthRepositoryTest {
         connectionOptimizer = mockk(relaxed = true)
         connectionOptimizerProvider = Provider { connectionOptimizer }
 
-        mockkStatic("org.jellyfin.sdk.api.client.extensions.QuickConnectApiKt")
-        mockkStatic("org.jellyfin.sdk.api.client.extensions.UserApiKt")
+        mockkStatic(ApiClient::quickConnectApi)
+        mockkStatic(ApiClient::userApi)
         mockkStatic(android.util.Log::class)
         every { android.util.Log.d(any<String>(), any<String>()) } returns 0
         every { android.util.Log.w(any<String>(), any<String>()) } returns 0
         every { android.util.Log.e(any<String>(), any<String>(), any()) } returns 0
 
-        every { jellyfin.createApi(any(), any()) } returns apiClient
         every { apiClient.quickConnectApi } returns quickConnectApi
         every { apiClient.userApi } returns userApi
 
-        repository = JellyfinAuthRepository(jellyfin, credentialManager, connectionOptimizerProvider)
+        repository = spyk(JellyfinAuthRepository(jellyfin, credentialManager, connectionOptimizerProvider))
+        every { repository.createApiClient(any(), any()) } returns apiClient
     }
 
     @After

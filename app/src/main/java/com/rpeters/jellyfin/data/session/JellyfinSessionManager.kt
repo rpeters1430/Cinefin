@@ -28,7 +28,7 @@ class JellyfinSessionManager @Inject constructor(
     private val reauthMutex = Mutex()
 
     private fun currentServerOrThrow(context: String = "Operation"): JellyfinServer {
-        val server = authRepository.getCurrentServer()
+        val server = authRepository.getCurrentServerSync()
         if (server == null) {
             Logger.w(LogCategory.NETWORK, "SessionManager", "No authenticated server available for $context")
             throw IllegalStateException("No authenticated server available for $context")

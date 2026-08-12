@@ -269,7 +269,7 @@ class PinningTrustManagerTest {
         }.exceptionOrNull()
 
         assertTrue(error is CertificateException)
-        assertTrue(error?.cause is PinningValidationException)
+        assertTrue(error is PinningValidationException)
     }
 
     @Test

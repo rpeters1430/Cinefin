@@ -208,7 +208,7 @@ class CertificatePinningManagerTest {
     @Test
     fun `validatePins throws exception when certificate does not match stored pin`() = runTest {
         val hostname = "jellyfin.example.com"
-        val mockCert: X509Certificate = mockk()
+        val mockCert: X509Certificate = mockk(relaxed = true)
         val mockPublicKey = mockk<java.security.PublicKey>()
 
         // Set up certificate

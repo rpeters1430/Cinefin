@@ -453,7 +453,7 @@ class MediaRequestSettingsViewModelTest {
         override val isConnected = MutableStateFlow(false).asStateFlow()
         override val isAuthenticating = MutableStateFlow(false).asStateFlow()
 
-        override fun getCurrentServer(): JellyfinServer? = currentServer.value
+        override fun getCurrentServerSync(): JellyfinServer? = currentServer.value
         override fun isUserAuthenticated(): Boolean = currentServer.value != null
         override fun isTokenExpired(): Boolean = false
         override fun shouldRefreshToken(): Boolean = false

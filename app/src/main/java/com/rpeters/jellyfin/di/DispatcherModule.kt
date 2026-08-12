@@ -7,6 +7,7 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -28,6 +29,10 @@ abstract class DispatcherModule {
     ): DispatcherProvider
 
     companion object {
+        @Provides
+        @Singleton
+        fun provideIoDispatcher(): CoroutineDispatcher = Dispatchers.IO
+
         /**
          * Provides an application-scoped CoroutineScope.
          * Uses SupervisorJob so failures in one coroutine don't cancel others.

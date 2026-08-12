@@ -330,7 +330,7 @@ class JellyfinMediaRepositoryTest {
 
         // Wire authRepository so BaseJellyfinRepository.validateServer() /
         // validateTokenAndRefreshIfNeeded() resolve to our test server without reauthenticating.
-        every { authRepository.getCurrentServer() } returns testServer
+        every { authRepository.getCurrentServerSync() } returns testServer
         every { authRepository.isTokenExpired() } returns false
 
         // Wire sessionManager.executeWithAuth(...) - called internally by

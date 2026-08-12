@@ -14,7 +14,7 @@ interface IJellyfinAuthRepository : TokenProvider {
     val isConnected: StateFlow<Boolean>
     val isAuthenticating: StateFlow<Boolean>
 
-    fun getCurrentServer(): JellyfinServer?
+    fun getCurrentServerSync(): JellyfinServer?
     fun isUserAuthenticated(): Boolean
     fun isTokenExpired(): Boolean
     fun shouldRefreshToken(): Boolean

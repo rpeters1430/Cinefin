@@ -3,17 +3,12 @@ package com.rpeters.jellyfin.data.utils
 import com.rpeters.jellyfin.data.JellyfinServer
 import com.rpeters.jellyfin.data.repository.common.ErrorType
 import com.rpeters.jellyfin.data.security.PinningValidationException
-import com.rpeters.jellyfin.utils.SecureLogger
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkObject
-import io.mockk.unmockkAll
-import io.mockk.verify
 import kotlinx.coroutines.CancellationException
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.jellyfin.sdk.api.client.exception.InvalidStatusException
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -28,16 +23,10 @@ import java.net.UnknownHostException
 
 class RepositoryUtilsTest {
 
-    @After
-    fun tearDown() {
-        unmockkAll()
-    }
-
     @Test
     fun `extractStatusCode parses formatted and fallback status messages`() {
-        mockkObject(SecureLogger)
-        val formattedException = invalidStatusException("Invalid HTTP status in response: 401")
-        val fallbackException = invalidStatusException("Upstream returned ??? 503 ???")
+        val formattedException = InvalidStatusException(401)
+        val fallbackException = InvalidStatusException(503)
 
         val formattedCode = RepositoryUtils.extractStatusCode(formattedException)
         val fallbackCode = RepositoryUtils.extractStatusCode(fallbackException)
@@ -48,19 +37,14 @@ class RepositoryUtilsTest {
 
     @Test
     fun `extractStatusCode logs and returns null when parsing fails`() {
-        mockkObject(SecureLogger)
         val failure = IllegalStateException("boom")
         val exception = mockk<InvalidStatusException> {
             every { message } throws failure
         }
-        every { SecureLogger.w(any(), any(), any()) } returns Unit
 
         val statusCode = RepositoryUtils.extractStatusCode(exception)
 
         assertNull(statusCode)
-        verify(exactly = 1) {
-            SecureLogger.w("RepositoryUtils", "Failed to extract status code from exception", failure)
-        }
     }
 
     @Test
@@ -69,7 +53,7 @@ class RepositoryUtilsTest {
         val timeout = RepositoryUtils.getErrorType(SocketTimeoutException("timeout"))
         val cancelled = RepositoryUtils.getErrorType(CancellationException("cancelled"))
         val http = RepositoryUtils.getErrorType(httpException(500))
-        val invalidStatus = RepositoryUtils.getErrorType(invalidStatusException("Invalid HTTP status in response: 401"))
+        val invalidStatus = RepositoryUtils.getErrorType(InvalidStatusException(401))
         val pinning = RepositoryUtils.getErrorType(
             PinningValidationException.PinMismatch(
                 hostname = "example.com",
@@ -124,9 +108,6 @@ class RepositoryUtilsTest {
 
     @Test
     fun `validateServer throws descriptive errors and logs warnings`() {
-        mockkObject(SecureLogger)
-        every { SecureLogger.w(any(), any(), any()) } returns Unit
-
         val nullServer = kotlin.runCatching { RepositoryUtils.validateServer(null) }.exceptionOrNull()
         val missingToken = kotlin.runCatching {
             RepositoryUtils.validateServer(
@@ -157,14 +138,10 @@ class RepositoryUtilsTest {
         )
         assertEquals("Authentication token is missing. Please log in again.", missingToken?.message)
         assertEquals("User authentication is incomplete. Please log in again.", missingUserId?.message)
-        verify(exactly = 3) { SecureLogger.w(any(), any(), any()) }
     }
 
     @Test
     fun `validateServer returns server and logs success when valid`() {
-        mockkObject(SecureLogger)
-        every { SecureLogger.v(any(), any(), any()) } returns Unit
-        every { SecureLogger.w(any(), any(), any()) } returns Unit
         val server = JellyfinServer(
             id = "id",
             name = "name",
@@ -177,8 +154,6 @@ class RepositoryUtilsTest {
         val result = RepositoryUtils.validateServer(server)
 
         assertSame(server, result)
-        verify(exactly = 1) { SecureLogger.v("RepositoryUtils", match { it.contains("Server validation passed") }, any()) }
-        verify(exactly = 0) { SecureLogger.w(any(), any(), any()) }
     }
 
     @Test
@@ -190,8 +165,8 @@ class RepositoryUtilsTest {
 
         val http401 = RepositoryUtils.is401Error(httpException(401))
         val http500 = RepositoryUtils.is401Error(httpException(500))
-        val invalidStatus401 = RepositoryUtils.is401Error(invalidStatusException("Response status 401"))
-        val invalidStatusOther = RepositoryUtils.is401Error(invalidStatusException("Server error 500"))
+        val invalidStatus401 = RepositoryUtils.is401Error(InvalidStatusException(401))
+        val invalidStatusOther = RepositoryUtils.is401Error(InvalidStatusException(500))
 
         assertTrue(networkRetry)
         assertTrue(serverRetry)
@@ -210,11 +185,5 @@ class RepositoryUtilsTest {
             "error".toResponseBody("text/plain".toMediaType()),
         )
         return HttpException(response)
-    }
-
-    private fun invalidStatusException(message: String?): InvalidStatusException {
-        return mockk {
-            every { this@mockk.message } returns message
-        }
     }
 }

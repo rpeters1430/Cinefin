@@ -28,7 +28,7 @@ class JellyfinAuthRefreshManager @Inject constructor(
     private var inFlightRefresh: Deferred<RefreshResult>? = null
 
     override fun currentAccessToken(): String? {
-        return authRepository.getCurrentServer()?.accessToken
+        return authRepository.getCurrentServerSync()?.accessToken
     }
 
     override fun scheduleProactiveRefreshIfNeeded() {
@@ -109,7 +109,7 @@ class JellyfinAuthRefreshManager @Inject constructor(
 
                 val refreshed = authRepository.forceReAuthenticate()
                 if (refreshed) {
-                    val token = authRepository.getCurrentServer()?.accessToken
+                    val token = authRepository.getCurrentServerSync()?.accessToken
                     if (!token.isNullOrBlank()) {
                         logTelemetry("success", trigger, retryIndex + 1, null)
                         return RefreshResult.Success(token)

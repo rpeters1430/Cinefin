@@ -590,7 +590,7 @@ class ServerConnectionViewModel @Inject constructor(
 
     private suspend fun clearSavedCredentials() {
         val currentState = _connectionState.value
-        val currentServer = authRepository.getCurrentServer()
+        val currentServer = authRepository.getCurrentServerSync()
         withContext(dispatchers.io) {
             context.dataStore.edit { preferences ->
                 preferences.remove(PreferencesKeys.SERVER_URL)

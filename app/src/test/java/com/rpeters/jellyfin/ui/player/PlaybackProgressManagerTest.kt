@@ -50,8 +50,8 @@ class PlaybackProgressManagerTest {
         val itemId = "item123"
         val sessionId = "session"
         coEvery { repository.getItemUserData(itemId) } returns ApiResult.Success(userData())
-        coEvery { repository.reportPlaybackStart(any(), any(), any(), any(), any(), any(), any()) } returns ApiResult.Success(Unit)
-        coEvery { repository.reportPlaybackProgress(any(), any(), any(), any(), any(), any(), any()) } returns ApiResult.Success(Unit)
+        coEvery { repository.reportPlaybackStart(any(), any(), any(), any(), any(), any(), any(), any()) } returns ApiResult.Success(Unit)
+        coEvery { repository.reportPlaybackProgress(any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns ApiResult.Success(Unit)
         coEvery { repository.reportPlaybackStopped(any(), any(), any(), any(), any()) } returns ApiResult.Success(Unit)
 
         manager.startTracking(itemId, this, sessionId)
@@ -62,11 +62,11 @@ class PlaybackProgressManagerTest {
 
         val expectedTicks = 6_000L * 10_000L
         coVerify { repository.reportPlaybackStart(itemId, sessionId, expectedTicks, null, org.jellyfin.sdk.model.api.PlayMethod.DIRECT_PLAY, false, false, true) }
-        coVerify { repository.reportPlaybackProgress(itemId, sessionId, expectedTicks, null, org.jellyfin.sdk.model.api.PlayMethod.DIRECT_PLAY, false, false, true) }
+        coVerify { repository.reportPlaybackProgress(itemId, sessionId, expectedTicks, null, org.jellyfin.sdk.model.api.PlayMethod.DIRECT_PLAY, false, false, true, true) }
 
-        advanceTimeBy(10_000L)
+        advanceTimeBy(15_000L)
         runCurrent()
-        coVerify(exactly = 2) { repository.reportPlaybackProgress(itemId, sessionId, any(), any(), any(), any(), any()) }
+        coVerify(exactly = 2) { repository.reportPlaybackProgress(itemId, sessionId, any(), any(), any(), any(), any(), any(), any()) }
 
         manager.stopTracking()
         runCurrent()
@@ -77,17 +77,18 @@ class PlaybackProgressManagerTest {
     fun `reportProgress error does not update last sync`() = runTest(testDispatcher) {
         val itemId = "itemError"
         coEvery { repository.getItemUserData(itemId) } returns ApiResult.Success(userData())
-        coEvery { repository.reportPlaybackStart(any(), any(), any(), any(), any(), any(), any()) } returns ApiResult.Success(Unit)
-        coEvery { repository.reportPlaybackProgress(any(), any(), any(), any(), any(), any(), any()) } returns ApiResult.Error("boom")
+        coEvery { repository.reportPlaybackStart(any(), any(), any(), any(), any(), any(), any(), any()) } returns ApiResult.Success(Unit)
+        coEvery { repository.reportPlaybackProgress(any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns ApiResult.Error("boom")
         coEvery { repository.reportPlaybackStopped(any(), any(), any(), any(), any()) } returns ApiResult.Success(Unit)
 
         manager.startTracking(itemId, this, "session")
         runCurrent()
+        val initialSyncTime = manager.playbackProgress.value.lastSyncTime
 
         manager.updateProgress(positionMs = 6_000L, durationMs = 20_000L)
         runCurrent()
 
-        assertEquals(0L, manager.playbackProgress.value.lastSyncTime)
+        assertEquals(initialSyncTime, manager.playbackProgress.value.lastSyncTime)
         manager.stopTracking()
         runCurrent()
     }
@@ -97,8 +98,8 @@ class PlaybackProgressManagerTest {
         val itemId = "paused"
         val sessionId = "paused-session"
         coEvery { repository.getItemUserData(itemId) } returns ApiResult.Success(userData())
-        coEvery { repository.reportPlaybackStart(any(), any(), any(), any(), any(), any(), any()) } returns ApiResult.Success(Unit)
-        coEvery { repository.reportPlaybackProgress(any(), any(), any(), any(), any(), any(), any()) } returns ApiResult.Success(Unit)
+        coEvery { repository.reportPlaybackStart(any(), any(), any(), any(), any(), any(), any(), any()) } returns ApiResult.Success(Unit)
+        coEvery { repository.reportPlaybackProgress(any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns ApiResult.Success(Unit)
         coEvery { repository.reportPlaybackStopped(any(), any(), any(), any(), any()) } returns ApiResult.Success(Unit)
 
         manager.startTracking(itemId, this, sessionId)
@@ -117,6 +118,7 @@ class PlaybackProgressManagerTest {
                 true,
                 false,
                 true,
+                true,
             )
         }
 
@@ -128,8 +130,8 @@ class PlaybackProgressManagerTest {
     fun `markAsWatched updates state on success`() = runTest(testDispatcher) {
         val itemId = "watched"
         coEvery { repository.getItemUserData(itemId) } returns ApiResult.Success(userData())
-        coEvery { repository.reportPlaybackStart(any(), any(), any(), any(), any(), any(), any()) } returns ApiResult.Success(Unit)
-        coEvery { repository.reportPlaybackProgress(any(), any(), any(), any(), any(), any(), any()) } returns ApiResult.Success(Unit)
+        coEvery { repository.reportPlaybackStart(any(), any(), any(), any(), any(), any(), any(), any()) } returns ApiResult.Success(Unit)
+        coEvery { repository.reportPlaybackProgress(any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns ApiResult.Success(Unit)
         coEvery { repository.reportPlaybackStopped(any(), any(), any(), any(), any()) } returns ApiResult.Success(Unit)
         coEvery { repository.markAsWatched(itemId) } returns ApiResult.Success(true)
 
@@ -148,8 +150,8 @@ class PlaybackProgressManagerTest {
     fun `markAsUnwatched updates state on success`() = runTest(testDispatcher) {
         val itemId = "unwatched"
         coEvery { repository.getItemUserData(itemId) } returns ApiResult.Success(userData())
-        coEvery { repository.reportPlaybackStart(any(), any(), any(), any(), any(), any(), any()) } returns ApiResult.Success(Unit)
-        coEvery { repository.reportPlaybackProgress(any(), any(), any(), any(), any(), any(), any()) } returns ApiResult.Success(Unit)
+        coEvery { repository.reportPlaybackStart(any(), any(), any(), any(), any(), any(), any(), any()) } returns ApiResult.Success(Unit)
+        coEvery { repository.reportPlaybackProgress(any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns ApiResult.Success(Unit)
         coEvery { repository.reportPlaybackStopped(any(), any(), any(), any(), any()) } returns ApiResult.Success(Unit)
         coEvery { repository.markAsWatched(itemId) } returns ApiResult.Success(true)
         coEvery { repository.markAsUnwatched(itemId) } returns ApiResult.Success(true)

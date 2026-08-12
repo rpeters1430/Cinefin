@@ -199,7 +199,7 @@ class JellyfinAuthRepository @Inject constructor(
         }
     }
 
-    override fun getCurrentServer(): JellyfinServer? = _currentServer.value
+    override fun getCurrentServerSync(): JellyfinServer? = _currentServer.value
 
     override fun isUserAuthenticated(): Boolean = _currentServer.value?.accessToken != null
 
@@ -263,7 +263,8 @@ class JellyfinAuthRepository @Inject constructor(
         }
     }
 
-    private fun createApiClient(serverUrl: String, accessToken: String? = null): ApiClient {
+    @VisibleForTesting
+    internal fun createApiClient(serverUrl: String, accessToken: String? = null): ApiClient {
         return jellyfin.createApi(
             baseUrl = serverUrl,
             accessToken = accessToken,
