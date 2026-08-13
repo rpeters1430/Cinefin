@@ -16,8 +16,8 @@
   <a href="https://android-arsenal.com/api?level=26">
     <img src="https://img.shields.io/badge/API-26%2B-brightgreen.svg?style=flat" alt="API Level 26+" />
   </a>
-  <img src="https://img.shields.io/badge/version-14.60-blue.svg?style=flat" alt="Version 14.60" />
-  <img src="https://img.shields.io/badge/Kotlin-2.3.20-7F52FF.svg?style=flat&logo=kotlin" alt="Kotlin 2.3.20" />
+  <img src="https://img.shields.io/badge/version-15.85-blue.svg?style=flat" alt="Version 15.85" />
+  <img src="https://img.shields.io/badge/Kotlin-2.4.10-7F52FF.svg?style=flat&logo=kotlin" alt="Kotlin 2.4.10" />
 </p>
 
 A modern, beautiful Android client for Jellyfin media servers built with Material 3 Expressive design and the latest Android development technologies. Stream your personal media collection with AI-powered features, offline support, and an immersive cinema-style UI.
@@ -108,30 +108,30 @@ A modern, beautiful Android client for Jellyfin media servers built with Materia
 
 | Component | Version | Notes |
 |-----------|---------|-------|
-| **Language** | Kotlin 2.3.20 | JDK 21 required |
-| **UI Framework** | Jetpack Compose BOM 2026.03.01 | Material 3 Expressive |
+| **Language** | Kotlin 2.4.10 | JDK 21 required |
+| **UI Framework** | Jetpack Compose BOM 2026.06.01 | Material 3 Expressive |
 | **Architecture** | MVVM + Repository | Hilt DI, StateFlow |
-| **Dependency Injection** | Hilt 2.59.2 | |
-| **Async** | Kotlin Coroutines 1.10.2 | |
+| **Dependency Injection** | Hilt 2.60.1 | |
+| **Async** | Kotlin Coroutines 1.11.0 | |
 
 ### **Networking & API**
 
 | Component | Version |
 |-----------|---------|
-| **Jellyfin SDK** | 1.8.8 |
-| **HTTP Client** | Retrofit 3.0.0 + OkHttp 5.3.2 |
+| **Jellyfin SDK** | 1.8.12 |
+| **HTTP Client** | Retrofit 3.0.0 + OkHttp 5.4.0 |
 | **Serialization** | Kotlinx Serialization 1.11.0 |
-| **Image Loading** | Coil 3.4.0 |
+| **Image Loading** | Coil 3.5.0 |
 
 ### **Media & UI**
 
 | Component | Version |
 |-----------|---------|
-| **Media Playback** | ExoPlayer / Media3 1.10.0 + FFmpeg decoder |
-| **Material Design** | Material 3 Expressive 1.5.0-alpha17 |
-| **Navigation** | Navigation Compose 2.10.0-alpha02 |
-| **Data Storage** | DataStore Preferences 1.3.0-alpha07 |
-| **Paging** | Paging 3 3.5.0-beta01 |
+| **Media Playback** | ExoPlayer / Media3 1.11.0 + FFmpeg decoder |
+| **Material Design** | Material 3 Expressive 1.5.0-alpha25 |
+| **Navigation** | Navigation Compose 2.10.0-beta01 |
+| **Data Storage** | DataStore Preferences 1.3.0-alpha10 |
+| **Paging** | Paging 3 3.5.0 |
 
 ---
 
@@ -149,8 +149,8 @@ A modern, beautiful Android client for Jellyfin media servers built with Materia
 ### Prerequisites
 - Android Studio Ladybug (2024.2) or later
 - JDK 21
-- **Compile SDK:** 36
-- **Target SDK:** 35
+- **Compile SDK:** 37
+- **Target SDK:** 36
 
 ### Building the Project
 
@@ -332,7 +332,7 @@ Automated workflows for:
 
 ## 📊 Project Status
 
-### **What's Working Now (May 2026)** ✅
+### **What's Working Now (August 2026)** ✅
 
 | Feature | Status |
 |---------|--------|
@@ -359,7 +359,6 @@ Automated workflows for:
 
 | Feature | Status |
 |---------|--------|
-| Music Background Playback (notification, lock-screen controls) | 🔄 In Progress |
 | Android TV D-pad navigation & focus polish | 🔄 In Progress |
 | Expanded instrumentation test coverage for playback + casting flows | 🔄 In Progress |
 
@@ -374,7 +373,7 @@ Automated workflows for:
 
 **[📖 See detailed roadmap in docs/plans/ROADMAP.md](docs/plans/ROADMAP.md)**
 
-> Last README status refresh: **May 22, 2026 (UTC)**. For the source-of-truth matrix, see **[docs/plans/CURRENT_STATUS.md](docs/plans/CURRENT_STATUS.md)**.
+> Last README status refresh: **August 13, 2026 (UTC)**. For the source-of-truth matrix, see **[docs/plans/CURRENT_STATUS.md](docs/plans/CURRENT_STATUS.md)**.
 
 ---
 
@@ -458,7 +457,7 @@ See **[Testing Guide](docs/development/TESTING_GUIDE.md)** for comprehensive pat
 ## 🔒 Security & Configuration
 - Never commit secrets or keystores — use Android Keystore / encrypted storage
 - Network config: `app/src/main/res/xml/network_security_config.xml`
-- Min SDK 26, Target SDK 35, Compile SDK 36
+- Min SDK 26, Target SDK 36, Compile SDK 37
 - Keep all dependency versions centralized in `gradle/libs.versions.toml`
 - API keys in `gradle.properties` (local dev) or CI environment variables — never in source
 
@@ -498,6 +497,6 @@ This project is licensed under the MIT License — see the [LICENSE](LICENSE) fi
 
 ---
 
-**Last Updated:** April 9, 2026
+**Last Updated:** August 13, 2026
 
 **Made with ❤️ for the Jellyfin community**
