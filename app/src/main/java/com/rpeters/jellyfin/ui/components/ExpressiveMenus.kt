@@ -277,7 +277,7 @@ fun ExpressiveSelectableMenuItem(
         colors = MenuDefaults.itemColors(
             textColor = textColor,
             leadingIconColor = textColor.copy(alpha = 0.72f),
-            trailingContentColor = selectedColor,
+            trailingIconColor = selectedColor,
         ),
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
     )
