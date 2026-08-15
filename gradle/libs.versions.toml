@@ -49,7 +49,7 @@ androidxTvMaterial = "1.1.0"
 androidxTvFoundation = "1.0.0"
 # Paging is temporarily pre-release and must follow explicit entry/exit rules in
 # docs/plans/UPGRADE_PATH.md before any version change.
-paging = "3.5.0"
+paging = "3.5.1"
 compileSdk = "37"
 targetSdk = "36"
 work = "2.12.0-beta01"
