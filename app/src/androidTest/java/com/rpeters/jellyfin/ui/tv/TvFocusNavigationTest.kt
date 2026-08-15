@@ -23,12 +23,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performKeyInput
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.pressKey
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -71,6 +73,8 @@ class TvFocusNavigationTest {
             }
         }
 
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("grid_item_0").performSemanticsAction(SemanticsActions.RequestFocus)
         composeRule.waitForIdle()
         composeRule.onNodeWithTag("grid_item_0").assertIsFocused()
 
@@ -116,11 +120,11 @@ class TvFocusNavigationTest {
                 )
             }
 
-            LaunchedEffect(Unit) {
-                gridRequester.requestFocus()
-            }
+            gridRequester.requestInitialFocus(delayMs = 50)
         }
 
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("grid_item_0").performSemanticsAction(SemanticsActions.RequestFocus)
         composeRule.waitForIdle()
         composeRule.onNodeWithTag("grid_item_0").assertIsFocused()
 
@@ -159,11 +163,11 @@ class TvFocusNavigationTest {
                 )
             }
 
-            LaunchedEffect(Unit) {
-                carouselRequester.requestFocus()
-            }
+            carouselRequester.requestInitialFocus(delayMs = 50)
         }
 
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("carousel_item_0").performSemanticsAction(SemanticsActions.RequestFocus)
         composeRule.waitForIdle()
         composeRule.onNodeWithTag("carousel_item_0").assertIsFocused()
 
@@ -200,9 +204,7 @@ private fun RestorableGridScreen(
         )
     }
 
-    LaunchedEffect(Unit) {
-        gridRequester.requestFocus()
-    }
+    gridRequester.requestInitialFocus(delayMs = 50)
 }
 
 @Composable

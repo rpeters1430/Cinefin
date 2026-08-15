@@ -2,6 +2,7 @@
 
 package com.rpeters.jellyfin.ui.tv
 
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.runtime.Composable
@@ -24,6 +25,7 @@ import androidx.compose.ui.input.key.KeyEvent
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import kotlinx.coroutines.CancellationException
@@ -185,9 +187,8 @@ fun TvFocusableCarousel(
     // Keyed on focusedIndex and hasFocus.
     LaunchedEffect(focusedIndex, hasFocus, itemCount) {
         if (hasFocus && focusedIndex in 0 until itemCount) {
-            // Only scroll if we actually have focus to prevent "flying" off-screen on initial load
-            // before the user has even interacted with the carousel.
             try {
+                itemFocusRequesters.getOrNull(focusedIndex)?.requestFocus()
                 lazyListState.animateScrollToItem(focusedIndex)
                 focusManager.saveFocusState(
                     carouselId = carouselId,
@@ -203,6 +204,7 @@ fun TvFocusableCarousel(
 
     val focusModifier = Modifier
         .focusRequester(actualFocusRequester)
+        .focusable()
         .onFocusChanged { focusState ->
             hasFocus = focusState.hasFocus
             onFocusChanged(hasFocus, focusedIndex)
@@ -229,7 +231,7 @@ fun TvFocusableCarousel(
                 )
             }
         }
-        .onKeyEvent { keyEvent ->
+        .onPreviewKeyEvent { keyEvent ->
             handleCarouselKeyEvent(
                 keyEvent = keyEvent,
                 isFocused = hasFocus,
@@ -240,7 +242,9 @@ fun TvFocusableCarousel(
                 onExitUp = onExitUp,
                 onExitDown = onExitDown,
                 onIndexChanged = { newIndex ->
-                    focusedIndex = newIndex.coerceIn(0, itemCount - 1)
+                    val targetIndex = newIndex.coerceIn(0, itemCount - 1)
+                    focusedIndex = targetIndex
+                    itemFocusRequesters.getOrNull(targetIndex)?.requestFocus()
                 },
             )
         }
@@ -300,8 +304,8 @@ fun TvFocusableGrid(
     // Keyed on focusedIndex and hasFocus.
     LaunchedEffect(focusedIndex, hasFocus, itemCount) {
         if (hasFocus && focusedIndex in 0 until itemCount) {
-            // Only scroll if we actually have focus to prevent "flying" off-screen on initial load
             try {
+                itemFocusRequesters.getOrNull(focusedIndex)?.requestFocus()
                 lazyGridState.animateScrollToItem(focusedIndex)
                 focusManager.saveFocusState(
                     carouselId = gridId,
@@ -317,6 +321,7 @@ fun TvFocusableGrid(
 
     val focusModifier = Modifier
         .focusRequester(actualFocusRequester)
+        .focusable()
         .onFocusChanged { focusState ->
             hasFocus = focusState.hasFocus
             onFocusChanged(hasFocus, focusedIndex)
@@ -337,7 +342,7 @@ fun TvFocusableGrid(
                 )
             }
         }
-        .onKeyEvent { keyEvent ->
+        .onPreviewKeyEvent { keyEvent ->
             handleGridKeyEvent(
                 keyEvent = keyEvent,
                 isFocused = hasFocus,
@@ -349,7 +354,9 @@ fun TvFocusableGrid(
                 onExitUp = onExitUp,
                 onExitDown = onExitDown,
                 onIndexChanged = { newIndex ->
-                    focusedIndex = newIndex.coerceIn(0, itemCount - 1)
+                    val targetIndex = newIndex.coerceIn(0, itemCount - 1)
+                    focusedIndex = targetIndex
+                    itemFocusRequesters.getOrNull(targetIndex)?.requestFocus()
                 },
             )
         }
@@ -376,7 +383,7 @@ private fun restoreFocusedIndex(
 /**
  * Handle key events for horizontal carousel navigation
  */
-private fun handleCarouselKeyEvent(
+internal fun handleCarouselKeyEvent(
     keyEvent: KeyEvent,
     isFocused: Boolean,
     focusedIndex: Int,
@@ -417,7 +424,7 @@ private fun handleCarouselKeyEvent(
 /**
  * Handle key events for grid navigation
  */
-private fun handleGridKeyEvent(
+internal fun handleGridKeyEvent(
     keyEvent: KeyEvent,
     isFocused: Boolean,
     focusedIndex: Int,

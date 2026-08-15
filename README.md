@@ -351,6 +351,7 @@ Automated workflows for:
 | Offline Downloads | ✅ Complete |
 | Material 3 Expressive UI (dark/light/AMOLED) | ✅ Complete |
 | Immersive Cinema UI (parallax, hero carousel) | ✅ Complete |
+| Android TV D-pad navigation & focus polish | ✅ Complete |
 | Firebase (Analytics, Crashlytics, Remote Config) | ✅ Complete |
 | Secure Credential Storage (Keystore AES-256-GCM) | ✅ Complete |
 | Certificate Pinning (TOFU) | ✅ Complete |
@@ -359,7 +360,6 @@ Automated workflows for:
 
 | Feature | Status |
 |---------|--------|
-| Android TV D-pad navigation & focus polish | 🔄 In Progress |
 | Expanded instrumentation test coverage for playback + casting flows | 🔄 In Progress |
 
 ### **Planned** 📋

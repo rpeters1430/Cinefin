@@ -203,16 +203,16 @@ fun JellyfinApp(
             }
         }
 
-        // Navigation guard: redirect to login if auto-login fails
-        LaunchedEffect(connectionState.errorMessage, connectionState.isConnected) {
+        // Navigation guard: redirect to login when session is disconnected/logged out or if auto-login fails
+        LaunchedEffect(connectionState.isConnected, connectionState.errorMessage) {
             val currentRoute = navController.currentBackStackEntry?.destination?.route
-            val hasError = connectionState.errorMessage != null
             val isNotConnected = !connectionState.isConnected
-            val isNotOnLoginScreens = currentRoute != Screen.ServerConnection.route &&
+            val isNotOnLoginScreens = currentRoute != null &&
+                currentRoute != Screen.ServerConnection.route &&
                 currentRoute != Screen.QuickConnect.route &&
                 currentRoute != Screen.OfflineLibrary.route
 
-            if (hasError && isNotConnected && isNotOnLoginScreens) {
+            if (isNotConnected && isNotOnLoginScreens) {
                 navController.navigate(Screen.ServerConnection.route) {
                     popUpTo(0) { inclusive = true }
                 }

@@ -66,19 +66,32 @@ fun TvNavGraph(
     startDestination: String = TvRoutes.ServerConnection,
     modifier: Modifier = Modifier,
 ) {
+    val connectionViewModel: ServerConnectionViewModel = hiltViewModel()
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val connectionState by connectionViewModel.connectionState.collectAsStateWithLifecycle(
+        lifecycle = lifecycleOwner.lifecycle,
+        minActiveState = Lifecycle.State.STARTED,
+    )
+
+    // Global navigation guard for TV: when disconnected, redirect to Server Connection screen
+    LaunchedEffect(connectionState.isConnected) {
+        val currentRoute = navController.currentBackStackEntry?.destination?.route
+        val isNotOnAuthScreens = currentRoute != null &&
+            currentRoute != TvRoutes.ServerConnection &&
+            currentRoute != TvRoutes.QuickConnect
+        if (!connectionState.isConnected && isNotOnAuthScreens) {
+            navController.navigate(TvRoutes.ServerConnection) {
+                popUpTo(0) { inclusive = true }
+            }
+        }
+    }
+
     NavHost(
         navController = navController,
         startDestination = startDestination,
         modifier = modifier,
     ) {
         composable(TvRoutes.ServerConnection) {
-            val connectionViewModel: ServerConnectionViewModel = hiltViewModel()
-            val lifecycleOwner = LocalLifecycleOwner.current
-            val connectionState by connectionViewModel.connectionState.collectAsStateWithLifecycle(
-                lifecycle = lifecycleOwner.lifecycle,
-                minActiveState = Lifecycle.State.STARTED,
-            )
-
             // Navigate to Home when successfully connected
             LaunchedEffect(connectionState.isConnected, connectionState.isConnecting, connectionState.errorMessage) {
                 Log.d("TvNavGraph", "Connection state changed - isConnected: ${connectionState.isConnected}, isConnecting: ${connectionState.isConnecting}, error: ${connectionState.errorMessage}")
@@ -255,7 +268,7 @@ fun TvNavGraph(
             TvSettingsScreen(
                 onSignOut = {
                     navController.navigate(TvRoutes.ServerConnection) {
-                        popUpTo(navController.graph.id) { inclusive = true }
+                        popUpTo(0) { inclusive = true }
                     }
                 },
             )

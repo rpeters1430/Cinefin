@@ -24,6 +24,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -50,6 +52,7 @@ import com.rpeters.jellyfin.ui.theme.CinefinTvTheme
 import com.rpeters.jellyfin.ui.tv.TvFocusableGrid
 import com.rpeters.jellyfin.ui.tv.TvScreenFocusScope
 import com.rpeters.jellyfin.ui.tv.rememberTvFocusManager
+import com.rpeters.jellyfin.ui.tv.requestInitialFocus
 import com.rpeters.jellyfin.ui.tv.tvKeyboardHandler
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import org.jellyfin.sdk.model.api.CollectionType
@@ -213,14 +216,34 @@ fun TvLibraryScreen(
                         actionText = routeConfig.emptyActionLabel,
                     )
                 } else {
+                    val gridFocusRequester = remember { FocusRequester() }
+                    gridFocusRequester.requestInitialFocus(condition = displayItems.isNotEmpty(), delayMs = 400)
+
                     Column(
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            routeConfig.filterOptions.forEach { filter ->
+                            routeConfig.filterOptions.forEachIndexed { idx, filter ->
                                 FilterChip(
                                     selected = selectedFilter == filter,
                                     onClick = { selectedFilter = filter },
+                                    modifier = Modifier.onPreviewKeyEvent { keyEvent ->
+                                        if (keyEvent.type == KeyEventType.KeyDown) {
+                                            when {
+                                                keyEvent.key == Key.DirectionLeft && idx == 0 -> {
+                                                    localFocusManager.moveFocus(FocusDirection.Left)
+                                                    true
+                                                }
+                                                keyEvent.key == Key.DirectionDown -> {
+                                                    gridFocusRequester.requestFocus()
+                                                    true
+                                                }
+                                                else -> false
+                                            }
+                                        } else {
+                                            false
+                                        }
+                                    },
                                 ) {
                                     TvText(filter.label)
                                 }
@@ -228,10 +251,27 @@ fun TvLibraryScreen(
                         }
 
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            routeConfig.sortOptions.forEach { sort ->
+                            routeConfig.sortOptions.forEachIndexed { idx, sort ->
                                 FilterChip(
                                     selected = selectedSort == sort,
                                     onClick = { selectedSort = sort },
+                                    modifier = Modifier.onPreviewKeyEvent { keyEvent ->
+                                        if (keyEvent.type == KeyEventType.KeyDown) {
+                                            when {
+                                                keyEvent.key == Key.DirectionLeft && idx == 0 -> {
+                                                    localFocusManager.moveFocus(FocusDirection.Left)
+                                                    true
+                                                }
+                                                keyEvent.key == Key.DirectionDown -> {
+                                                    gridFocusRequester.requestFocus()
+                                                    true
+                                                }
+                                                else -> false
+                                            }
+                                        } else {
+                                            false
+                                        }
+                                    },
                                 ) {
                                     TvText(sort.label)
                                 }
@@ -271,6 +311,7 @@ fun TvLibraryScreen(
                         itemCount = displayItems.size,
                         columnsCount = columns,
                         itemKeys = displayItems.map { it.id.toString() },
+                        focusRequester = gridFocusRequester,
                         onExitLeft = {
                             localFocusManager.moveFocus(FocusDirection.Left)
                         },

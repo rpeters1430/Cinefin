@@ -155,6 +155,38 @@ fun TvHomeScreen(
                         }
                     }
 
+                    // Next Up Episodes
+                    if (appState.nextUp.isNotEmpty()) {
+                        item {
+                            TvSectionRow(
+                                title = "Next Up",
+                                sectionPadding = tvLayout.screenHorizontalPadding,
+                                items = appState.nextUp.take(15),
+                                focusManager = focusManager,
+                                carouselId = "next_up_row",
+                                onExitLeft = {
+                                    localFocusManager.moveFocus(FocusDirection.Left)
+                                    true
+                                },
+                                onItemFocus = { focusedBackdrop = viewModel.getBackdropUrl(it) },
+                                onItemClick = { onItemSelect(it.id.toString()) },
+                                content = { item, isFocused, focusRequester ->
+                                    TvContentCard(
+                                        item = item,
+                                        onItemFocus = { focusedBackdrop = viewModel.getBackdropUrl(item) },
+                                        onItemSelect = { onItemSelect(item.id.toString()) },
+                                        getImageUrl = { viewModel.getSeriesImageUrl(it) ?: viewModel.getImageUrl(it) },
+                                        getSeriesImageUrl = viewModel::getSeriesImageUrl,
+                                        focusRequester = focusRequester,
+                                        isFocused = isFocused,
+                                        posterWidth = 260.dp,
+                                        posterHeight = 146.dp
+                                    )
+                                }
+                            )
+                        }
+                    }
+
                     // Recently Added Movies
                     val recentMovies = appState.recentlyAddedByTypes[BaseItemKind.MOVIE.name].orEmpty()
                     if (recentMovies.isNotEmpty()) {

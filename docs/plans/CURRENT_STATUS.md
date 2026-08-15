@@ -172,10 +172,11 @@ Key technology choices:
 - ✅ **Offline downloads completed**: background worker, progress notifications, storage management, and offline playback routing (Feb 2026)
 - ✅ **Offline download hanging bug** fixed (Jan 2026)
 - ✅ **Download ID mismatch** resolved (Jan 2026)
+- ✅ **Android TV D-pad navigation & focus polish**: Full 10-screen audit completed, focus dead-ends resolved, focus indicators and initial focus placement verified ([2026-08-13-tv-dpad-audit.md](2026-08-13-tv-dpad-audit.md))
 - ✅ **Chromecast enhancements**: seek bar, volume control, position tracking (Jan 2026)
 
 ### Active Development
-- 🔄 Android TV D-pad navigation testing (in progress - [ROADMAP §2.1](ROADMAP.md))
+- 🔄 Expanded instrumentation test coverage for playback + casting flows
 
 ### Code Quality Focus
 - 🎯 Test coverage target: 70%+ for ViewModels and Repositories

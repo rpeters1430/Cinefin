@@ -535,6 +535,41 @@ class ServerConnectionViewModelTest {
             viewModel.viewModelScope.cancel()
         }
 
+    @Test
+    fun `logout clears saved credentials, resets connection state and calls authRepository logout`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            coEvery { authRepository.logout() } just Runs
+
+            viewModel = ServerConnectionViewModel(
+                repository,
+                authRepository,
+                secureCredentialManager,
+                certificatePinningManager,
+                connectivityChecker,
+                discoveryRepository,
+                offlineDownloadManagerProvider,
+                context,
+                TestDispatcherProvider(mainDispatcherRule.dispatcher),
+            )
+            advanceUntilIdle()
+
+            viewModel.logout()
+            awaitCondition {
+                runCatching { coVerify { authRepository.logout() } }.isSuccess
+            }
+            advanceUntilIdle()
+
+            val state = viewModel.connectionState.value
+            assertFalse(state.isConnected)
+            assertFalse(state.isConnecting)
+            assertEquals("", state.savedServerUrl)
+            assertEquals("", state.savedUsername)
+            assertFalse(state.hasSavedPassword)
+
+            coVerify { authRepository.logout() }
+            viewModel.viewModelScope.cancel()
+        }
+
     // endregion
 
     private suspend fun awaitCondition(timeoutMs: Long = 2000, condition: suspend () -> Boolean) {

@@ -15,6 +15,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -22,9 +23,21 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalFocusManager
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.ui.components.tv.TvImmersiveBackground
 import com.rpeters.jellyfin.ui.theme.CinefinTvTheme
+import com.rpeters.jellyfin.ui.tv.TvScreenFocusScope
+import com.rpeters.jellyfin.ui.tv.rememberTvFocusManager
+import com.rpeters.jellyfin.ui.tv.requestInitialFocus
 import com.rpeters.jellyfin.ui.viewmodel.PlaybackPreferencesViewModel
 import com.rpeters.jellyfin.ui.viewmodel.ServerConnectionViewModel
 import com.rpeters.jellyfin.ui.viewmodel.SubtitleAppearancePreferencesViewModel
@@ -50,65 +63,73 @@ fun TvSettingsScreen(
     val subtitlePreferences by subtitlePreferencesViewModel.preferences.collectAsStateWithLifecycle()
     val themePreferences by themePreferencesViewModel.themePreferences.collectAsStateWithLifecycle()
     val tvLayout = CinefinTvTheme.layout
+    val focusManager = rememberTvFocusManager()
+    val localFocusManager = LocalFocusManager.current
+    val initialFocusRequester = remember { FocusRequester() }
 
-    val sections = listOf(
-        TvSettingsSection(
-            title = "Account",
-            subtitle = "Who you are signed in as and where this TV is connected.",
-            items = listOf(
-                TvSettingsItem("Server", connectionState.savedServerUrl.ifBlank { "Not connected" }),
-                TvSettingsItem("Username", connectionState.savedUsername.ifBlank { "Unknown account" }),
-                TvSettingsItem(
-                    "Session",
-                    if (connectionState.hasSavedPassword) "Saved sign-in available" else "No saved credentials",
+    initialFocusRequester.requestInitialFocus(condition = true, delayMs = 300)
+
+    val sections = remember(connectionState, playbackPreferences, subtitlePreferences, themePreferences) {
+        listOf(
+            TvSettingsSection(
+                title = "Account",
+                subtitle = "Who you are signed in as and where this TV is connected.",
+                items = listOf(
+                    TvSettingsItem("Server", connectionState.savedServerUrl.ifBlank { "Not connected" }),
+                    TvSettingsItem("Username", connectionState.savedUsername.ifBlank { "Unknown account" }),
+                    TvSettingsItem(
+                        "Session",
+                        if (connectionState.hasSavedPassword) "Saved sign-in available" else "No saved credentials",
+                    ),
                 ),
             ),
-        ),
-        TvSettingsSection(
-            title = "Playback",
-            subtitle = "How playback resumes, streams, and moves between episodes.",
-            items = listOf(
-                TvSettingsItem("Resume Playback", playbackPreferences.resumePlaybackMode.name.prettySettingLabel()),
-                TvSettingsItem("Autoplay Next Episode", playbackPreferences.autoPlayNextEpisode.onOffLabel()),
-                TvSettingsItem("Transcoding Quality", playbackPreferences.transcodingQuality.name.prettySettingLabel()),
-                TvSettingsItem("Audio Channels", playbackPreferences.audioChannels.name.prettySettingLabel()),
+            TvSettingsSection(
+                title = "Playback",
+                subtitle = "How playback resumes, streams, and moves between episodes.",
+                items = listOf(
+                    TvSettingsItem("Resume Playback", playbackPreferences.resumePlaybackMode.name.prettySettingLabel()),
+                    TvSettingsItem("Autoplay Next Episode", playbackPreferences.autoPlayNextEpisode.onOffLabel()),
+                    TvSettingsItem("Transcoding Quality", playbackPreferences.transcodingQuality.name.prettySettingLabel()),
+                    TvSettingsItem("Audio Channels", playbackPreferences.audioChannels.name.prettySettingLabel()),
+                ),
             ),
-        ),
-        TvSettingsSection(
-            title = "Audio & Subtitles",
-            subtitle = "Subtitle presentation and language defaults used during playback.",
-            items = listOf(
-                TvSettingsItem("Preferred Audio Language", playbackPreferences.preferredAudioLanguage ?: "System default"),
-                TvSettingsItem("Subtitle Size", subtitlePreferences.textSize.name.prettySettingLabel()),
-                TvSettingsItem("Subtitle Font", subtitlePreferences.font.name.prettySettingLabel()),
-                TvSettingsItem("Subtitle Background", subtitlePreferences.background.name.prettySettingLabel()),
+            TvSettingsSection(
+                title = "Audio & Subtitles",
+                subtitle = "Subtitle presentation and language defaults used during playback.",
+                items = listOf(
+                    TvSettingsItem("Preferred Audio Language", playbackPreferences.preferredAudioLanguage ?: "System default"),
+                    TvSettingsItem("Subtitle Size", subtitlePreferences.textSize.name.prettySettingLabel()),
+                    TvSettingsItem("Subtitle Font", subtitlePreferences.font.name.prettySettingLabel()),
+                    TvSettingsItem("Subtitle Background", subtitlePreferences.background.name.prettySettingLabel()),
+                ),
             ),
-        ),
-        TvSettingsSection(
-            title = "Appearance",
-            subtitle = "Theme choices that affect contrast, motion, and overall presentation.",
-            items = listOf(
-                TvSettingsItem("Theme Mode", themePreferences.themeMode.name.prettySettingLabel()),
-                TvSettingsItem("Accent Color", themePreferences.accentColor.name.prettySettingLabel()),
-                TvSettingsItem("Contrast", themePreferences.contrastLevel.name.prettySettingLabel()),
-                TvSettingsItem("Dynamic Color", themePreferences.useDynamicColors.onOffLabel()),
-                TvSettingsItem("Reduce Motion", themePreferences.respectReduceMotion.onOffLabel()),
+            TvSettingsSection(
+                title = "Appearance",
+                subtitle = "Theme choices that affect contrast, motion, and overall presentation.",
+                items = listOf(
+                    TvSettingsItem("Theme Mode", themePreferences.themeMode.name.prettySettingLabel()),
+                    TvSettingsItem("Accent Color", themePreferences.accentColor.name.prettySettingLabel()),
+                    TvSettingsItem("Contrast", themePreferences.contrastLevel.name.prettySettingLabel()),
+                    TvSettingsItem("Dynamic Color", themePreferences.useDynamicColors.onOffLabel()),
+                    TvSettingsItem("Reduce Motion", themePreferences.respectReduceMotion.onOffLabel()),
+                ),
             ),
-        ),
-        TvSettingsSection(
-            title = "Diagnostics",
-            subtitle = "Useful environment details when checking this TV setup.",
-            items = listOf(
-                TvSettingsItem("App Version", BuildConfig.VERSION_NAME),
-                TvSettingsItem("Build Type", BuildConfig.BUILD_TYPE.prettySettingLabel()),
-                TvSettingsItem("Remember Login", connectionState.rememberLogin.onOffLabel()),
-                TvSettingsItem("Biometric Sign-In", connectionState.isBiometricAuthEnabled.onOffLabel()),
+            TvSettingsSection(
+                title = "Diagnostics",
+                subtitle = "Useful environment details when checking this TV setup.",
+                items = listOf(
+                    TvSettingsItem("App Version", BuildConfig.VERSION_NAME),
+                    TvSettingsItem("Build Type", BuildConfig.BUILD_TYPE.prettySettingLabel()),
+                    TvSettingsItem("Remember Login", connectionState.rememberLogin.onOffLabel()),
+                    TvSettingsItem("Biometric Sign-In", connectionState.isBiometricAuthEnabled.onOffLabel()),
+                ),
             ),
-        ),
-    )
+        )
+    }
 
-    Box(modifier = modifier.fillMaxSize()) {
-        TvImmersiveBackground(backdropUrl = null)
+    TvScreenFocusScope(screenKey = "tv_settings", focusManager = focusManager) {
+        Box(modifier = modifier.fillMaxSize()) {
+            TvImmersiveBackground(backdropUrl = null)
 
         Column(
             modifier = Modifier
@@ -131,8 +152,15 @@ fun TvSettingsScreen(
                 )
             }
 
-            sections.forEach { section ->
-                TvSettingsSectionCard(section = section)
+            sections.forEachIndexed { index, section ->
+                TvSettingsSectionCard(
+                    section = section,
+                    isFirstSection = index == 0,
+                    initialFocusRequester = if (index == 0) initialFocusRequester else null,
+                    onExitLeft = {
+                        localFocusManager.moveFocus(FocusDirection.Left)
+                    },
+                )
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -142,6 +170,14 @@ fun TvSettingsScreen(
                         containerColor = Color.White.copy(alpha = 0.12f),
                         contentColor = Color.White,
                     ),
+                    modifier = Modifier.onPreviewKeyEvent { keyEvent ->
+                        if (keyEvent.type == KeyEventType.KeyDown && keyEvent.key == Key.DirectionLeft) {
+                            localFocusManager.moveFocus(FocusDirection.Left)
+                            true
+                        } else {
+                            false
+                        }
+                    },
                 ) {
                     TvText("Reset Theme")
                 }
@@ -161,6 +197,7 @@ fun TvSettingsScreen(
             }
         }
     }
+    }
 }
 
 private data class TvSettingsSection(
@@ -178,6 +215,9 @@ private data class TvSettingsItem(
 private fun TvSettingsSectionCard(
     section: TvSettingsSection,
     modifier: Modifier = Modifier,
+    isFirstSection: Boolean = false,
+    initialFocusRequester: FocusRequester? = null,
+    onExitLeft: (() -> Unit)? = null,
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -201,8 +241,27 @@ private fun TvSettingsSectionCard(
             contentPadding = PaddingValues(end = 24.dp),
         ) {
             items(section.items, key = { item -> "${section.title}_${item.label}" }) { item ->
+                val isFirstItem = section.items.indexOf(item) == 0
+                val cardModifier = Modifier
+                    .then(
+                        if (isFirstItem && initialFocusRequester != null) {
+                            Modifier.focusRequester(initialFocusRequester)
+                        } else {
+                            Modifier
+                        },
+                    )
+                    .onPreviewKeyEvent { keyEvent ->
+                        if (isFirstItem && keyEvent.type == KeyEventType.KeyDown && keyEvent.key == Key.DirectionLeft) {
+                            onExitLeft?.invoke()
+                            true
+                        } else {
+                            false
+                        }
+                    }
+
                 TvCard(
                     onClick = {},
+                    modifier = cardModifier,
                     scale = TvCardDefaults.scale(focusedScale = 1.03f),
                     colors = TvCardDefaults.colors(containerColor = Color.White.copy(alpha = 0.08f)),
                 ) {

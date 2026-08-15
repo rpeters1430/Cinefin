@@ -1,6 +1,7 @@
 package com.rpeters.jellyfin.ui.screens.tv
 
 import android.util.Log
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,6 +36,11 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -199,7 +205,13 @@ fun TvServerConnectionScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(tvLayout.formFieldHeight)
-                                .focusRequester(serverUrlFocusRequester),
+                                .focusRequester(serverUrlFocusRequester)
+                                .onPreviewKeyEvent { keyEvent ->
+                                    if (keyEvent.type == KeyEventType.KeyDown && keyEvent.key == Key.DirectionDown) {
+                                        usernameFocusRequester.requestFocus()
+                                        true
+                                    } else false
+                                },
                             enabled = !isConnecting,
                         )
 
@@ -219,7 +231,22 @@ fun TvServerConnectionScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(tvLayout.formFieldHeight)
-                                .focusRequester(usernameFocusRequester),
+                                .focusRequester(usernameFocusRequester)
+                                .onPreviewKeyEvent { keyEvent ->
+                                    if (keyEvent.type == KeyEventType.KeyDown) {
+                                        when (keyEvent.key) {
+                                            Key.DirectionDown -> {
+                                                passwordFocusRequester.requestFocus()
+                                                true
+                                            }
+                                            Key.DirectionUp -> {
+                                                serverUrlFocusRequester.requestFocus()
+                                                true
+                                            }
+                                            else -> false
+                                        }
+                                    } else false
+                                },
                             enabled = !isConnecting,
                         )
 
@@ -243,14 +270,39 @@ fun TvServerConnectionScreen(
                                 imeAction = ImeAction.Done,
                             ),
                             keyboardActions = KeyboardActions(
-                                onDone = { connectButtonFocusRequester.requestFocus() },
+                                onDone = {
+                                    if (serverUrl.isNotBlank() && username.isNotBlank() && password.isNotBlank()) {
+                                        connectButtonFocusRequester.requestFocus()
+                                    } else {
+                                        quickConnectButtonFocusRequester.requestFocus()
+                                    }
+                                },
                             ),
                             colors = tvLoginTextFieldColors(),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(tvLayout.formFieldHeight)
                                 .focusRequester(passwordFocusRequester)
-                                .onFocusChanged { passwordFocused = it.isFocused },
+                                .onFocusChanged { passwordFocused = it.isFocused }
+                                .onPreviewKeyEvent { keyEvent ->
+                                    if (keyEvent.type == KeyEventType.KeyDown) {
+                                        when (keyEvent.key) {
+                                            Key.DirectionDown -> {
+                                                if (serverUrl.isNotBlank() && username.isNotBlank() && password.isNotBlank()) {
+                                                    connectButtonFocusRequester.requestFocus()
+                                                } else {
+                                                    quickConnectButtonFocusRequester.requestFocus()
+                                                }
+                                                true
+                                            }
+                                            Key.DirectionUp -> {
+                                                usernameFocusRequester.requestFocus()
+                                                true
+                                            }
+                                            else -> false
+                                        }
+                                    } else false
+                                },
                             enabled = !isConnecting,
                         )
 
@@ -275,11 +327,13 @@ fun TvServerConnectionScreen(
                     }
                 }
 
-                TvCard(
-                    onClick = {},
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = TvCardDefaults.colors(containerColor = TvMaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.22f)),
-                    scale = TvCardDefaults.scale(focusedScale = 1f),
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            color = TvMaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.22f),
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                        ),
                 ) {
                     Column(
                         modifier = Modifier.padding(horizontal = 24.dp, vertical = 20.dp),
@@ -323,7 +377,13 @@ fun TvServerConnectionScreen(
                         modifier = Modifier
                             .weight(1f)
                             .height(56.dp)
-                            .focusRequester(connectButtonFocusRequester),
+                            .focusRequester(connectButtonFocusRequester)
+                            .onPreviewKeyEvent { keyEvent ->
+                                if (keyEvent.type == KeyEventType.KeyDown && keyEvent.key == Key.DirectionUp) {
+                                    passwordFocusRequester.requestFocus()
+                                    true
+                                } else false
+                            },
                     ) {
                         if (isConnecting) {
                             Row(
@@ -351,7 +411,13 @@ fun TvServerConnectionScreen(
                         modifier = Modifier
                             .weight(1f)
                             .height(56.dp)
-                            .focusRequester(quickConnectButtonFocusRequester),
+                            .focusRequester(quickConnectButtonFocusRequester)
+                            .onPreviewKeyEvent { keyEvent ->
+                                if (keyEvent.type == KeyEventType.KeyDown && keyEvent.key == Key.DirectionUp) {
+                                    passwordFocusRequester.requestFocus()
+                                    true
+                                } else false
+                            },
                     ) {
                         TvText(stringResource(id = R.string.quick_connect), style = TvMaterialTheme.typography.labelLarge)
                     }
@@ -389,11 +455,12 @@ private fun TvQuickTipChip(
     text: String,
     modifier: Modifier = Modifier,
 ) {
-    TvCard(
-        onClick = {},
-        modifier = modifier,
-        colors = TvCardDefaults.colors(containerColor = Color.White.copy(alpha = 0.08f)),
-        scale = TvCardDefaults.scale(focusedScale = 1f),
+    Box(
+        modifier = modifier
+            .background(
+                color = Color.White.copy(alpha = 0.08f),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+            ),
     ) {
         TvText(
             text = text,

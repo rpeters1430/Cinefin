@@ -1122,10 +1122,17 @@ class ServerConnectionViewModel @Inject constructor(
      * Explicit logout method that clears saved credentials and disconnects
      */
     fun logout() {
-        _connectionState.value = ConnectionState()
+        _connectionState.value = ConnectionState(
+            isConnected = false,
+            isConnecting = false,
+            savedServerUrl = "",
+            savedUsername = "",
+            hasSavedPassword = false,
+        )
         viewModelScope.launch {
-            // Clear saved credentials when user explicitly logs out
+            // Clear saved credentials and auth session when user explicitly logs out
             clearSavedCredentials()
+            authRepository.logout()
         }
     }
 

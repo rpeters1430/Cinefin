@@ -42,9 +42,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.tv.material3.Text
 import androidx.tv.material3.MaterialTheme as TvMaterialTheme
+import com.rpeters.jellyfin.ui.tv.tvKeyboardHandler
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
 import com.rpeters.jellyfin.ui.image.rememberCoilSize
@@ -67,6 +69,7 @@ fun TvAudioPlayerScreen(
     viewModel: AudioPlaybackViewModel = hiltViewModel(),
 ) {
     val focusManager = rememberTvFocusManager()
+    val localFocusManager = LocalFocusManager.current
     val playbackState by viewModel.playbackState.collectAsStateWithLifecycle()
     val queue by viewModel.queue.collectAsStateWithLifecycle()
 
@@ -94,7 +97,21 @@ fun TvAudioPlayerScreen(
         focusManager = focusManager,
     ) {
         Box(
-            modifier = modifier.fillMaxSize(),
+            modifier = modifier
+                .fillMaxSize()
+                .tvKeyboardHandler(
+                    focusManager = localFocusManager,
+                    onBack = {
+                        if (showQueue) {
+                            showQueue = false
+                        } else {
+                            onBack()
+                        }
+                    },
+                    onPlayPause = { viewModel.togglePlayPause() },
+                    onSeekForward = { viewModel.seekForward() },
+                    onSeekBackward = { viewModel.seekBackward() },
+                ),
         ) {
             // Background with blurred album art
             playbackState.currentMediaItem?.let { mediaItem ->

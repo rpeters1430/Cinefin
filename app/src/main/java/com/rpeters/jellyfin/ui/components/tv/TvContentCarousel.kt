@@ -254,11 +254,28 @@ fun TvContentCard(
             )
         },
         subtitle = {
-            item.productionYear?.let { year ->
+            val subtitleText = when (item.type) {
+                org.jellyfin.sdk.model.api.BaseItemKind.EPISODE -> {
+                    val series = item.seriesName
+                    val s = item.parentIndexNumber
+                    val e = item.indexNumber
+                    when {
+                        !series.isNullOrBlank() && s != null && e != null -> "$series • S${s}:E${e}"
+                        !series.isNullOrBlank() -> series
+                        s != null && e != null -> "S${s}:E${e}"
+                        else -> item.productionYear?.toString()
+                    }
+                }
+                else -> item.productionYear?.toString()
+            }
+
+            subtitleText?.let { text ->
                 TvText(
-                    text = year.toString(),
+                    text = text,
                     style = TvMaterialTheme.typography.bodyMedium,
                     color = TvMaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }

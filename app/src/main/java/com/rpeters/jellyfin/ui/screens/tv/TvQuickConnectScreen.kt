@@ -6,6 +6,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +20,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -37,6 +39,11 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -45,8 +52,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.tv.material3.Card as TvCard
-import androidx.tv.material3.CardDefaults as TvCardDefaults
 import androidx.tv.material3.Button
 import androidx.tv.material3.Icon as TvIcon
 import androidx.tv.material3.Text as TvText
@@ -142,11 +147,13 @@ fun TvQuickConnectScreen(
                 )
             }
 
-            TvCard(
-                onClick = {},
-                colors = TvCardDefaults.colors(containerColor = Color.White.copy(alpha = 0.08f)),
-                scale = TvCardDefaults.scale(focusedScale = 1f),
-                modifier = Modifier.fillMaxWidth(),
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        color = Color.White.copy(alpha = 0.08f),
+                        shape = RoundedCornerShape(12.dp),
+                    ),
             ) {
                 Column(
                     modifier = Modifier.padding(horizontal = 28.dp, vertical = 24.dp),
@@ -176,6 +183,8 @@ fun TvQuickConnectScreen(
                             onDone = {
                                 if (localServerUrl.isNotBlank() && !isPolling) {
                                     getCodeButtonFocusRequester.requestFocus()
+                                } else {
+                                    cancelButtonFocusRequester.requestFocus()
                                 }
                             },
                         ),
@@ -183,6 +192,16 @@ fun TvQuickConnectScreen(
                             .fillMaxWidth()
                             .height(64.dp)
                             .focusRequester(serverUrlFocusRequester)
+                            .onPreviewKeyEvent { keyEvent ->
+                                if (keyEvent.type == KeyEventType.KeyDown && keyEvent.key == Key.DirectionDown) {
+                                    if (localServerUrl.isNotBlank() && !isPolling) {
+                                        getCodeButtonFocusRequester.requestFocus()
+                                    } else {
+                                        cancelButtonFocusRequester.requestFocus()
+                                    }
+                                    true
+                                } else false
+                            }
                             .testTag(TvQuickConnectTestTags.SERVER_INPUT),
                         enabled = !isConnecting && !isPolling,
                     )
@@ -199,15 +218,14 @@ fun TvQuickConnectScreen(
 
             // Quick Connect Code display - LARGE for TV viewing from 10 feet
             if (quickConnectCode.isNotBlank()) {
-                TvCard(
-                    onClick = { /* No-op */ },
-                    colors = TvCardDefaults.colors(
-                        containerColor = TvMaterialTheme.colorScheme.primaryContainer,
-                    ),
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .background(
+                            color = TvMaterialTheme.colorScheme.primaryContainer,
+                            shape = RoundedCornerShape(16.dp),
+                        )
                         .testTag(TvQuickConnectTestTags.CODE_CARD),
-                    scale = TvCardDefaults.scale(focusedScale = 1f),
                 ) {
                     Column(
                         modifier = Modifier
@@ -251,19 +269,18 @@ fun TvQuickConnectScreen(
 
             // Status message with icon
             if (status.isNotBlank()) {
-                TvCard(
-                    onClick = { /* No-op */ },
-                    colors = TvCardDefaults.colors(
-                        containerColor = if (isPolling) {
-                            TvMaterialTheme.colorScheme.secondaryContainer
-                        } else {
-                            TvMaterialTheme.colorScheme.tertiaryContainer
-                        },
-                    ),
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .background(
+                            color = if (isPolling) {
+                                TvMaterialTheme.colorScheme.secondaryContainer
+                            } else {
+                                TvMaterialTheme.colorScheme.tertiaryContainer
+                            },
+                            shape = RoundedCornerShape(12.dp),
+                        )
                         .testTag(TvQuickConnectTestTags.STATUS_CARD),
-                    scale = TvCardDefaults.scale(focusedScale = 1f),
                 ) {
                     Row(
                         modifier = Modifier
@@ -312,13 +329,13 @@ fun TvQuickConnectScreen(
 
             // Error message
             if (errorMessage != null) {
-                TvCard(
-                    onClick = { /* No-op */ },
-                    colors = TvCardDefaults.colors(
-                        containerColor = TvMaterialTheme.colorScheme.error.copy(alpha = 0.2f),
-                    ),
-                    modifier = Modifier.fillMaxWidth(),
-                    scale = TvCardDefaults.scale(focusedScale = 1f),
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            color = TvMaterialTheme.colorScheme.error.copy(alpha = 0.2f),
+                            shape = RoundedCornerShape(12.dp),
+                        ),
                 ) {
                     TvText(
                         text = errorMessage,
@@ -343,6 +360,12 @@ fun TvQuickConnectScreen(
                         .weight(1f)
                         .height(56.dp)
                         .focusRequester(getCodeButtonFocusRequester)
+                        .onPreviewKeyEvent { keyEvent ->
+                            if (keyEvent.type == KeyEventType.KeyDown && keyEvent.key == Key.DirectionUp) {
+                                serverUrlFocusRequester.requestFocus()
+                                true
+                            } else false
+                        }
                         .testTag(TvQuickConnectTestTags.GET_CODE_BUTTON),
                 ) {
                     if (isConnecting) {
@@ -391,6 +414,12 @@ fun TvQuickConnectScreen(
                         .weight(1f)
                         .height(56.dp)
                         .focusRequester(cancelButtonFocusRequester)
+                        .onPreviewKeyEvent { keyEvent ->
+                            if (keyEvent.type == KeyEventType.KeyDown && keyEvent.key == Key.DirectionUp) {
+                                serverUrlFocusRequester.requestFocus()
+                                true
+                            } else false
+                        }
                         .testTag(TvQuickConnectTestTags.CANCEL_BUTTON),
                 ) {
                     TvText(
@@ -419,11 +448,12 @@ private fun QuickConnectStepChip(
     text: String,
     modifier: Modifier = Modifier,
 ) {
-    TvCard(
-        onClick = {},
-        modifier = modifier,
-        colors = TvCardDefaults.colors(containerColor = Color.White.copy(alpha = 0.08f)),
-        scale = TvCardDefaults.scale(focusedScale = 1f),
+    Box(
+        modifier = modifier
+            .background(
+                color = Color.White.copy(alpha = 0.08f),
+                shape = RoundedCornerShape(8.dp),
+            ),
     ) {
         TvText(
             text = text,

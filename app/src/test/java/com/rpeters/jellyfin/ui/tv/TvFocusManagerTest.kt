@@ -57,4 +57,16 @@ class TvFocusManagerTest {
 
         assertEquals("tv_home_featured", manager.getCarouselId("featured"))
     }
+
+    @Test
+    fun clearScreenFocusStates_clearsCurrentScreenKeyIfMatching() {
+        val manager = TvFocusManager()
+        manager.setCurrentScreen("tv_home")
+        manager.saveFocusState("tv_home_featured", 2, 0)
+
+        manager.clearScreenFocusStates("tv_home")
+
+        assertNull(manager.getFocusState("tv_home_featured"))
+    }
 }
+

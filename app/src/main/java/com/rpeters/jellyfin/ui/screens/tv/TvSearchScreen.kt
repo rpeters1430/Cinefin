@@ -131,11 +131,7 @@ fun TvSearchScreen(
                             if (keyEvent.type == KeyEventType.KeyDown) {
                                 when (keyEvent.key) {
                                     Key.DirectionDown -> {
-                                        if (searchState.selectedContentTypes.isNotEmpty()) {
-                                            firstFilterFocusRequester.requestFocus()
-                                        } else if (searchState.searchResults.isNotEmpty()) {
-                                            resultsFocusRequester.requestFocus()
-                                        }
+                                        firstFilterFocusRequester.requestFocus()
                                         true
                                     }
                                     Key.DirectionLeft -> {
