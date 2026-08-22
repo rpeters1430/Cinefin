@@ -47,6 +47,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -88,7 +89,7 @@ fun LibraryTypeScreen(
 ) {
     val appState by viewModel.appState.collectAsStateWithLifecycle()
     val libraryActionPrefs by libraryActionsPreferencesViewModel.preferences.collectAsStateWithLifecycle()
-    var viewMode by remember(libraryType) {
+    var viewMode by rememberSaveable(libraryType) {
         mutableStateOf(if (libraryType == LibraryType.STUFF) ViewMode.LIST else ViewMode.GRID)
     }
     val availableViewModes = remember(libraryType) {
@@ -97,7 +98,7 @@ fun LibraryTypeScreen(
             else -> ViewMode.entries
         }
     }
-    var selectedFilter by remember { mutableStateOf(FilterType.getDefault()) }
+    var selectedFilter by rememberSaveable { mutableStateOf(FilterType.getDefault()) }
     var hasRequestedData by remember(libraryType, folderId) { mutableStateOf(false) }
     val gridState = rememberLazyGridState()
     val listState = rememberLazyListState()
@@ -194,9 +195,15 @@ fun LibraryTypeScreen(
         }
     }
 
+    // Track the previous filter so scroll-to-top only fires when the filter actually changes,
+    // not on initial composition or when navigating back to this screen.
+    val previousFilter = remember { mutableStateOf(selectedFilter) }
     LaunchedEffect(selectedFilter, libraryType) {
-        gridState.scrollToItem(0)
-        listState.scrollToItem(0)
+        if (previousFilter.value != selectedFilter) {
+            previousFilter.value = selectedFilter
+            gridState.scrollToItem(0)
+            listState.scrollToItem(0)
+        }
     }
 
     LaunchedEffect(libraryType, libraryId, folderId) {
