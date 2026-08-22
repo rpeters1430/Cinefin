@@ -84,6 +84,12 @@ fun androidx.navigation.NavGraphBuilder.homeLibraryNavGraph(
                         }
                     }
 
+                    org.jellyfin.sdk.model.api.BaseItemKind.PLAYLIST -> {
+                        item.id.let { playlistId ->
+                            navController.navigate(Screen.PlaylistDetail.createRoute(playlistId.toString()))
+                        }
+                    }
+
                     else -> {
                         item.id.let { genericId ->
                             navController.navigate(Screen.ItemDetail.createRoute(genericId.toString()))
@@ -238,6 +244,11 @@ fun androidx.navigation.NavGraphBuilder.homeLibraryNavGraph(
                     org.jellyfin.sdk.model.api.BaseItemKind.SERIES -> {
                         item.id.let { seriesId ->
                             navController.navigate(Screen.TVSeasons.createRoute(seriesId.toString()))
+                        }
+                    }
+                    org.jellyfin.sdk.model.api.BaseItemKind.PLAYLIST -> {
+                        item.id.let { playlistId ->
+                            navController.navigate(Screen.PlaylistDetail.createRoute(playlistId.toString()))
                         }
                     }
                     else -> {

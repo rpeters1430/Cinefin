@@ -57,15 +57,12 @@ internal fun MobileExpressiveHomeContent(
     modifier: Modifier = Modifier,
 ) {
     val unknownText = androidx.compose.ui.res.stringResource(id = R.string.unknown)
-    val libraryRows = remember(appState.libraries, appState.itemsByLibrary, currentServer) {
+    val libraryRows = remember(appState.libraries, appState.recentlyAddedByLibrary, appState.itemsByLibrary, currentServer) {
         appState.libraries.mapNotNull { library ->
-            val libraryType = library.toLibraryTypeOrNull()
-            if (libraryType == LibraryType.STUFF || libraryType == LibraryType.TV_SHOWS) return@mapNotNull null
             val libraryId = library.id.toString()
-            val items = appState.itemsByLibrary[libraryId]
-                .orEmpty()
-                .sortedByDescending { it.dateCreated }
-                .take(10)
+            val items = appState.recentlyAddedByLibrary[libraryId]
+                ?: appState.itemsByLibrary[libraryId]?.sortedByDescending { it.dateCreated }?.take(10)
+                ?: emptyList()
             if (items.isEmpty()) null else library to items
         }
     }
@@ -167,34 +164,9 @@ internal fun MobileExpressiveHomeContent(
             }
         }
 
-        if (contentLists.recentEpisodes.isNotEmpty()) {
-            item(key = "recently_added_tv_episodes", contentType = "recent_episodes") {
-                PosterRowSection(
-                    title = androidx.compose.ui.res.stringResource(id = R.string.home_recently_added_tv_episodes),
-                    items = contentLists.recentEpisodes,
-                    getImageUrl = { item -> getSeriesImageUrl(item) ?: getImageUrl(item) },
-                    onItemClick = onItemClick,
-                    onItemLongPress = onItemLongPress,
-                    cardWidth = 200.dp,
-                )
-            }
-        }
-
-        if (contentLists.recentVideos.isNotEmpty()) {
-            item(key = "recent_stuff", contentType = "recent_stuff") {
-                MediaRowSection(
-                    title = androidx.compose.ui.res.stringResource(id = R.string.home_recently_added_stuff),
-                    items = contentLists.recentVideos,
-                    getImageUrl = { item -> getBackdropUrl(item) ?: getImageUrl(item) },
-                    onItemClick = onItemClick,
-                    onItemLongPress = onItemLongPress,
-                )
-            }
-        }
-
         items(
             items = libraryRows,
-            key = { (library, _) -> library.id.toString() },
+            key = { (library, _) -> "library_recent_${library.id}" },
             contentType = { "library_recent_row" },
         ) { (library, items) ->
             LibraryRecentSection(
@@ -223,7 +195,7 @@ private fun LibraryNavigationCarousel(
     getImageUrl: (BaseItemDto) -> String?,
     onLibraryClick: (BaseItemDto) -> Unit,
 ) {
-    val visibleLibraries = libraries.filterNot { it.collectionType == CollectionType.PLAYLISTS }
+    val visibleLibraries = libraries
     if (visibleLibraries.isEmpty()) return
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {

@@ -33,8 +33,10 @@ private val homeVideosSortOptions = listOf(
 @OptInAppExperimentalApis
 @Composable
 fun ImmersiveHomeVideosScreenContainer(
+    libraryId: String? = null,
     onVideoClick: (String) -> Unit,
     onItemClick: (String) -> Unit,
+    onPlaylistClick: (String) -> Unit = {},
     onFolderClick: (folderId: String, libraryId: String) -> Unit = { _, _ -> },
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -42,12 +44,21 @@ fun ImmersiveHomeVideosScreenContainer(
 ) {
     val appState by viewModel.appState.collectAsStateWithLifecycle()
 
-    val homeVideosLibraries = remember(appState.libraries) {
-        appState.libraries.filter { it.collectionType == CollectionType.HOMEVIDEOS }
+    val targetLibraries = remember(appState.libraries, libraryId) {
+        if (!libraryId.isNullOrBlank()) {
+            val matching = appState.libraries.filter { it.id.toString() == libraryId }
+            if (matching.isNotEmpty()) matching else appState.libraries.filter { it.collectionType == CollectionType.HOMEVIDEOS }
+        } else {
+            appState.libraries.filter { it.collectionType == CollectionType.HOMEVIDEOS }
+        }
     }
 
-    LaunchedEffect(homeVideosLibraries) {
-        homeVideosLibraries.forEach { library ->
+    val currentLibrary = remember(targetLibraries, libraryId) {
+        targetLibraries.firstOrNull { it.id.toString() == libraryId } ?: targetLibraries.firstOrNull()
+    }
+
+    LaunchedEffect(targetLibraries) {
+        targetLibraries.forEach { library ->
             val currentItems = appState.itemsByLibrary[library.id.toString()] ?: emptyList()
             if (currentItems.isEmpty()) {
                 viewModel.loadHomeVideos(library.id.toString())
@@ -55,27 +66,27 @@ fun ImmersiveHomeVideosScreenContainer(
         }
     }
 
-    val homeVideosLibraryIds = remember(homeVideosLibraries) {
-        homeVideosLibraries.map { it.id.toString() }
+    val targetLibraryIds = remember(targetLibraries) {
+        targetLibraries.map { it.id.toString() }
     }
 
     // Build a map from item ID to library ID for folder navigation
-    val itemToLibraryId = remember(appState.itemsByLibrary, homeVideosLibraries) {
+    val itemToLibraryId = remember(appState.itemsByLibrary, targetLibraries) {
         buildMap<String, String> {
-            homeVideosLibraries.forEach { library ->
-                val libraryId = library.id.toString()
-                appState.itemsByLibrary[libraryId]?.forEach { item ->
-                    put(item.id.toString(), libraryId)
+            targetLibraries.forEach { library ->
+                val libId = library.id.toString()
+                appState.itemsByLibrary[libId]?.forEach { item ->
+                    put(item.id.toString(), libId)
                 }
             }
         }
     }
 
-    val homeVideosItems = remember(appState.itemsByLibrary, homeVideosLibraries) {
+    val homeVideosItems = remember(appState.itemsByLibrary, targetLibraries) {
         // No type filter here — the API already returns only direct children (recursive=false).
         // Filtering by type would hide yt-dlp creator folders that Jellyfin classifies as
         // SERIES, BOX_SET, etc. instead of FOLDER.
-        homeVideosLibraries
+        targetLibraries
             .flatMap { appState.itemsByLibrary[it.id.toString()] ?: emptyList() }
     }
 
@@ -88,10 +99,11 @@ fun ImmersiveHomeVideosScreenContainer(
         // Only show directly playable items in the hero carousel — exclude all container types.
         sortedVideos.filter { it.type == BaseItemKind.VIDEO || it.type == BaseItemKind.MOVIE }.take(5)
     }
-    val routeHomeVideoItemClick: (String) -> Unit = remember(homeVideosItems, itemToLibraryId, onVideoClick, onItemClick, onFolderClick) {
+    val routeHomeVideoItemClick: (String) -> Unit = remember(homeVideosItems, itemToLibraryId, targetLibraries, onVideoClick, onPlaylistClick, onItemClick, onFolderClick) {
         { id ->
             when (homeVideosItems.firstOrNull { it.id.toString() == id }?.type) {
                 BaseItemKind.VIDEO -> onVideoClick(id)
+                BaseItemKind.PLAYLIST -> onPlaylistClick(id)
                 // Treat any container type (FOLDER, SERIES, BOX_SET, etc.) as a browsable folder.
                 // yt-dlp creator directories are often classified as SERIES by Jellyfin.
                 BaseItemKind.FOLDER,
@@ -99,22 +111,22 @@ fun ImmersiveHomeVideosScreenContainer(
                 BaseItemKind.BOX_SET,
                 BaseItemKind.COLLECTION_FOLDER,
                 -> {
-                    val libraryId = itemToLibraryId[id] ?: homeVideosLibraries.firstOrNull()?.id?.toString()
-                    if (libraryId != null) onFolderClick(id, libraryId)
+                    val libId = itemToLibraryId[id] ?: targetLibraries.firstOrNull()?.id?.toString()
+                    if (libId != null) onFolderClick(id, libId)
                 }
                 else -> onItemClick(id)
             }
         }
     }
 
-    val isLoadingMore = remember(appState.libraryPaginationState, homeVideosLibraryIds) {
-        homeVideosLibraryIds.any { appState.libraryPaginationState[it]?.isLoadingMore == true }
+    val isLoadingMore = remember(appState.libraryPaginationState, targetLibraryIds) {
+        targetLibraryIds.any { appState.libraryPaginationState[it]?.isLoadingMore == true }
     }
-    val hasMoreItems = remember(appState.libraryPaginationState, homeVideosLibraryIds) {
-        homeVideosLibraryIds.any { appState.libraryPaginationState[it]?.hasMore == true }
+    val hasMoreItems = remember(appState.libraryPaginationState, targetLibraryIds) {
+        targetLibraryIds.any { appState.libraryPaginationState[it]?.hasMore == true }
     }
 
-    val emptyTitle = stringResource(id = R.string.no_home_videos_found)
+    val emptyTitle = currentLibrary?.name?.let { "No items found in $it" } ?: stringResource(id = R.string.no_home_videos_found)
     val emptySubtitle = stringResource(id = R.string.adjust_home_videos_filters_hint)
 
     ImmersiveLibraryBrowserScreen(
@@ -132,7 +144,7 @@ fun ImmersiveHomeVideosScreenContainer(
         sortOptions = homeVideosSortOptions,
         selectedSortIndex = selectedSortIndex,
         onSortSelected = { selectedSortIndex = it },
-        onLoadMore = { viewModel.loadMoreHomeVideos(homeVideosLibraries) },
+        onLoadMore = { viewModel.loadMoreHomeVideos(targetLibraries) },
         onItemClick = routeHomeVideoItemClick,
         onCarouselItemClick = routeHomeVideoItemClick,
         onRefresh = { viewModel.loadInitialData() },

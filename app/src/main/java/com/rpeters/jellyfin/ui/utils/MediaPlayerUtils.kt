@@ -39,6 +39,7 @@ object MediaPlayerUtils {
         item: BaseItemDto,
         subtitleIndex: Int? = null,
         startPosition: Long? = null,
+        playlistId: String? = null,
     ) {
         if (item.type == BaseItemKind.AUDIO || item.type == BaseItemKind.MUSIC_ALBUM || item.type == BaseItemKind.AUDIO_BOOK) {
             playAudio(context, streamUrl, item)
@@ -58,7 +59,7 @@ object MediaPlayerUtils {
 
         try {
             if (BuildConfig.DEBUG) {
-                Log.d("MediaPlayerUtils", "Launching internal video player for: ${item.name} at position $startPosition")
+                Log.d("MediaPlayerUtils", "Launching internal video player for: ${item.name} at position $startPosition (playlistId: $playlistId)")
             }
 
             val itemId = item.id.toString()
@@ -71,6 +72,7 @@ object MediaPlayerUtils {
                 itemName = item.name ?: context.getString(R.string.unknown),
                 startPosition = resumePosition,
                 subtitleIndex = subtitleIndex,
+                playlistId = playlistId,
             )
             if (context !is android.app.Activity) {
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)

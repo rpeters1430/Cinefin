@@ -67,13 +67,13 @@ fun androidx.navigation.NavGraphBuilder.profileNavGraph(
         // Use ImmersiveSearchScreen by default
         ImmersiveSearchScreen(
             appState = appState,
-            onSearch = { query -> viewModel.search(query) },
+            onSearch = { searchQuery -> viewModel.search(searchQuery) },
             onClearSearch = { viewModel.clearSearch() },
             getImageUrl = { item -> viewModel.getImageUrl(item) },
             onBackClick = { navController.popBackStack() },
             onNowPlayingClick = { navController.navigate(Screen.NowPlaying.route) },
-            onSearchRequests = { query ->
-                navController.navigate(Screen.Requests.createRoute(query))
+            onSearchRequests = { requestQuery ->
+                navController.navigate(Screen.Requests.createRoute(requestQuery))
             },
             onItemClick = { item ->
                 when (item.type) {
@@ -98,6 +98,12 @@ fun androidx.navigation.NavGraphBuilder.profileNavGraph(
                     org.jellyfin.sdk.model.api.BaseItemKind.EPISODE -> {
                         item.id.let { episodeId ->
                             navController.navigate(Screen.TVEpisodeDetail.createRoute(episodeId.toString()))
+                        }
+                    }
+
+                    org.jellyfin.sdk.model.api.BaseItemKind.PLAYLIST -> {
+                        item.id.let { playlistId ->
+                            navController.navigate(Screen.PlaylistDetail.createRoute(playlistId.toString()))
                         }
                     }
 
@@ -155,6 +161,12 @@ fun androidx.navigation.NavGraphBuilder.profileNavGraph(
                     org.jellyfin.sdk.model.api.BaseItemKind.EPISODE -> {
                         item.id.let { episodeId ->
                             navController.navigate(Screen.TVEpisodeDetail.createRoute(episodeId.toString()))
+                        }
+                    }
+
+                    org.jellyfin.sdk.model.api.BaseItemKind.PLAYLIST -> {
+                        item.id.let { playlistId ->
+                            navController.navigate(Screen.PlaylistDetail.createRoute(playlistId.toString()))
                         }
                     }
 
@@ -356,6 +368,12 @@ fun androidx.navigation.NavGraphBuilder.profileNavGraph(
                     org.jellyfin.sdk.model.api.BaseItemKind.EPISODE -> {
                         item.id.let { episodeId ->
                             navController.navigate(Screen.TVEpisodeDetail.createRoute(episodeId.toString()))
+                        }
+                    }
+
+                    org.jellyfin.sdk.model.api.BaseItemKind.PLAYLIST -> {
+                        item.id.let { playlistId ->
+                            navController.navigate(Screen.PlaylistDetail.createRoute(playlistId.toString()))
                         }
                     }
 

@@ -400,4 +400,167 @@ class JellyfinMediaRepositoryTest {
             )
         }
     }
+
+    @Test
+    fun `getPlaylistItems queries items with parentId and returns items`() = runTest {
+        val userUuid = UUID.randomUUID()
+        val playlistUuid = UUID.randomUUID()
+        val playlistId = playlistUuid.toString()
+
+        val testServer = JellyfinServer(
+            id = "test-server",
+            name = "Test Server",
+            url = "http://localhost:8096",
+            userId = userUuid.toString(),
+            accessToken = "test-token",
+        )
+
+        every { authRepository.getCurrentServerSync() } returns testServer
+        every { authRepository.isTokenExpired() } returns false
+
+        coEvery {
+            sessionManager.executeWithAuth<List<BaseItemDto>?>(any(), any())
+        } coAnswers {
+            @Suppress("UNCHECKED_CAST")
+            val block = invocation.args[1] as suspend (JellyfinServer, ApiClient) -> List<BaseItemDto>?
+            block(testServer, apiClient)
+        }
+
+        val mockVideos = listOf(
+            mockk<BaseItemDto> {
+                coEvery { id } returns UUID.randomUUID()
+                coEvery { name } returns "YouTube Video 1"
+                coEvery { type } returns BaseItemKind.VIDEO
+            },
+        )
+        val queryResult = mockk<BaseItemDtoQueryResult> {
+            coEvery { items } returns mockVideos
+        }
+
+        coEvery {
+            itemsApi.getItems(
+                userId = userUuid,
+                parentId = playlistUuid,
+                fields = any(),
+            )
+        } returns Response(queryResult, 200, emptyMap())
+
+        val realRepository = JellyfinMediaRepository(authRepository, sessionManager, cache, healthChecker)
+        val result = realRepository.getPlaylistItems(playlistId)
+
+        assertTrue(result is ApiResult.Success<List<BaseItemDto>>)
+        val successResult = result as ApiResult.Success<List<BaseItemDto>>
+        assertEquals(1, successResult.data.size)
+        assertEquals("YouTube Video 1", successResult.data[0].name)
+    }
+
+    @Test
+    fun `getPlaylists queries items with PLAYLIST type and returns list`() = runTest {
+        val userUuid = UUID.randomUUID()
+
+        val testServer = JellyfinServer(
+            id = "test-server",
+            name = "Test Server",
+            url = "http://localhost:8096",
+            userId = userUuid.toString(),
+            accessToken = "test-token",
+        )
+
+        every { authRepository.getCurrentServerSync() } returns testServer
+        every { authRepository.isTokenExpired() } returns false
+
+        coEvery {
+            sessionManager.executeWithAuth<List<BaseItemDto>?>(any(), any())
+        } coAnswers {
+            @Suppress("UNCHECKED_CAST")
+            val block = invocation.args[1] as suspend (JellyfinServer, ApiClient) -> List<BaseItemDto>?
+            block(testServer, apiClient)
+        }
+
+        val mockPlaylists = listOf(
+            mockk<BaseItemDto> {
+                coEvery { id } returns UUID.randomUUID()
+                coEvery { name } returns "YouTarr Playlist"
+                coEvery { type } returns BaseItemKind.PLAYLIST
+            },
+        )
+        val queryResult = mockk<BaseItemDtoQueryResult> {
+            coEvery { items } returns mockPlaylists
+        }
+
+        coEvery {
+            itemsApi.getItems(
+                userId = userUuid,
+                includeItemTypes = listOf(BaseItemKind.PLAYLIST),
+                recursive = true,
+                limit = any(),
+                sortBy = any(),
+                sortOrder = any(),
+                fields = any(),
+            )
+        } returns Response(queryResult, 200, emptyMap())
+
+        val realRepository = JellyfinMediaRepository(authRepository, sessionManager, cache, healthChecker)
+        val result = realRepository.getPlaylists(100)
+
+        assertTrue(result is ApiResult.Success<List<BaseItemDto>>)
+        val successResult = result as ApiResult.Success<List<BaseItemDto>>
+        assertEquals(1, successResult.data.size)
+        assertEquals("YouTarr Playlist", successResult.data[0].name)
+    }
+
+    @Test
+    fun `getRecentlyAddedFromLibrary returns success with items from specific library`() = runTest {
+        val userUuid = UUID.randomUUID()
+        val libraryUuid = UUID.randomUUID()
+        val testServer = JellyfinServer(
+            id = "server-1",
+            name = "Test Server",
+            url = "http://localhost:8096",
+            accessToken = "test-token",
+            userId = userUuid.toString(),
+        )
+
+        every { authRepository.getCurrentServerSync() } returns testServer
+        every { authRepository.isTokenExpired() } returns false
+
+        coEvery {
+            sessionManager.executeWithAuth<List<BaseItemDto>?>(any(), any())
+        } coAnswers {
+            @Suppress("UNCHECKED_CAST")
+            val block = invocation.args[1] as suspend (JellyfinServer, ApiClient) -> List<BaseItemDto>?
+            block(testServer, apiClient)
+        }
+
+        val mockItems = listOf(
+            mockk<BaseItemDto> {
+                coEvery { id } returns UUID.randomUUID()
+                coEvery { name } returns "YouTube Video 1"
+                coEvery { type } returns BaseItemKind.VIDEO
+            },
+        )
+        val queryResult = mockk<BaseItemDtoQueryResult> {
+            coEvery { items } returns mockItems
+        }
+
+        coEvery {
+            itemsApi.getItems(
+                userId = userUuid,
+                parentId = libraryUuid,
+                recursive = true,
+                limit = any(),
+                sortBy = any(),
+                sortOrder = any(),
+                fields = any(),
+            )
+        } returns Response(queryResult, 200, emptyMap())
+
+        val realRepository = JellyfinMediaRepository(authRepository, sessionManager, cache, healthChecker)
+        val result = realRepository.getRecentlyAddedFromLibrary(libraryUuid.toString(), 15)
+
+        assertTrue(result is ApiResult.Success<List<BaseItemDto>>)
+        val successResult = result as ApiResult.Success<List<BaseItemDto>>
+        assertEquals(1, successResult.data.size)
+        assertEquals("YouTube Video 1", successResult.data[0].name)
+    }
 }

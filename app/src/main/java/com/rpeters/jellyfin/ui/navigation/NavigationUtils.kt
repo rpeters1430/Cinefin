@@ -26,18 +26,20 @@ fun NavController.navigateToMainDestination(route: String) {
  */
 fun shouldShowNavigation(route: String?): Boolean {
     if (route == null) return false
-    return route in setOf(
-        Screen.Home.route,
-        Screen.Library.route,
-        Screen.Search.route,
-        Screen.Requests.route,
-        Screen.Favorites.route,
-        Screen.Settings.route,
-        Screen.Movies.route,
-        Screen.TVShows.route,
-        Screen.Music.route,
-        Screen.HomeVideos.route,
-        Screen.Books.route,
+    val baseRoute = route.substringBefore('?').substringBefore('/')
+    return baseRoute in setOf(
+        "home",
+        "library",
+        "search",
+        "requests",
+        "favorites",
+        "settings",
+        "movies",
+        "tv_shows",
+        "music",
+        "home_videos",
+        "books",
+        "playlists",
     )
 }
 
@@ -51,7 +53,8 @@ fun libraryRouteFor(library: BaseItemDto): String? {
             CollectionType.TVSHOWS -> Screen.TVShows.route
             CollectionType.MUSIC -> Screen.Music.route
             CollectionType.BOOKS -> Screen.Books.route
-            CollectionType.HOMEVIDEOS -> Screen.HomeVideos.route
+            CollectionType.HOMEVIDEOS -> Screen.HomeVideos.createRoute(library.id.toString())
+            CollectionType.PLAYLISTS -> Screen.Playlists.route
             else -> library.id.toString().let { id ->
                 val type = library.collectionType?.toString()?.lowercase(Locale.getDefault())
                     ?: "mixed"

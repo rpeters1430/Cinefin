@@ -88,6 +88,7 @@ class VideoPlayerActivity : FragmentActivity() {
         private const val EXTRA_START_POSITION = "extra_start_position"
         private const val EXTRA_SUBTITLE_INDEX = "extra_subtitle_index"
         private const val EXTRA_FORCE_OFFLINE = "extra_force_offline"
+        private const val EXTRA_PLAYLIST_ID = "extra_playlist_id"
 
         @JvmStatic
         @VisibleForTesting
@@ -119,12 +120,16 @@ class VideoPlayerActivity : FragmentActivity() {
             startPosition: Long = 0L,
             subtitleIndex: Int? = null,
             forceOffline: Boolean = false,
+            playlistId: String? = null,
         ): Intent {
             return Intent(context, VideoPlayerActivity::class.java).apply {
                 putExtra(EXTRA_ITEM_ID, itemId)
                 putExtra(EXTRA_ITEM_NAME, itemName)
                 putExtra(EXTRA_START_POSITION, startPosition)
                 putExtra(EXTRA_FORCE_OFFLINE, forceOffline)
+                if (playlistId != null) {
+                    putExtra(EXTRA_PLAYLIST_ID, playlistId)
+                }
                 if (subtitleIndex != null) {
                     putExtra(EXTRA_SUBTITLE_INDEX, subtitleIndex)
                 }
@@ -161,6 +166,7 @@ class VideoPlayerActivity : FragmentActivity() {
                 null
             }
             val forceOffline = intent.getBooleanExtra(EXTRA_FORCE_OFFLINE, false)
+            val playlistId = intent.getStringExtra(EXTRA_PLAYLIST_ID)
 
             // Store item name for PiP title
             currentItemName = itemName
@@ -190,6 +196,7 @@ class VideoPlayerActivity : FragmentActivity() {
                             startPosition = startPosition,
                             subtitleIndex = subtitleIndex,
                             forceOffline = forceOffline,
+                            playlistId = playlistId,
                         )
                     )
                 } catch (e: CancellationException) {

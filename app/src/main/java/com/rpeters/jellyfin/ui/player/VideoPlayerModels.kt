@@ -123,6 +123,7 @@ data class VideoPlayerState(
     val showNextEpisodeCountdown: Boolean = false,
     val nextEpisodeCountdown: Int = 0, // seconds remaining
     val hasEnded: Boolean = false,
+    val playlistId: String? = null,
     // Adaptive bitrate quality recommendation
     val qualityRecommendation: com.rpeters.jellyfin.data.playback.QualityRecommendation? = null,
 )
@@ -134,7 +135,8 @@ sealed class VideoPlayerIntent {
         val startPosition: Long = 0,
         val subtitleIndex: Int? = null,
         val audioIndex: Int? = null,
-        val forceOffline: Boolean = false
+        val forceOffline: Boolean = false,
+        val playlistId: String? = null,
     ) : VideoPlayerIntent()
     object TogglePlayPause : VideoPlayerIntent()
     data class SeekTo(val positionMs: Long) : VideoPlayerIntent()

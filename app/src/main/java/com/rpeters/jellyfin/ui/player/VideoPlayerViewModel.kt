@@ -156,7 +156,8 @@ class VideoPlayerViewModel @Inject constructor(
                         intent.startPosition,
                         intent.subtitleIndex,
                         intent.audioIndex,
-                        intent.forceOffline
+                        intent.forceOffline,
+                        intent.playlistId,
                     )
                 }
             }
@@ -230,8 +231,9 @@ class VideoPlayerViewModel @Inject constructor(
         subtitleIndex: Int? = null,
         audioIndex: Int? = null,
         forceOffline: Boolean = false,
+        playlistId: String? = null,
     ) {
-        SecureLogger.d("VideoPlayer", "Initializing playback for $itemName")
+        SecureLogger.d("VideoPlayer", "Initializing playback for $itemName (playlistId: $playlistId)")
 
         val resumeStartPosition = if (startPosition > 0) {
             startPosition
@@ -246,6 +248,7 @@ class VideoPlayerViewModel @Inject constructor(
             it.copy(
                 itemId = itemId,
                 itemName = itemName,
+                playlistId = playlistId,
                 isLoading = true,
                 isPlaying = false,
                 currentPosition = 0L,
@@ -281,7 +284,7 @@ class VideoPlayerViewModel @Inject constructor(
             // Load metadata and skip markers
             val metadata = metadataManager.loadSkipMarkers(itemId)
             currentItemMetadata = metadata
-            metadataManager.loadNextEpisodeIfAvailable(metadata)
+            metadataManager.loadNextEpisodeIfAvailable(metadata, playlistId)
 
             // Get playback info for subtitles
             val playbackInfo = try { repository.getPlaybackInfo(itemId) } catch (_: Exception) { null }
@@ -389,6 +392,7 @@ class VideoPlayerViewModel @Inject constructor(
 
     internal fun playNextEpisode() {
         val nextEpisode = stateManager.playerState.value.nextEpisode ?: return
+        val currentPlaylistId = stateManager.playerState.value.playlistId
         metadataManager.cancelNextEpisodeCountdown()
         viewModelScope.launch {
             playbackManager.releasePlayer()
@@ -396,6 +400,7 @@ class VideoPlayerViewModel @Inject constructor(
                 itemId = nextEpisode.id.toString(),
                 itemName = nextEpisode.name ?: "Next Episode",
                 startPosition = 0,
+                playlistId = currentPlaylistId,
             )
         }
     }

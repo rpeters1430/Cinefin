@@ -53,6 +53,7 @@ data class MainAppState(
     val libraries: List<BaseItemDto> = emptyList(),
     val recentlyAdded: List<BaseItemDto> = emptyList(),
     val recentlyAddedByTypes: Map<String, List<BaseItemDto>> = emptyMap(),
+    val recentlyAddedByLibrary: Map<String, List<BaseItemDto>> = emptyMap(),
     val allMovies: List<BaseItemDto> = emptyList(),
     val allTVShows: List<BaseItemDto> = emptyList(),
     val allItems: List<BaseItemDto> = emptyList(),
@@ -269,9 +270,30 @@ constructor(
             }.awaitAll().filterNotNull().toMap()
         }
 
+    /**
+     * Load recently added content specifically for each library.
+     * Keeps libraries of the same type separated with their own distinct recently added items.
+     */
+    private suspend fun loadRecentlyAddedForLibraries(
+        libraries: List<BaseItemDto>,
+    ): Map<String, List<BaseItemDto>> = coroutineScope {
+        libraries.map { library ->
+            val libraryId = library.id.toString()
+            async {
+                val result = mediaRepository.getRecentlyAddedFromLibrary(libraryId, limit = 15)
+                if (result is ApiResult.Success && result.data.isNotEmpty()) {
+                    libraryId to result.data
+                } else {
+                    null
+                }
+            }
+        }.awaitAll().filterNotNull().toMap()
+    }
+
     private data class InitialSupplementalData(
         val recentlyAdded: List<BaseItemDto>? = null,
         val recentlyAddedByTypes: Map<String, List<BaseItemDto>>? = null,
+        val recentlyAddedByLibrary: Map<String, List<BaseItemDto>>? = null,
         val continueWatching: List<BaseItemDto>? = null,
         val nextUp: List<BaseItemDto>? = null,
         val currentUser: CurrentUserDetails? = null,
@@ -294,10 +316,12 @@ constructor(
 
     private suspend fun loadInitialSupplementalData(
         forceRefresh: Boolean,
+        libraries: List<BaseItemDto> = emptyList(),
     ): InitialSupplementalData = withContext(dispatchers.io) {
         supervisorScope {
             val recentDeferred = async { mediaRepository.getRecentlyAdded(forceRefresh = forceRefresh) }
             val recentByTypesDeferred = async { loadRecentlyAddedByTypes(forceRefresh = forceRefresh) }
+            val recentByLibraryDeferred = async { loadRecentlyAddedForLibraries(libraries) }
             val continueWatchingDeferred = async { mediaRepository.getContinueWatching(forceRefresh = forceRefresh) }
             val nextUpDeferred = async { mediaRepository.getNextUp() }
             val currentUserDeferred = async { userRepository.getCurrentUser() }
@@ -324,6 +348,18 @@ constructor(
                     "Recently added by types failed during supplemental initial load: ${throwable.message}",
                 )
                 errors += "Recently added by types: ${throwable.message ?: "Unknown error"}"
+                null
+            }
+
+            val recentlyAddedByLibrary = try {
+                recentByLibraryDeferred.await()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (throwable: Exception) {
+                SecureLogger.w(
+                    "MainAppViewModel-Initial",
+                    "Recently added by library failed during supplemental initial load: ${throwable.message}",
+                )
                 null
             }
 
@@ -360,6 +396,7 @@ constructor(
             InitialSupplementalData(
                 recentlyAdded = recentlyAdded,
                 recentlyAddedByTypes = recentlyAddedByTypes,
+                recentlyAddedByLibrary = recentlyAddedByLibrary,
                 continueWatching = continueWatching,
                 nextUp = nextUp,
                 currentUser = currentUser,
@@ -468,12 +505,13 @@ constructor(
                             errorMessage = null,
                         )
 
-                        val supplementalData = loadInitialSupplementalData(forceRefresh)
+                        val supplementalData = loadInitialSupplementalData(forceRefresh, libraries)
 
                         _appState.update { state ->
                             state.copy(
                                 recentlyAdded = supplementalData.recentlyAdded ?: state.recentlyAdded,
                                 recentlyAddedByTypes = supplementalData.recentlyAddedByTypes ?: state.recentlyAddedByTypes,
+                                recentlyAddedByLibrary = supplementalData.recentlyAddedByLibrary ?: state.recentlyAddedByLibrary,
                                 continueWatching = supplementalData.continueWatching ?: state.continueWatching,
                                 nextUp = supplementalData.nextUp ?: state.nextUp,
                                 currentUser = supplementalData.currentUser ?: state.currentUser,

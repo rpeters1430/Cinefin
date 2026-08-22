@@ -67,6 +67,26 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
     }
 
     composable(
+        route = Screen.PlaylistDetail.route,
+        arguments = listOf(
+            navArgument(Screen.PLAYLIST_ID_ARG) { type = NavType.StringType },
+        ),
+    ) { backStackEntry ->
+        val playlistId =
+            backStackEntry.arguments?.getString(Screen.PLAYLIST_ID_ARG) ?: return@composable
+        val mainViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<MainAppViewModel>()
+
+        com.rpeters.jellyfin.ui.screens.ImmersivePlaylistDetailScreen(
+            playlistId = playlistId,
+            onBackClick = { navController.popBackStack() },
+            onVideoDetailClick = { videoId ->
+                navController.navigate(Screen.HomeVideoDetail.createRoute(videoId))
+            },
+            mainViewModel = mainViewModel,
+        )
+    }
+
+    composable(
         route = Screen.ArtistDetail.route,
         arguments = listOf(
             navArgument(Screen.ARTIST_ID_ARG) { type = NavType.StringType },

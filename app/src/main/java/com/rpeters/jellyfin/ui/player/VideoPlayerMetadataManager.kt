@@ -90,7 +90,25 @@ class VideoPlayerMetadataManager @Inject constructor(
         }
     }
 
-    suspend fun loadNextEpisodeIfAvailable(metadata: BaseItemDto?) {
+    suspend fun loadNextEpisodeIfAvailable(metadata: BaseItemDto?, playlistId: String? = null) {
+        if (!playlistId.isNullOrBlank()) {
+            try {
+                when (val result = repository.getPlaylistItems(playlistId)) {
+                    is com.rpeters.jellyfin.data.repository.common.ApiResult.Success -> {
+                        val items = result.data
+                        val targetId = metadata?.id?.toString()
+                        val currentIndex = items.indexOfFirst { it.id.toString() == targetId }
+                        val nextItem = if (currentIndex >= 0) items.getOrNull(currentIndex + 1) else null
+                        stateManager.updateState { it.copy(nextEpisode = nextItem) }
+                        return
+                    }
+                    else -> {}
+                }
+            } catch (e: Exception) {
+                SecureLogger.e("VideoPlayerMetadata", "Failed to load next playlist item", e)
+            }
+        }
+
         if (metadata == null) return
 
         val seasonId = metadata.seasonId?.toString() ?: return

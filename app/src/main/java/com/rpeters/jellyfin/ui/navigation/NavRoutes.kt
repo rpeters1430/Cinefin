@@ -29,8 +29,12 @@ sealed class Screen(val route: String) {
     object Music : Screen("music")
     object NowPlaying : Screen("now_playing")
     object AudioQueue : Screen("audio_queue")
-    object HomeVideos : Screen("home_videos")
+    object HomeVideos : Screen("home_videos?libraryId={libraryId}") {
+        fun createRoute(libraryId: String? = null) =
+            if (libraryId != null) "home_videos?libraryId=$libraryId" else "home_videos"
+    }
     object Books : Screen("books")
+    object Playlists : Screen("playlists")
     object Stuff : Screen("stuff/{libraryId}/{collectionType}") {
         fun createRoute(libraryId: String, collectionType: String) =
             "stuff/$libraryId/$collectionType"
@@ -78,6 +82,9 @@ sealed class Screen(val route: String) {
     object HomeVideoDetail : Screen("home_video_detail/{videoId}") {
         fun createRoute(videoId: String) = "home_video_detail/$videoId"
     }
+    object PlaylistDetail : Screen("playlist_detail/{playlistId}") {
+        fun createRoute(playlistId: String) = "playlist_detail/$playlistId"
+    }
     object ItemDetail : Screen("item_detail/{itemId}?startPosition={startPosition}") {
         fun createRoute(itemId: String, startPosition: Long? = null) =
             if (startPosition != null) "item_detail/$itemId?startPosition=$startPosition"
@@ -93,6 +100,7 @@ sealed class Screen(val route: String) {
         const val ALBUM_ID_ARG = "albumId"
         const val ARTIST_ID_ARG = "artistId"
         const val VIDEO_ID_ARG = "videoId"
+        const val PLAYLIST_ID_ARG = "playlistId"
         const val ITEM_ID_ARG = "itemId"
         const val START_POSITION_ARG = "startPosition"
         const val LIBRARY_ID_ARG = "libraryId"

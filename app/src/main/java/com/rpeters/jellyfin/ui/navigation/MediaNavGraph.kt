@@ -236,7 +236,17 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
         )
     }
 
-    composable(Screen.HomeVideos.route) {
+    composable(
+        route = Screen.HomeVideos.route,
+        arguments = listOf(
+            navArgument(Screen.LIBRARY_ID_ARG) {
+                type = NavType.StringType
+                nullable = true
+                defaultValue = null
+            },
+        ),
+    ) { backStackEntry ->
+        val libraryId = backStackEntry.arguments?.getString(Screen.LIBRARY_ID_ARG)
         val viewModel = mainViewModel
         val appState by viewModel.appState.collectAsStateWithLifecycle(
             lifecycle = LocalLifecycleOwner.current.lifecycle,
@@ -244,23 +254,21 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
         )
 
         LaunchedEffect(Unit) {
-            SecureLogger.v("NavGraph-HomeVideos", "?? HomeVideos screen entered - Initial state check")
-            SecureLogger.v("NavGraph-HomeVideos", "  Libraries count: ${appState.libraries.size}")
-            SecureLogger.v("NavGraph-HomeVideos", "  Is loading: ${appState.isLoading}")
-
+            SecureLogger.v("NavGraph-HomeVideos", "HomeVideos screen entered - libraryId: $libraryId")
             if (appState.libraries.isEmpty() && !appState.isLoading) {
-                SecureLogger.v("NavGraph-HomeVideos", "  ?? Loading initial data...")
                 viewModel.loadInitialData()
             }
         }
 
         // Use ImmersiveHomeVideosScreenContainer by default
         ImmersiveHomeVideosScreenContainer(
+            libraryId = libraryId,
             onBackClick = { navController.popBackStack() },
             onVideoClick = { id -> navController.navigate(Screen.HomeVideoDetail.createRoute(id)) },
+            onPlaylistClick = { id -> navController.navigate(Screen.PlaylistDetail.createRoute(id)) },
             onItemClick = { id -> navController.navigate(Screen.ItemDetail.createRoute(id)) },
-            onFolderClick = { folderId, libraryId ->
-                navController.navigate(Screen.Stuff.createRoute(libraryId, "homevideos") + "?folderId=$folderId")
+            onFolderClick = { folderId, libId ->
+                navController.navigate(Screen.Stuff.createRoute(libId, "homevideos") + "?folderId=$folderId")
             },
             viewModel = viewModel,
         )
@@ -301,6 +309,7 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
                     when (item.type) {
                         BaseItemKind.VIDEO -> navController.navigate(Screen.HomeVideoDetail.createRoute(id))
                         BaseItemKind.SERIES -> navController.navigate(Screen.TVSeasons.createRoute(id))
+                        BaseItemKind.PLAYLIST -> navController.navigate(Screen.PlaylistDetail.createRoute(id))
                         BaseItemKind.FOLDER -> {
                             navController.navigate(Screen.Stuff.route + "?${Screen.LIBRARY_ID_ARG}=$libraryId&folderId=$id")
                         }
@@ -309,6 +318,17 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
                 }
             },
             viewModel = mainViewModel,
+        )
+    }
+
+    composable(Screen.Playlists.route) {
+        com.rpeters.jellyfin.ui.screens.ImmersivePlaylistsScreenContainer(
+            onPlaylistClick = { playlistId ->
+                navController.navigate(Screen.PlaylistDetail.createRoute(playlistId))
+            },
+            onBackClick = { navController.popBackStack() },
+            onSearchClick = { navController.navigate(Screen.Search.route) },
+            mainViewModel = mainViewModel,
         )
     }
 }

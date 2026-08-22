@@ -112,31 +112,17 @@ fun HomeContent(
                 rowKind = HomeRowKind.POSTER,
                 imageSelector = HomeImageSelector.SERIES_OR_DEFAULT,
             ),
-            HomeRowSectionConfig(
-                key = HomeSectionKeys.RECENT_EPISODES,
-                contentType = HomeSectionContentTypes.POSTER_ROW,
-                titleRes = R.string.home_recently_added_tv_episodes,
-                items = contentLists.recentEpisodes,
-                rowKind = HomeRowKind.POSTER,
-                imageSelector = HomeImageSelector.SERIES_OR_DEFAULT,
-            ),
-            HomeRowSectionConfig(
-                key = HomeSectionKeys.RECENT_MOVIES,
-                contentType = HomeSectionContentTypes.POSTER_ROW,
-                titleRes = R.string.home_recently_added_movies,
-                items = contentLists.recentMovies,
-                rowKind = HomeRowKind.POSTER,
-                imageSelector = HomeImageSelector.DEFAULT,
-            ),
-            HomeRowSectionConfig(
-                key = HomeSectionKeys.RECENT_STUFF,
-                contentType = HomeSectionContentTypes.MEDIA_ROW,
-                titleRes = R.string.home_recently_added_stuff,
-                items = contentLists.recentVideos,
-                rowKind = HomeRowKind.MEDIA,
-                imageSelector = HomeImageSelector.BACKDROP_OR_DEFAULT,
-            ),
         ).filter { it.items.isNotEmpty() }
+    }
+
+    val libraryRows = remember(appState.libraries, appState.recentlyAddedByLibrary, appState.itemsByLibrary, adaptiveConfig.rowItemLimit) {
+        appState.libraries.mapNotNull { library ->
+            val libraryId = library.id.toString()
+            val items = appState.recentlyAddedByLibrary[libraryId]
+                ?: appState.itemsByLibrary[libraryId]?.sortedByDescending { it.dateCreated }?.take(adaptiveConfig.rowItemLimit)
+                ?: emptyList()
+            if (items.isEmpty()) null else library to items
+        }
     }
 
     val surfaceCoordinatorViewModel: SurfaceCoordinatorViewModel = hiltViewModel()
@@ -294,6 +280,40 @@ fun HomeContent(
                                     cardWidth = adaptiveConfig.mediaCardWidth,
                                 )
                             }
+                        }
+                    }
+                }
+
+                // Per-Library Recently Added Rows
+                libraryRows.forEach { (library, items) ->
+                    item(key = "library_recent_${library.id}", contentType = "library_recent_row") {
+                        val isMediaRow = library.toLibraryTypeOrNull() == com.rpeters.jellyfin.ui.screens.LibraryType.STUFF ||
+                            library.toLibraryTypeOrNull() == com.rpeters.jellyfin.ui.screens.LibraryType.MUSIC
+                        val title = library.name ?: stringResource(R.string.library_recently_added_section)
+                        if (isMediaRow) {
+                            MediaRowSection(
+                                title = title,
+                                items = items,
+                                getImageUrl = { item -> getBackdropUrl(item) ?: getImageUrl(item) },
+                                onItemClick = stableOnItemClick,
+                                onItemLongPress = stableOnItemLongPress,
+                                cardWidth = adaptiveConfig.mediaCardWidth,
+                            )
+                        } else {
+                            PosterRowSection(
+                                title = title,
+                                items = items,
+                                getImageUrl = { item ->
+                                    if (item.type == BaseItemKind.EPISODE || item.type == BaseItemKind.SERIES) {
+                                        getSeriesImageUrl(item) ?: getImageUrl(item)
+                                    } else {
+                                        getImageUrl(item)
+                                    }
+                                },
+                                onItemClick = stableOnItemClick,
+                                onItemLongPress = stableOnItemLongPress,
+                                cardWidth = adaptiveConfig.posterCardWidth,
+                            )
                         }
                     }
                 }

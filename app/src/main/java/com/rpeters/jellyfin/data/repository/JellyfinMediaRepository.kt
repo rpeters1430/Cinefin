@@ -51,6 +51,7 @@ class JellyfinMediaRepository @Inject constructor(
         "homevideos" -> null // Don't specify types for home videos - let server decide
         "photos" -> listOf(BaseItemKind.PHOTO)
         "books" -> listOf(BaseItemKind.BOOK, BaseItemKind.AUDIO_BOOK)
+        "playlists" -> listOf(BaseItemKind.PLAYLIST)
         else -> null
     }
 
@@ -127,6 +128,7 @@ class JellyfinMediaRepository @Inject constructor(
                     "Video" -> BaseItemKind.VIDEO
                     "Photo" -> BaseItemKind.PHOTO
                     "Folder" -> BaseItemKind.FOLDER
+                    "Playlist" -> BaseItemKind.PLAYLIST
                     else -> null
                 }
             }
@@ -261,6 +263,36 @@ class JellyfinMediaRepository @Inject constructor(
         }
     }
 
+    suspend fun getRecentlyAddedFromLibrary(
+        libraryId: String,
+        limit: Int = 20,
+    ): ApiResult<List<BaseItemDto>> =
+        withServerClient("getRecentlyAddedFromLibrary") { server, client ->
+            val userUuid = parseUuid(server.userId ?: "", "user")
+            val parentUuid = parseUuid(libraryId, "library")
+            val response = client.itemsApi.getItems(
+                userId = userUuid,
+                parentId = parentUuid,
+                recursive = true,
+                sortBy = listOf(ItemSortBy.DATE_CREATED),
+                sortOrder = listOf(SortOrder.DESCENDING),
+                fields = listOf(
+                    org.jellyfin.sdk.model.api.ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
+                    org.jellyfin.sdk.model.api.ItemFields.MEDIA_SOURCES,
+                    org.jellyfin.sdk.model.api.ItemFields.MEDIA_STREAMS,
+                    org.jellyfin.sdk.model.api.ItemFields.OVERVIEW,
+                    org.jellyfin.sdk.model.api.ItemFields.DATE_CREATED,
+                    org.jellyfin.sdk.model.api.ItemFields.CHILD_COUNT,
+                    org.jellyfin.sdk.model.api.ItemFields.CUMULATIVE_RUN_TIME_TICKS,
+                    org.jellyfin.sdk.model.api.ItemFields.GENRES,
+                    org.jellyfin.sdk.model.api.ItemFields.STUDIOS,
+                    org.jellyfin.sdk.model.api.ItemFields.TAGS,
+                ),
+                limit = limit,
+            )
+            response.content.items
+        }
+
     suspend fun getContinueWatching(limit: Int = 20, forceRefresh: Boolean = false): ApiResult<List<BaseItemDto>> {
         return withServerClient("getContinueWatching") { server, client ->
             val userUuid = parseUuid(server.userId ?: "", "user")
@@ -323,6 +355,57 @@ class JellyfinMediaRepository @Inject constructor(
     suspend fun getItemDetails(itemId: String): ApiResult<BaseItemDto> =
         withServerClient("getItemDetails") { server, client ->
             getItemDetailsById(itemId, "item", server, client)
+        }
+
+    suspend fun getPlaylistDetails(playlistId: String): ApiResult<BaseItemDto> =
+        withServerClient("getPlaylistDetails") { server, client ->
+            getItemDetailsById(playlistId, "playlist", server, client)
+        }
+
+    suspend fun getPlaylistItems(playlistId: String): ApiResult<List<BaseItemDto>> =
+        withServerClient("getPlaylistItems") { server, client ->
+            val userUuid = parseUuid(server.userId ?: "", "user")
+            val playlistUuid = parseUuid(playlistId, "playlist")
+            val response = client.itemsApi.getItems(
+                userId = userUuid,
+                parentId = playlistUuid,
+                fields = listOf(
+                    org.jellyfin.sdk.model.api.ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
+                    org.jellyfin.sdk.model.api.ItemFields.MEDIA_SOURCES,
+                    org.jellyfin.sdk.model.api.ItemFields.MEDIA_STREAMS,
+                    org.jellyfin.sdk.model.api.ItemFields.OVERVIEW,
+                    org.jellyfin.sdk.model.api.ItemFields.DATE_CREATED,
+                    org.jellyfin.sdk.model.api.ItemFields.CHILD_COUNT,
+                    org.jellyfin.sdk.model.api.ItemFields.CUMULATIVE_RUN_TIME_TICKS,
+                    org.jellyfin.sdk.model.api.ItemFields.GENRES,
+                    org.jellyfin.sdk.model.api.ItemFields.STUDIOS,
+                    org.jellyfin.sdk.model.api.ItemFields.TAGS,
+                ),
+            )
+            response.content.items
+        }
+
+    suspend fun getPlaylists(limit: Int = 100): ApiResult<List<BaseItemDto>> =
+        withServerClient("getPlaylists") { server, client ->
+            val userUuid = parseUuid(server.userId ?: "", "user")
+            val response = client.itemsApi.getItems(
+                userId = userUuid,
+                includeItemTypes = listOf(BaseItemKind.PLAYLIST),
+                recursive = true,
+                limit = limit,
+                sortBy = listOf(ItemSortBy.SORT_NAME),
+                sortOrder = listOf(SortOrder.ASCENDING),
+                fields = listOf(
+                    org.jellyfin.sdk.model.api.ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
+                    org.jellyfin.sdk.model.api.ItemFields.OVERVIEW,
+                    org.jellyfin.sdk.model.api.ItemFields.DATE_CREATED,
+                    org.jellyfin.sdk.model.api.ItemFields.CHILD_COUNT,
+                    org.jellyfin.sdk.model.api.ItemFields.CUMULATIVE_RUN_TIME_TICKS,
+                    org.jellyfin.sdk.model.api.ItemFields.TAGS,
+                    org.jellyfin.sdk.model.api.ItemFields.GENRES,
+                ),
+            )
+            response.content.items
         }
 
     suspend fun getAlbumsForArtist(artistId: String): ApiResult<List<BaseItemDto>> =

@@ -549,4 +549,18 @@
     <string name="seerr_request_pending">Request pending in Seerr</string>
     <string name="seerr_not_requestable">Not requestable in Seerr</string>
 
+    <!-- Playlists & YouTarr -->
+    <string name="playlists">Playlists</string>
+    <string name="playlist">Playlist</string>
+    <string name="youtube_playlist">YouTube Playlist</string>
+    <string name="play_all">Play All</string>
+    <string name="shuffle_playlist">Shuffle</string>
+    <string name="videos_count">%1$d videos</string>
+    <string name="items_count">%1$d items</string>
+    <string name="no_playlists_found">No Playlists Found</string>
+    <string name="no_playlists_description">Playlists and YouTube collections synced to your server will appear here.</string>
+    <string name="no_playlist_items">No items found in this playlist</string>
+    <string name="download_playlist">Download Playlist</string>
+    <string name="downloading_playlist_items">Downloading playlist items…</string>
+    <string name="playlist_empty">Playlist is empty</string>
 </resources>

@@ -616,9 +616,9 @@ open class JellyfinRepository @Inject constructor(
         }
     }
 
-    suspend fun getRecentlyAddedFromLibrary(
+    override suspend fun getRecentlyAddedFromLibrary(
         libraryId: String,
-        limit: Int = 10,
+        limit: Int,
     ): ApiResult<List<BaseItemDto>> {
         val server = authRepository.getCurrentServerSync()
         if (server?.accessToken == null || server.userId == null) {
@@ -835,6 +835,58 @@ open class JellyfinRepository @Inject constructor(
      */
     override suspend fun getItemDetails(itemId: String): ApiResult<BaseItemDto> {
         return getItemDetailsById(itemId, "item")
+    }
+
+    override suspend fun getPlaylistDetails(playlistId: String): ApiResult<BaseItemDto> {
+        return getItemDetailsById(playlistId, "playlist")
+    }
+
+    override suspend fun getPlaylistItems(playlistId: String): ApiResult<List<BaseItemDto>> {
+        return withServerClient("getPlaylistItems") { server, client ->
+            val userUuid = parseUuid(server.userId ?: "", "user")
+            val playlistUuid = parseUuid(playlistId, "playlist")
+            val response = client.itemsApi.getItems(
+                userId = userUuid,
+                parentId = playlistUuid,
+                fields = listOf(
+                    ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
+                    ItemFields.MEDIA_SOURCES,
+                    ItemFields.MEDIA_STREAMS,
+                    ItemFields.OVERVIEW,
+                    ItemFields.DATE_CREATED,
+                    ItemFields.CHILD_COUNT,
+                    ItemFields.CUMULATIVE_RUN_TIME_TICKS,
+                    ItemFields.GENRES,
+                    ItemFields.STUDIOS,
+                    ItemFields.TAGS,
+                ),
+            )
+            response.content.items
+        }
+    }
+
+    override suspend fun getPlaylists(limit: Int): ApiResult<List<BaseItemDto>> {
+        return withServerClient("getPlaylists") { server, client ->
+            val userUuid = parseUuid(server.userId ?: "", "user")
+            val response = client.itemsApi.getItems(
+                userId = userUuid,
+                includeItemTypes = listOf(BaseItemKind.PLAYLIST),
+                recursive = true,
+                limit = limit,
+                sortBy = listOf(ItemSortBy.SORT_NAME),
+                sortOrder = listOf(SortOrder.ASCENDING),
+                fields = listOf(
+                    ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
+                    ItemFields.OVERVIEW,
+                    ItemFields.DATE_CREATED,
+                    ItemFields.CHILD_COUNT,
+                    ItemFields.CUMULATIVE_RUN_TIME_TICKS,
+                    ItemFields.TAGS,
+                    ItemFields.GENRES,
+                ),
+            )
+            response.content.items
+        }
     }
 
     override suspend fun getMediaSegments(itemId: String): ApiResult<List<org.jellyfin.sdk.model.api.MediaSegmentDto>> {

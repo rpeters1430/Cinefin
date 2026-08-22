@@ -45,6 +45,7 @@ class LibraryItemPagingSource(
                     BaseItemKind.BOOK -> "Book"
                     BaseItemKind.AUDIO_BOOK -> "AudioBook"
                     BaseItemKind.VIDEO -> "Video"
+                    BaseItemKind.PLAYLIST -> "Playlist"
                     else -> type.name
                 }
             }

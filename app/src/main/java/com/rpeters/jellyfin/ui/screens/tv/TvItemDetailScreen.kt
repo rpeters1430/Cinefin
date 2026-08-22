@@ -827,6 +827,7 @@ private fun BaseItemDto.tvDetailEyebrow(): String? {
         BaseItemKind.SEASON -> "SEASON"
         BaseItemKind.EPISODE -> "EPISODE"
         BaseItemKind.VIDEO -> "HOME VIDEO"
+        BaseItemKind.PLAYLIST -> "PLAYLIST"
         BaseItemKind.AUDIO -> "ALBUM"
         else -> type.name.replace('_', ' ')
     }
@@ -849,6 +850,9 @@ private fun BaseItemDto.tvDetailContextLine(): String? {
         }
         BaseItemKind.SERIES -> {
             childCount?.takeIf { it > 0 }?.let { "$it episodes available" }
+        }
+        BaseItemKind.PLAYLIST -> {
+            childCount?.takeIf { it > 0 }?.let { "$it items" }
         }
         BaseItemKind.VIDEO -> {
             listOfNotNull(productionYear?.toString(), officialRating).joinToString(" • ").ifBlank { null }

@@ -264,6 +264,16 @@ object ApiParameterValidator {
                     }
                 }
             }
+            "playlists" -> {
+                when {
+                    itemTypes == null -> "Playlist"
+                    itemTypes.contains("Playlist") -> itemTypes
+                    else -> {
+                        Log.w(TAG, "Incompatible item types '$itemTypes' for playlists collection, using Playlist")
+                        "Playlist"
+                    }
+                }
+            }
             else -> itemTypes // Keep original for unknown/mixed collections
         }
 
@@ -333,6 +343,13 @@ object ApiParameterValidator {
                 parentId = null,
                 itemTypes = "Book,AudioBook",
                 collectionType = "books",
+                startIndex = 0,
+                limit = DEFAULT_LIMIT,
+            )
+            CollectionType.PLAYLISTS -> ValidatedApiLibraryParams(
+                parentId = null,
+                itemTypes = "Playlist",
+                collectionType = "playlists",
                 startIndex = 0,
                 limit = DEFAULT_LIMIT,
             )

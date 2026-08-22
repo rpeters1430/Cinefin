@@ -71,8 +71,13 @@ interface IJellyfinRepository {
         limit: Int = 24,
     ): ApiResult<List<BaseItemDto>>
 
+    suspend fun getPlaylistDetails(playlistId: String): ApiResult<BaseItemDto>
+    suspend fun getPlaylistItems(playlistId: String): ApiResult<List<BaseItemDto>>
+    suspend fun getPlaylists(limit: Int = 100): ApiResult<List<BaseItemDto>>
+
     suspend fun getRecentlyAdded(limit: Int = 10): ApiResult<List<BaseItemDto>>
     suspend fun getRecentlyAddedByType(itemType: BaseItemKind, limit: Int = 10): ApiResult<List<BaseItemDto>>
+    suspend fun getRecentlyAddedFromLibrary(libraryId: String, limit: Int = 20): ApiResult<List<BaseItemDto>>
     suspend fun getFavorites(): ApiResult<List<BaseItemDto>>
     suspend fun validateAndRefreshTokenManually()
     suspend fun toggleFavorite(itemId: String, isFavorite: Boolean): ApiResult<Boolean>
