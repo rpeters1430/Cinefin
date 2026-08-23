@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -38,6 +39,7 @@ import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
 import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
 import com.rpeters.jellyfin.ui.components.immersive.ParallaxHeroSection
+import com.rpeters.jellyfin.ui.components.immersive.normalizedParallaxScrollOffset
 import com.rpeters.jellyfin.ui.downloads.DownloadsViewModel
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
 import com.rpeters.jellyfin.ui.theme.LibraryPlaylistsAccent
@@ -80,10 +82,14 @@ fun ImmersivePlaylistDetailScreen(
     )
 
     val listState = rememberLazyListState()
-    val scrollOffset by remember {
+    val heroHeightPx = with(LocalDensity.current) { ImmersiveDimens.HeroHeightPhone.toPx() }
+    val scrollOffset by remember(listState, heroHeightPx) {
         derivedStateOf {
             if (listState.firstVisibleItemIndex == 0) {
-                listState.firstVisibleItemScrollOffset / ImmersiveDimens.HeroHeightPhone.value
+                normalizedParallaxScrollOffset(
+                    scrollOffsetPx = listState.firstVisibleItemScrollOffset,
+                    heroHeightPx = heroHeightPx,
+                )
             } else {
                 1f
             }

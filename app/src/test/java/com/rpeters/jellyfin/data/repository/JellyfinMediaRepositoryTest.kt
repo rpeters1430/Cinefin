@@ -19,6 +19,7 @@ import org.jellyfin.sdk.api.operations.ItemsApi
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemDtoQueryResult
 import org.jellyfin.sdk.model.api.BaseItemKind
+import org.jellyfin.sdk.model.api.CollectionType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -548,6 +549,7 @@ class JellyfinMediaRepositoryTest {
                 userId = userUuid,
                 parentId = libraryUuid,
                 recursive = true,
+                includeItemTypes = listOf(BaseItemKind.VIDEO),
                 limit = any(),
                 sortBy = any(),
                 sortOrder = any(),
@@ -556,11 +558,52 @@ class JellyfinMediaRepositoryTest {
         } returns Response(queryResult, 200, emptyMap())
 
         val realRepository = JellyfinMediaRepository(authRepository, sessionManager, cache, healthChecker)
-        val result = realRepository.getRecentlyAddedFromLibrary(libraryUuid.toString(), 15)
+        val result = realRepository.getRecentlyAddedFromLibrary(
+            libraryId = libraryUuid.toString(),
+            limit = 15,
+            includeItemTypes = listOf(BaseItemKind.VIDEO),
+        )
 
         assertTrue(result is ApiResult.Success<List<BaseItemDto>>)
         val successResult = result as ApiResult.Success<List<BaseItemDto>>
         assertEquals(1, successResult.data.size)
         assertEquals("YouTube Video 1", successResult.data[0].name)
+
+        coVerify(exactly = 1) {
+            itemsApi.getItems(
+                userId = userUuid,
+                parentId = libraryUuid,
+                recursive = true,
+                includeItemTypes = listOf(BaseItemKind.VIDEO),
+                limit = 15,
+                sortBy = any(),
+                sortOrder = any(),
+                fields = any(),
+            )
+        }
+    }
+
+    @Test
+    fun `recently added rows request playable episodes for TV libraries`() {
+        assertEquals(
+            listOf(BaseItemKind.EPISODE),
+            recentlyAddedItemTypesForCollection(CollectionType.TVSHOWS),
+        )
+    }
+
+    @Test
+    fun `recently added rows request playable videos for home video libraries`() {
+        assertEquals(
+            listOf(BaseItemKind.VIDEO),
+            recentlyAddedItemTypesForCollection(CollectionType.HOMEVIDEOS),
+        )
+    }
+
+    @Test
+    fun `recently added rows request native playlists for playlist libraries`() {
+        assertEquals(
+            listOf(BaseItemKind.PLAYLIST),
+            recentlyAddedItemTypesForCollection(CollectionType.PLAYLISTS),
+        )
     }
 }

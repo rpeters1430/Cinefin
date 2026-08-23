@@ -32,6 +32,11 @@ import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
 import androidx.compose.animation.AnimatedVisibilityScope
 import com.rpeters.jellyfin.ui.utils.rememberMediaColorPalette
 
+internal fun normalizedParallaxScrollOffset(
+    scrollOffsetPx: Int,
+    heroHeightPx: Float,
+): Float = (scrollOffsetPx / heroHeightPx).coerceIn(0f, 1f)
+
 @Composable
 fun ParallaxHeroSection(
     imageUrl: String?,

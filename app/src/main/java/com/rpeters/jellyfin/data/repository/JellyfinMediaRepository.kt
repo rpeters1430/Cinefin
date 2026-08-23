@@ -16,6 +16,7 @@ import org.jellyfin.sdk.api.client.extensions.libraryApi
 import org.jellyfin.sdk.api.client.extensions.tvShowsApi
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
+import org.jellyfin.sdk.model.api.CollectionType
 import org.jellyfin.sdk.model.api.ItemFilter
 import org.jellyfin.sdk.model.api.ItemSortBy
 import org.jellyfin.sdk.model.api.SortOrder
@@ -29,6 +30,27 @@ data class LibraryItemsResult(
     val items: List<BaseItemDto>,
     val totalCount: Int,
 )
+
+internal fun recentlyAddedItemTypesForCollection(collectionType: CollectionType?): List<BaseItemKind> =
+    when (collectionType) {
+        CollectionType.MOVIES -> listOf(BaseItemKind.MOVIE)
+        CollectionType.TVSHOWS -> listOf(BaseItemKind.EPISODE)
+        CollectionType.MUSIC -> listOf(BaseItemKind.AUDIO, BaseItemKind.MUSIC_ALBUM)
+        CollectionType.HOMEVIDEOS -> listOf(BaseItemKind.VIDEO)
+        CollectionType.PHOTOS -> listOf(BaseItemKind.PHOTO, BaseItemKind.VIDEO)
+        CollectionType.BOOKS -> listOf(BaseItemKind.BOOK, BaseItemKind.AUDIO_BOOK, BaseItemKind.VIDEO)
+        CollectionType.PLAYLISTS -> listOf(BaseItemKind.PLAYLIST)
+        else -> listOf(
+            BaseItemKind.MOVIE,
+            BaseItemKind.EPISODE,
+            BaseItemKind.VIDEO,
+            BaseItemKind.AUDIO,
+            BaseItemKind.BOOK,
+            BaseItemKind.AUDIO_BOOK,
+            BaseItemKind.PHOTO,
+            BaseItemKind.PLAYLIST,
+        )
+    }
 
 /**
  * Repository containing media-related operations that were previously
@@ -265,6 +287,7 @@ class JellyfinMediaRepository @Inject constructor(
 
     suspend fun getRecentlyAddedFromLibrary(
         libraryId: String,
+        includeItemTypes: List<BaseItemKind>,
         limit: Int = 20,
     ): ApiResult<List<BaseItemDto>> =
         withServerClient("getRecentlyAddedFromLibrary") { server, client ->
@@ -274,6 +297,7 @@ class JellyfinMediaRepository @Inject constructor(
                 userId = userUuid,
                 parentId = parentUuid,
                 recursive = true,
+                includeItemTypes = includeItemTypes,
                 sortBy = listOf(ItemSortBy.DATE_CREATED),
                 sortOrder = listOf(SortOrder.DESCENDING),
                 fields = listOf(

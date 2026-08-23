@@ -18,6 +18,7 @@ import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
 import com.rpeters.jellyfin.data.repository.JellyfinUserRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.data.repository.common.ErrorType
+import com.rpeters.jellyfin.data.repository.recentlyAddedItemTypesForCollection
 import com.rpeters.jellyfin.ui.player.CastManager
 import com.rpeters.jellyfin.ui.screens.LibraryType
 import com.rpeters.jellyfin.utils.SecureLogger
@@ -280,7 +281,11 @@ constructor(
         libraries.map { library ->
             val libraryId = library.id.toString()
             async {
-                val result = mediaRepository.getRecentlyAddedFromLibrary(libraryId, limit = 15)
+                val result = mediaRepository.getRecentlyAddedFromLibrary(
+                    libraryId = libraryId,
+                    limit = 15,
+                    includeItemTypes = recentlyAddedItemTypesForCollection(library.collectionType),
+                )
                 if (result is ApiResult.Success && result.data.isNotEmpty()) {
                     libraryId to result.data
                 } else {
