@@ -10,6 +10,7 @@ import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -26,6 +27,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
+import java.util.concurrent.Executors
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class JellyfinAuthRefreshManagerTest {
@@ -64,19 +66,30 @@ class JellyfinAuthRefreshManagerTest {
             every { accessToken } returns "shared-token"
         }
 
-        val testRefreshManager = JellyfinAuthRefreshManager(
-            authRepository = authRepository,
-            applicationScope = CoroutineScope(Dispatchers.Default + Job()),
-        )
+        // refreshAfterUnauthorized() blocks its caller's thread via runBlocking, so the 10
+        // concurrent callers below occupy up to 10 Dispatchers.Default threads for the whole
+        // call. That pool is small (~core count) on CI runners, so giving the manager's own
+        // applicationScope the *same* shared pool starves the single-flight executeRefresh()
+        // coroutine of a thread to run on, occasionally exceeding REFRESH_TIMEOUT_MS and
+        // failing the assertion below. A dedicated pool for the manager avoids that contention.
+        val refreshDispatcher = Executors.newFixedThreadPool(4).asCoroutineDispatcher()
+        try {
+            val testRefreshManager = JellyfinAuthRefreshManager(
+                authRepository = authRepository,
+                applicationScope = CoroutineScope(refreshDispatcher + Job()),
+            )
 
-        val tokens = (1..10).map {
-            async(Dispatchers.Default) {
-                testRefreshManager.refreshAfterUnauthorized(attempt = 1)
-            }
-        }.awaitAll()
+            val tokens = (1..10).map {
+                async(Dispatchers.Default) {
+                    testRefreshManager.refreshAfterUnauthorized(attempt = 1)
+                }
+            }.awaitAll()
 
-        assertEquals(List(10) { "shared-token" }, tokens)
-        coVerify(exactly = 1) { authRepository.forceReAuthenticate() }
+            assertEquals(List(10) { "shared-token" }, tokens)
+            coVerify(exactly = 1) { authRepository.forceReAuthenticate() }
+        } finally {
+            refreshDispatcher.close()
+        }
     }
 
     @Test
