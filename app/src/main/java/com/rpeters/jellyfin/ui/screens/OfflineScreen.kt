@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
+import com.rpeters.jellyfin.ui.image.rememberCoilSize
 import com.rpeters.jellyfin.ui.theme.Dimens
 import com.rpeters.jellyfin.ui.utils.*
 import org.jellyfin.sdk.model.api.BaseItemDto
@@ -388,6 +389,7 @@ private fun OfflineContentItem(
                         contentDescription = null,
                         modifier = Modifier.size(48.dp),
                         contentScale = ContentScale.Crop,
+                        requestSize = rememberCoilSize(48.dp),
                     )
                 } else {
                     Icon(

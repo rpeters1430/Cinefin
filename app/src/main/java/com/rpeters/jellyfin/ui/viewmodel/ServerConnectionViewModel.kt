@@ -144,6 +144,7 @@ class ServerConnectionViewModel @Inject constructor(
                 isUsingWeakBiometric = isBiometricAuthEnabled && biometricCapability.isWeakOnly && biometricCapability.isAvailable,
                 requireStrongBiometric = requireStrongBiometric,
                 isNetworkAvailable = connectivityChecker.isOnline(),
+                isLocalCredentialCheckComplete = true,
                 // We don't set biometric auth enabled here because we want to check it separately
             )
 
@@ -386,20 +387,7 @@ class ServerConnectionViewModel @Inject constructor(
                             if (_connectionState.value.rememberLogin) {
                                 saveCredentials(normalizedServerUrl, username, password)
                                 saveCurrentSessionToken()
-                                if (!isAutoLogin && activity != null) {
-                                    // Best-effort: offers to sync this login to the system password
-                                    // manager so it can carry over to a new device. Never blocks or
-                                    // fails sign-in — PasswordCredentialSyncManager swallows its own
-                                    // errors, including the user declining the save prompt. Runs
-                                    // under NonCancellable since the success state below pops this
-                                    // screen off the back stack, which would otherwise cancel
-                                    // viewModelScope before the system save dialog resolves.
-                                    viewModelScope.launch {
-                                        withContext(NonCancellable) {
-                                            passwordCredentialSyncManager.save(activity, normalizedServerUrl, username, password)
-                                        }
-                                    }
-                                }
+                                offerPasswordManagerSave(isAutoLogin, activity, normalizedServerUrl, username, password)
                             } else {
                                 // Best-effort cleanup: older versions could have persisted credentials
                                 // even when the user opted out of "Remember Login".
@@ -608,6 +596,29 @@ class ServerConnectionViewModel @Inject constructor(
             savedUsername = username,
             hasSavedPassword = true,
         )
+    }
+
+    /**
+     * Best-effort: offers to sync this login to the system password manager so it can carry
+     * over to a new device. Never blocks or fails sign-in — [PasswordCredentialSyncManager]
+     * swallows its own errors, including the user declining the save prompt. Runs under
+     * [NonCancellable] since the connectToServer success state that follows pops the
+     * connection screen off the back stack, which would otherwise cancel viewModelScope
+     * before the system save dialog resolves.
+     */
+    private fun offerPasswordManagerSave(
+        isAutoLogin: Boolean,
+        activity: FragmentActivity?,
+        serverUrl: String,
+        username: String,
+        password: String,
+    ) {
+        if (isAutoLogin || activity == null) return
+        viewModelScope.launch {
+            withContext(NonCancellable) {
+                passwordCredentialSyncManager.save(activity, serverUrl, username, password)
+            }
+        }
     }
 
     private suspend fun clearSavedCredentials() {
