@@ -76,6 +76,10 @@ class ServerConnectionViewModelOfflineTest {
 
         // Setup default mocks
         coEvery { repository.isConnectedFlow } returns flowOf(false)
+        // saveCurrentSessionToken() awaits repository.currentServerFlow.first { it != null };
+        // leaving this unstubbed on a relaxed mock never emits, so any test whose auto-login
+        // succeeds throws NoSuchElementException here instead of exercising the intended path.
+        every { repository.currentServerFlow } returns MutableStateFlow(mockk(relaxed = true))
         coEvery { authRepository.isTokenExpired() } returns false
         coEvery { secureCredentialManager.getBiometricCapability(any()) } returns
             mockk {
