@@ -37,6 +37,9 @@ fun androidx.navigation.NavGraphBuilder.authNavGraph(
             connectionState.savedServerUrl,
             connectionState.savedUsername,
         ) { androidx.compose.runtime.mutableStateOf(false) }
+        val passwordManagerPrompted = androidx.compose.runtime.saveable.rememberSaveable {
+            androidx.compose.runtime.mutableStateOf(false)
+        }
 
         // Navigate to Home when successfully connected.
         LaunchedEffect(connectionState.isConnected, connectionState.isOfflineSession) {
@@ -70,11 +73,28 @@ fun androidx.navigation.NavGraphBuilder.authNavGraph(
             viewModel.autoLoginWithBiometric(activity)
         }
 
+        // No local saved password means either a fresh install or a fresh device: check whether
+        // the system password manager has a login carried over from another device before making
+        // the user retype it (Google Play's Zero-Tap Sign-In quality requirement).
+        LaunchedEffect(
+            connectionState.hasSavedPassword,
+            connectionState.isConnecting,
+            connectionState.isConnected,
+            connectionState.isOfflineSession,
+        ) {
+            if (passwordManagerPrompted.value) return@LaunchedEffect
+            if (activity == null) return@LaunchedEffect
+            if (connectionState.hasSavedPassword) return@LaunchedEffect
+            if (connectionState.isConnecting || connectionState.isConnected || connectionState.isOfflineSession) return@LaunchedEffect
+            passwordManagerPrompted.value = true
+            viewModel.trySignInWithPasswordManager(activity)
+        }
+
         val biometricErrorMsg = stringResource(R.string.biometric_activity_error)
 
         ServerConnectionScreen(
             onConnect = { serverUrl, username, password ->
-                viewModel.connectToServer(serverUrl, username, password)
+                viewModel.connectToServer(serverUrl, username, password, activity = activity)
             },
             onQuickConnect = {
                 viewModel.startQuickConnect()

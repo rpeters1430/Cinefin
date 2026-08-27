@@ -10,6 +10,7 @@ import com.rpeters.jellyfin.core.constants.Constants
 import com.rpeters.jellyfin.data.BiometricCapability
 import com.rpeters.jellyfin.data.SecureCredentialManager
 import com.rpeters.jellyfin.data.JellyfinServer
+import com.rpeters.jellyfin.data.credentials.PasswordCredentialSyncManager
 import com.rpeters.jellyfin.data.repository.IJellyfinAuthRepository
 import com.rpeters.jellyfin.data.repository.IJellyfinRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
@@ -67,6 +68,7 @@ class ServerConnectionViewModelTest {
     private lateinit var repository: IJellyfinRepository
     private lateinit var authRepository: IJellyfinAuthRepository
     private lateinit var secureCredentialManager: SecureCredentialManager
+    private lateinit var passwordCredentialSyncManager: PasswordCredentialSyncManager
     private lateinit var certificatePinningManager: CertificatePinningManager
     private lateinit var connectivityChecker: com.rpeters.jellyfin.network.ConnectivityChecker
     private lateinit var offlineDownloadManager: com.rpeters.jellyfin.data.offline.OfflineDownloadManager
@@ -84,6 +86,7 @@ class ServerConnectionViewModelTest {
         repository = mockk(relaxed = true)
         authRepository = mockk(relaxed = true)
         secureCredentialManager = mockk(relaxed = true)
+        passwordCredentialSyncManager = mockk(relaxed = true)
         certificatePinningManager = mockk(relaxed = true)
         connectivityChecker = mockk(relaxed = true)
         discoveryRepository = mockk(relaxed = true)
@@ -159,6 +162,7 @@ class ServerConnectionViewModelTest {
                 repository,
                 authRepository,
                 secureCredentialManager,
+                passwordCredentialSyncManager,
                 certificatePinningManager,
                 connectivityChecker,
                 discoveryRepository,
@@ -201,6 +205,7 @@ class ServerConnectionViewModelTest {
             repository,
             authRepository,
             secureCredentialManager,
+            passwordCredentialSyncManager,
             certificatePinningManager,
             connectivityChecker,
             discoveryRepository,
@@ -236,6 +241,7 @@ class ServerConnectionViewModelTest {
             repository,
             authRepository,
             secureCredentialManager,
+            passwordCredentialSyncManager,
             certificatePinningManager,
             connectivityChecker,
             discoveryRepository,
@@ -287,6 +293,7 @@ class ServerConnectionViewModelTest {
                 repository,
                 authRepository,
                 secureCredentialManager,
+                passwordCredentialSyncManager,
                 certificatePinningManager,
                 connectivityChecker,
                 discoveryRepository,
@@ -336,6 +343,7 @@ class ServerConnectionViewModelTest {
             repository,
             authRepository,
             secureCredentialManager,
+            passwordCredentialSyncManager,
             certificatePinningManager,
             connectivityChecker,
             discoveryRepository,
@@ -365,6 +373,7 @@ class ServerConnectionViewModelTest {
             repository,
             authRepository,
             secureCredentialManager,
+            passwordCredentialSyncManager,
             certificatePinningManager,
             connectivityChecker,
             discoveryRepository,
@@ -403,6 +412,7 @@ class ServerConnectionViewModelTest {
             repository,
             authRepository,
             secureCredentialManager,
+            passwordCredentialSyncManager,
             certificatePinningManager,
             connectivityChecker,
             discoveryRepository,
@@ -442,6 +452,7 @@ class ServerConnectionViewModelTest {
                 repository,
                 authRepository,
                 secureCredentialManager,
+                passwordCredentialSyncManager,
                 certificatePinningManager,
                 connectivityChecker,
                 discoveryRepository,
@@ -475,6 +486,7 @@ class ServerConnectionViewModelTest {
                 repository,
                 authRepository,
                 secureCredentialManager,
+                passwordCredentialSyncManager,
                 certificatePinningManager,
                 connectivityChecker,
                 discoveryRepository,
@@ -520,6 +532,7 @@ class ServerConnectionViewModelTest {
                 repository,
                 authRepository,
                 secureCredentialManager,
+                passwordCredentialSyncManager,
                 certificatePinningManager,
                 connectivityChecker,
                 discoveryRepository,
@@ -544,6 +557,7 @@ class ServerConnectionViewModelTest {
                 repository,
                 authRepository,
                 secureCredentialManager,
+                passwordCredentialSyncManager,
                 certificatePinningManager,
                 connectivityChecker,
                 discoveryRepository,

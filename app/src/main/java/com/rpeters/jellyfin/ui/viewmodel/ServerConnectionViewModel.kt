@@ -16,6 +16,7 @@ import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.constants.Constants
 import com.rpeters.jellyfin.data.JellyfinServer
 import com.rpeters.jellyfin.data.SecureCredentialManager
+import com.rpeters.jellyfin.data.credentials.PasswordCredentialSyncManager
 import com.rpeters.jellyfin.data.offline.DownloadStatus
 import com.rpeters.jellyfin.data.offline.OfflineDownloadManager
 import com.rpeters.jellyfin.data.repository.IJellyfinAuthRepository
@@ -75,6 +76,7 @@ class ServerConnectionViewModel @Inject constructor(
     private val repository: IJellyfinRepository,
     private val authRepository: IJellyfinAuthRepository,
     private val secureCredentialManager: SecureCredentialManager,
+    private val passwordCredentialSyncManager: PasswordCredentialSyncManager,
     private val certificatePinningManager: CertificatePinningManager,
     private val connectivityChecker: ConnectivityChecker,
     private val discoveryRepository: com.rpeters.jellyfin.data.repository.IJellyfinDiscoveryRepository,
@@ -314,7 +316,13 @@ class ServerConnectionViewModel @Inject constructor(
         }
     }
 
-    fun connectToServer(serverUrl: String, username: String, password: String, isAutoLogin: Boolean = false) {
+    fun connectToServer(
+        serverUrl: String,
+        username: String,
+        password: String,
+        isAutoLogin: Boolean = false,
+        activity: FragmentActivity? = null,
+    ) {
         // Debounce duplicate connection attempts
         val state = _connectionState.value
         if (state.isConnecting || state.isConnected) {
@@ -378,6 +386,20 @@ class ServerConnectionViewModel @Inject constructor(
                             if (_connectionState.value.rememberLogin) {
                                 saveCredentials(normalizedServerUrl, username, password)
                                 saveCurrentSessionToken()
+                                if (!isAutoLogin && activity != null) {
+                                    // Best-effort: offers to sync this login to the system password
+                                    // manager so it can carry over to a new device. Never blocks or
+                                    // fails sign-in — PasswordCredentialSyncManager swallows its own
+                                    // errors, including the user declining the save prompt. Runs
+                                    // under NonCancellable since the success state below pops this
+                                    // screen off the back stack, which would otherwise cancel
+                                    // viewModelScope before the system save dialog resolves.
+                                    viewModelScope.launch {
+                                        withContext(NonCancellable) {
+                                            passwordCredentialSyncManager.save(activity, normalizedServerUrl, username, password)
+                                        }
+                                    }
+                                }
                             } else {
                                 // Best-effort cleanup: older versions could have persisted credentials
                                 // even when the user opted out of "Remember Login".
@@ -827,6 +849,21 @@ class ServerConnectionViewModel @Inject constructor(
             } else {
                 showError(context.getString(R.string.biometric_failed_error))
             }
+        }
+    }
+
+    /**
+     * Attempts a silent sign-in using a login saved on another device and restored to this one
+     * via the system password manager (e.g. after a device migration, where none of this app's
+     * own local, device-bound storage carries over). No-ops if nothing is saved or the user
+     * dismisses the system picker.
+     */
+    fun trySignInWithPasswordManager(activity: FragmentActivity) {
+        val state = _connectionState.value
+        if (state.isConnecting || state.isConnected) return
+        viewModelScope.launch {
+            val saved = passwordCredentialSyncManager.getSavedSignIn(activity) ?: return@launch
+            connectToServer(saved.serverUrl, saved.username, saved.password, isAutoLogin = true)
         }
     }
 
