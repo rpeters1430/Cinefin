@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.preferences.core.edit
 import androidx.test.core.app.ApplicationProvider
 import com.rpeters.jellyfin.data.SecureCredentialManager
+import com.rpeters.jellyfin.data.credentials.PasswordCredentialSyncManager
 import com.rpeters.jellyfin.data.repository.IJellyfinAuthRepository
 import com.rpeters.jellyfin.data.repository.IJellyfinRepository
 import com.rpeters.jellyfin.data.security.CertificatePinningManager
@@ -46,6 +47,7 @@ class ServerConnectionViewModelOfflineTest {
     private lateinit var repository: IJellyfinRepository
     private lateinit var authRepository: IJellyfinAuthRepository
     private lateinit var secureCredentialManager: SecureCredentialManager
+    private lateinit var passwordCredentialSyncManager: PasswordCredentialSyncManager
     private lateinit var certificatePinningManager: CertificatePinningManager
     private lateinit var connectivityChecker: ConnectivityChecker
     private lateinit var offlineDownloadManager: com.rpeters.jellyfin.data.offline.OfflineDownloadManager
@@ -64,6 +66,7 @@ class ServerConnectionViewModelOfflineTest {
         repository = mockk(relaxed = true)
         authRepository = mockk(relaxed = true)
         secureCredentialManager = mockk(relaxed = true)
+        passwordCredentialSyncManager = mockk(relaxed = true)
         certificatePinningManager = mockk(relaxed = true)
         connectivityChecker = mockk(relaxed = true)
         discoveryRepository = mockk(relaxed = true)
@@ -73,6 +76,10 @@ class ServerConnectionViewModelOfflineTest {
 
         // Setup default mocks
         coEvery { repository.isConnectedFlow } returns flowOf(false)
+        // saveCurrentSessionToken() awaits repository.currentServerFlow.first { it != null };
+        // leaving this unstubbed on a relaxed mock never emits, so any test whose auto-login
+        // succeeds throws NoSuchElementException here instead of exercising the intended path.
+        every { repository.currentServerFlow } returns MutableStateFlow(mockk(relaxed = true))
         coEvery { authRepository.isTokenExpired() } returns false
         coEvery { secureCredentialManager.getBiometricCapability(any()) } returns
             mockk {
@@ -125,6 +132,7 @@ class ServerConnectionViewModelOfflineTest {
             repository,
             authRepository,
             secureCredentialManager,
+            passwordCredentialSyncManager,
             certificatePinningManager,
             connectivityChecker,
             discoveryRepository,
@@ -173,6 +181,7 @@ class ServerConnectionViewModelOfflineTest {
             repository,
             authRepository,
             secureCredentialManager,
+            passwordCredentialSyncManager,
             certificatePinningManager,
             connectivityChecker,
             discoveryRepository,
@@ -225,6 +234,7 @@ class ServerConnectionViewModelOfflineTest {
             repository,
             authRepository,
             secureCredentialManager,
+            passwordCredentialSyncManager,
             certificatePinningManager,
             connectivityChecker,
             discoveryRepository,
@@ -257,6 +267,7 @@ class ServerConnectionViewModelOfflineTest {
             repository,
             authRepository,
             secureCredentialManager,
+            passwordCredentialSyncManager,
             certificatePinningManager,
             connectivityChecker,
             discoveryRepository,

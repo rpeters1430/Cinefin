@@ -219,6 +219,11 @@ data class ConnectionState(
     val isQuickConnectPolling: Boolean = false,
     val quickConnectStatus: String = "",
     val hasSavedPassword: Boolean = false,
+    // True once ServerConnectionViewModel's init block has finished reading local
+    // DataStore/Keystore state, so hasSavedPassword etc. reflect reality rather than
+    // their initial defaults. Gates UI that would otherwise act on a false "no saved
+    // credential" reading during the first composition.
+    val isLocalCredentialCheckComplete: Boolean = false,
     val isBiometricAuthEnabled: Boolean = false,
     val isBiometricAuthAvailable: Boolean = false,
     val isUsingWeakBiometric: Boolean = false,
