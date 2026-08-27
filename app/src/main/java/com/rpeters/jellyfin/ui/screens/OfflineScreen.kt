@@ -1,7 +1,5 @@
 package com.rpeters.jellyfin.ui.screens
 
-import android.graphics.BitmapFactory
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -12,12 +10,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
 import com.rpeters.jellyfin.ui.theme.Dimens
 import com.rpeters.jellyfin.ui.utils.*
 import org.jellyfin.sdk.model.api.BaseItemDto
@@ -378,16 +377,17 @@ private fun OfflineContentItem(
                 horizontalArrangement = Arrangement.spacedBy(Dimens.Spacing12),
                 modifier = Modifier.weight(1f),
             ) {
-                val posterBitmap = remember(libraryItem.posterLocalPath) {
+                val posterFile = remember(libraryItem.posterLocalPath) {
                     libraryItem.posterLocalPath
-                        ?.takeIf { File(it).exists() }
-                        ?.let { BitmapFactory.decodeFile(it) }
+                        ?.let { File(it) }
+                        ?.takeIf { it.exists() }
                 }
-                if (posterBitmap != null) {
-                    Image(
-                        bitmap = posterBitmap.asImageBitmap(),
+                if (posterFile != null) {
+                    JellyfinAsyncImage(
+                        model = posterFile,
                         contentDescription = null,
                         modifier = Modifier.size(48.dp),
+                        contentScale = ContentScale.Crop,
                     )
                 } else {
                     Icon(
