@@ -584,6 +584,90 @@ class ServerConnectionViewModelTest {
             viewModel.viewModelScope.cancel()
         }
 
+    @Test
+    fun connectToServer_withDemoModeKeyword_activatesDemoModeInsteadOfConnecting() =
+        runTest(mainDispatcherRule.dispatcher) {
+            viewModel = ServerConnectionViewModel(
+                repository,
+                authRepository,
+                secureCredentialManager,
+                passwordCredentialSyncManager,
+                certificatePinningManager,
+                connectivityChecker,
+                discoveryRepository,
+                offlineDownloadManagerProvider,
+                context,
+                TestDispatcherProvider(mainDispatcherRule.dispatcher),
+            )
+            advanceUntilIdle()
+
+            viewModel.connectToServer("demo.mode", "", "")
+            advanceUntilIdle()
+
+            val state = viewModel.connectionState.value
+            assertTrue(state.isDemoMode)
+            assertTrue(state.isConnected)
+            coVerify(exactly = 0) { authRepository.testServerConnection(any()) }
+            coVerify(exactly = 0) { authRepository.authenticateUser(any(), any(), any()) }
+
+            viewModel.viewModelScope.cancel()
+        }
+
+    @Test
+    fun connectToServer_withDemoModeKeyword_isCaseInsensitiveAndTrimmed() =
+        runTest(mainDispatcherRule.dispatcher) {
+            viewModel = ServerConnectionViewModel(
+                repository,
+                authRepository,
+                secureCredentialManager,
+                passwordCredentialSyncManager,
+                certificatePinningManager,
+                connectivityChecker,
+                discoveryRepository,
+                offlineDownloadManagerProvider,
+                context,
+                TestDispatcherProvider(mainDispatcherRule.dispatcher),
+            )
+            advanceUntilIdle()
+
+            viewModel.connectToServer("  Demo.Mode  ", "", "")
+            advanceUntilIdle()
+
+            assertTrue(viewModel.connectionState.value.isDemoMode)
+
+            viewModel.viewModelScope.cancel()
+        }
+
+    @Test
+    fun exitDemoMode_deactivatesDemoModeAndDisconnects() = runTest(mainDispatcherRule.dispatcher) {
+        viewModel = ServerConnectionViewModel(
+            repository,
+            authRepository,
+            secureCredentialManager,
+            passwordCredentialSyncManager,
+            certificatePinningManager,
+            connectivityChecker,
+            discoveryRepository,
+            offlineDownloadManagerProvider,
+            context,
+            TestDispatcherProvider(mainDispatcherRule.dispatcher),
+        )
+        advanceUntilIdle()
+
+        viewModel.connectToServer("demo.mode", "", "")
+        advanceUntilIdle()
+        assertTrue(viewModel.connectionState.value.isDemoMode)
+
+        viewModel.exitDemoMode()
+        advanceUntilIdle()
+
+        val state = viewModel.connectionState.value
+        assertFalse(state.isDemoMode)
+        assertFalse(state.isConnected)
+
+        viewModel.viewModelScope.cancel()
+    }
+
     // endregion
 
     private suspend fun awaitCondition(timeoutMs: Long = 2000, condition: suspend () -> Boolean) {

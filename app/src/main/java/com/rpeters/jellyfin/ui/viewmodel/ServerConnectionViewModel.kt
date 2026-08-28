@@ -19,6 +19,7 @@ import com.rpeters.jellyfin.data.SecureCredentialManager
 import com.rpeters.jellyfin.data.credentials.PasswordCredentialSyncManager
 import com.rpeters.jellyfin.data.offline.DownloadStatus
 import com.rpeters.jellyfin.data.offline.OfflineDownloadManager
+import com.rpeters.jellyfin.data.repository.DemoModeRepository
 import com.rpeters.jellyfin.data.repository.IJellyfinAuthRepository
 import com.rpeters.jellyfin.data.repository.IJellyfinRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
@@ -83,6 +84,7 @@ class ServerConnectionViewModel @Inject constructor(
     private val offlineDownloadManagerProvider: Provider<OfflineDownloadManager>,
     @ApplicationContext private val context: Context,
     private val dispatchers: DispatcherProvider = DefaultDispatcherProvider(),
+    private val demoModeRepository: DemoModeRepository = DemoModeRepository(),
 ) : ViewModel() {
 
     private val _connectionState = MutableStateFlow(ConnectionState())
@@ -304,6 +306,9 @@ class ServerConnectionViewModel @Inject constructor(
         // Observe repository connection state
         viewModelScope.launch {
             repository.isConnectedFlow.collect { isConnected ->
+                // Demo Mode is not backed by a real server connection; don't let this flow
+                // (which reflects the real repository/server state) stomp on it.
+                if (_connectionState.value.isDemoMode) return@collect
                 _connectionState.value = _connectionState.value.copy(
                     isConnected = isConnected,
                     isConnecting = false,
@@ -315,6 +320,30 @@ class ServerConnectionViewModel @Inject constructor(
                 // cleared when the user explicitly logs out or disables "Remember Login".
             }
         }
+
+        // Observe Demo Mode activation so every instance of this ViewModel (there can be more
+        // than one, scoped to different navigation back stack entries) reflects it.
+        viewModelScope.launch {
+            demoModeRepository.isDemoModeActive.collect { isDemoModeActive ->
+                if (isDemoModeActive) {
+                    _connectionState.value = _connectionState.value.copy(
+                        isDemoMode = true,
+                        isConnected = true,
+                        isConnecting = false,
+                        connectionPhase = ConnectionPhase.Connected,
+                        errorMessage = null,
+                    )
+                } else if (_connectionState.value.isDemoMode) {
+                    // Demo Mode was just explicitly deactivated via exitDemoMode(); there was
+                    // never a real server session behind it, so return to the login screen.
+                    _connectionState.value = _connectionState.value.copy(
+                        isDemoMode = false,
+                        isConnected = false,
+                        connectionPhase = ConnectionPhase.Idle,
+                    )
+                }
+            }
+        }
     }
 
     fun connectToServer(
@@ -324,6 +353,13 @@ class ServerConnectionViewModel @Inject constructor(
         isAutoLogin: Boolean = false,
         activity: FragmentActivity? = null,
     ) {
+        // Let reviewers/testers bypass the real server connection entirely by entering the
+        // Demo Mode keyword into the server URL field. See DemoModeRepository for details.
+        if (!isAutoLogin && DemoModeRepository.isTriggerKeyword(serverUrl)) {
+            demoModeRepository.activate()
+            return
+        }
+
         // Debounce duplicate connection attempts
         val state = _connectionState.value
         if (state.isConnecting || state.isConnected) {
@@ -1182,6 +1218,14 @@ class ServerConnectionViewModel @Inject constructor(
             clearSavedCredentials()
             authRepository.logout()
         }
+    }
+
+    /**
+     * Exits Demo Mode and returns the user to the server connection screen. No credentials or
+     * session state need to be cleared since Demo Mode never established a real session.
+     */
+    fun exitDemoMode() {
+        demoModeRepository.deactivate()
     }
 
     fun restartDiscovery() {

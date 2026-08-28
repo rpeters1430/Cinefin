@@ -167,15 +167,21 @@ fun ServerConnectionScreen(
     val isServerUrlValid by remember(serverUrl) {
         derivedStateOf { isValidServerUrl(serverUrl) }
     }
-    val canSubmit by remember(serverUrl, username, password, isServerUrlValid) {
+    val isDemoModeTrigger by remember(serverUrl) {
+        derivedStateOf { com.rpeters.jellyfin.data.repository.DemoModeRepository.isTriggerKeyword(serverUrl) }
+    }
+    val canSubmit by remember(serverUrl, username, password, isServerUrlValid, isDemoModeTrigger) {
         derivedStateOf {
-            isServerUrlValid &&
-                username.isNotBlank() &&
-                password.isNotBlank()
+            isDemoModeTrigger ||
+                (
+                    isServerUrlValid &&
+                        username.isNotBlank() &&
+                        password.isNotBlank()
+                    )
         }
     }
-    val showInvalidUrlError by remember(serverUrl, isServerUrlValid) {
-        derivedStateOf { serverUrl.isNotBlank() && !isServerUrlValid }
+    val showInvalidUrlError by remember(serverUrl, isServerUrlValid, isDemoModeTrigger) {
+        derivedStateOf { serverUrl.isNotBlank() && !isServerUrlValid && !isDemoModeTrigger }
     }
     val submitIfValid: () -> Unit = {
         keyboardController?.hide()
@@ -296,6 +302,7 @@ fun ServerConnectionScreen(
                 onRememberLoginChange = onRememberLoginChange,
                 onPasswordSubmit = submitIfValid,
                 showInvalidUrlError = showInvalidUrlError,
+                isDemoModeTrigger = isDemoModeTrigger,
                 modifier = Modifier.fillMaxWidth(),
             )
 
@@ -688,6 +695,7 @@ private fun LoginFormCard(
     onRememberLoginChange: (Boolean) -> Unit,
     onPasswordSubmit: () -> Unit,
     showInvalidUrlError: Boolean,
+    isDemoModeTrigger: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -706,10 +714,14 @@ private fun LoginFormCard(
             ),
             singleLine = true,
             isError = showInvalidUrlError,
-            supportingText = if (showInvalidUrlError) {
-                { Text(stringResource(id = R.string.invalid_server_url)) }
-            } else {
-                null
+            supportingText = when {
+                showInvalidUrlError -> {
+                    { Text(stringResource(id = R.string.invalid_server_url)) }
+                }
+                isDemoModeTrigger -> {
+                    { Text("Demo Mode will load sample content with no server required") }
+                }
+                else -> null
             },
             modifier = Modifier
                 .fillMaxWidth()
