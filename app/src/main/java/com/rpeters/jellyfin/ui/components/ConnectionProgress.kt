@@ -239,6 +239,9 @@ data class ConnectionState(
     val isOfflineSession: Boolean = false,
     val isNetworkAvailable: Boolean = true,
     val discoveredServers: List<com.rpeters.jellyfin.data.model.DiscoveredServer> = emptyList(),
+    // True when the user bypassed the real server connection via Demo Mode (see
+    // DemoModeRepository). Used to route to the sample-content demo screen instead of Home.
+    val isDemoMode: Boolean = false,
 )
 
 /**

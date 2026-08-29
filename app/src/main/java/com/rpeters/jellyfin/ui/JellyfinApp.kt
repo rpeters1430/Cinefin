@@ -173,7 +173,9 @@ fun JellyfinApp(
         // Only enter the main app when a session is actually connected. Remembered credentials
         // should go through ServerConnectionViewModel auto-login first; otherwise Home can render
         // with a stale/restored shell and no usable authenticated session.
-        val startDestination = if (connectionState.isConnected) {
+        val startDestination = if (connectionState.isDemoMode) {
+            Screen.DemoHome.route
+        } else if (connectionState.isConnected) {
             Screen.Home.route
         } else {
             Screen.ServerConnection.route

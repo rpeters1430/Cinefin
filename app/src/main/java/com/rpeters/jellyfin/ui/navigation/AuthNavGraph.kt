@@ -42,8 +42,12 @@ fun androidx.navigation.NavGraphBuilder.authNavGraph(
         }
 
         // Navigate to Home when successfully connected.
-        LaunchedEffect(connectionState.isConnected, connectionState.isOfflineSession) {
-            if (connectionState.isConnected) {
+        LaunchedEffect(connectionState.isConnected, connectionState.isDemoMode, connectionState.isOfflineSession) {
+            if (connectionState.isDemoMode) {
+                navController.navigate(Screen.DemoHome.route) {
+                    popUpTo(Screen.ServerConnection.route) { inclusive = true }
+                }
+            } else if (connectionState.isConnected) {
                 navController.navigate(Screen.Home.route) {
                     popUpTo(Screen.ServerConnection.route) { inclusive = true }
                 }
@@ -191,6 +195,19 @@ fun androidx.navigation.NavGraphBuilder.authNavGraph(
                 navController.popBackStack()
             },
             onServerUrlChange = { url -> viewModel.updateQuickConnectServerUrl(url) },
+        )
+    }
+
+    composable(Screen.DemoHome.route) {
+        val viewModel: ServerConnectionViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel()
+
+        com.rpeters.jellyfin.ui.screens.DemoHomeScreen(
+            onExitDemoMode = {
+                viewModel.exitDemoMode()
+                navController.navigate(Screen.ServerConnection.route) {
+                    popUpTo(Screen.DemoHome.route) { inclusive = true }
+                }
+            },
         )
     }
 }
