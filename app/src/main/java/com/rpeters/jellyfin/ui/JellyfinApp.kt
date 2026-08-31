@@ -150,6 +150,15 @@ fun JellyfinApp(
             SecureLogger.i("JellyfinApp", "Network state changed: ${if (isOnline) "ONLINE" else "OFFLINE"}")
         }
 
+        // Only auto-trigger the initial load once per server session. Without this guard, an
+        // empty (but successful) libraries response re-satisfies this effect's condition on
+        // every isLoading true->false transition, causing an unbounded retry loop that spams
+        // the server and starves the Home/Library screens' own initial loads.
+        var hasTriggeredInitialLoad by rememberSaveable(
+            currentServer?.normalizedUrl ?: currentServer?.url,
+            currentServer?.userId,
+        ) { mutableStateOf(false) }
+
         LaunchedEffect(
             currentServer?.normalizedUrl ?: currentServer?.url,
             currentServer?.userId,
@@ -163,9 +172,11 @@ fun JellyfinApp(
                 currentServer != null &&
                 appState.libraries.isEmpty() &&
                 !appState.isLoading &&
-                appState.errorMessage == null
+                appState.errorMessage == null &&
+                !hasTriggeredInitialLoad
             ) {
                 SecureLogger.v("JellyfinApp", "Session ready with no libraries loaded yet; triggering initial data load")
+                hasTriggeredInitialLoad = true
                 mainAppViewModel.loadInitialData()
             }
         }

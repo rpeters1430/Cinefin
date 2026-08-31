@@ -5,7 +5,10 @@ package com.rpeters.jellyfin.ui.navigation
 import android.util.Log
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -201,17 +204,26 @@ fun androidx.navigation.NavGraphBuilder.homeLibraryNavGraph(
         val onSettingsClick = remember(navController) { { navController.navigate(Screen.Settings.route) } }
         val onNowPlayingClick = remember(navController) { { navController.navigate(Screen.NowPlaying.route) } }
 
+        // Only auto-trigger the initial load once per server session. Without this guard, an
+        // empty (but successful) libraries response re-satisfies this effect's condition on
+        // every isLoading true->false transition, causing the screen to loop between the
+        // "no libraries" empty state and the loading state forever. Pull-to-refresh (onRefresh)
+        // remains available for the user to explicitly retry.
+        var hasTriggeredInitialLoad by rememberSaveable(currentServer) { mutableStateOf(false) }
+
         LaunchedEffect(currentServer, isConnected, appState.libraries.size, appState.isLoading, appState.errorMessage) {
             if (
                 isConnected &&
                 currentServer != null &&
                 appState.libraries.isEmpty() &&
                 !appState.isLoading &&
-                appState.errorMessage == null
+                appState.errorMessage == null &&
+                !hasTriggeredInitialLoad
             ) {
                 if (BuildConfig.DEBUG) {
                     SecureLogger.v("NavGraph", "Library screen - session ready, triggering initial data load")
                 }
+                hasTriggeredInitialLoad = true
                 viewModel.loadInitialData()
             }
         }
