@@ -154,29 +154,38 @@ fun JellyfinApp(
         // empty (but successful) libraries response re-satisfies this effect's condition on
         // every isLoading true->false transition, causing an unbounded retry loop that spams
         // the server and starves the Home/Library screens' own initial loads.
-        var hasTriggeredInitialLoad by rememberSaveable(
-            currentServer?.normalizedUrl ?: currentServer?.url,
-            currentServer?.userId,
-        ) { mutableStateOf(false) }
+        //
+        // The "already attempted" identity is stored as a value compared inside the effect
+        // rather than as a rememberSaveable key: currentServer is collected with
+        // initialValue = null, so keying rememberSaveable directly on it would transiently
+        // reset to (null) on every recomposition before the real value arrives (e.g. on
+        // configuration change), discarding the guard and allowing one more spurious retry.
+        // Including loginTimestamp in the identity (rather than just server URL/userId) makes
+        // a fresh login to the same server/user count as a new session, so auto-load still
+        // fires after a logout/re-login within the same process.
+        var lastAttemptedSessionKey by rememberSaveable { mutableStateOf<String?>(null) }
 
         LaunchedEffect(
             currentServer?.normalizedUrl ?: currentServer?.url,
             currentServer?.userId,
+            currentServer?.loginTimestamp,
             isConnected,
             appState.libraries.size,
             appState.isLoading,
             appState.errorMessage,
         ) {
+            val server = currentServer
+            val sessionKey = server?.let { "${it.normalizedUrl ?: it.url}|${it.userId}|${it.loginTimestamp}" }
             if (
                 isConnected &&
-                currentServer != null &&
+                server != null &&
                 appState.libraries.isEmpty() &&
                 !appState.isLoading &&
                 appState.errorMessage == null &&
-                !hasTriggeredInitialLoad
+                lastAttemptedSessionKey != sessionKey
             ) {
                 SecureLogger.v("JellyfinApp", "Session ready with no libraries loaded yet; triggering initial data load")
-                hasTriggeredInitialLoad = true
+                lastAttemptedSessionKey = sessionKey
                 mainAppViewModel.loadInitialData()
             }
         }
