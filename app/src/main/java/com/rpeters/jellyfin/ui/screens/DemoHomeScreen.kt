@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -67,6 +68,11 @@ fun DemoHomeScreen(
         DemoVideoPlayerScreen(onBack = { showPlayer = false })
         return
     }
+
+    // Demo Mode is the only entry on its back stack (the sign-in screen was popped when Demo
+    // Mode was entered), so without this, hardware/gesture back exits the app entirely instead
+    // of returning to sign-in the way the top app bar's back arrow does.
+    BackHandler(onBack = onExitDemoMode)
 
     Scaffold(
         modifier = modifier,

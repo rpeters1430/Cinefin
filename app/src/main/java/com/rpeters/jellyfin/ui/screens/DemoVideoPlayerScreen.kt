@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -54,6 +55,11 @@ fun DemoVideoPlayerScreen(onBack: () -> Unit) {
     DisposableEffect(Unit) {
         onDispose { exoPlayer.release() }
     }
+
+    // Without this, hardware/gesture back falls through to the NavController, which has no
+    // entry to pop back to from Demo Mode's single-entry back stack and exits the app instead
+    // of returning to the sample library grid.
+    BackHandler(onBack = onBack)
 
     Scaffold(
         topBar = {
