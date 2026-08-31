@@ -5,7 +5,10 @@ package com.rpeters.jellyfin.ui.navigation
 import android.util.Log
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -201,17 +204,45 @@ fun androidx.navigation.NavGraphBuilder.homeLibraryNavGraph(
         val onSettingsClick = remember(navController) { { navController.navigate(Screen.Settings.route) } }
         val onNowPlayingClick = remember(navController) { { navController.navigate(Screen.NowPlaying.route) } }
 
-        LaunchedEffect(currentServer, isConnected, appState.libraries.size, appState.isLoading, appState.errorMessage) {
+        // Only auto-trigger the initial load once per server session. Without this guard, an
+        // empty (but successful) libraries response re-satisfies this effect's condition on
+        // every isLoading true->false transition, causing the screen to loop between the
+        // "no libraries" empty state and the loading state forever. Pull-to-refresh (onRefresh)
+        // remains available for the user to explicitly retry.
+        //
+        // The "already attempted" identity is stored as a value compared inside the effect
+        // rather than as a rememberSaveable key: currentServer is collected with
+        // initialValue = null, so keying rememberSaveable directly on it would transiently
+        // reset to (null) on every recomposition before the real value arrives (e.g. on
+        // configuration change), discarding the guard and allowing one more spurious retry.
+        // Including loginTimestamp in the identity (rather than just server URL/userId) makes
+        // a fresh login to the same server/user count as a new session, so auto-load still
+        // fires after a logout/re-login within the same process.
+        var lastAttemptedSessionKey by rememberSaveable { mutableStateOf<String?>(null) }
+
+        LaunchedEffect(
+            currentServer?.normalizedUrl ?: currentServer?.url,
+            currentServer?.userId,
+            currentServer?.loginTimestamp,
+            isConnected,
+            appState.libraries.size,
+            appState.isLoading,
+            appState.errorMessage,
+        ) {
+            val server = currentServer
+            val sessionKey = server?.let { "${it.normalizedUrl ?: it.url}|${it.userId}|${it.loginTimestamp}" }
             if (
                 isConnected &&
-                currentServer != null &&
+                server != null &&
                 appState.libraries.isEmpty() &&
                 !appState.isLoading &&
-                appState.errorMessage == null
+                appState.errorMessage == null &&
+                lastAttemptedSessionKey != sessionKey
             ) {
                 if (BuildConfig.DEBUG) {
                     SecureLogger.v("NavGraph", "Library screen - session ready, triggering initial data load")
                 }
+                lastAttemptedSessionKey = sessionKey
                 viewModel.loadInitialData()
             }
         }
