@@ -15,7 +15,9 @@ import kotlinx.coroutines.test.runTest
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.Response
 import org.jellyfin.sdk.api.client.extensions.itemsApi
+import org.jellyfin.sdk.api.client.extensions.userViewsApi
 import org.jellyfin.sdk.api.operations.ItemsApi
+import org.jellyfin.sdk.api.operations.UserViewsApi
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemDtoQueryResult
 import org.jellyfin.sdk.model.api.BaseItemKind
@@ -46,6 +48,9 @@ class JellyfinMediaRepositoryTest {
     @MockK
     private lateinit var itemsApi: ItemsApi
 
+    @MockK
+    private lateinit var userViewsApi: UserViewsApi
+
     private lateinit var repository: JellyfinMediaRepository
 
     @Before
@@ -55,6 +60,7 @@ class JellyfinMediaRepositoryTest {
 
         // Mock API client setup
         coEvery { apiClient.itemsApi } returns itemsApi
+        coEvery { apiClient.userViewsApi } returns userViewsApi
     }
 
     @Test
@@ -87,6 +93,66 @@ class JellyfinMediaRepositoryTest {
         assertEquals(2, successResult.data.size)
         assertEquals("Movies", successResult.data[0].name)
         assertEquals("TV Shows", successResult.data[1].name)
+    }
+
+    @Test
+    fun `getUserLibraries queries canonical user views endpoint`() = runTest {
+        val userUuid = UUID.randomUUID()
+        val testServer = JellyfinServer(
+            id = "test-server",
+            name = "Test Server",
+            url = "http://localhost:8096",
+            userId = userUuid.toString(),
+            accessToken = "test-token",
+        )
+        val mockLibraries = listOf(
+            mockk<BaseItemDto> {
+                coEvery { id } returns UUID.randomUUID()
+                coEvery { name } returns "Movies"
+                coEvery { type } returns BaseItemKind.COLLECTION_FOLDER
+                coEvery { collectionType } returns CollectionType.MOVIES
+            },
+        )
+        val queryResult = mockk<BaseItemDtoQueryResult> {
+            coEvery { items } returns mockLibraries
+        }
+
+        every { authRepository.getCurrentServerSync() } returns testServer
+        every { authRepository.isTokenExpired() } returns false
+        coEvery {
+            sessionManager.executeWithAuth<List<BaseItemDto>>(any(), any())
+        } coAnswers {
+            @Suppress("UNCHECKED_CAST")
+            val block = invocation.args[1] as suspend (JellyfinServer, ApiClient) -> List<BaseItemDto>
+            block(testServer, apiClient)
+        }
+        coEvery {
+            userViewsApi.getUserViews(
+                userId = userUuid,
+                includeExternalContent = false,
+                includeHidden = false,
+            )
+        } returns Response(queryResult, 200, emptyMap())
+
+        val realRepository = JellyfinMediaRepository(authRepository, sessionManager, cache, healthChecker)
+
+        val result = realRepository.getUserLibraries()
+
+        assertTrue(result is ApiResult.Success<List<BaseItemDto>>)
+        assertEquals(mockLibraries, (result as ApiResult.Success).data)
+        coVerify(exactly = 1) {
+            userViewsApi.getUserViews(
+                userId = userUuid,
+                includeExternalContent = false,
+                includeHidden = false,
+            )
+        }
+        coVerify(exactly = 0) {
+            itemsApi.getItems(
+                userId = any(),
+                includeItemTypes = listOf(BaseItemKind.COLLECTION_FOLDER),
+            )
+        }
     }
 
     @Test

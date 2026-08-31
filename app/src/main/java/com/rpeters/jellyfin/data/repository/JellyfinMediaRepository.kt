@@ -14,6 +14,7 @@ import org.jellyfin.sdk.api.client.exception.InvalidStatusException
 import org.jellyfin.sdk.api.client.extensions.itemsApi
 import org.jellyfin.sdk.api.client.extensions.libraryApi
 import org.jellyfin.sdk.api.client.extensions.tvShowsApi
+import org.jellyfin.sdk.api.client.extensions.userViewsApi
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.CollectionType
@@ -94,12 +95,16 @@ class JellyfinMediaRepository @Inject constructor(
     }
 
     suspend fun getUserLibraries(forceRefresh: Boolean = false): ApiResult<List<BaseItemDto>> {
-        // ✅ FIX: Use withServerClient helper to ensure fresh server/client on token refresh
+        // User libraries are Jellyfin "user views". Querying /Items with
+        // includeItemTypes=CollectionFolder can return an empty list on newer servers even
+        // though the user has visible libraries, which leaves Home without library cards or
+        // per-library recently-added rows. /UserViews is the canonical, user-scoped endpoint.
         return withServerClient("getUserLibraries") { server, client ->
             val userUuid = parseUuid(server.userId ?: "", "user")
-            val response = client.itemsApi.getItems(
+            val response = client.userViewsApi.getUserViews(
                 userId = userUuid,
-                includeItemTypes = listOf(BaseItemKind.COLLECTION_FOLDER),
+                includeExternalContent = false,
+                includeHidden = false,
             )
             response.content.items
         }

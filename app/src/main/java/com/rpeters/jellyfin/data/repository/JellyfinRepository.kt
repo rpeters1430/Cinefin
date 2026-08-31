@@ -37,6 +37,7 @@ import org.jellyfin.sdk.api.client.extensions.systemApi
 import org.jellyfin.sdk.api.client.extensions.tvShowsApi
 import org.jellyfin.sdk.api.client.extensions.userApi
 import org.jellyfin.sdk.api.client.extensions.userLibraryApi
+import org.jellyfin.sdk.api.client.extensions.userViewsApi
 import org.jellyfin.sdk.model.UUID
 import org.jellyfin.sdk.model.api.AuthenticationResult
 import org.jellyfin.sdk.model.api.BaseItemDto
@@ -255,9 +256,10 @@ open class JellyfinRepository @Inject constructor(
         return withServerClient("getUserLibraries") { server, client ->
             val userUuid = runCatching { UUID.fromString(server.userId ?: "") }.getOrNull()
                 ?: throw IllegalStateException("Invalid user ID")
-            val response = client.itemsApi.getItems(
+            val response = client.userViewsApi.getUserViews(
                 userId = userUuid,
-                includeItemTypes = listOf(org.jellyfin.sdk.model.api.BaseItemKind.COLLECTION_FOLDER),
+                includeExternalContent = false,
+                includeHidden = false,
             )
             response.content.items
         }
