@@ -500,6 +500,8 @@
     <string name="resume_playback_message">You left off at %1$s.</string>
     <string name="resume_playback_resume">Resume</string>
     <string name="resume_playback_start_over">Start Over</string>
+    <string name="auto_skip_intro_credits_title">Auto-skip Intro &amp; Credits</string>
+    <string name="auto_skip_intro_credits_subtitle">Silently skip intros and credits without tapping a button</string>
     <string name="quality_auto">Auto</string>
     <string name="subtitles">Subtitles</string>
     <string name="cast_to_device">Cast to Device</string>

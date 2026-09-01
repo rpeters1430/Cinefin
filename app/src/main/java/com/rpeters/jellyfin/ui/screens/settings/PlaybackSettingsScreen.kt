@@ -170,10 +170,10 @@ fun PlaybackSettingsScreen(
                 )
 
                 ExpressiveSwitchListItem(
-                    title = "Auto-skip Intro & Credits",
-                    subtitle = "Silently skip intros and credits without tapping a button",
-                    checked = prefs.autoSkipIntro,
-                    onCheckedChange = viewModel::setAutoSkipIntro,
+                    title = stringResource(id = R.string.auto_skip_intro_credits_title),
+                    subtitle = stringResource(id = R.string.auto_skip_intro_credits_subtitle),
+                    checked = prefs.autoSkipIntroAndCredits,
+                    onCheckedChange = viewModel::setAutoSkipIntroAndCredits,
                     leadingIcon = Icons.Default.FastForward
                 )
 

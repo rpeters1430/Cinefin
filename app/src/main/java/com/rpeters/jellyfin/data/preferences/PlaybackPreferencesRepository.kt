@@ -56,7 +56,7 @@ data class PlaybackPreferences(
     val autoPlayNextEpisode: Boolean,
     val resumePlaybackMode: ResumePlaybackMode,
     val useExternalPlayer: Boolean,
-    val autoSkipIntro: Boolean,
+    val autoSkipIntroAndCredits: Boolean,
 ) {
     companion object {
         val DEFAULT = PlaybackPreferences(
@@ -68,7 +68,7 @@ data class PlaybackPreferences(
             autoPlayNextEpisode = true, // enabled by default
             resumePlaybackMode = ResumePlaybackMode.ALWAYS, // always resume by default
             useExternalPlayer = false, // disabled by default
-            autoSkipIntro = false, // disabled by default; user opts in
+            autoSkipIntroAndCredits = false, // disabled by default; user opts in
         )
     }
 }
@@ -112,7 +112,7 @@ class PlaybackPreferencesRepository(
                     ResumePlaybackMode.valueOf(prefs[PreferencesKeys.RESUME_PLAYBACK_MODE] ?: "")
                 }.getOrDefault(PlaybackPreferences.DEFAULT.resumePlaybackMode),
                 useExternalPlayer = prefs[PreferencesKeys.USE_EXTERNAL_PLAYER] ?: PlaybackPreferences.DEFAULT.useExternalPlayer,
-                autoSkipIntro = prefs[PreferencesKeys.AUTO_SKIP_INTRO] ?: PlaybackPreferences.DEFAULT.autoSkipIntro,
+                autoSkipIntroAndCredits = prefs[PreferencesKeys.AUTO_SKIP_INTRO] ?: PlaybackPreferences.DEFAULT.autoSkipIntroAndCredits,
             )
         }
 
@@ -154,7 +154,7 @@ class PlaybackPreferencesRepository(
         dataStore.edit { it[PreferencesKeys.USE_EXTERNAL_PLAYER] = enabled }
     }
 
-    suspend fun setAutoSkipIntro(enabled: Boolean) {
+    suspend fun setAutoSkipIntroAndCredits(enabled: Boolean) {
         dataStore.edit { it[PreferencesKeys.AUTO_SKIP_INTRO] = enabled }
     }
 

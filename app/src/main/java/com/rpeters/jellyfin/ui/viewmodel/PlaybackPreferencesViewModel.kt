@@ -77,9 +77,9 @@ class PlaybackPreferencesViewModel @Inject constructor(
         }
     }
 
-    fun setAutoSkipIntro(enabled: Boolean) {
+    fun setAutoSkipIntroAndCredits(enabled: Boolean) {
         viewModelScope.launch {
-            repository.setAutoSkipIntro(enabled)
+            repository.setAutoSkipIntroAndCredits(enabled)
         }
     }
 }
