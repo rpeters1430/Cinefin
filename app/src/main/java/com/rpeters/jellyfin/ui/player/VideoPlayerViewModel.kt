@@ -20,6 +20,9 @@ import org.jellyfin.sdk.model.api.PlayMethod
 import org.orbitmvi.orbit.syntax.*
 import javax.inject.Inject
 
+/** Minimum saved position before the "Ask" resume mode prompts the user; below this, just start over silently. */
+private const val RESUME_PROMPT_THRESHOLD_MS = 5_000L
+
 /**
  * Refactored VideoPlayerViewModel that delegates to specialized managers and uses MVI.
  */
@@ -46,10 +49,15 @@ class VideoPlayerViewModel @Inject constructor(
     val exoPlayer get() = playbackManager.exoPlayer
 
     private var currentItemMetadata: BaseItemDto? = null
+
+    // Only ever read via `.value` (never collected) below, so this must stay subscribed via
+    // Eagerly rather than WhileSubscribed — otherwise the upstream DataStore flow never starts
+    // collecting and `.value` stays frozen at initialValue for the ViewModel's whole lifetime,
+    // silently ignoring whatever the user actually set in Settings.
     private val playbackPreferences =
         playbackPreferencesRepository.preferences.stateIn(
             scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
+            started = SharingStarted.Eagerly,
             initialValue = com.rpeters.jellyfin.data.preferences.PlaybackPreferences.DEFAULT,
         )
 
@@ -99,6 +107,19 @@ class VideoPlayerViewModel @Inject constructor(
     }
 
     private var previousPlaybackState: Int = Player.STATE_IDLE
+    private var hasAutoSkippedIntro = false
+    private var hasAutoSkippedOutro = false
+
+    /** Parameters needed to resume initialization once a pending resume-dialog choice is made. */
+    private data class PendingPlaybackInit(
+        val itemId: String,
+        val itemName: String,
+        val subtitleIndex: Int?,
+        val audioIndex: Int?,
+        val forceOffline: Boolean,
+        val playlistId: String?,
+    )
+    private var pendingPlaybackInit: PendingPlaybackInit? = null
 
     init {
         // Observe stateManager.playerState and sync with Orbit's container
@@ -107,6 +128,7 @@ class VideoPlayerViewModel @Inject constructor(
                 intent {
                     reduce { newState }
                 }
+                maybeAutoSkip(newState)
             }
         }
 
@@ -221,6 +243,62 @@ class VideoPlayerViewModel @Inject constructor(
             }
             VideoPlayerIntent.PausePlayback -> pausePlayback()
             VideoPlayerIntent.ReleasePlayer -> releasePlayerImmediate()
+            VideoPlayerIntent.ConfirmResumePlayback -> confirmResumePlayback()
+            VideoPlayerIntent.DismissResumeDialog -> dismissResumeDialog()
+        }
+    }
+
+    private fun confirmResumePlayback() {
+        val position = stateManager.playerState.value.resumeDialogPositionMs
+        resumeDeferredInitialization(startPosition = position)
+    }
+
+    private fun dismissResumeDialog() {
+        resumeDeferredInitialization(startPosition = 0L)
+    }
+
+    /** Continues the initialization deferred by the resume dialog, now that a start position is known. */
+    private fun resumeDeferredInitialization(startPosition: Long) {
+        val pending = pendingPlaybackInit
+        pendingPlaybackInit = null
+        stateManager.updateState { it.copy(showResumeDialog = false, resumeDialogPositionMs = 0L) }
+        if (pending != null) {
+            viewModelScope.launch {
+                proceedWithPlayback(
+                    itemId = pending.itemId,
+                    itemName = pending.itemName,
+                    startPosition = startPosition,
+                    subtitleIndex = pending.subtitleIndex,
+                    audioIndex = pending.audioIndex,
+                    forceOffline = pending.forceOffline,
+                    playlistId = pending.playlistId,
+                )
+            }
+        }
+    }
+
+    /** Silently seeks past the intro/outro once per item when the user has opted into auto-skip. */
+    private fun maybeAutoSkip(state: VideoPlayerState) {
+        if (!playbackPreferences.value.autoSkipIntroAndCredits) return
+        // Wait for a real player before consuming a skip: seeking before it exists is a no-op,
+        // and the "once per item" flag would then never let a later, real seek retry.
+        playbackManager.exoPlayer ?: return
+
+        val introStart = state.introStartMs
+        val introEnd = state.introEndMs
+        if (!hasAutoSkippedIntro && introStart != null && introEnd != null && state.currentPosition in introStart until introEnd) {
+            hasAutoSkippedIntro = true
+            seekTo(introEnd)
+        }
+
+        val outroStart = state.outroStartMs
+        // A final Credits/Outro chapter has no "next chapter" to derive an end from, so
+        // outroEndMs is often null; fall back to the media duration in that case (matches
+        // the manual Skip Credits button's intent of jumping to the end of the video).
+        val outroEnd = state.outroEndMs ?: state.duration.takeIf { outroStart != null && it > outroStart }
+        if (!hasAutoSkippedOutro && outroStart != null && outroEnd != null && state.currentPosition in outroStart until outroEnd) {
+            hasAutoSkippedOutro = true
+            seekTo(outroEnd)
         }
     }
 
@@ -235,15 +313,58 @@ class VideoPlayerViewModel @Inject constructor(
     ) {
         SecureLogger.d("VideoPlayer", "Initializing playback for $itemName (playlistId: $playlistId)")
 
+        hasAutoSkippedIntro = false
+        hasAutoSkippedOutro = false
+        pendingPlaybackInit = null
+
         val resumeStartPosition = if (startPosition > 0) {
             startPosition
         } else {
             when (playbackPreferences.value.resumePlaybackMode) {
                 com.rpeters.jellyfin.data.preferences.ResumePlaybackMode.NEVER -> 0L
-                else -> playbackProgressManager.getResumePosition(itemId)
+                com.rpeters.jellyfin.data.preferences.ResumePlaybackMode.ASK -> {
+                    val resumeMs = playbackProgressManager.getResumePosition(itemId)
+                    // TV has no resume-dialog UI yet, so it keeps the pre-existing ALWAYS-style
+                    // behavior for ASK until a TV prompt is wired (see VideoPlayerScreen's TV branch).
+                    val isTvDevice = com.rpeters.jellyfin.utils.DeviceTypeUtils.isTvDevice(context)
+                    if (!isTvDevice && resumeMs > RESUME_PROMPT_THRESHOLD_MS) {
+                        // Defer starting the player until the user answers the dialog. Starting
+                        // playback now (at position 0) would autoplay behind the modal and race
+                        // the dialog's seek against a player/media item that doesn't exist yet.
+                        pendingPlaybackInit = PendingPlaybackInit(itemId, itemName, subtitleIndex, audioIndex, forceOffline, playlistId)
+                        stateManager.updateState {
+                            it.copy(
+                                itemId = itemId,
+                                itemName = itemName,
+                                playlistId = playlistId,
+                                isLoading = false,
+                                isPlaying = false,
+                                showResumeDialog = true,
+                                resumeDialogPositionMs = resumeMs,
+                            )
+                        }
+                        return
+                    }
+                    resumeMs
+                }
+                com.rpeters.jellyfin.data.preferences.ResumePlaybackMode.ALWAYS ->
+                    playbackProgressManager.getResumePosition(itemId)
             }
         }
 
+        proceedWithPlayback(itemId, itemName, resumeStartPosition, subtitleIndex, audioIndex, forceOffline, playlistId)
+    }
+
+    /** Does the actual metadata load + player init + playback start, once any start position is known. */
+    private suspend fun proceedWithPlayback(
+        itemId: String,
+        itemName: String,
+        startPosition: Long,
+        subtitleIndex: Int?,
+        audioIndex: Int?,
+        forceOffline: Boolean,
+        playlistId: String?,
+    ) {
         stateManager.updateState {
             it.copy(
                 itemId = itemId,
@@ -277,6 +398,8 @@ class VideoPlayerViewModel @Inject constructor(
                 isNextEpisodePromptDismissed = false,
                 showNextEpisodeCountdown = false,
                 nextEpisodeCountdown = 0,
+                showResumeDialog = false,
+                resumeDialogPositionMs = 0L,
             )
         }
 
@@ -313,7 +436,7 @@ class VideoPlayerViewModel @Inject constructor(
             playbackManager.startPlayback(
                 itemId = itemId,
                 itemName = itemName,
-                startPosition = resumeStartPosition,
+                startPosition = startPosition,
                 metadata = metadata,
                 sideLoadedSubs = subtitles,
                 forceOffline = forceOffline,

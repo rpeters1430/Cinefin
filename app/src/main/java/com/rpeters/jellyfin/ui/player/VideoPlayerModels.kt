@@ -126,6 +126,9 @@ data class VideoPlayerState(
     val playlistId: String? = null,
     // Adaptive bitrate quality recommendation
     val qualityRecommendation: com.rpeters.jellyfin.data.playback.QualityRecommendation? = null,
+    // Resume playback prompt (ResumePlaybackMode.ASK)
+    val showResumeDialog: Boolean = false,
+    val resumeDialogPositionMs: Long = 0L,
 )
 
 sealed class VideoPlayerIntent {
@@ -175,6 +178,8 @@ sealed class VideoPlayerIntent {
     object EnterPip : VideoPlayerIntent()
     object PausePlayback : VideoPlayerIntent()
     object ReleasePlayer : VideoPlayerIntent()
+    object ConfirmResumePlayback : VideoPlayerIntent()
+    object DismissResumeDialog : VideoPlayerIntent()
 }
 
 sealed class VideoPlayerSideEffect {

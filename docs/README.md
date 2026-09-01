@@ -20,6 +20,7 @@ Welcome to the central documentation repository for the Jellyfin Android client.
 - [Known Issues](features/KNOWN_ISSUES.md)
 - [Material3 Expressive Design](features/MATERIAL3_EXPRESSIVE.md)
 - [Media Info UI Redesign](features/MEDIA_INFO_UI_REDESIGN.md)
+- [Media Requests](features/REQUESTS.md)
 - [Movies Screen Improvements](features/MOVIES_SCREEN_IMPROVEMENTS.md)
 - [Offline Downloads Plan](features/OFFLINE_DOWNLOADS_PLAN.md)
 - [Person Detail Screen](features/PERSON_DETAIL_SCREEN.md)

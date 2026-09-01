@@ -64,17 +64,17 @@ scripts/gen-local-properties.ps1  # Windows (PowerShell)
 - **Project Name**: Cinefin Android (formerly Jellyfin Android Client)
 - **Application ID**: `com.rpeters.jellyfin`
 - **Namespace**: `com.rpeters.jellyfin`
-- **Version**: Defined in `app/build.gradle.kts` (versionCode: 123, versionName: "14.91")
+- **Version**: `versionCode`/`versionName` are defined in `app/build.gradle.kts` — check there for the current values rather than trusting a number copied into this doc.
 
 ### High-Level Architecture
 This is a modern Android client for Jellyfin media servers built with:
-- **UI**: Jetpack Compose (BOM 2026.03.01) with Material 3 design system
+- **UI**: Jetpack Compose (see `composeBom` in `gradle/libs.versions.toml`) with Material 3 design system
 - **Architecture**: MVVM pattern with Repository pattern for data access
-- **DI**: Hilt 2.59.1 for dependency injection throughout the app
-- **Async**: Kotlin Coroutines 1.10.2 with StateFlow for reactive UI updates
-- **Media Playback**: ExoPlayer (Media3 1.10.0-rc03) with Jellyfin FFmpeg decoder
-- **Networking**: Retrofit 3.0.0 + OkHttp 5.3.2 + Jellyfin SDK 1.8.6
-- **Image Loading**: Coil 3.3.0 with custom performance optimizations
+- **DI**: Hilt (see `hilt` in `gradle/libs.versions.toml`) for dependency injection throughout the app
+- **Async**: Kotlin Coroutines with StateFlow for reactive UI updates
+- **Media Playback**: ExoPlayer (see `media3` in `gradle/libs.versions.toml`) with Jellyfin FFmpeg decoder
+- **Networking**: Retrofit + OkHttp + Jellyfin SDK (see `retrofit`, `okhttp`, `jellyfinSdk` in `gradle/libs.versions.toml`)
+- **Image Loading**: Coil (see `coil` in `gradle/libs.versions.toml`) with custom performance optimizations
 - **Security**: Android Keystore encryption, dynamic certificate pinning with TOFU model
 
 ### Multi-Platform Support
@@ -240,11 +240,11 @@ OkHttp interceptor stack in `network/` directory:
 
 ### Key Constants & Configuration
 - Centralized constants in `core/constants/Constants.kt`
-- **SDK versions**: compileSdk 36, targetSdk 35, minSdk 26 (Android 8.0+)
-- **Current version**: versionCode 79, versionName "14.47"
+- **SDK versions**: see `compileSdk`, `minSdk`, `targetSdk` in `app/build.gradle.kts` / `gradle/libs.versions.toml`
+- **Current version**: see `versionCode`/`versionName` in `app/build.gradle.kts`
 - **Java version**: 21 with core library desugaring enabled
-- **Kotlin version**: 2.3.20 with KSP 2.3.6
-- **Dependency versions**: Centralized in `gradle/libs.versions.toml`
+- **Kotlin version**: see `kotlin`/`ksp` in `gradle/libs.versions.toml`
+- **Dependency versions**: Centralized in `gradle/libs.versions.toml` — this is the single source of truth; don't copy version numbers into this file, they will drift
 - **Release builds**: ProGuard/R8 enabled with shrinking and minification (`proguard-rules.pro`)
 - **Native debug symbols**: FULL debug symbols enabled for Play Console crash reporting
 - **Network security**: Custom configuration in `app/src/main/res/xml/network_security_config.xml`

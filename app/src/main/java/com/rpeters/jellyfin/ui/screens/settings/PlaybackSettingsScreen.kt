@@ -169,6 +169,19 @@ fun PlaybackSettingsScreen(
                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                 )
 
+                ExpressiveSwitchListItem(
+                    title = stringResource(id = R.string.auto_skip_intro_credits_title),
+                    subtitle = stringResource(id = R.string.auto_skip_intro_credits_subtitle),
+                    checked = prefs.autoSkipIntroAndCredits,
+                    onCheckedChange = viewModel::setAutoSkipIntroAndCredits,
+                    leadingIcon = Icons.Default.FastForward
+                )
+
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = 12.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                )
+
                 Text(
                     text = "Resume Playback",
                     style = MaterialTheme.typography.labelMedium,

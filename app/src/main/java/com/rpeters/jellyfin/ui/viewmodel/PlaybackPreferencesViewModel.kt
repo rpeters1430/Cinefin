@@ -76,4 +76,10 @@ class PlaybackPreferencesViewModel @Inject constructor(
             repository.setUseExternalPlayer(enabled)
         }
     }
+
+    fun setAutoSkipIntroAndCredits(enabled: Boolean) {
+        viewModelScope.launch {
+            repository.setAutoSkipIntroAndCredits(enabled)
+        }
+    }
 }

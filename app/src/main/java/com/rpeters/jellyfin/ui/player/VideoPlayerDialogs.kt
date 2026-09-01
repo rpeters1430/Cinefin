@@ -202,6 +202,55 @@ fun SubtitleTrackSelectionDialog(
     )
 }
 
+@UnstableApi
+@Composable
+fun ResumePlaybackDialog(
+    resumePositionMs: Long,
+    onResume: () -> Unit,
+    onStartOver: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onStartOver,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+        titleContentColor = MaterialTheme.colorScheme.onSurface,
+        textContentColor = MaterialTheme.colorScheme.onSurface,
+        tonalElevation = AlertDialogDefaults.TonalElevation,
+        title = { Text(stringResource(id = R.string.resume_playback_title)) },
+        text = {
+            Text(
+                text = stringResource(
+                    id = R.string.resume_playback_message,
+                    formatResumeDialogTime(resumePositionMs),
+                ),
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onResume) {
+                Text(stringResource(id = R.string.resume_playback_resume), color = MaterialTheme.colorScheme.primary)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onStartOver) {
+                Text(stringResource(id = R.string.resume_playback_start_over), color = MaterialTheme.colorScheme.onSurface)
+            }
+        },
+    )
+}
+
+private fun formatResumeDialogTime(timeMs: Long): String {
+    val totalSeconds = timeMs / 1000
+    val hours = totalSeconds / 3600
+    val minutes = (totalSeconds % 3600) / 60
+    val seconds = totalSeconds % 60
+
+    return if (hours > 0) {
+        String.format(java.util.Locale.ROOT, "%d:%02d:%02d", hours, minutes, seconds)
+    } else {
+        String.format(java.util.Locale.ROOT, "%d:%02d", minutes, seconds)
+    }
+}
+
 @Composable
 private fun SelectionDialogContent(
     maxHeight: Dp,
