@@ -6,11 +6,12 @@
 features across the app. **Android TV is intentionally back-burnered** — its
 section is last and shortest on purpose. Everything above it is phone/tablet.
 
-> This supersedes nothing — `CURRENT_STATUS.md`, `KNOWN_ISSUES.md`, `ROADMAP.md`,
-> and `IMPROVEMENT_PLAN.md` still hold the detailed history and rationale. This
-> doc exists because those four had drifted from each other and from the code
-> (see [Note on the older docs](#note-on-the-older-docs) at the bottom). Treat
-> **this file as the one to check off**; update the others only if you want the
+> This is now the authoritative day-to-day checklist, superseding
+> `CURRENT_STATUS.md`, `KNOWN_ISSUES.md`, `ROADMAP.md`, and `IMPROVEMENT_PLAN.md`
+> for active tracking — those four had drifted from each other and from the code
+> (see [Note on the older docs](#note-on-the-older-docs) at the bottom). They
+> still hold detailed history and rationale, so nothing is deleted, but
+> **this file is the one to check off**; update the others only if you want the
 > historical record to stay accurate.
 
 Checklist convention: `[ ]` open, `[x]` done. Check items off in place and add
@@ -36,10 +37,12 @@ lightweight changelog without a separate summary doc.
       the next Claude session). *15 min.*
 - [ ] **Implement or remove the multimodal image-loading stub** —
       `GenerativeAiRepository.kt:1181` has `TODO("Implement bitmap loading
-      from URI")` inside `loadBitmapFromUri`. It's the only TODO/FIXME left
-      in the whole codebase. Either wire it via Coil's `ImageRequest.Builder`
-      + `ContentResolver` for the (currently mostly commented-out) multimodal
-      AI path, or delete the dead function until multimodal ships. *1–2 hrs.*
+      from URI")` inside `loadBitmapFromUri`. It's the only TODO/FIXME left in
+      `app/src/main` (test doubles have a few unrelated `TODO()` stubs, e.g.
+      `MediaRequestSettingsViewModelTest.kt`, which are fine as-is). Either
+      wire it via Coil's `ImageRequest.Builder` + `ContentResolver` for the
+      (currently mostly commented-out) multimodal AI path, or delete the dead
+      function until multimodal ships. *1–2 hrs.*
 - [ ] **Re-run `testDebugUnitTest` and triage red tests** — last documented
       check (2026-03-30) found the suite "not green overall" and nobody
       confirmed it since. This has been open for 5+ months across three plan
@@ -55,7 +58,9 @@ lightweight changelog without a separate summary doc.
       since it's a genuine bug, not just a missing feature.
 - [ ] **Subtitle sync delay missing** — no `subtitleDelayMs` field anywhere in
       `SubtitleAppearancePreferences` or the player. Users with slightly
-      out-of-sync subtitles have no in-app fix. *File**: `ui/player/VideoPlayerViewModel.kt`, `data/preferences/SubtitleAppearancePreferences.kt`. ~1 day.*
+      out-of-sync subtitles have no in-app fix. **Files**:
+      `ui/player/VideoPlayerViewModel.kt`,
+      `data/preferences/SubtitleAppearancePreferences.kt`. *~1 day.*
 - [ ] **External subtitle files not selectable in the streaming player** —
       `OfflineDownloadManager.downloadExternalSubtitles()` exists for offline
       playback, but the live-streaming path still filters external tracks
