@@ -306,6 +306,14 @@ fun VideoPlayerScreen(
             )
         }
 
+        if (state.showResumeDialog) {
+            ResumePlaybackDialog(
+                resumePositionMs = state.resumeDialogPositionMs,
+                onResume = { viewModel.onIntent(VideoPlayerIntent.ConfirmResumePlayback) },
+                onStartOver = { viewModel.onIntent(VideoPlayerIntent.DismissResumeDialog) },
+            )
+        }
+
         if (state.showCastDialog) {
             CastDeviceSelectionDialog(
                 availableDevices = state.availableCastDevices,

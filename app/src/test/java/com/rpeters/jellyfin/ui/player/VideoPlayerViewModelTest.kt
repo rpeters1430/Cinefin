@@ -168,6 +168,34 @@ class VideoPlayerViewModelTest {
     }
 
     @Test
+    fun `ConfirmResumePlayback seeks to saved position and hides dialog`() = runTest {
+        playerStateFlow.value = VideoPlayerState(
+            itemId = "item-1",
+            resumeDialogPositionMs = 42_000L,
+            showResumeDialog = true,
+        )
+
+        viewModel.onIntent(VideoPlayerIntent.ConfirmResumePlayback)
+
+        verify { mockExoPlayer.seekTo(42_000L) }
+        verify { stateManager.updateState(any()) }
+    }
+
+    @Test
+    fun `DismissResumeDialog hides dialog without seeking`() = runTest {
+        playerStateFlow.value = VideoPlayerState(
+            itemId = "item-1",
+            resumeDialogPositionMs = 42_000L,
+            showResumeDialog = true,
+        )
+
+        viewModel.onIntent(VideoPlayerIntent.DismissResumeDialog)
+
+        verify(exactly = 0) { mockExoPlayer.seekTo(any()) }
+        verify { stateManager.updateState(any()) }
+    }
+
+    @Test
     fun `acceptQualityRecommendation persists recommended quality before restart`() = runTest {
         val recommendation = com.rpeters.jellyfin.data.playback.QualityRecommendation(
             recommendedQuality = com.rpeters.jellyfin.data.preferences.TranscodingQuality.MEDIUM,

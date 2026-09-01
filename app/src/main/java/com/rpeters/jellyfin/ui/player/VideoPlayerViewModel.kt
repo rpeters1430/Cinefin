@@ -20,6 +20,9 @@ import org.jellyfin.sdk.model.api.PlayMethod
 import org.orbitmvi.orbit.syntax.*
 import javax.inject.Inject
 
+/** Minimum saved position before the "Ask" resume mode prompts the user; below this, just start over silently. */
+private const val RESUME_PROMPT_THRESHOLD_MS = 5_000L
+
 /**
  * Refactored VideoPlayerViewModel that delegates to specialized managers and uses MVI.
  */
@@ -221,7 +224,21 @@ class VideoPlayerViewModel @Inject constructor(
             }
             VideoPlayerIntent.PausePlayback -> pausePlayback()
             VideoPlayerIntent.ReleasePlayer -> releasePlayerImmediate()
+            VideoPlayerIntent.ConfirmResumePlayback -> confirmResumePlayback()
+            VideoPlayerIntent.DismissResumeDialog -> dismissResumeDialog()
         }
+    }
+
+    private fun confirmResumePlayback() {
+        val position = stateManager.playerState.value.resumeDialogPositionMs
+        stateManager.updateState { it.copy(showResumeDialog = false, resumeDialogPositionMs = 0L) }
+        if (position > 0) {
+            seekTo(position)
+        }
+    }
+
+    private fun dismissResumeDialog() {
+        stateManager.updateState { it.copy(showResumeDialog = false, resumeDialogPositionMs = 0L) }
     }
 
     private suspend fun initializePlayerInternal(
@@ -235,12 +252,23 @@ class VideoPlayerViewModel @Inject constructor(
     ) {
         SecureLogger.d("VideoPlayer", "Initializing playback for $itemName (playlistId: $playlistId)")
 
+        var pendingAskResumePositionMs = 0L
         val resumeStartPosition = if (startPosition > 0) {
             startPosition
         } else {
             when (playbackPreferences.value.resumePlaybackMode) {
                 com.rpeters.jellyfin.data.preferences.ResumePlaybackMode.NEVER -> 0L
-                else -> playbackProgressManager.getResumePosition(itemId)
+                com.rpeters.jellyfin.data.preferences.ResumePlaybackMode.ASK -> {
+                    val resumeMs = playbackProgressManager.getResumePosition(itemId)
+                    if (resumeMs > RESUME_PROMPT_THRESHOLD_MS) {
+                        pendingAskResumePositionMs = resumeMs
+                        0L
+                    } else {
+                        0L
+                    }
+                }
+                com.rpeters.jellyfin.data.preferences.ResumePlaybackMode.ALWAYS ->
+                    playbackProgressManager.getResumePosition(itemId)
             }
         }
 
@@ -277,6 +305,8 @@ class VideoPlayerViewModel @Inject constructor(
                 isNextEpisodePromptDismissed = false,
                 showNextEpisodeCountdown = false,
                 nextEpisodeCountdown = 0,
+                showResumeDialog = pendingAskResumePositionMs > 0,
+                resumeDialogPositionMs = pendingAskResumePositionMs,
             )
         }
 

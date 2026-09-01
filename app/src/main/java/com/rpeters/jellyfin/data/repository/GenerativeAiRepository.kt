@@ -1136,49 +1136,4 @@ class GenerativeAiRepository @Inject constructor(
         }
     }
 
-    /**
-     * Analyzes an image (e.g., movie poster) and provides insights.
-     *
-     * **Multimodal Support:**
-     * - Samsung S25 series: Uses on-device multimodal Gemini Nano (text + images)
-     * - Other devices: Uses cloud API with multimodal support
-     *
-     * **Future Use Cases:**
-     * - Analyze movie posters to suggest similar content
-     * - Describe scenes from video thumbnails
-     * - Visual search: "Find movies with this vibe"
-     *
-     * @param imageUri URI to the image (can be content://, file://, or http://)
-     * @param prompt The question or analysis request about the image
-     * @return AI-generated description or analysis of the image
-     *
-     * **Note**: This method is prepared for future implementation when you want to add
-     * image analysis features. Currently commented out to avoid unused code warnings.
-     */
-    /*
-    suspend fun analyzeImage(imageUri: Uri, prompt: String): String = withContext(Dispatchers.IO) {
-        try {
-            // Load the image as a Bitmap
-            val bitmap = loadBitmapFromUri(imageUri)
-
-            // Create content with both text and image
-            val content = content {
-                text(prompt)
-                image(bitmap)
-            }
-
-            // Use primary model (Nano on S25, cloud otherwise)
-            val response = primaryModel.generateContent(content)
-            response.text ?: "Unable to analyze image."
-        } catch (e: Exception) {
-            "Error analyzing image: ${e.message}"
-        }
-    }
-
-    private suspend fun loadBitmapFromUri(uri: Uri): Bitmap {
-        // Implementation would use ContentResolver or Coil to load bitmap
-        // This is a placeholder for when you implement multimodal features
-        TODO("Implement bitmap loading from URI")
-    }
-     */
 }

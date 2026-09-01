@@ -496,6 +496,10 @@
     <string name="close">Close</string>
     <string name="select_audio_track">Select Audio Track</string>
     <string name="select_quality">Select Quality</string>
+    <string name="resume_playback_title">Resume playback?</string>
+    <string name="resume_playback_message">You left off at %1$s.</string>
+    <string name="resume_playback_resume">Resume</string>
+    <string name="resume_playback_start_over">Start Over</string>
     <string name="quality_auto">Auto</string>
     <string name="subtitles">Subtitles</string>
     <string name="cast_to_device">Cast to Device</string>
