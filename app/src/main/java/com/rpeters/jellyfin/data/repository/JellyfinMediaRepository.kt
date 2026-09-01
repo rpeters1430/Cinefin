@@ -10,6 +10,8 @@ import com.rpeters.jellyfin.data.repository.common.ErrorType
 import com.rpeters.jellyfin.data.repository.common.LibraryHealthChecker
 import com.rpeters.jellyfin.utils.SecureLogger
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import org.jellyfin.sdk.api.client.exception.InvalidStatusException
 import org.jellyfin.sdk.api.client.extensions.itemsApi
 import org.jellyfin.sdk.api.client.extensions.libraryApi
@@ -106,7 +108,29 @@ class JellyfinMediaRepository @Inject constructor(
                 includeExternalContent = false,
                 includeHidden = false,
             )
-            response.content.items
+            val views = response.content.items
+
+            // /UserViews doesn't return an accurate ChildCount for the view itself (it's often
+            // stale or reflects folder structure rather than the true recursive item count), so
+            // "X items" on the library cards ends up wrong. Fetch the real recursive count per
+            // library in parallel and stitch it back in.
+            coroutineScope {
+                views.map { view ->
+                    async {
+                        val viewId = view.id
+                        val total = runCatching {
+                            client.itemsApi.getItems(
+                                userId = userUuid,
+                                parentId = viewId,
+                                recursive = true,
+                                includeItemTypes = getDefaultTypesForCollection(view.collectionType?.name?.lowercase()),
+                                limit = 0,
+                            ).content.totalRecordCount
+                        }.getOrNull()
+                        if (total != null) view.copy(childCount = total) else view
+                    }
+                }.map { it.await() }
+            }
         }
     }
 
