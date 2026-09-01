@@ -196,6 +196,51 @@ class VideoPlayerViewModelTest {
     }
 
     @Test
+    fun `auto-skip intro does nothing when the preference is disabled`() = runTest {
+        // Class-level viewModel was built with PlaybackPreferences.DEFAULT (autoSkipIntro = false).
+        playerStateFlow.value = VideoPlayerState(
+            itemId = "item-1",
+            introStartMs = 0L,
+            introEndMs = 30_000L,
+            currentPosition = 5_000L,
+        )
+        advanceUntilIdle()
+
+        verify(exactly = 0) { mockExoPlayer.seekTo(30_000L) }
+    }
+
+    @Test
+    fun `auto-skip intro seeks past the intro once when enabled`() = runTest {
+        every { playbackPreferencesRepository.preferences } returns MutableStateFlow(
+            PlaybackPreferences.DEFAULT.copy(autoSkipIntro = true),
+        )
+        val autoSkipViewModel = VideoPlayerViewModel(
+            context = context,
+            repository = repository,
+            stateManager = stateManager,
+            playbackManager = playbackManager,
+            trackManager = trackManager,
+            castManager = castManager,
+            metadataManager = metadataManager,
+            playbackProgressManager = playbackProgressManager,
+            playbackPreferencesRepository = playbackPreferencesRepository,
+            adaptiveBitrateMonitor = adaptiveBitrateMonitor,
+        )
+        advanceUntilIdle()
+
+        playerStateFlow.value = VideoPlayerState(
+            itemId = "item-1",
+            introStartMs = 0L,
+            introEndMs = 30_000L,
+            currentPosition = 5_000L,
+        )
+        advanceUntilIdle()
+
+        verify { mockExoPlayer.seekTo(30_000L) }
+        assertNotNull(autoSkipViewModel.playerState)
+    }
+
+    @Test
     fun `acceptQualityRecommendation persists recommended quality before restart`() = runTest {
         val recommendation = com.rpeters.jellyfin.data.playback.QualityRecommendation(
             recommendedQuality = com.rpeters.jellyfin.data.preferences.TranscodingQuality.MEDIUM,

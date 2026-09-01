@@ -169,6 +169,19 @@ fun PlaybackSettingsScreen(
                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                 )
 
+                ExpressiveSwitchListItem(
+                    title = "Auto-skip Intro & Credits",
+                    subtitle = "Silently skip intros and credits without tapping a button",
+                    checked = prefs.autoSkipIntro,
+                    onCheckedChange = viewModel::setAutoSkipIntro,
+                    leadingIcon = Icons.Default.FastForward
+                )
+
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = 12.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                )
+
                 Text(
                     text = "Resume Playback",
                     style = MaterialTheme.typography.labelMedium,

@@ -56,6 +56,7 @@ data class PlaybackPreferences(
     val autoPlayNextEpisode: Boolean,
     val resumePlaybackMode: ResumePlaybackMode,
     val useExternalPlayer: Boolean,
+    val autoSkipIntro: Boolean,
 ) {
     companion object {
         val DEFAULT = PlaybackPreferences(
@@ -67,6 +68,7 @@ data class PlaybackPreferences(
             autoPlayNextEpisode = true, // enabled by default
             resumePlaybackMode = ResumePlaybackMode.ALWAYS, // always resume by default
             useExternalPlayer = false, // disabled by default
+            autoSkipIntro = false, // disabled by default; user opts in
         )
     }
 }
@@ -110,6 +112,7 @@ class PlaybackPreferencesRepository(
                     ResumePlaybackMode.valueOf(prefs[PreferencesKeys.RESUME_PLAYBACK_MODE] ?: "")
                 }.getOrDefault(PlaybackPreferences.DEFAULT.resumePlaybackMode),
                 useExternalPlayer = prefs[PreferencesKeys.USE_EXTERNAL_PLAYER] ?: PlaybackPreferences.DEFAULT.useExternalPlayer,
+                autoSkipIntro = prefs[PreferencesKeys.AUTO_SKIP_INTRO] ?: PlaybackPreferences.DEFAULT.autoSkipIntro,
             )
         }
 
@@ -151,6 +154,10 @@ class PlaybackPreferencesRepository(
         dataStore.edit { it[PreferencesKeys.USE_EXTERNAL_PLAYER] = enabled }
     }
 
+    suspend fun setAutoSkipIntro(enabled: Boolean) {
+        dataStore.edit { it[PreferencesKeys.AUTO_SKIP_INTRO] = enabled }
+    }
+
     private object PreferencesKeys {
         val MAX_BITRATE_WIFI = intPreferencesKey("max_bitrate_wifi")
         val MAX_BITRATE_CELLULAR = intPreferencesKey("max_bitrate_cellular")
@@ -160,6 +167,7 @@ class PlaybackPreferencesRepository(
         val AUTO_PLAY_NEXT_EPISODE = booleanPreferencesKey("auto_play_next_episode")
         val RESUME_PLAYBACK_MODE = stringPreferencesKey("resume_playback_mode")
         val USE_EXTERNAL_PLAYER = booleanPreferencesKey("use_external_player")
+        val AUTO_SKIP_INTRO = booleanPreferencesKey("auto_skip_intro")
     }
 
     companion object {

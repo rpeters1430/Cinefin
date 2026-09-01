@@ -118,12 +118,21 @@ growing while other work shipped around them:
       chat, summaries, mood analysis, recommendations, smart search, person
       bio, thematic analysis, and (mostly commented-out) multimodal. Split by
       feature under a `data/ai/` sub-package with the repository as a façade.
-- [ ] **Auto-skip intro/outro preference** — manual "Skip Intro"/"Skip
-      Credits" buttons already ship (`VideoPlayerOverlays.kt`,
-      `ExpressiveVideoControls.kt` both have them wired to chapter markers).
-      What's still missing is the *automatic* silent-skip preference
-      (`autoSkipIntro: Boolean`) for users who don't want to tap a button
-      every episode. Small addition on top of what already exists.
+- [x] **Auto-skip intro/outro preference** — 2026-09-01: added
+      `autoSkipIntro: Boolean` to `PlaybackPreferences` (DataStore-backed, off
+      by default) with a toggle in Settings → Playback → "Auto-skip Intro &
+      Credits". `VideoPlayerViewModel` now silently seeks past a known
+      intro/outro window once per item when enabled, without touching the
+      existing manual "Skip Intro"/"Skip Credits" buttons. While doing this,
+      found and fixed a real bug: `playbackPreferences` in
+      `VideoPlayerViewModel` was `stateIn(..., WhileSubscribed(5000), ...)`
+      but only ever read via `.value`, never collected — so its upstream
+      DataStore flow never actually started, and `.value` stayed frozen at
+      `PlaybackPreferences.DEFAULT` (`resumePlaybackMode = ALWAYS`) for the
+      ViewModel's whole life regardless of what the user picked in Settings.
+      Switched it to `SharingStarted.Eagerly`. This was a deeper root cause
+      of the "Ask" resume dialog bug above than the missing `when` branch
+      alone — even `NEVER` would silently have had no effect.
 - [x] **Document the Requests feature** — 2026-09-01: added
       `docs/features/REQUESTS.md` (and an index entry in `docs/README.md`).
       Turns out there isn't one backend — it talks to Jellyseerr/Overseerr,

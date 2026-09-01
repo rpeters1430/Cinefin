@@ -49,10 +49,15 @@ class VideoPlayerViewModel @Inject constructor(
     val exoPlayer get() = playbackManager.exoPlayer
 
     private var currentItemMetadata: BaseItemDto? = null
+
+    // Only ever read via `.value` (never collected) below, so this must stay subscribed via
+    // Eagerly rather than WhileSubscribed — otherwise the upstream DataStore flow never starts
+    // collecting and `.value` stays frozen at initialValue for the ViewModel's whole lifetime,
+    // silently ignoring whatever the user actually set in Settings.
     private val playbackPreferences =
         playbackPreferencesRepository.preferences.stateIn(
             scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
+            started = SharingStarted.Eagerly,
             initialValue = com.rpeters.jellyfin.data.preferences.PlaybackPreferences.DEFAULT,
         )
 
@@ -102,6 +107,8 @@ class VideoPlayerViewModel @Inject constructor(
     }
 
     private var previousPlaybackState: Int = Player.STATE_IDLE
+    private var hasAutoSkippedIntro = false
+    private var hasAutoSkippedOutro = false
 
     init {
         // Observe stateManager.playerState and sync with Orbit's container
@@ -110,6 +117,7 @@ class VideoPlayerViewModel @Inject constructor(
                 intent {
                     reduce { newState }
                 }
+                maybeAutoSkip(newState)
             }
         }
 
@@ -241,6 +249,25 @@ class VideoPlayerViewModel @Inject constructor(
         stateManager.updateState { it.copy(showResumeDialog = false, resumeDialogPositionMs = 0L) }
     }
 
+    /** Silently seeks past the intro/outro once per item when the user has opted into auto-skip. */
+    private fun maybeAutoSkip(state: VideoPlayerState) {
+        if (!playbackPreferences.value.autoSkipIntro) return
+
+        val introStart = state.introStartMs
+        val introEnd = state.introEndMs
+        if (!hasAutoSkippedIntro && introStart != null && introEnd != null && state.currentPosition in introStart until introEnd) {
+            hasAutoSkippedIntro = true
+            seekTo(introEnd)
+        }
+
+        val outroStart = state.outroStartMs
+        val outroEnd = state.outroEndMs
+        if (!hasAutoSkippedOutro && outroStart != null && outroEnd != null && state.currentPosition in outroStart until outroEnd) {
+            hasAutoSkippedOutro = true
+            seekTo(outroEnd)
+        }
+    }
+
     private suspend fun initializePlayerInternal(
         itemId: String,
         itemName: String,
@@ -251,6 +278,9 @@ class VideoPlayerViewModel @Inject constructor(
         playlistId: String? = null,
     ) {
         SecureLogger.d("VideoPlayer", "Initializing playback for $itemName (playlistId: $playlistId)")
+
+        hasAutoSkippedIntro = false
+        hasAutoSkippedOutro = false
 
         var pendingAskResumePositionMs = 0L
         val resumeStartPosition = if (startPosition > 0) {
