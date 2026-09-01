@@ -38,21 +38,40 @@ lightweight changelog without a separate summary doc.
       block from `GenerativeAiRepository.kt` (it wasn't even live code — the
       whole thing was inside a `/* */` block already). Nothing else
       referenced it.
-- [ ] **Re-run `testDebugUnitTest` and triage red tests** — 2026-09-01:
-      attempted from this session but blocked — this sandbox's egress policy
-      denies `dl.google.com`, so the Android SDK (needed by `./gradlew`)
-      can't be downloaded and no build/test run was possible here. Needs a
-      session with SDK access (or a pre-provisioned SDK) to actually execute
-      this. Added two new unit tests for the resume-dialog intents in
-      `VideoPlayerViewModelTest.kt` (reviewed by hand, not run) while making
-      the change above.
+- [x] **Re-run `testDebugUnitTest` and triage red tests** — 2026-09-01:
+      couldn't run it from this session directly (this sandbox's egress
+      policy denies `dl.google.com`, so the Android SDK can't be downloaded
+      here), but PR #1262's CI (`build-test-lint`) ran it for real: `Build
+      debug APK` and `Run unit tests` both succeeded on the full suite,
+      confirming the resume-dialog/auto-skip changes (and the new/rewritten
+      tests added alongside them) actually compile and pass. `Run lint`
+      still fails, but that's pre-existing and unrelated — same 4 errors,
+      same first failure (`EpisodeNotificationWorker.kt:152`,
+      `MissingPermission`), already failing on `main` before this branch
+      existed; documented on the PR rather than folded into this diff.
 
 ---
 
 ## 🐛 Bugs
 
-- [ ] **Resume "Ask" mode is a no-op** — see Do Next above; listed here too
-      since it's a genuine bug, not just a missing feature.
+- [x] **Resume "Ask" mode is a no-op** — see Do Next above; fixed 2026-09-01.
+- [ ] **CI is red on `main`, unrelated to any specific PR** — verified
+      2026-09-01 while driving PR #1262 to green: `build-test-lint`'s `Run
+      lint` step fails on `main` itself (checked at commit `1299abe`, this
+      branch's base, and multiple prior unrelated PRs/merges going back
+      through at least Aug 27) with `EpisodeNotificationWorker.kt:152:
+      Error: Call requires permission which may be rejected by user
+      [MissingPermission]` — the `POST_NOTIFICATIONS` call at that line
+      needs a `checkSelfPermission`/`SecurityException` guard. Separately,
+      the repo's `.github/workflows/claude.yml` automated-review job
+      (triggered on `pull_request`) fails near-instantly on essentially
+      every PR (is_error:true, 0 turns, 0 cost, ~350-400ms — dies during
+      SDK init before reading any diff), confirmed across multiple
+      unrelated PRs including Renovate dependency bumps; looks like a
+      workflow/secret misconfiguration (e.g. `ANTHROPIC_API_KEY`), not a
+      code issue. Both make every PR in this repo show red regardless of
+      its own quality — worth a maintainer's attention independent of any
+      single PR's diff.
 - [ ] **Subtitle sync delay missing** — no `subtitleDelayMs` field anywhere in
       `SubtitleAppearancePreferences` or the player. Users with slightly
       out-of-sync subtitles have no in-app fix. **Files**:
