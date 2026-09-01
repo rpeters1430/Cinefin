@@ -22,33 +22,30 @@ lightweight changelog without a separate summary doc.
 
 ## 🔥 Do next (highest leverage, lowest effort)
 
-- [ ] **Wire up the "Ask" resume dialog** — `VideoPlayerViewModel.kt:241` still
-      routes `ResumePlaybackMode.ASK` through the `else` branch, so it behaves
-      exactly like `ALWAYS`. The preference exists in Settings and quietly
-      lies to the user. Backend (`playbackProgressManager.getResumePosition`)
-      is ready; just needs a branch that emits a prompt state + a
-      `ResumePlaybackDialog` composable wired to phone player (TV can wait).
-      *0.5 day.*
-- [ ] **Delete or restore `TvPlayerControls_Backup.kt`** —
-      `ui/player/TvPlayerControls_Backup.kt` (326 lines, modified Aug 27) is a
-      stray backup file sitting alongside the real TV controls. Confirm
-      nothing references it, then delete it — dead code with a `_Backup`
-      suffix is exactly the kind of thing that confuses the next person (or
-      the next Claude session). *15 min.*
-- [ ] **Implement or remove the multimodal image-loading stub** —
-      `GenerativeAiRepository.kt:1181` has `TODO("Implement bitmap loading
-      from URI")` inside `loadBitmapFromUri`. It's the only TODO/FIXME left in
-      `app/src/main` (test doubles have a few unrelated `TODO()` stubs, e.g.
-      `MediaRequestSettingsViewModelTest.kt`, which are fine as-is). Either
-      wire it via Coil's `ImageRequest.Builder` + `ContentResolver` for the
-      (currently mostly commented-out) multimodal AI path, or delete the dead
-      function until multimodal ships. *1–2 hrs.*
-- [ ] **Re-run `testDebugUnitTest` and triage red tests** — last documented
-      check (2026-03-30) found the suite "not green overall" and nobody
-      confirmed it since. This has been open for 5+ months across three plan
-      revisions without anyone actually running the command. Do that first;
-      it's the fastest way to know how much of the rest of this list is safe
-      to build on. *~30 min to run, more to fix what it finds.*
+- [x] **Wire up the "Ask" resume dialog** — 2026-09-01: `VideoPlayerViewModel`
+      now branches on `ResumePlaybackMode.ASK` — if the saved position is
+      above a 5s threshold it starts playback at 0 and surfaces
+      `showResumeDialog`/`resumeDialogPositionMs` in `VideoPlayerState`
+      instead of silently resuming. Added `ResumePlaybackDialog` composable
+      (`VideoPlayerDialogs.kt`) wired into `VideoPlayerScreen.kt`, plus
+      `ConfirmResumePlayback`/`DismissResumeDialog` intents. TV still resumes
+      unprompted (`ALWAYS`-style), as scoped.
+- [x] **Delete or restore `TvPlayerControls_Backup.kt`** — 2026-09-01:
+      confirmed zero references anywhere in the codebase and deleted the
+      file.
+- [x] **Implement or remove the multimodal image-loading stub** — 2026-09-01:
+      removed the fully-commented-out `analyzeImage`/`loadBitmapFromUri`
+      block from `GenerativeAiRepository.kt` (it wasn't even live code — the
+      whole thing was inside a `/* */` block already). Nothing else
+      referenced it.
+- [ ] **Re-run `testDebugUnitTest` and triage red tests** — 2026-09-01:
+      attempted from this session but blocked — this sandbox's egress policy
+      denies `dl.google.com`, so the Android SDK (needed by `./gradlew`)
+      can't be downloaded and no build/test run was possible here. Needs a
+      session with SDK access (or a pre-provisioned SDK) to actually execute
+      this. Added two new unit tests for the resume-dialog intents in
+      `VideoPlayerViewModelTest.kt` (reviewed by hand, not run) while making
+      the change above.
 
 ---
 
@@ -127,11 +124,14 @@ growing while other work shipped around them:
       What's still missing is the *automatic* silent-skip preference
       (`autoSkipIntro: Boolean`) for users who don't want to tap a button
       every episode. Small addition on top of what already exists.
-- [ ] **Document the Requests feature** — `RequestsScreen.kt`,
-      `RequestsViewModel.kt`, `TvRequestsScreen.kt` still have no entry in
-      `docs/features/` explaining what backend this talks to (Jellyseerr?
-      something self-hosted?) or which flags gate it. Given it's now the
-      largest screen in the app, this is overdue. *~1 hr.*
+- [x] **Document the Requests feature** — 2026-09-01: added
+      `docs/features/REQUESTS.md` (and an index entry in `docs/README.md`).
+      Turns out there isn't one backend — it talks to Jellyseerr/Overseerr,
+      Sonarr, and Radarr directly (each optional/independently configured),
+      plus an optional self-hosted "Cinefin" Jellyfin plugin used only to
+      import credentials for those three, never to proxy requests. No
+      feature flag gates it; the bottom-nav tab is hidden until at least one
+      backend is enabled+configured in Settings → Media Requests.
 - [ ] **Reduce the ~150 build warnings** — the warning-budget machinery
       already exists in `build.gradle.kts` (`deprecation: 24, nullability:
       16, api-migration: 18, tooling: 12`); nobody has actually cut a budget
@@ -155,11 +155,14 @@ growing while other work shipped around them:
       this file, and archive the ~15 dated/session-summary files under
       `docs/plans/` (`2026-02-*`, `SESSION_*_SUMMARY.md`, `PHASE_*_*.md`,
       `QUICK_WINS_*`) into `docs/archive/` since their work has shipped.
-- [ ] **Refresh stale version numbers in `CLAUDE.md`** — it currently lists
-      Compose BOM 2026.03.01, Hilt 2.59.1, versionCode 123/versionName 14.91
-      in one place and versionCode 79/14.47 in another; the real values are
-      now 161/15.92. Replace the copied numbers with "see
-      `gradle/libs.versions.toml`" so this can't drift again.
+- [x] **Refresh stale version numbers in `CLAUDE.md`** — 2026-09-01: replaced
+      every hardcoded version number (versionCode/versionName in two places,
+      Compose BOM, Hilt, Media3, Retrofit/OkHttp/Jellyfin SDK, Coil, Kotlin/KSP,
+      compileSdk/minSdk/targetSdk) with pointers to `app/build.gradle.kts` /
+      `gradle/libs.versions.toml`. Turned out drift was worse than the todo
+      described — minSdk had drifted from the documented 26 to the actual 30,
+      targetSdk 35→36, compileSdk 36→37 — which is exactly why pointers beat
+      copied numbers.
 
 ---
 
