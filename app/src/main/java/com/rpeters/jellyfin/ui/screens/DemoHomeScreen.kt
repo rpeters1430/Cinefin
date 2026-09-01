@@ -13,7 +13,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -81,7 +81,7 @@ fun DemoHomeScreen(
                 title = { Text("Demo Mode") },
                 navigationIcon = {
                     IconButton(onClick = onExitDemoMode) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Exit Demo Mode")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Exit Demo Mode")
                     }
                 },
             )
