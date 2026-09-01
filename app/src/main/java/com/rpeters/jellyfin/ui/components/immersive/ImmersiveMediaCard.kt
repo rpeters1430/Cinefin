@@ -245,7 +245,10 @@ private fun ImmersiveCardContent(
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             // Rating on the left – vibrant amber-gold gradient badge
-            if (rating != null) {
+            // Community ratings are a 0-10 scale; guard against bad metadata (e.g. a provider
+            // that populated CommunityRating with a vote count instead of an average) so cards
+            // never show a nonsensical value like "29358.0".
+            if (rating != null && rating in 0f..10f) {
                 Surface(
                     shape = ImmersiveShapes.RatingBadge,
                     color = Color.Transparent,

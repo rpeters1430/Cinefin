@@ -174,6 +174,10 @@ fun ImmersiveLibraryScreen(
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                         modifier = Modifier
                             .fillMaxWidth()
+                            // Reserve space for the floating back/refresh/settings FABs
+                            // (up to 3 x 56dp + spacing) so the title text never renders
+                            // underneath them.
+                            .padding(end = if (showBackButton) 184.dp else 128.dp)
                             .padding(bottom = 24.dp),
                     )
                 }
