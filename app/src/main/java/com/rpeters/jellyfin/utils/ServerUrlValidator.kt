@@ -152,13 +152,17 @@ object ServerUrlValidator {
         // Determine if this looks like a reverse proxy setup
         val isReverseProxyLikely = isReverseProxySetup(baseUrl, originalPort, path)
 
+        // Always prioritize the exact user-provided URL first
+        if (isValidUrl(baseUrl)) {
+            variations.add(baseUrl)
+        }
+
         if (isReverseProxyLikely) {
             // Special handling for reverse proxy setups with /jellyfin path
             when {
                 baseUrl.startsWith("https://") -> {
                     // For HTTPS reverse proxy, prioritize the exact path first
                     variations.add("$baseUrl/jellyfin")
-                    variations.add("$baseUrl")
                     variations.add("https://$host:443/jellyfin")
                     variations.add("https://$host/jellyfin")
                     // Try without the path if it was already included
@@ -173,7 +177,6 @@ object ServerUrlValidator {
                 baseUrl.startsWith("http://") -> {
                     // For HTTP reverse proxy, prioritize the exact path first
                     variations.add("$baseUrl/jellyfin")
-                    variations.add("$baseUrl")
                     variations.add("http://$host:80/jellyfin")
                     variations.add("http://$host/jellyfin")
                     // Try without the path if it was already included
@@ -241,7 +244,7 @@ object ServerUrlValidator {
             // Has a path component beyond root (like /jellyfin) - strongest indicator
             path.isNotEmpty() && path != "/" -> true
             // Domain has subdomain (more than 1 dot - e.g., server.domain.com)
-            url.substringAfter("://").substringBefore("/").substringBefore(":").count { it == '.' } >= 2 -> true
+            !looksLikeIPAddress(url) && url.substringAfter("://").substringBefore("/").substringBefore(":").count { it == '.' } >= 2 -> true
             // Uses standard web ports (likely reverse proxy)
             port == 80 || port == 443 -> true
             // Contains common reverse proxy indicators in hostname

@@ -4,8 +4,10 @@ import android.content.Context
 import android.util.Log
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.repository.common.ApiResult
+import com.rpeters.jellyfin.data.repository.common.ErrorType
 import com.rpeters.jellyfin.data.session.JellyfinSessionManager
 import com.rpeters.jellyfin.data.utils.RepositoryUtils
+import com.rpeters.jellyfin.utils.ServerUrlValidator
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -40,8 +42,9 @@ class ConnectionOptimizer @Inject constructor(
         return withContext(Dispatchers.IO) {
             logDebug("Starting parallel server discovery for: $serverUrl")
 
+            val normalizedUrl = serverUrl.trim().removeSuffix("/")
             val urlVariations = getUrlVariations(serverUrl)
-            val prioritizedUrls = prioritizeUrls(urlVariations)
+            val prioritizedUrls = prioritizeUrls(urlVariations, normalizedUrl)
 
             logDebug("Testing ${prioritizedUrls.size} URL variations in parallel")
 
@@ -55,6 +58,7 @@ class ConnectionOptimizer @Inject constructor(
                     }
                 }
 
+            var lastError: ApiResult.Error<PublicSystemInfo>? = null
             // Return first successful result
             results.forEachIndexed { index, deferred ->
                 try {
@@ -62,14 +66,19 @@ class ConnectionOptimizer @Inject constructor(
                     if (result is ApiResult.Success) {
                         logDebug("Successfully connected to: ${prioritizedUrls[index]}")
                         return@withContext result
+                    } else if (result is ApiResult.Error<PublicSystemInfo>) {
+                        if (prioritizedUrls[index] == normalizedUrl || lastError == null) {
+                            lastError = result
+                        }
                     }
                 } catch (e: CancellationException) {
                     throw e
                 }
             }
 
-            logDebug("No working endpoints found")
-            ApiResult.Error("No working endpoints found for $serverUrl")
+            val failureMsg = lastError?.message ?: "No working endpoints found for $serverUrl"
+            logDebug("No working endpoints found for $serverUrl: $failureMsg")
+            ApiResult.Error(failureMsg, lastError?.cause, lastError?.errorType ?: ErrorType.UNKNOWN)
         }
     }
 
@@ -84,13 +93,14 @@ class ConnectionOptimizer @Inject constructor(
 
         // Check if this looks like a reverse proxy setup
         val isReverseProxy = normalizedUrl.contains("/jellyfin") ||
-            normalizedUrl.substringAfter("://").substringBefore("/").substringBefore(":").count { it == '.' } >= 2 ||
+            (!ServerUrlValidator.looksLikeIPAddress(normalizedUrl) &&
+                normalizedUrl.substringAfter("://").substringBefore("/").substringBefore(":").count { it == '.' } >= 2) ||
             normalizedUrl.contains(":443") || normalizedUrl.contains(":80")
 
-        if (isReverseProxy) {
-            // For reverse proxy setups, prioritize the exact URL first
-            urls.add(normalizedUrl)
+        // Always prioritize the exact user-provided URL first
+        urls.add(normalizedUrl)
 
+        if (isReverseProxy) {
             // Add /jellyfin path if not already present
             if (!normalizedUrl.endsWith("/jellyfin")) {
                 urls.add("$normalizedUrl/jellyfin")
@@ -150,11 +160,9 @@ class ConnectionOptimizer @Inject constructor(
             // Standard Jellyfin server setup
             // Add HTTPS variations
             if (normalizedUrl.startsWith("https://")) {
-                urls.add(normalizedUrl)
                 urls.add(normalizedUrl.replace("https://", "http://"))
             } else if (normalizedUrl.startsWith("http://")) {
                 urls.add(normalizedUrl.replace("http://", "https://"))
-                urls.add(normalizedUrl)
             } else {
                 // No protocol specified
                 urls.add("https://$normalizedUrl")
@@ -186,19 +194,20 @@ class ConnectionOptimizer @Inject constructor(
     /**
      * Prioritize URLs for faster discovery, with special handling for reverse proxy setups
      */
-    private fun prioritizeUrls(urls: List<String>): List<String> {
+    private fun prioritizeUrls(urls: List<String>, originalUrl: String): List<String> {
         return urls.sortedBy { url ->
             when {
-                // Exact match gets highest priority
-                url.contains("/jellyfin") -> 0
+                // Exact match from user gets absolute highest priority
+                url.equals(originalUrl, ignoreCase = true) -> 0
+                // Match with same scheme as original
+                originalUrl.startsWith("http://") && url.startsWith("http://") -> 1
+                originalUrl.startsWith("https://") && url.startsWith("https://") -> 1
+                // Reverse proxy paths next if original requested reverse proxy
+                url.contains("/jellyfin") -> 2
                 // HTTPS with standard ports next
-                url.startsWith("https://") && (url.contains(":443") || !url.contains(":")) -> 1
+                url.startsWith("https://") && (url.contains(":443") || !url.contains(":")) -> 3
                 // HTTP with standard ports next
-                url.startsWith("http://") && (url.contains(":80") || !url.contains(":")) -> 2
-                // HTTPS without ports
-                url.startsWith("https://") -> 3
-                // HTTP without ports
-                url.startsWith("http://") -> 4
+                url.startsWith("http://") && (url.contains(":80") || !url.contains(":")) -> 4
                 // Default Jellyfin ports
                 url.contains(":8096") -> 5
                 // Other ports last
@@ -221,6 +230,7 @@ class ConnectionOptimizer @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
+            logDebug("Endpoint failed for $url: ${e.javaClass.simpleName} - ${e.message}")
             // Catch all exceptions including DNS resolution failures (GaiException/UnknownHostException)
             // to prevent crashes when a hostname cannot be resolved.
             val errorType = RepositoryUtils.getErrorType(e)

@@ -38,7 +38,7 @@ class ConnectivityChecker @Inject constructor(
     fun isOnline(): Boolean {
         val network = connectivityManager.activeNetwork ?: return false
         val caps = connectivityManager.getNetworkCapabilities(network) ?: return false
-        return caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+        return caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) ||
             caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
     }
 
@@ -120,7 +120,7 @@ class ConnectivityChecker @Inject constructor(
                 network: Network,
                 networkCapabilities: NetworkCapabilities,
             ) {
-                val isConnected = networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+                val isConnected = networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) ||
                     networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
                 trySend(isConnected)
             }
