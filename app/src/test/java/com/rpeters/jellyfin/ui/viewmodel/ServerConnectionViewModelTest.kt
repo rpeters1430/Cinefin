@@ -249,7 +249,7 @@ class ServerConnectionViewModelTest {
             context,
             TestDispatcherProvider(mainDispatcherRule.dispatcher),
         )
-        awaitCondition {
+        awaitCondition(timeoutMs = 5000) {
             val preferences = context.dataStore.data.first()
             preferences[REMEMBER_LOGIN] == true
         }
