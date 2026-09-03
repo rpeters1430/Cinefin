@@ -89,7 +89,7 @@ jobs:
 
       - name: Enforce warning budget baseline
         if: always()
-        run: ./gradlew --no-daemon --stacktrace verifyWarningBudget
+        run: ./gradlew --no-daemon --no-configuration-cache --stacktrace verifyWarningBudget
 
       - name: Verify 16 KB page alignment of native libraries
         if: always()
