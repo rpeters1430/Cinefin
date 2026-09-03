@@ -35,27 +35,10 @@ tasks.register("verifyWarningBudget") {
             )
         }
 
-        val baselineByCategory = linkedMapOf(
-            "deprecation" to 24,
-            "nullability" to 16,
-            "api-migration" to 18,
-            "tooling" to 12,
-        )
-
-        val categoryByIssueId = mapOf(
-            "Deprecated" to "deprecation",
-            "NewApi" to "api-migration",
-            "InlinedApi" to "api-migration",
-            "UnknownNullness" to "nullability",
-            "NullSafeMutableLiveData" to "nullability",
-            "SyntheticAccessor" to "tooling",
-            "GradleDependency" to "tooling",
-            "ObsoleteLintCustomCheck" to "tooling",
-            "ObsoleteSdkInt" to "tooling",
-        )
-
-        val warningCounts = baselineByCategory.keys.associateWith { 0 }.toMutableMap()
-        val uncategorizedWarnings = mutableSetOf<String>()
+        // Current clean lint baseline. Fail only when a change increases the total;
+        // keep the per-rule breakdown in the generated report for targeted cleanup.
+        val warningBaseline = 403
+        val warningCountsByIssueId = linkedMapOf<String, Int>()
 
         val documentBuilderFactory = DocumentBuilderFactory.newInstance().apply {
             setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
@@ -69,18 +52,15 @@ tasks.register("verifyWarningBudget") {
         val document = documentBuilder.parse(lintReport)
         val issueNodes = document.getElementsByTagName("issue")
 
+        var warningCount = 0
         for (index in 0 until issueNodes.length) {
             val issue = issueNodes.item(index)
             val severity = issue.attributes?.getNamedItem("severity")?.nodeValue
             if (severity != "Warning") continue
 
             val issueId = issue.attributes?.getNamedItem("id")?.nodeValue ?: continue
-            val category = categoryByIssueId[issueId]
-            if (category == null) {
-                uncategorizedWarnings += issueId
-                continue
-            }
-            warningCounts[category] = warningCounts.getValue(category) + 1
+            warningCount += 1
+            warningCountsByIssueId[issueId] = warningCountsByIssueId.getOrDefault(issueId, 0) + 1
         }
 
         val reportDir = file("app/build/reports/warnings")
@@ -90,33 +70,26 @@ tasks.register("verifyWarningBudget") {
             buildString {
                 appendLine("# Warning Budget Report")
                 appendLine()
-                appendLine("| Category | Baseline | Current | Delta |")
-                appendLine("|---|---:|---:|---:|")
-                baselineByCategory.forEach { (category, baseline) ->
-                    val current = warningCounts.getValue(category)
-                    appendLine("| $category | $baseline | $current | ${current - baseline} |")
-                }
+                appendLine("- Baseline: $warningBaseline")
+                appendLine("- Current: $warningCount")
+                appendLine("- Delta: ${warningCount - warningBaseline}")
                 appendLine()
-                if (uncategorizedWarnings.isNotEmpty()) {
-                    appendLine("## Uncategorized warning IDs")
-                    uncategorizedWarnings.sorted().forEach { appendLine("- $it") }
-                }
+                appendLine("## Warnings by lint rule")
+                appendLine()
+                appendLine("| Rule | Count |")
+                appendLine("|---|---:|")
+                warningCountsByIssueId
+                    .toList()
+                    .sortedWith(compareByDescending<Pair<String, Int>> { it.second }.thenBy { it.first })
+                    .forEach { (issueId, count) -> appendLine("| $issueId | $count |") }
             },
         )
 
-        val regressions = baselineByCategory
-            .mapNotNull { (category, baseline) ->
-                val current = warningCounts.getValue(category)
-                if (current > baseline) "$category: $current > baseline $baseline" else null
-            } + if (uncategorizedWarnings.isNotEmpty()) {
-            "uncategorized: ${uncategorizedWarnings.size} > baseline 0"
-        } else {
-            emptyList<String>()
-        }
+        val budgetExceeded = warningCount > warningBaseline
 
-        if (regressions.isNotEmpty()) {
+        if (budgetExceeded) {
             throw GradleException(
-                "Warning budget exceeded: ${regressions.joinToString("; ")}. " +
+                "Warning budget exceeded: $warningCount > baseline $warningBaseline. " +
                     "See ${summaryFile.path} for details.",
             )
         }

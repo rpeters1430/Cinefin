@@ -149,8 +149,13 @@ class EpisodeNotificationWorker @AssistedInject constructor(
             .setCategory(NotificationCompat.CATEGORY_STATUS)
             .build()
 
-        NotificationManagerCompat.from(applicationContext)
-            .notify(NOTIFICATION_ID_BASE + (followed.seriesId.hashCode() and 0x7FFFFFFF) % 10000, notification)
+        try {
+            NotificationManagerCompat.from(applicationContext)
+                .notify(NOTIFICATION_ID_BASE + (followed.seriesId.hashCode() and 0x7FFFFFFF) % 10000, notification)
+        } catch (securityException: SecurityException) {
+            // Permission can be revoked between the check above and posting the notification.
+            SecureLogger.w(TAG, "Notification permission was revoked before delivery", securityException)
+        }
     }
 
     private fun canPostNotifications(): Boolean =

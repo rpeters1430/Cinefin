@@ -73,6 +73,8 @@ fun ImmersivePlaylistDetailScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val playlistEmptyMessage = stringResource(R.string.playlist_empty)
+    val downloadingPlaylistItemsMessage = stringResource(R.string.downloading_playlist_items)
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
@@ -132,9 +134,9 @@ fun ImmersivePlaylistDetailScreen(
     val handleDownloadAll: () -> Unit = {
         coroutineScope.launch {
             if (state.items.isEmpty()) {
-                snackbarHostState.showSnackbar(context.getString(R.string.playlist_empty))
+                snackbarHostState.showSnackbar(playlistEmptyMessage)
             } else {
-                snackbarHostState.showSnackbar(context.getString(R.string.downloading_playlist_items))
+                snackbarHostState.showSnackbar(downloadingPlaylistItemsMessage)
                 state.items.forEach { videoItem ->
                     downloadsViewModel.startDownload(videoItem)
                 }
