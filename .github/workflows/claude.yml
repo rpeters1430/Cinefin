@@ -51,7 +51,7 @@ jobs:
       # --- Auto PR review (triggered by pull_request open/sync) ---
       - name: Auto PR Review
         if: github.event_name == 'pull_request'
-        uses: anthropics/claude-code-action@8251c103ac8c1d761882c86aba1412c7f583c844 # v1
+        uses: anthropics/claude-code-action@ef8bb1e43bf303cff727a1dd0b8837029fe982a2 # v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           allowed_bots: "renovate[bot]"
@@ -77,7 +77,7 @@ jobs:
       # --- Auto triage (triggered by issues opened) ---
       - name: Auto Triage
         if: github.event_name == 'issues'
-        uses: anthropics/claude-code-action@8251c103ac8c1d761882c86aba1412c7f583c844 # v1
+        uses: anthropics/claude-code-action@ef8bb1e43bf303cff727a1dd0b8837029fe982a2 # v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: --max-turns 3
@@ -95,7 +95,7 @@ jobs:
           (github.event_name == 'issue_comment' || github.event_name == 'pull_request_review_comment') &&
           startsWith(github.event.comment.body, '/fix') &&
           contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)
-        uses: anthropics/claude-code-action@8251c103ac8c1d761882c86aba1412c7f583c844 # v1
+        uses: anthropics/claude-code-action@ef8bb1e43bf303cff727a1dd0b8837029fe982a2 # v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: --max-turns 20
@@ -133,7 +133,7 @@ jobs:
           (github.event_name == 'issue_comment' || github.event_name == 'pull_request_review_comment') &&
           startsWith(github.event.comment.body, '/review') &&
           contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)
-        uses: anthropics/claude-code-action@8251c103ac8c1d761882c86aba1412c7f583c844 # v1
+        uses: anthropics/claude-code-action@ef8bb1e43bf303cff727a1dd0b8837029fe982a2 # v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: --max-turns 10
@@ -153,7 +153,7 @@ jobs:
           github.event_name == 'issue_comment' &&
           startsWith(github.event.comment.body, '/triage') &&
           contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)
-        uses: anthropics/claude-code-action@8251c103ac8c1d761882c86aba1412c7f583c844 # v1
+        uses: anthropics/claude-code-action@ef8bb1e43bf303cff727a1dd0b8837029fe982a2 # v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: --max-turns 3
@@ -174,7 +174,7 @@ jobs:
             contains(github.event.comment.body, '@claude') ||
             contains(github.event.review.body, '@claude')
           )
-        uses: anthropics/claude-code-action@8251c103ac8c1d761882c86aba1412c7f583c844 # v1
+        uses: anthropics/claude-code-action@ef8bb1e43bf303cff727a1dd0b8837029fe982a2 # v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: --max-turns 10
