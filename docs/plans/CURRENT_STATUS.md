@@ -113,7 +113,7 @@ Key technology choices:
 
 ### Build Status
 
-- **CI/CD**: ✅ Android CI (`android-ci.yml`), dependency check, Claude/Gemini automation, and release workflows all active
+- **CI/CD**: ✅ Android CI (`android-ci.yml`), dependency check, Gemini CLI automation, and release workflows all active
 - **Unit Tests**: ✅ Passing (target 70%+ coverage)
 - **Lint**: ⚠️ ~150 non-critical warnings (see [ROADMAP §3.2](ROADMAP.md#32-fix-build-warnings))
 - **Coverage**: ✅ JaCoCo configured and reporting
@@ -215,7 +215,7 @@ Key technology choices:
 - **[ROADMAP.md](ROADMAP.md)** - Future features and development roadmap
 - **[KNOWN_ISSUES.md](../features/KNOWN_ISSUES.md)** - Active bugs with workarounds and fix status
 - **[UPGRADE_PATH.md](UPGRADE_PATH.md)** - Dependency upgrade strategy and version roadmap
-- **[CLAUDE.md](../../CLAUDE.md)** - Development guidelines and architecture details
+- **[GEMINI.md](../../GEMINI.md)** - Development guidelines and architecture details
 - **[CONTRIBUTING.md](../development/CONTRIBUTING.md)** - Contribution process and guidelines
 - **[TESTING_GUIDE.md](../development/TESTING_GUIDE.md)** - Testing patterns and best practices
 - **[IMPROVEMENT_PLAN.md](IMPROVEMENT_PLAN.md)** - Technical debt and code quality improvements

@@ -347,15 +347,10 @@ Key documents for Codex users:
 
 ## CI/CD & Automation
 
-### Gemini AI-Powered Issue Management
-The repository uses automated workflows powered by Google's Gemini AI:
-- **Auto-triaging**: Issues are automatically labeled when opened
-- **Fix planning**: Maintainers can comment `/fix` to generate AI fix plans
-- **Automated PRs**: Comment `/approve` on fix plans to create PRs with fixes
-- **Auto-merge**: Comment `/approve` on PRs to merge approved changes
-- **Workflows**: See `.github/workflows/gemini-*.yml` and `.github/GEMINI_README.md`
-- **Commands**: `/fix`, `/approve`, `/deny` (maintainers only)
-- **Security**: Only repository OWNER, MEMBER, and COLLABORATOR can use commands
+### Gemini CLI automation
+Issues receive automatic triage and labels. Non-draft PRs receive code and security
+reviews. Maintainers can request `@gemini-cli /review` or `@gemini-cli /triage`.
+See `.github/GEMINI_CLI_USAGE.md` for setup, capabilities and limitations.
 
 ### Standard CI Workflows
 - Build verification on every push

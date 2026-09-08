@@ -63,12 +63,12 @@ lightweight changelog without a separate summary doc.
       Error: Call requires permission which may be rejected by user
       [MissingPermission]` — the `POST_NOTIFICATIONS` call at that line
       needs a `checkSelfPermission`/`SecurityException` guard. Separately,
-      the repo's `.github/workflows/claude.yml` automated-review job
+      the repo's `.github/workflows/gemini.yml` automated-review job
       (triggered on `pull_request`) fails near-instantly on essentially
       every PR (is_error:true, 0 turns, 0 cost, ~350-400ms — dies during
       SDK init before reading any diff), confirmed across multiple
       unrelated PRs including Renovate dependency bumps; looks like a
-      workflow/secret misconfiguration (e.g. `ANTHROPIC_API_KEY`), not a
+      workflow/secret misconfiguration (e.g. `GEMINI_API_KEY`), not a
       code issue. Both make every PR in this repo show red regardless of
       its own quality — worth a maintainer's attention independent of any
       single PR's diff.
@@ -183,7 +183,7 @@ growing while other work shipped around them:
       this file, and archive the ~15 dated/session-summary files under
       `docs/plans/` (`2026-02-*`, `SESSION_*_SUMMARY.md`, `PHASE_*_*.md`,
       `QUICK_WINS_*`) into `docs/archive/` since their work has shipped.
-- [x] **Refresh stale version numbers in `CLAUDE.md`** — 2026-09-01: replaced
+- [x] **Refresh stale version numbers in `GEMINI.md`** — 2026-09-01: replaced
       every hardcoded version number (versionCode/versionName in two places,
       Compose BOM, Hilt, Media3, Retrofit/OkHttp/Jellyfin SDK, Coil, Kotlin/KSP,
       compileSdk/minSdk/targetSdk) with pointers to `app/build.gradle.kts` /

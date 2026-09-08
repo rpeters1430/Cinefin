@@ -649,14 +649,14 @@ This document outlines a comprehensive plan to rebuild the Chromecast/Google Cas
 - [ ] Add KDoc comments to all public APIs
 - [ ] Document architecture decisions
 - [ ] Create Cast troubleshooting guide
-- [ ] Update CLAUDE.md with Cast details
+- [ ] Update GEMINI.md with Cast details
 - [ ] Update CURRENT_STATUS.md
 - [ ] Create Cast developer guide
 
 **Files to Create/Update**:
 - `docs/CAST_ARCHITECTURE.md` (new)
 - `docs/CAST_TROUBLESHOOTING.md` (new)
-- `CLAUDE.md` (update)
+- `GEMINI.md` (update)
 - `CURRENT_STATUS.md` (update)
 
 **Acceptance Criteria**:

@@ -172,7 +172,7 @@ The same pattern will be used for:
 
 1. `TESTING_IMMERSIVE_UI.md` - Complete testing guide
 2. `IMMERSIVE_UI_PROGRESS.md` - Implementation progress tracking
-3. `CLAUDE.md` - Project architecture and conventions
+3. `GEMINI.md` - Project architecture and conventions
 4. This file - Feature flag implementation summary
 
 ---

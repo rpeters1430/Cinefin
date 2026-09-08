@@ -1,0 +1,31 @@
+name: Workflow validation
+on:
+  push:
+    branches: [main]
+    paths: ['.github/**', 'scripts/gemini/**']
+  pull_request:
+    paths: ['.github/**', 'scripts/gemini/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: workflow-validation-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Install actionlint
+        env:
+          ACTIONLINT_VERSION: '1.7.7'
+        run: go install github.com/rhysd/actionlint/cmd/actionlint@v${ACTIONLINT_VERSION}
+      - name: Validate workflows
+        run: $(go env GOPATH)/bin/actionlint -shellcheck= -pyflakes=
+      - name: Test Gemini routing and publication guards
+        run: node --test scripts/gemini/automation.test.cjs
+      - name: Validate setup script syntax
+        run: python3 -m py_compile scripts/gemini/setup.py
