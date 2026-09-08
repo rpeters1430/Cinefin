@@ -32,7 +32,7 @@ dependencies {
 
 jmh {
     // Version of the CodSpeed JMH fork wired through `settings.gradle.kts`.
-    jmhVersion.set("0.2.0")
+    jmhVersion.set("0.9.8")
 
     benchmarkMode.set(listOf("avgt"))
     timeUnit.set("ns")
