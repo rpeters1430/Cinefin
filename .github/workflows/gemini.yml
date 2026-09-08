@@ -72,6 +72,10 @@ jobs:
       - name: Prepare pinned extensions and skills
         if: steps.prepare.outputs.mode != ''
         run: python3 scripts/gemini/setup.py
+      - name: Allow .gemini directory in CLI ignore patterns
+        if: steps.prepare.outputs.mode != ''
+        run: |
+          printf "!.gemini\n!.gemini/**\n" >> .geminiignore
       - name: Load trusted task prompt
         if: steps.prepare.outputs.mode != ''
         id: prompt
@@ -96,12 +100,11 @@ jobs:
           extensions: '["./.gemini/vendor/code-review", "./.gemini/vendor/security"]'
           settings: |
             {
-              "model": {"maxSessionTurns": 30},
+              "model": {"maxSessionTurns": 40},
               "telemetry": {"enabled": false},
               "hooksConfig": {"enabled": false},
               "tools": {
-                "core": ["read_file", "read_many_files", "list_directory", "glob", "grep_search", "activate_skill"],
-                "exclude": ["run_shell_command", "write_file", "replace", "web_fetch", "google_web_search", "save_memory"]
+                "core": ["read_file", "read_many_files", "list_directory", "glob", "grep_search", "activate_skill"]
               }
             }
       - name: Validate and save result
