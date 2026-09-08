@@ -1,0 +1,166 @@
+name: Gemini triage and PR review
+
+on:
+  issues:
+    types: [opened, reopened]
+  # Always run trusted default-branch scripts; never check out or execute PR code.
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review]
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      task:
+        description: Task to run
+        type: choice
+        options: [review, triage]
+        required: true
+      number:
+        description: PR or issue number
+        type: string
+        required: true
+
+permissions: {}
+
+concurrency:
+  group: gemini-${{ github.event.pull_request.number || github.event.issue.number || inputs.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request_target' }}
+
+jobs:
+  analyze:
+    if: >-
+      vars.GEMINI_ENABLED != 'false' &&
+      (github.event_name != 'issue_comment' ||
+       github.event.comment.body == '@gemini-cli /review' ||
+       github.event.comment.body == '@gemini-cli /triage')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    outputs:
+      mode: ${{ steps.prepare.outputs.mode }}
+      number: ${{ steps.prepare.outputs.number }}
+      revision: ${{ steps.prepare.outputs.revision }}
+      trusted_sha: ${{ steps.trusted.outputs.sha }}
+      ready: ${{ steps.result.outputs.ready }}
+    steps:
+      - name: Isolate Gemini runtime configuration
+        run: echo "GEMINI_CLI_HOME=$RUNNER_TEMP/gemini-home" >> "$GITHUB_ENV"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+      - name: Record trusted script revision
+        id: trusted
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Select target and collect untrusted input as data
+        id: prepare
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          script: |
+            await require('./scripts/gemini/automation.cjs').prepare({github, context, core});
+      - name: Check Gemini credentials
+        if: steps.prepare.outputs.mode != ''
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          if [ -z "$GEMINI_API_KEY" ]; then
+            echo '::error::Add repository Actions secret GEMINI_API_KEY to enable Gemini automation.'
+            exit 1
+          fi
+      - name: Prepare pinned extensions and skills
+        if: steps.prepare.outputs.mode != ''
+        run: python3 scripts/gemini/setup.py
+      - name: Load trusted task prompt
+        if: steps.prepare.outputs.mode != ''
+        id: prompt
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        env:
+          TASK_MODE: ${{ steps.prepare.outputs.mode }}
+        with:
+          script: |
+            const fs = require('node:fs');
+            core.setOutput('text', fs.readFileSync(`.github/gemini/${process.env.TASK_MODE}.md`, 'utf8'));
+      - name: Gemini static analysis
+        if: steps.prepare.outputs.mode != ''
+        id: gemini
+        uses: google-github-actions/run-gemini-cli@f77273f4c914e4bf38440cf36a0369cb64a37489 # v0.1.22
+        with:
+          gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
+          gemini_cli_version: '0.59.0'
+          gemini_model: ${{ vars.GEMINI_MODEL }}
+          gemini_debug: 'false'
+          upload_artifacts: 'false'
+          prompt: ${{ steps.prompt.outputs.text }}
+          extensions: '["./.gemini/vendor/code-review", "./.gemini/vendor/security"]'
+          settings: |
+            {
+              "model": {"maxSessionTurns": 30},
+              "telemetry": {"enabled": false},
+              "hooksConfig": {"enabled": false},
+              "tools": {
+                "core": ["read_file", "read_many_files", "list_directory", "glob", "grep_search", "activate_skill"],
+                "exclude": ["run_shell_command", "write_file", "replace", "web_fetch", "google_web_search", "save_memory"]
+              }
+            }
+      - name: Validate and save result
+        if: steps.prepare.outputs.mode != ''
+        id: result
+        env:
+          REPORT: ${{ steps.gemini.outputs.summary }}
+          TASK_MODE: ${{ steps.prepare.outputs.mode }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          node <<'JS'
+          const fs = require('node:fs');
+          const {parseReport} = require('./scripts/gemini/automation.cjs');
+          const raw = process.env.REPORT;
+          if (raw.includes(process.env.GEMINI_API_KEY)) throw Error('Credential detected in model output');
+          const report = parseReport(raw, process.env.TASK_MODE);
+          const input = JSON.parse(fs.readFileSync('.gemini/input.json', 'utf8'));
+          if (process.env.TASK_MODE === 'review' && input.incomplete) {
+            report.limitations = [...report.limitations.slice(0, 9), 'Some patches were missing or truncated; this is a partial review.'];
+          }
+          fs.mkdirSync('gemini-result', {recursive: true});
+          fs.writeFileSync('gemini-result/report.json', JSON.stringify(report));
+          fs.writeFileSync('gemini-result/input.json', JSON.stringify({recentIssues: input.recentIssues || []}));
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, 'ready=true\n');
+          JS
+      - name: Transfer validated result to publisher
+        if: steps.result.outputs.ready == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: gemini-result
+          path: gemini-result/
+          retention-days: 1
+          if-no-files-found: error
+
+  publish:
+    needs: analyze
+    if: needs.analyze.outputs.ready == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ needs.analyze.outputs.trusted_sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: gemini-result
+          path: gemini-result
+      - name: Apply allowed labels and publish review or triage
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        env:
+          TASK_MODE: ${{ needs.analyze.outputs.mode }}
+          TARGET_NUMBER: ${{ needs.analyze.outputs.number }}
+          TARGET_REVISION: ${{ needs.analyze.outputs.revision }}
+        with:
+          script: |
+            await require('./scripts/gemini/automation.cjs').publish({github, context, core});

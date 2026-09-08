@@ -1,0 +1,6 @@
+{
+  "code-review": {"repository": "gemini-cli-extensions/code-review", "ref": "dd1a10d2c9d07b2ebade866590fdfa59cd8f9d04"},
+  "security": {"repository": "gemini-cli-extensions/security", "ref": "2227f3cf7150972baac695b8233abc2186408538"},
+  "firebase": {"repository": "firebase/agent-skills", "ref": "a0b4e143f40c1ebe05fe5f9a4787fecd4da8f478"},
+  "android": {"repository": "android/skills", "ref": "bac232fd02b0855df9275281a2a7a47643768719"}
+}

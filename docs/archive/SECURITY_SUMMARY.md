@@ -320,7 +320,7 @@ The application demonstrates comprehensive security controls across:
 1. **SECURITY_IMPROVEMENTS.md** - Detailed implementation guide
 2. **SECURITY_AUDIT.md** - Complete audit findings
 3. **SECURITY_SUMMARY.md** - This executive summary
-4. **CLAUDE.md** - Development guidelines
+4. **GEMINI.md** - Development guidelines
 
 ---
 

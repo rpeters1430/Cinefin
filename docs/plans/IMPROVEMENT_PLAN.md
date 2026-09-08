@@ -35,7 +35,7 @@ actual files. Findings fall into three buckets:
 - **New / untracked** — emerged since the last plan and is not in any current document.
 
 Version reference points used:
-- `versionCode 111`, `versionName "14.79"` (was `79 / 14.47` in CLAUDE.md)
+- `versionCode 111`, `versionName "14.79"` (was `79 / 14.47` in GEMINI.md)
 - Kotlin `2.3.21`, AGP `9.2.1`, KSP `2.3.8`
 - compileSdk `37`, targetSdk `35`, minSdk `26`
 - Compose BOM `2026.05.00`, Material 3 `1.5.0-alpha19`, Media3 `1.10.1`
@@ -424,7 +424,7 @@ describing how plans are managed. Three meta-problems:
 **one canonical truth source** (`CURRENT_STATUS.md` is the right one — it already calls
 itself the source of truth in its own header) and rewrite the others to defer to it.
 
-### 4.2 Stale version numbers in `CLAUDE.md`
+### 4.2 Stale version numbers in `GEMINI.md`
 The "High-Level Architecture" section lists Compose BOM 2026.03.01, Hilt 2.59.1, Kotlin
 2.3.20, Media3 1.10.0-rc03, Jellyfin SDK 1.8.6, versionCode 79. Every one of those
 is now stale. Replace with a single line that says *"see `gradle/libs.versions.toml`
@@ -508,7 +508,7 @@ I've tagged what should be one issue vs. parent-and-children. Use the existing
 | T | Expand DeviceCapabilities test coverage | testing | medium |
 | U | Documentation: pick one canonical status source | docs | medium |
 | V | Documentation: archive shipped dated plans | docs | low |
-| W | Documentation: remove stale versions from CLAUDE.md | docs | low |
+| W | Documentation: remove stale versions from GEMINI.md | docs | low |
 
 Each issue body should cite the relevant section of this plan plus its file references.
 Most of the labor of writing those bodies is already done above — paragraphs in
@@ -523,5 +523,5 @@ Most of the labor of writing those bodies is already done above — paragraphs i
 - [KNOWN_ISSUES.md](../features/KNOWN_ISSUES.md) — user-facing bugs (needs reconciliation
   with this plan; see 4.1)
 - [UPGRADE_PATH.md](UPGRADE_PATH.md) — dependency upgrade strategy
-- [CLAUDE.md](../../CLAUDE.md) — development guidelines (needs version cleanup; see 4.2)
+- [GEMINI.md](../../GEMINI.md) — development guidelines (needs version cleanup; see 4.2)
 - [TESTING_GUIDE.md](../development/TESTING_GUIDE.md) — ViewModel testing patterns

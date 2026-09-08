@@ -23,11 +23,15 @@ This repository includes GitHub Actions workflows for Android build verification
 - 📦 Generates dependency graph/report for the app runtime classpath
 - 🔎 Runs GitHub dependency review on pull requests
 
-### 4. `claude.yml` - Repository Automation
-**Triggers:** Issue/PR events and comment commands
+### 4. `gemini.yml` - Gemini CLI automation
+**Triggers:** New/reopened issues, non-draft PR updates, maintainer commands and manual dispatch.
 
-**What it does:**
-- 🤖 Runs configured Claude automation for review/triage/fix workflows
+Uses code-review/security extensions and Android/Firebase skills. Validates model
+output before posting triage comments, PR reviews and allowed labels. See
+[GEMINI_CLI_USAGE.md](GEMINI_CLI_USAGE.md) for setup and commands.
+
+### 5. `workflow-validation.yml` - Automation validation
+Checks workflow syntax with actionlint and tests routing/publication safeguards.
 
 ## Build Requirements
 

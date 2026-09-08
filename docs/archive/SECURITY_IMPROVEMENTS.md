@@ -597,7 +597,7 @@ BUILD SUCCESSFUL in 7s
 
 ## 📚 **DOCUMENTATION REFERENCES**
 
-- **CLAUDE.md** - Project architecture and development guide
+- **GEMINI.md** - Project architecture and development guide
 - **CURRENT_STATUS.md** - Project status and feature tracking
 - **TESTING_GUIDE.md** - Testing patterns and best practices
 - **SECURITY_IMPROVEMENTS.md** - This document
