@@ -51,7 +51,7 @@ async function prepare({github, context, core}) {
       if (context.ref !== `refs/heads/${event.repository.default_branch}`) return;
       mode = event.inputs.task; number = Number(event.inputs.number);
     } else {
-      const command = event.comment.body.trim();
+      const command = event.comment.body;
       if (command === '@gemini-cli /review' && event.issue.pull_request) mode = 'review';
       if (command === '@gemini-cli /triage' && !event.issue.pull_request) mode = 'triage';
       if (!mode) return;

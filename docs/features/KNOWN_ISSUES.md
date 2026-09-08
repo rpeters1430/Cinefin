@@ -378,7 +378,7 @@ We welcome contributions to fix these issues! See [CONTRIBUTING.md](CONTRIBUTING
 - **[UPGRADE_PATH.md](UPGRADE_PATH.md)** - Dependency upgrade strategy
 - **[docs/plans/IMPROVEMENT_PLAN.md](../plans/IMPROVEMENT_PLAN.md)** - Technical debt and code quality focus
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** - How to contribute fixes
-- **[GEMINI.md](GEMINI.md)** - Development guidelines and architecture
+- **[GEMINI.md](../../GEMINI.md)** - Development guidelines and architecture
 
 ---
 

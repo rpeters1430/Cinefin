@@ -74,8 +74,10 @@ upstream build scripts are executed. Gemini gets only file-reading/search and
 skill activation tools; it has no shell, network, file-writing or GitHub tools.
 GitHub writes happen in a separate job with validated JSON and allowed labels.
 PR code is never checked out or executed by the privileged review workflow.
-The default-branch scripts are checked out again at the exact recorded SHA for
-publication. Results are discarded if the target changed while analysis ran.
+Both jobs check out the same immutable `github.sha` directly from GitHub event
+context, never an analysis-job output. For issue/comment/PR-target events this is
+the default-branch event commit. Manual dispatch is restricted to the default
+branch before checkout. See [GitHub's event reference changes](https://github.blog/changelog/2025-11-07-actions-pull_request_target-and-environment-branch-protections-changes/). Results are discarded if the target changed while analysis ran.
 
 ## Coverage and maintenance
 

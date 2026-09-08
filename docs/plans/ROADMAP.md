@@ -308,7 +308,7 @@ When completing a task:
 ## Related Documentation
 
 - [IMPROVEMENT_PLAN.md](IMPROVEMENT_PLAN.md) - Detailed technical improvement plan (transcoding, security, accessibility)
-- [GEMINI.md](GEMINI.md) - Development guidelines
+- [GEMINI.md](../../GEMINI.md) - Development guidelines
 - [CONTRIBUTING.md](CONTRIBUTING.md) - Contribution process
 - [MATERIAL3_EXPRESSIVE.md](MATERIAL3_EXPRESSIVE.md) - M3 Expressive components
 - [docs/TESTING_GUIDE.md](docs/TESTING_GUIDE.md) - Testing patterns

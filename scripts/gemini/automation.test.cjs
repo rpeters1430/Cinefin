@@ -72,3 +72,10 @@ test('issue triage updates its bot comment and preserves existing labels', async
     assert.match(updated[0].body, /#5/);
   } finally {process.chdir(previous); fs.rmSync(temp, {recursive: true, force: true});}
 });
+test('privileged workflow checkouts use the event SHA, never model/job outputs or PR refs', () => {
+  const workflow = fs.readFileSync(path.join(__dirname, '../../.github/workflows/gemini.yml'), 'utf8');
+  const refs = [...workflow.matchAll(/^\s+ref: (.+)$/gm)].map(match => match[1]);
+  assert.deepEqual(refs, ['${{ github.sha }}', '${{ github.sha }}']);
+  assert.doesNotMatch(workflow, /trusted_sha|pull_request\.head|refs\/pull\//);
+  assert.match(workflow, /github\.event_name != 'workflow_dispatch' \|\|\s+github\.ref == format/);
+});
