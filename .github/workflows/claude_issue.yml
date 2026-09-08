@@ -6,6 +6,7 @@ on:
 jobs:
   triage:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       issues: write
       id-token: write
@@ -27,16 +28,17 @@ jobs:
             3. Suggest appropriate labels
             4. Check if it duplicates existing issues
 
-            Use ./scripts/gh.sh to interact with GitHub:
-            - `./scripts/gh.sh issue view [number]` to view the issue
-            - `./scripts/gh.sh search issues "query"` to find similar issues
-            - `./scripts/gh.sh label list` to see available labels
+            Use the gh CLI to interact with GitHub:
+            - `gh issue view ${{ github.event.issue.number }}` to view the issue
+            - `gh issue list --search "query" --state all` to find similar issues
+            - `gh label list` to see available labels
 
             Based on your analysis, add the appropriate labels using:
-            `./scripts/edit-issue-labels.sh --add-label "label1" --add-label "label2"`
-            (the issue number is read automatically from the workflow event)
+            `gh issue edit ${{ github.event.issue.number }} --add-label "label1" --add-label "label2"`
 
-            If it appears to be a duplicate, post a comment mentioning the original issue.
+            If it appears to be a duplicate, post a comment mentioning the original issue using:
+            `gh issue comment ${{ github.event.issue.number }} --body "..."`
 
           claude_args: |
-            --allowedTools "Bash(./scripts/gh.sh:*),Bash(./scripts/edit-issue-labels.sh:*)"
+            --model claude-sonnet-5
+            --allowedTools "Bash(gh issue view:*),Bash(gh issue list:*),Bash(gh label list:*),Bash(gh issue edit:*),Bash(gh issue comment:*)"
