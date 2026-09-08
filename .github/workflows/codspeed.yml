@@ -1,0 +1,51 @@
+name: CodSpeed Benchmarks
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+  # `workflow_dispatch` allows CodSpeed to trigger backtest
+  # performance analysis in order to generate initial data.
+  workflow_dispatch:
+
+permissions:
+  contents: read # required for actions/checkout
+  id-token: write # required for OIDC authentication with CodSpeed
+
+concurrency:
+  group: codspeed-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  benchmarks:
+    name: Run benchmarks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6
+        with:
+          java-version: "21"
+          distribution: "temurin"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6
+
+      - name: Ensure Gradle wrapper executable
+        run: chmod +x gradlew
+
+      - name: Build the benchmarks
+        run: ./gradlew --no-daemon --stacktrace -p benchmarks jmhJar
+
+      - name: Run the benchmarks
+        uses: CodSpeedHQ/action@373d6868929f444bc08d901fd0eb0ad52a8875ea # v5.2.1
+        with:
+          mode: walltime
+          run: ./gradlew --no-daemon -p benchmarks jmh
