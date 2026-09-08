@@ -13,6 +13,9 @@
   <a href="https://github.com/rpeters1430/Cinefin/actions/workflows/dependency-check.yml">
     <img src="https://github.com/rpeters1430/Cinefin/actions/workflows/dependency-check.yml/badge.svg" alt="Dependency Check" />
   </a>
+  <a href="https://app.codspeed.io/rpeters1430/Cinefin?utm_source=badge">
+    <img src="https://img.shields.io/endpoint?url=https://codspeed.io/badge.json" alt="CodSpeed" />
+  </a>
   <a href="https://android-arsenal.com/api?level=26">
     <img src="https://img.shields.io/badge/API-26%2B-brightgreen.svg?style=flat" alt="API Level 26+" />
   </a>
@@ -451,6 +454,21 @@ Examples: `feat: add movie detail screen`, `fix: prevent crash on empty library`
 - Hilt testing configured; use `HiltAndroidRule` and `HiltTestRunner` for instrumented tests
 
 See **[Testing Guide](docs/development/TESTING_GUIDE.md)** for comprehensive patterns and examples.
+
+---
+
+## ⚡ Performance Benchmarks
+
+JMH benchmarks for the platform-independent hot paths (rating normalization, server URL
+normalization, Jellyseerr payload decoding) live in the standalone `benchmarks` build and run
+on every pull request through [CodSpeed](https://app.codspeed.io/rpeters1430/Cinefin).
+
+```bash
+git submodule update --init --recursive   # first checkout only
+./gradlew -p benchmarks jmh
+```
+
+See **[benchmarks/README.md](benchmarks/README.md)** for details.
 
 ---
 
