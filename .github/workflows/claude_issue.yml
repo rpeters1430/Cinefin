@@ -6,6 +6,7 @@ on:
 jobs:
   triage:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       issues: write
       id-token: write
@@ -39,4 +40,5 @@ jobs:
             `gh issue comment ${{ github.event.issue.number }} --body "..."`
 
           claude_args: |
+            --model claude-sonnet-5
             --allowedTools "Bash(gh issue view:*),Bash(gh issue list:*),Bash(gh label list:*),Bash(gh issue edit:*),Bash(gh issue comment:*)"
