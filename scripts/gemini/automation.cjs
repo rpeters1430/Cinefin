@@ -181,12 +181,26 @@ async function prepare({github, context, core}) {
 
 // Neutralize mentions/HTML before publishing model-controlled text.
 const safe = value => String(value).replace(/@/g, '@\u200b').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const normalizeFindingPath = value => String(value).replace(/\\/g, '/').replace(/^\.\//, '');
+
+function appendLimitation(limitations, message) {
+  if (limitations.includes(message)) return limitations;
+  return [...limitations.slice(0, 9), message];
+}
+
+function outOfDiffFindingMessage(count) {
+  const findingNoun = count === 1 ? 'finding was' : 'findings were';
+  const fileNoun = count === 1 ? 'file' : 'files';
+  const pronoun = count === 1 ? 'it' : 'they';
+  return `${count} ${findingNoun} discarded because ${pronoun} referenced ${fileNoun} outside the PR diff.`;
+}
 
 async function publish({github, context, core}) {
   const repo = context.repo, number = Number(process.env.TARGET_NUMBER);
   const mode = process.env.TASK_MODE, revision = process.env.TARGET_REVISION;
   if (!Number.isSafeInteger(number) || number < 1 || !['review', 'triage'].includes(mode)) throw Error('Invalid target');
   const report = parseReport(fs.readFileSync('gemini-result/report.json', 'utf8'), mode);
+  let discardedOutOfDiffFindings = 0;
   let current;
   if (mode === 'review') {
     ({data: current} = await github.rest.pulls.get({...repo, pull_number: number}));
@@ -195,7 +209,21 @@ async function publish({github, context, core}) {
     }
     const files = await github.paginate(github.rest.pulls.listFiles, {...repo, pull_number: number, per_page: 100});
     const paths = new Set(files.map(f => f.filename));
-    if (report.findings.some(f => !paths.has(f.path))) throw Error('Finding is outside the PR diff');
+    report.findings = report.findings.flatMap(f => {
+      const path = normalizeFindingPath(f.path);
+      if (!paths.has(path)) {
+        discardedOutOfDiffFindings += 1;
+        return [];
+      }
+      return [{...f, path}];
+    });
+    if (discardedOutOfDiffFindings > 0) {
+      report.limitations = appendLimitation(
+        report.limitations,
+        outOfDiffFindingMessage(discardedOutOfDiffFindings),
+      );
+      core.notice('Discarded Gemini findings that referenced files outside the PR diff.');
+    }
   } else {
     ({data: current} = await github.rest.issues.get({...repo, issue_number: number}));
     const comments = github.paginate
@@ -240,13 +268,19 @@ async function publish({github, context, core}) {
 
     const statusHeader = report.findings.length > 0
       ? `## 🤖 Gemini PR Review: Feedback Identified (${report.findings.length})`
+      : discardedOutOfDiffFindings > 0
+        ? `## 🤖 Gemini PR Review: No In-Diff Findings Published`
       : `## 🤖 Gemini PR Review: No Blocking Issues Found`;
+
+    const discardedFindingsNote = discardedOutOfDiffFindings > 0
+      ? `> ${outOfDiffFindingMessage(discardedOutOfDiffFindings).replace(/^\d+ /, `${discardedOutOfDiffFindings} model-generated `)}\n\n`
+      : '';
 
     const limitationsSection = report.limitations.length > 0
       ? `<details>\n<summary><b>Review Scope & Limitations</b></summary>\n\n${report.limitations.map(x => '- ' + safe(x)).join('\n')}\n</details>\n\n`
       : '';
 
-    const body = `${marker}\n${statusHeader}\n\n> ${safe(report.summary)}\n\n${findings || '✅ No actionable code quality or security defects identified in the reviewed changes.'}\n\n${limitationsSection}*Static AI review only; builds, tests, and lint are verified by Android CI.* • [Workflow run](${run})`;
+    const body = `${marker}\n${statusHeader}\n\n> ${safe(report.summary)}\n\n${discardedFindingsNote}${findings || '✅ No actionable code quality or security defects identified in the reviewed changes.'}\n\n${limitationsSection}*Static AI review only; builds, tests, and lint are verified by Android CI.* • [Workflow run](${run})`;
     await github.rest.pulls.createReview({...repo, pull_number: number, commit_id: revision, event: 'COMMENT', body});
   } else {
     const marker = '<!-- cinefin-gemini-triage -->';

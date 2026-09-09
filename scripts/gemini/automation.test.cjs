@@ -52,6 +52,43 @@ test('current PR gets allowed labels and a COMMENT review, with rerun deduplicat
     assert.equal(reviews[0].commit_id, 'abc'); assert.deepEqual(labels, ['area:playback', 'area:playback']);
   } finally {process.chdir(previous); fs.rmSync(temp, {recursive: true, force: true});}
 });
+test('review publish normalizes simple finding paths and discards out-of-diff findings', async () => {
+  const previous = process.cwd(), temp = fs.mkdtempSync(path.join(os.tmpdir(), 'gemini-test-'));
+  try {
+    process.chdir(temp); fs.mkdirSync('gemini-result');
+    fs.writeFileSync('gemini-result/report.json', JSON.stringify({
+      summary: 'Review feedback',
+      labels: ['area:ci'],
+      findings: [
+        {path: './README.md', line: 12, severity: 'medium', title: 'Doc fix', body: 'Update the docs.'},
+        {path: 'docs/other.md', line: 3, severity: 'low', title: 'Ignore me', body: 'Outside the diff.'}
+      ],
+      limitations: []
+    }));
+    process.env.TARGET_NUMBER = '12'; process.env.TASK_MODE = 'review'; process.env.TARGET_REVISION = 'abc';
+    const notices = [], reviews = [];
+    const github = {rest: {
+      pulls: {
+        get: async () => ({data: {state: 'open', head: {sha: 'abc'}}}),
+        listFiles: 'files',
+        listReviews: 'reviews',
+        createReview: async r => reviews.push(r)
+      },
+      issues: {getLabel: async () => ({}), addLabels: async () => {}},
+    }, paginate: async route => route === 'files' ? [{filename: 'README.md'}] : []};
+    await publish({
+      github,
+      context: {repo: {owner: 'owner', repo: 'repo'}, serverUrl: 'https://github.com', runId: 1},
+      core: {notice: message => notices.push(message)}
+    });
+    assert.equal(reviews.length, 1);
+    assert.match(reviews[0].body, /Feedback Identified \(1\)/);
+    assert.match(reviews[0].body, /\[README\.md#L12\]/);
+    assert.doesNotMatch(reviews[0].body, /docs\/other\.md/);
+    assert.match(reviews[0].body, /discarded because (it|they) referenced file(s)? outside the PR diff/);
+    assert.deepEqual(notices, ['Discarded Gemini findings that referenced files outside the PR diff.']);
+  } finally {process.chdir(previous); fs.rmSync(temp, {recursive: true, force: true});}
+});
 test('issue triage updates its bot comment and preserves existing labels', async () => {
   const previous = process.cwd(), temp = fs.mkdtempSync(path.join(os.tmpdir(), 'gemini-test-'));
   try {
@@ -173,4 +210,3 @@ test('allows issue author to reply to @gemini-cli and extracts context & potenti
     process.chdir(previous); fs.rmSync(temp, {recursive: true, force: true});
   }
 });
-
