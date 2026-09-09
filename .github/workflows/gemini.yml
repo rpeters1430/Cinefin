@@ -109,7 +109,7 @@ jobs:
           extensions: '["./.gemini/vendor/code-review", "./.gemini/vendor/security"]'
           settings: |
             {
-              "model": {"maxSessionTurns": 40},
+              "model": {"maxSessionTurns": 60},
               "telemetry": {"enabled": false},
               "hooksConfig": {"enabled": false},
               "tools": {
@@ -120,7 +120,7 @@ jobs:
         if: >-
           steps.prepare.outputs.mode != '' &&
           (steps.gemini.outcome == 'failure' || steps.gemini.outputs.summary == '') &&
-          (vars.GEMINI_MODEL == '' || vars.GEMINI_MODEL == 'gemini-3.8-flash')
+          (!vars.GEMINI_MODEL || vars.GEMINI_MODEL == 'gemini-3.8-flash')
         id: gemini_fallback
         uses: google-github-actions/run-gemini-cli@f77273f4c914e4bf38440cf36a0369cb64a37489 # v0.1.22
         with:
@@ -133,7 +133,7 @@ jobs:
           extensions: '["./.gemini/vendor/code-review", "./.gemini/vendor/security"]'
           settings: |
             {
-              "model": {"maxSessionTurns": 40},
+              "model": {"maxSessionTurns": 60},
               "telemetry": {"enabled": false},
               "hooksConfig": {"enabled": false},
               "tools": {

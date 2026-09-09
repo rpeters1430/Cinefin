@@ -14,10 +14,10 @@ import io.mockk.spyk
 import kotlinx.coroutines.test.runTest
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.Response
-import org.jellyfin.sdk.api.client.extensions.itemsApi
-import org.jellyfin.sdk.api.client.extensions.userViewsApi
-import org.jellyfin.sdk.api.operations.ItemsApi
-import org.jellyfin.sdk.api.operations.UserViewsApi
+import org.jellyfin.sdk.api.client.extensions.libraryApi
+import org.jellyfin.sdk.api.client.extensions.userViewApi
+import org.jellyfin.sdk.api.operations.LibraryApi
+import org.jellyfin.sdk.api.operations.UserViewApi
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemDtoQueryResult
 import org.jellyfin.sdk.model.api.BaseItemKind
@@ -46,10 +46,10 @@ class JellyfinMediaRepositoryTest {
     private lateinit var apiClient: ApiClient
 
     @MockK
-    private lateinit var itemsApi: ItemsApi
+    private lateinit var libraryApi: LibraryApi
 
     @MockK
-    private lateinit var userViewsApi: UserViewsApi
+    private lateinit var userViewApi: UserViewApi
 
     private lateinit var repository: JellyfinMediaRepository
 
@@ -59,8 +59,8 @@ class JellyfinMediaRepositoryTest {
         repository = spyk(JellyfinMediaRepository(authRepository, sessionManager, cache, healthChecker))
 
         // Mock API client setup
-        coEvery { apiClient.itemsApi } returns itemsApi
-        coEvery { apiClient.userViewsApi } returns userViewsApi
+        coEvery { apiClient.libraryApi } returns libraryApi
+        coEvery { apiClient.userViewApi } returns userViewApi
     }
 
     @Test
@@ -127,7 +127,7 @@ class JellyfinMediaRepositoryTest {
             block(testServer, apiClient)
         }
         coEvery {
-            userViewsApi.getUserViews(
+            userViewApi.getUserViews(
                 userId = userUuid,
                 includeExternalContent = false,
                 includeHidden = false,
@@ -141,14 +141,14 @@ class JellyfinMediaRepositoryTest {
         assertTrue(result is ApiResult.Success<List<BaseItemDto>>)
         assertEquals(mockLibraries, (result as ApiResult.Success).data)
         coVerify(exactly = 1) {
-            userViewsApi.getUserViews(
+            userViewApi.getUserViews(
                 userId = userUuid,
                 includeExternalContent = false,
                 includeHidden = false,
             )
         }
         coVerify(exactly = 0) {
-            itemsApi.getItems(
+            libraryApi.getItems(
                 userId = any(),
                 includeItemTypes = listOf(BaseItemKind.COLLECTION_FOLDER),
             )
@@ -378,7 +378,7 @@ class JellyfinMediaRepositoryTest {
     // the actual `ItemsApi.getItems(...)` call arguments can be verified with `coVerify`.
 
     @Test
-    fun `getAlbumsForArtist queries itemsApi with artistIds and recursive, not parentId`() = runTest {
+    fun `getAlbumsForArtist queries libraryApi with artistIds and recursive, not parentId`() = runTest {
         // Given
         val artistId = "550e8400-e29b-41d4-a716-446655440000"
         val artistUuid = UUID.fromString(artistId)
@@ -426,7 +426,7 @@ class JellyfinMediaRepositoryTest {
         // Permissive stub: matches any argument shape so the "when" step always succeeds.
         // Correctness of the actual query is asserted purely via coVerify below.
         coEvery {
-            itemsApi.getItems(
+            libraryApi.getItems(
                 userId = any(),
                 artistIds = any(),
                 recursive = any(),
@@ -455,7 +455,7 @@ class JellyfinMediaRepositoryTest {
         // the query by parentId (that was the bug behind issue #1194 - MusicArtist is not the
         // literal folder parent of its MusicAlbum items).
         coVerify(exactly = 1) {
-            itemsApi.getItems(
+            libraryApi.getItems(
                 userId = userUuid,
                 artistIds = listOf(artistUuid),
                 recursive = true,
@@ -505,7 +505,7 @@ class JellyfinMediaRepositoryTest {
         }
 
         coEvery {
-            itemsApi.getItems(
+            libraryApi.getItems(
                 userId = userUuid,
                 parentId = playlistUuid,
                 fields = any(),
@@ -556,7 +556,7 @@ class JellyfinMediaRepositoryTest {
         }
 
         coEvery {
-            itemsApi.getItems(
+            libraryApi.getItems(
                 userId = userUuid,
                 includeItemTypes = listOf(BaseItemKind.PLAYLIST),
                 recursive = true,
@@ -611,7 +611,7 @@ class JellyfinMediaRepositoryTest {
         }
 
         coEvery {
-            itemsApi.getItems(
+            libraryApi.getItems(
                 userId = userUuid,
                 parentId = libraryUuid,
                 recursive = true,
@@ -636,7 +636,7 @@ class JellyfinMediaRepositoryTest {
         assertEquals("YouTube Video 1", successResult.data[0].name)
 
         coVerify(exactly = 1) {
-            itemsApi.getItems(
+            libraryApi.getItems(
                 userId = userUuid,
                 parentId = libraryUuid,
                 recursive = true,

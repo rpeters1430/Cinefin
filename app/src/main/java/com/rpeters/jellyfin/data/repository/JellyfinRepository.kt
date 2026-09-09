@@ -28,16 +28,15 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.ApiClient
-import org.jellyfin.sdk.api.client.extensions.itemsApi
 import org.jellyfin.sdk.api.client.extensions.libraryApi
 import org.jellyfin.sdk.api.client.extensions.mediaInfoApi
-import org.jellyfin.sdk.api.client.extensions.mediaSegmentsApi
+import org.jellyfin.sdk.api.client.extensions.mediaSegmentApi
 import org.jellyfin.sdk.api.client.extensions.sessionApi
+import org.jellyfin.sdk.api.client.extensions.showApi
 import org.jellyfin.sdk.api.client.extensions.systemApi
-import org.jellyfin.sdk.api.client.extensions.tvShowsApi
 import org.jellyfin.sdk.api.client.extensions.userApi
-import org.jellyfin.sdk.api.client.extensions.userLibraryApi
-import org.jellyfin.sdk.api.client.extensions.userViewsApi
+import org.jellyfin.sdk.api.client.extensions.userDataApi
+import org.jellyfin.sdk.api.client.extensions.userViewApi
 import org.jellyfin.sdk.model.UUID
 import org.jellyfin.sdk.model.api.AuthenticationResult
 import org.jellyfin.sdk.model.api.BaseItemDto
@@ -256,7 +255,7 @@ open class JellyfinRepository @Inject constructor(
         return withServerClient("getUserLibraries") { server, client ->
             val userUuid = runCatching { UUID.fromString(server.userId ?: "") }.getOrNull()
                 ?: throw IllegalStateException("Invalid user ID")
-            val response = client.userViewsApi.getUserViews(
+            val response = client.userViewApi.getUserViews(
                 userId = userUuid,
                 includeExternalContent = false,
                 includeHidden = false,
@@ -312,7 +311,7 @@ open class JellyfinRepository @Inject constructor(
                 // Guard against empty list - can cause 400 errors
                 val includeTypes = itemKinds?.takeIf { it.isNotEmpty() }
 
-                val response = client.itemsApi.getItems(
+                val response = client.libraryApi.getItems(
                     userId = userUuid,
                     recursive = true,
                     includeItemTypes = includeTypes,
@@ -355,7 +354,7 @@ open class JellyfinRepository @Inject constructor(
         return try {
             withIo {
                 val client = getClient(server.url, server.accessToken)
-                val response = client.itemsApi.getItems(
+                val response = client.libraryApi.getItems(
                     userId = userUuid,
                     recursive = true,
                     personIds = listOf(UUID.fromString(personId)),
@@ -381,7 +380,7 @@ open class JellyfinRepository @Inject constructor(
         return withServerClient("getNextUp") { server, client ->
             val userUuid = runCatching { UUID.fromString(server.userId ?: "") }.getOrNull()
                 ?: throw IllegalStateException("Invalid user ID")
-            val response = client.tvShowsApi.getNextUp(
+            val response = client.showApi.getNextUp(
                 userId = userUuid,
                 limit = limit,
                 fields = listOf(
@@ -425,7 +424,7 @@ open class JellyfinRepository @Inject constructor(
                         ?: throw IllegalStateException("Invalid user ID")
 
                     val client = getClient(currentServer.url, currentServer.accessToken)
-                    val response = client.itemsApi.getItems(
+                    val response = client.libraryApi.getItems(
                         userId = currentUserUuid,
                         recursive = true,
                         includeItemTypes = listOf(
@@ -591,7 +590,7 @@ open class JellyfinRepository @Inject constructor(
                 val currentUserUuid = runCatching { UUID.fromString(currentServer.userId ?: "") }.getOrNull()
                     ?: return@withIo ApiResult.Error("Invalid user ID", errorType = ErrorType.AUTHENTICATION)
 
-                val response = client.itemsApi.getItems(
+                val response = client.libraryApi.getItems(
                     userId = currentUserUuid,
                     recursive = true,
                     includeItemTypes = listOf(itemType),
@@ -640,7 +639,7 @@ open class JellyfinRepository @Inject constructor(
         return try {
             withIo {
                 val client = getClient(server.url, server.accessToken)
-                val response = client.itemsApi.getItems(
+                val response = client.libraryApi.getItems(
                     userId = userUuid,
                     parentId = parentUuid,
                     recursive = true,
@@ -721,7 +720,7 @@ open class JellyfinRepository @Inject constructor(
         return withServerClient("getFavorites") { server, client ->
             val userUuid = runCatching { UUID.fromString(server.userId ?: "") }.getOrNull()
                 ?: throw IllegalStateException("Invalid user ID")
-            val response = client.itemsApi.getItems(
+            val response = client.libraryApi.getItems(
                 userId = userUuid,
                 recursive = true,
                 sortBy = listOf(ItemSortBy.SORT_NAME),
@@ -746,7 +745,7 @@ open class JellyfinRepository @Inject constructor(
                 ?: throw IllegalStateException("Invalid user ID")
             val seriesUuid = parseUuid(seriesId, "series")
 
-            val response = client.itemsApi.getItems(
+            val response = client.libraryApi.getItems(
                 userId = userUuid,
                 parentId = seriesUuid,
                 includeItemTypes = listOf(BaseItemKind.SEASON),
@@ -776,7 +775,7 @@ open class JellyfinRepository @Inject constructor(
                 ?: throw IllegalStateException("Invalid user ID")
             val seasonUuid = parseUuid(seasonId, "season")
 
-            val response = client.itemsApi.getItems(
+            val response = client.libraryApi.getItems(
                 userId = userUuid,
                 parentId = seasonUuid,
                 includeItemTypes = listOf(BaseItemKind.EPISODE),
@@ -798,7 +797,7 @@ open class JellyfinRepository @Inject constructor(
             val itemUuid = runCatching { UUID.fromString(itemId) }.getOrNull()
                 ?: throw IllegalArgumentException("Invalid $itemTypeName ID")
 
-            val response = client.itemsApi.getItems(
+            val response = client.libraryApi.getItems(
                 userId = userUuid,
                 ids = listOf(itemUuid),
                 limit = 1,
@@ -847,7 +846,7 @@ open class JellyfinRepository @Inject constructor(
         return withServerClient("getPlaylistItems") { server, client ->
             val userUuid = parseUuid(server.userId ?: "", "user")
             val playlistUuid = parseUuid(playlistId, "playlist")
-            val response = client.itemsApi.getItems(
+            val response = client.libraryApi.getItems(
                 userId = userUuid,
                 parentId = playlistUuid,
                 fields = listOf(
@@ -870,7 +869,7 @@ open class JellyfinRepository @Inject constructor(
     override suspend fun getPlaylists(limit: Int): ApiResult<List<BaseItemDto>> {
         return withServerClient("getPlaylists") { server, client ->
             val userUuid = parseUuid(server.userId ?: "", "user")
-            val response = client.itemsApi.getItems(
+            val response = client.libraryApi.getItems(
                 userId = userUuid,
                 includeItemTypes = listOf(BaseItemKind.PLAYLIST),
                 recursive = true,
@@ -899,7 +898,7 @@ open class JellyfinRepository @Inject constructor(
             // analytics on every playback for a large portion of users.
             try {
                 val itemUuid = parseUuid(itemId, "item")
-                client.mediaSegmentsApi.getItemSegments(
+                client.mediaSegmentApi.getItemSegments(
                     itemId = itemUuid,
                     includeSegmentTypes = listOf(
                         org.jellyfin.sdk.model.api.MediaSegmentType.INTRO,
@@ -935,7 +934,7 @@ open class JellyfinRepository @Inject constructor(
             val userUuid = runCatching { UUID.fromString(server.userId ?: "") }.getOrNull()
                 ?: throw IllegalStateException("Invalid user ID")
 
-            val response = client.itemsApi.getItems(
+            val response = client.libraryApi.getItems(
                 userId = userUuid,
                 searchTerm = query.trim(),
                 recursive = true,
@@ -1028,9 +1027,9 @@ open class JellyfinRepository @Inject constructor(
             withIo {
                 val client = getClient(server.url, server.accessToken)
                 if (isFavorite) {
-                    client.userLibraryApi.markFavoriteItem(itemId = itemUuid, userId = userUuid)
+                    client.userDataApi.markFavoriteItem(itemId = itemUuid, userId = userUuid)
                 } else {
-                    client.userLibraryApi.unmarkFavoriteItem(itemId = itemUuid, userId = userUuid)
+                    client.userDataApi.unmarkFavoriteItem(itemId = itemUuid, userId = userUuid)
                 }
                 ApiResult.Success(!isFavorite) // Return the new state
             }

@@ -13,10 +13,9 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import org.jellyfin.sdk.api.client.exception.InvalidStatusException
-import org.jellyfin.sdk.api.client.extensions.itemsApi
 import org.jellyfin.sdk.api.client.extensions.libraryApi
-import org.jellyfin.sdk.api.client.extensions.tvShowsApi
-import org.jellyfin.sdk.api.client.extensions.userViewsApi
+import org.jellyfin.sdk.api.client.extensions.showApi
+import org.jellyfin.sdk.api.client.extensions.userViewApi
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.CollectionType
@@ -83,7 +82,7 @@ class JellyfinMediaRepository @Inject constructor(
     suspend fun getNextUp(limit: Int = 24): ApiResult<List<BaseItemDto>> {
         return withServerClient("getNextUp") { server, client ->
             val userUuid = parseUuid(server.userId ?: "", "user")
-            val response = client.tvShowsApi.getNextUp(
+            val response = client.showApi.getNextUp(
                 userId = userUuid,
                 limit = limit,
                 fields = listOf(
@@ -103,7 +102,7 @@ class JellyfinMediaRepository @Inject constructor(
         // per-library recently-added rows. /UserViews is the canonical, user-scoped endpoint.
         return withServerClient("getUserLibraries") { server, client ->
             val userUuid = parseUuid(server.userId ?: "", "user")
-            val response = client.userViewsApi.getUserViews(
+            val response = client.userViewApi.getUserViews(
                 userId = userUuid,
                 includeExternalContent = false,
                 includeHidden = false,
@@ -119,7 +118,7 @@ class JellyfinMediaRepository @Inject constructor(
                     async {
                         val viewId = view.id
                         val total = runCatching {
-                            client.itemsApi.getItems(
+                            client.libraryApi.getItems(
                                 userId = userUuid,
                                 parentId = viewId,
                                 recursive = true,
@@ -210,7 +209,7 @@ class JellyfinMediaRepository @Inject constructor(
                     org.jellyfin.sdk.model.api.ItemFields.MEDIA_SOURCES,
                 )
 
-                val response = client.itemsApi.getItems(
+                val response = client.libraryApi.getItems(
                     userId = userUuid,
                     parentId = parent,
                     recursive = !isHomeVideos,
@@ -238,7 +237,7 @@ class JellyfinMediaRepository @Inject constructor(
                     if (!collectionType.isNullOrBlank() && !itemTypes.isNullOrBlank()) {
                         try {
                             val fallbackTypes = getDefaultTypesForCollection(collectionType)
-                            val response = client.itemsApi.getItems(
+                            val response = client.libraryApi.getItems(
                                 userId = userUuid,
                                 parentId = parent,
                                 recursive = true,
@@ -253,7 +252,7 @@ class JellyfinMediaRepository @Inject constructor(
                     // Strategy 2 Fallback
                     if (isHomeVideos || isPhotos || itemKinds.isNullOrEmpty()) {
                         try {
-                            val response = client.itemsApi.getItems(
+                            val response = client.libraryApi.getItems(
                                 userId = userUuid,
                                 parentId = parent,
                                 recursive = !isHomeVideos,
@@ -276,7 +275,7 @@ class JellyfinMediaRepository @Inject constructor(
         // ✅ FIX: Use withServerClient helper to ensure fresh server/client on token refresh
         return withServerClient("getRecentlyAdded") { server, client ->
             val userUuid = parseUuid(server.userId ?: "", "user")
-            val response = client.itemsApi.getItems(
+            val response = client.libraryApi.getItems(
                 userId = userUuid,
                 recursive = true,
                 includeItemTypes = listOf(
@@ -302,7 +301,7 @@ class JellyfinMediaRepository @Inject constructor(
         // ✅ FIX: Use withServerClient helper to ensure fresh server/client on token refresh
         return withServerClient("getRecentlyAddedByType") { server, client ->
             val userUuid = parseUuid(server.userId ?: "", "user")
-            val response = client.itemsApi.getItems(
+            val response = client.libraryApi.getItems(
                 userId = userUuid,
                 recursive = true,
                 includeItemTypes = listOf(itemType),
@@ -322,7 +321,7 @@ class JellyfinMediaRepository @Inject constructor(
         withServerClient("getRecentlyAddedFromLibrary") { server, client ->
             val userUuid = parseUuid(server.userId ?: "", "user")
             val parentUuid = parseUuid(libraryId, "library")
-            val response = client.itemsApi.getItems(
+            val response = client.libraryApi.getItems(
                 userId = userUuid,
                 parentId = parentUuid,
                 recursive = true,
@@ -349,7 +348,7 @@ class JellyfinMediaRepository @Inject constructor(
     suspend fun getContinueWatching(limit: Int = 20, forceRefresh: Boolean = false): ApiResult<List<BaseItemDto>> {
         return withServerClient("getContinueWatching") { server, client ->
             val userUuid = parseUuid(server.userId ?: "", "user")
-            val response = client.itemsApi.getItems(
+            val response = client.libraryApi.getItems(
                 userId = userUuid,
                 recursive = true,
                 includeItemTypes = listOf(
@@ -390,7 +389,7 @@ class JellyfinMediaRepository @Inject constructor(
         withServerClient("getAlbumTracks") { server, client ->
             val userUuid = parseUuid(server.userId ?: "", "user")
             val albumUuid = parseUuid(albumId, "album")
-            val response = client.itemsApi.getItems(
+            val response = client.libraryApi.getItems(
                 userId = userUuid,
                 parentId = albumUuid,
                 includeItemTypes = listOf(BaseItemKind.AUDIO),
@@ -419,7 +418,7 @@ class JellyfinMediaRepository @Inject constructor(
         withServerClient("getPlaylistItems") { server, client ->
             val userUuid = parseUuid(server.userId ?: "", "user")
             val playlistUuid = parseUuid(playlistId, "playlist")
-            val response = client.itemsApi.getItems(
+            val response = client.libraryApi.getItems(
                 userId = userUuid,
                 parentId = playlistUuid,
                 fields = listOf(
@@ -441,7 +440,7 @@ class JellyfinMediaRepository @Inject constructor(
     suspend fun getPlaylists(limit: Int = 100): ApiResult<List<BaseItemDto>> =
         withServerClient("getPlaylists") { server, client ->
             val userUuid = parseUuid(server.userId ?: "", "user")
-            val response = client.itemsApi.getItems(
+            val response = client.libraryApi.getItems(
                 userId = userUuid,
                 includeItemTypes = listOf(BaseItemKind.PLAYLIST),
                 recursive = true,
@@ -470,7 +469,7 @@ class JellyfinMediaRepository @Inject constructor(
             // nothing. Use artistIds (matches the server's /Items?ArtistIds= query param)
             // together with recursive = true, which is how the official web client and
             // other Jellyfin clients (e.g. Finamp) look up an artist's albums.
-            val response = client.itemsApi.getItems(
+            val response = client.libraryApi.getItems(
                 userId = userUuid,
                 artistIds = listOf(artistUuid),
                 recursive = true,
@@ -492,7 +491,7 @@ class JellyfinMediaRepository @Inject constructor(
             val userUuid = parseUuid(server.userId ?: "", "user")
             val seriesUuid = parseUuid(seriesId, "series")
 
-            val response = client.itemsApi.getItems(
+            val response = client.libraryApi.getItems(
                 userId = userUuid,
                 parentId = seriesUuid,
                 includeItemTypes = listOf(BaseItemKind.SEASON),
@@ -557,7 +556,7 @@ class JellyfinMediaRepository @Inject constructor(
             val userUuid = parseUuid(server.userId ?: "", "user")
             val seasonUuid = parseUuid(seasonId, "season")
 
-            val response = client.itemsApi.getItems(
+            val response = client.libraryApi.getItems(
                 userId = userUuid,
                 parentId = seasonUuid,
                 includeItemTypes = listOf(BaseItemKind.EPISODE),
@@ -581,7 +580,7 @@ class JellyfinMediaRepository @Inject constructor(
         val userUuid = parseUuid(server.userId ?: "", "user")
         val itemUuid = parseUuid(itemId, itemTypeName)
 
-        val response = client.itemsApi.getItems(
+        val response = client.libraryApi.getItems(
             userId = userUuid,
             ids = listOf(itemUuid),
             limit = 1,

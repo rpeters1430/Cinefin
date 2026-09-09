@@ -22,9 +22,8 @@ import kotlinx.coroutines.sync.withLock
 import org.jellyfin.sdk.Jellyfin
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.exception.InvalidStatusException
-import org.jellyfin.sdk.api.client.extensions.quickConnectApi
+import org.jellyfin.sdk.api.client.extensions.authenticationApi
 import org.jellyfin.sdk.api.client.extensions.systemApi
-import org.jellyfin.sdk.api.client.extensions.userApi
 import org.jellyfin.sdk.model.api.AuthenticateUserByName
 import org.jellyfin.sdk.model.api.AuthenticationResult
 import org.jellyfin.sdk.model.api.PublicSystemInfo
@@ -119,7 +118,7 @@ class JellyfinAuthRepository @Inject constructor(
             val normalizedServerUrl = normalizeServerUrl(serverUrl)
 
             val client = createApiClient(serverUrl)
-            val response = client.userApi.authenticateUserByName(
+            val response = client.authenticationApi.authenticateUserByName(
                 AuthenticateUserByName(
                     username = username,
                     pw = password,
@@ -299,7 +298,7 @@ class JellyfinAuthRepository @Inject constructor(
     override suspend fun initiateQuickConnect(serverUrl: String): ApiResult<QuickConnectResult> {
         return try {
             val client = createApiClient(serverUrl)
-            val response = client.quickConnectApi.initiateQuickConnect()
+            val response = client.authenticationApi.initiateQuickConnect()
             ApiResult.Success(response.content.toDomainQuickConnectResult())
         } catch (e: Exception) {
             if (e is kotlinx.coroutines.CancellationException) throw e
@@ -312,7 +311,7 @@ class JellyfinAuthRepository @Inject constructor(
     override suspend fun isQuickConnectEnabled(serverUrl: String): ApiResult<Boolean> {
         return try {
             val client = createApiClient(serverUrl)
-            val response = client.quickConnectApi.getQuickConnectEnabled()
+            val response = client.authenticationApi.getQuickConnectEnabled()
             ApiResult.Success(response.content)
         } catch (e: InvalidStatusException) {
             // Disabled quick connect may return unauthorized on some server versions.
@@ -330,7 +329,7 @@ class JellyfinAuthRepository @Inject constructor(
     override suspend fun getQuickConnectState(serverUrl: String, secret: String): ApiResult<QuickConnectState> {
         return try {
             val client = createApiClient(serverUrl)
-            val response = client.quickConnectApi.getQuickConnectState(secret)
+            val response = client.authenticationApi.getQuickConnectState(secret)
             val state = if (response.content.authenticated) {
                 QuickConnectState(state = "Approved")
             } else {
@@ -357,7 +356,7 @@ class JellyfinAuthRepository @Inject constructor(
             _isAuthenticating.update { true }
             try {
                 val client = createApiClient(serverUrl)
-                val response = client.userApi.authenticateWithQuickConnect(
+                val response = client.authenticationApi.authenticateWithQuickConnect(
                     org.jellyfin.sdk.model.api.QuickConnectDto(secret = secret),
                 )
                 val authResult = response.content
