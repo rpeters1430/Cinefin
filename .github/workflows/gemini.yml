@@ -34,8 +34,10 @@ jobs:
       (github.event_name != 'workflow_dispatch' ||
        github.ref == format('refs/heads/{0}', github.event.repository.default_branch)) &&
       (github.event_name != 'issue_comment' ||
-       github.event.comment.body == '@gemini-cli /review' ||
-       github.event.comment.body == '@gemini-cli /triage')
+       startsWith(github.event.comment.body, '@gemini-cli /review') ||
+       startsWith(github.event.comment.body, '@gemini-cli /triage') ||
+       contains(github.event.comment.body, '@gemini-cli /review') ||
+       contains(github.event.comment.body, '@gemini-cli /triage'))
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -69,6 +71,15 @@ jobs:
             echo '::error::Add repository Actions secret GEMINI_API_KEY to enable Gemini automation.'
             exit 1
           fi
+      - name: Cache Gemini extensions and skills
+        if: steps.prepare.outputs.mode != ''
+        uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4.2.2
+        id: gemini-cache
+        with:
+          path: |
+            .gemini/vendor
+            .gemini/skills
+          key: gemini-skills-${{ hashFiles('.github/gemini/sources.json') }}
       - name: Prepare pinned extensions and skills
         if: steps.prepare.outputs.mode != ''
         run: python3 scripts/gemini/setup.py
@@ -86,14 +97,39 @@ jobs:
           script: |
             const fs = require('node:fs');
             core.setOutput('text', fs.readFileSync(`.github/gemini/${process.env.TASK_MODE}.md`, 'utf8'));
-      - name: Gemini static analysis
+      - name: Gemini static analysis (primary)
         if: steps.prepare.outputs.mode != ''
         id: gemini
+        continue-on-error: true
         uses: google-github-actions/run-gemini-cli@f77273f4c914e4bf38440cf36a0369cb64a37489 # v0.1.22
         with:
           gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
           gemini_cli_version: '0.59.0'
-          gemini_model: ${{ vars.GEMINI_MODEL }}
+          gemini_model: ${{ vars.GEMINI_MODEL || 'gemini-3.8-flash' }}
+          gemini_debug: 'false'
+          upload_artifacts: 'false'
+          prompt: ${{ steps.prompt.outputs.text }}
+          extensions: '["./.gemini/vendor/code-review", "./.gemini/vendor/security"]'
+          settings: |
+            {
+              "model": {"maxSessionTurns": 40},
+              "telemetry": {"enabled": false},
+              "hooksConfig": {"enabled": false},
+              "tools": {
+                "core": ["read_file", "read_many_files", "list_directory", "glob", "grep_search", "activate_skill"]
+              }
+            }
+      - name: Gemini static analysis (fallback to gemini-3.7-flash)
+        if: >-
+          steps.prepare.outputs.mode != '' &&
+          (steps.gemini.outcome == 'failure' || steps.gemini.outputs.summary == '') &&
+          (vars.GEMINI_MODEL == '' || vars.GEMINI_MODEL == 'gemini-3.8-flash')
+        id: gemini_fallback
+        uses: google-github-actions/run-gemini-cli@f77273f4c914e4bf38440cf36a0369cb64a37489 # v0.1.22
+        with:
+          gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
+          gemini_cli_version: '0.59.0'
+          gemini_model: 'gemini-3.7-flash'
           gemini_debug: 'false'
           upload_artifacts: 'false'
           prompt: ${{ steps.prompt.outputs.text }}
@@ -111,7 +147,7 @@ jobs:
         if: steps.prepare.outputs.mode != ''
         id: result
         env:
-          REPORT: ${{ steps.gemini.outputs.summary }}
+          REPORT: ${{ steps.gemini.outputs.summary || steps.gemini_fallback.outputs.summary }}
           TASK_MODE: ${{ steps.prepare.outputs.mode }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
@@ -119,6 +155,7 @@ jobs:
           const fs = require('node:fs');
           const {parseReport} = require('./scripts/gemini/automation.cjs');
           const raw = process.env.REPORT;
+          if (!raw || !raw.trim()) throw Error('Gemini CLI produced an empty summary output');
           if (raw.includes(process.env.GEMINI_API_KEY)) throw Error('Credential detected in model output');
           const report = parseReport(raw, process.env.TASK_MODE);
           const input = JSON.parse(fs.readFileSync('.gemini/input.json', 'utf8'));
@@ -128,6 +165,15 @@ jobs:
           fs.mkdirSync('gemini-result', {recursive: true});
           fs.writeFileSync('gemini-result/report.json', JSON.stringify(report));
           fs.writeFileSync('gemini-result/input.json', JSON.stringify({recentIssues: input.recentIssues || []}));
+          if (process.env.GITHUB_STEP_SUMMARY) {
+            const summary = [
+              `### 🤖 Gemini Static Analysis (${process.env.TASK_MODE})`,
+              `- **Summary:** ${report.summary}`,
+              `- **Labels:** ${report.labels.length ? report.labels.join(', ') : 'None'}`,
+              process.env.TASK_MODE === 'review' ? `- **Findings Count:** ${report.findings.length}` : `- **Questions Count:** ${report.questions.length}`
+            ].join('\n');
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary + '\n');
+          }
           fs.appendFileSync(process.env.GITHUB_OUTPUT, 'ready=true\n');
           JS
       - name: Transfer validated result to publisher

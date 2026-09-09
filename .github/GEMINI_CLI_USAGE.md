@@ -11,29 +11,45 @@
 
 The workflow uses GitHub's built-in token; no PAT, GitHub App or Firebase service
 account is required. Optional repository variable `GEMINI_MODEL` selects a model
-available to your API key; leaving it unset uses the CLI default. Set
-`GEMINI_ENABLED=false` to pause automation. Missing credentials fail with a clear
-setup error. API quota/model failures appear in the workflow logs and publish no
-partial result. AI requests can consume your Gemini API quota/billing.
+available to your API key (defaults to `gemini-3.8-flash` with automatic fallback to
+`gemini-3.7-flash` if unavailable). Set `GEMINI_ENABLED=false` to pause automation.
+Missing credentials fail with a clear setup error. Extensions and skills are
+automatically cached in GitHub Actions to minimize latency and avoid network flakiness.
 
 ## Behavior
 
 | Trigger | Result |
 | --- | --- |
 | Issue opened/reopened | Suggested type/area labels and one updated triage comment |
-| PR opened, reopened, updated, or marked ready | Code/security review and relevant area labels |
-| `@gemini-cli /triage` on an issue | Rerun triage (verified write/maintain/admin permission required) |
-| `@gemini-cli /review` on a PR | Rerun review (same permission requirement) |
+| PR opened, reopened, updated, or marked ready | Code/security review with direct file/line links and area labels |
+| `@gemini-cli /triage` on an issue | Rerun triage (verified write/maintain/admin permission required; whitespace-tolerant) |
+| `@gemini-cli /review` on a PR | Rerun review (same permission requirement; whitespace-tolerant) |
 | Manual workflow dispatch | Review or triage an existing number |
 
-Commands must be the entire comment. Draft PRs and bot-authored issues are skipped.
-PRs from bots and forks are reviewed using GitHub's patch data. Existing labels
-are preserved; missing labels from the finite allowlist are created as needed.
-Duplicates are suggestions, never automatic closures. Reviews use COMMENT,
-include file/line findings and never approve, request changes, merge or push code.
+Commands can be commented with or without trailing newlines/whitespace. Draft PRs and bot-authored issues are skipped.
+PRs from bots and forks are reviewed using GitHub's patch data. Source files (`.kt`, `.kts`, `.xml`, `.java`)
+are prioritized over lockfiles and binary assets so that diff budgets are spent on code changes.
+Existing labels are preserved; missing labels from the finite allowlist are created as needed.
+Duplicates are suggestions, never automatic closures. Reviews use COMMENT, include clickable
+file/line findings and collapsible coverage sections, and never approve, request changes, merge or push code.
 An existing review for the same commit is not posted twice. To request a new
-review after changes, push a new commit. Triage updates its existing bot comment.
-The former `/fix`, `/approve`, `/deny` command files have been removed.
+review after changes, push a new commit or trigger `@gemini-cli /review`. Triage updates its existing bot comment.
+Every run produces an accessible GitHub Actions Step Summary for fast visibility.
+
+## Which Setup Approach is Better to Use?
+
+Depending on your team's goals, there are two primary architectures for Gemini in GitHub CI:
+
+1. **Gemini CLI Action (`google-github-actions/run-gemini-cli`) [CURRENT & RECOMMENDED]**
+   - **How it works:** Runs Google's official Gemini CLI engine in headless CI with sandboxed tools, extensions (`code-review`, `security`), and project skills (`android/skills`, `firebase/agent-skills`).
+   - **Pros:** Full access to curated extensions and specialized Android/Firebase skills; headless sandbox security; uses official Google CLI tooling; runs offline without executing PR code.
+   - **Best for:** Cinefin's current setup where deep Android domain skills (adaptive layouts, Media3, Intent security, R8) and security passes are needed.
+
+2. **Direct Gemini API Action / Script (REST / `@google/genai` SDK)**
+   - **How it works:** A single Node/Python script directly queries the Gemini API with the diff and posts comments via Octokit.
+   - **Pros:** Slightly faster runner start (no CLI installation); smaller runner footprint; direct control over inline diff comment placement.
+   - **Cons:** Does not have access to Gemini CLI extensions or multi-skill catalogs (`activate_skill`), losing Android/Firebase specialized domain rules.
+   - **Verdict:** Use the current Gemini CLI architecture because Cinefin relies heavily on specific Android and Firebase guidance that the skills system provides.
 
 ## Extensions and skills
 

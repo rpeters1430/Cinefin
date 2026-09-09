@@ -79,3 +79,26 @@ test('privileged workflow checkouts use the event SHA, never model/job outputs o
   assert.doesNotMatch(workflow, /trusted_sha|pull_request\.head|refs\/pull\//);
   assert.match(workflow, /github\.event_name != 'workflow_dispatch' \|\|\s+github\.ref == format/);
 });
+test('extracts JSON surrounded by markdown code blocks or text and normalizes severity', () => {
+  const rawWithFences = 'Here is the analysis:\n```json\n{"summary":"Fine","labels":["area:ai"],"findings":[{"path":"app/A.kt","line":10,"severity":"HIGH","title":"Leak","body":"Fix it"}],"limitations":[]}\n```\nThanks!';
+  const parsed = parseReport(rawWithFences, 'review');
+  assert.equal(parsed.summary, 'Fine');
+  assert.deepEqual(parsed.labels, ['area:ai']);
+  assert.equal(parsed.findings[0].severity, 'high');
+});
+test('handles comment commands with trailing whitespace or newlines', async () => {
+  const outputs = [];
+  await prepare({
+    github: {
+      rest: {
+        repos: {getCollaboratorPermissionLevel: async () => ({data: {permission: 'write'}})},
+        issues: {get: async () => ({data: {state: 'open', title: 'Title', body: 'Body', user: {type: 'User'}}}), listForRepo: async () => ({data: []})}
+      }
+    },
+    context: {repo: {}, actor: 'maintainer', eventName: 'issue_comment', payload: {
+      comment: {body: '@gemini-cli /triage \r\n'}, issue: {number: 14, user: {type: 'User'}}}},
+    core: {setOutput: (...x) => outputs.push(x)}
+  });
+  assert.deepEqual(outputs, [['mode', 'triage'], ['number', 14], ['revision', require('node:crypto').createHash('sha256').update('Title\nBody').digest('hex')]]);
+});
+
