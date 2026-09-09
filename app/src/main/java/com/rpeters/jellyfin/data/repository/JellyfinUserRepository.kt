@@ -11,12 +11,11 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import org.jellyfin.sdk.api.client.extensions.itemsApi
 import org.jellyfin.sdk.api.client.extensions.libraryApi
-import org.jellyfin.sdk.api.client.extensions.playStateApi
+import org.jellyfin.sdk.api.client.extensions.sessionApi
 import org.jellyfin.sdk.api.client.extensions.systemApi
 import org.jellyfin.sdk.api.client.extensions.userApi
-import org.jellyfin.sdk.api.client.extensions.userLibraryApi
+import org.jellyfin.sdk.api.client.extensions.userDataApi
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.PlayMethod
 import org.jellyfin.sdk.model.api.PlaybackOrder
@@ -198,9 +197,9 @@ class JellyfinUserRepository @Inject constructor(
             val userUuid = parseUuid(server.userId ?: "", "user")
             val itemUuid = parseUuid(itemId, "item")
             if (isFavorite) {
-                client.userLibraryApi.unmarkFavoriteItem(itemId = itemUuid, userId = userUuid)
+                client.userDataApi.unmarkFavoriteItem(itemId = itemUuid, userId = userUuid)
             } else {
-                client.userLibraryApi.markFavoriteItem(itemId = itemUuid, userId = userUuid)
+                client.userDataApi.markFavoriteItem(itemId = itemUuid, userId = userUuid)
             }
             !isFavorite
         }
@@ -212,7 +211,7 @@ class JellyfinUserRepository @Inject constructor(
         val result = withServerClient("markAsWatched") { server, client ->
             val userUuid = parseUuid(server.userId ?: "", "user")
             val itemUuid = parseUuid(itemId, "item")
-            client.playStateApi.markPlayedItem(itemId = itemUuid, userId = userUuid)
+            client.userDataApi.markPlayedItem(itemId = itemUuid, userId = userUuid)
             true
         }
         if (queueOfflineOnNetworkError && result is ApiResult.Error && result.errorType == ErrorType.NETWORK) {
@@ -235,7 +234,7 @@ class JellyfinUserRepository @Inject constructor(
         val result = withServerClient("markAsUnwatched") { server, client ->
             val userUuid = parseUuid(server.userId ?: "", "user")
             val itemUuid = parseUuid(itemId, "item")
-            client.playStateApi.markUnplayedItem(itemId = itemUuid, userId = userUuid)
+            client.userDataApi.markUnplayedItem(itemId = itemUuid, userId = userUuid)
             true
         }
         if (queueOfflineOnNetworkError && result is ApiResult.Error && result.errorType == ErrorType.NETWORK) {
@@ -255,7 +254,7 @@ class JellyfinUserRepository @Inject constructor(
         withServerClient("getItemUserData") { server, client ->
             val userUuid = parseUuid(server.userId ?: "", "user")
             val itemUuid = parseUuid(itemId, "item")
-            val response = client.itemsApi.getItemUserData(itemId = itemUuid, userId = userUuid)
+            val response = client.userDataApi.getItemUserData(itemId = itemUuid, userId = userUuid)
             response.content
         }
 
@@ -284,7 +283,7 @@ class JellyfinUserRepository @Inject constructor(
                 playbackOrder = PlaybackOrder.DEFAULT,
                 playSessionId = sessionId,
             )
-            client.playStateApi.reportPlaybackStart(info).let { }
+            client.sessionApi.reportPlaybackStart(info).let { }
         }
 
     suspend fun reportPlaybackProgress(
@@ -314,7 +313,7 @@ class JellyfinUserRepository @Inject constructor(
                 playbackOrder = PlaybackOrder.DEFAULT,
                 playSessionId = effectiveSessionId,
             )
-            client.playStateApi.reportPlaybackProgress(info).let { }
+            client.sessionApi.reportPlaybackProgress(info).let { }
         }
 
         // If network error, queue for later sync
@@ -355,7 +354,7 @@ class JellyfinUserRepository @Inject constructor(
                 playSessionId = effectiveSessionId,
                 failed = failed,
             )
-            client.playStateApi.reportPlaybackStopped(info).let { }
+            client.sessionApi.reportPlaybackStopped(info).let { }
         }
         if (queueOfflineOnNetworkError && result is ApiResult.Error && result.errorType == ErrorType.NETWORK) {
             offlineProgressRepository.addUpdate(
@@ -390,7 +389,7 @@ class JellyfinUserRepository @Inject constructor(
         // ✅ FIX: Use withServerClient helper to ensure fresh server/client on token refresh
         withServerClient("getFavorites") { server, client ->
             val userUuid = parseUuid(server.userId ?: "", "user")
-            val response = client.itemsApi.getItems(
+            val response = client.libraryApi.getItems(
                 userId = userUuid,
                 recursive = true,
                 sortBy = listOf(org.jellyfin.sdk.model.api.ItemSortBy.SORT_NAME),

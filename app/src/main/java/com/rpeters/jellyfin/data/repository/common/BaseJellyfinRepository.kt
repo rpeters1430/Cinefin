@@ -145,7 +145,7 @@ open class BaseJellyfinRepository @Inject constructor(
      * Usage example:
      * ```kotlin
      * return withServerClient("getLibraryItems") { server, client ->
-     *     val response = client.itemsApi.getItems(
+     *     val response = client.libraryApi.getItems(
      *         userId = server.userId,
      *         // ...
      *     )

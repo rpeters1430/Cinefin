@@ -150,6 +150,7 @@ object NetworkModule {
             deviceInfo = DeviceInfo(
                 id = deviceIdentityProvider.deviceId(),
                 name = deviceIdentityProvider.deviceName(),
+                languages = listOf(java.util.Locale.getDefault().toLanguageTag()),
             )
             this.context = context
         }

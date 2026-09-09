@@ -73,7 +73,7 @@ This is a modern Android client for Jellyfin media servers built with:
 - **DI**: Hilt 2.59.1 for dependency injection throughout the app
 - **Async**: Kotlin Coroutines 1.10.2 with StateFlow for reactive UI updates
 - **Media Playback**: ExoPlayer (Media3 1.10.0-rc03) with Jellyfin FFmpeg decoder
-- **Networking**: Retrofit 3.0.0 + OkHttp 5.3.2 + Jellyfin SDK 1.8.6
+- **Networking**: Retrofit 3.0.0 + OkHttp 5.5.0 + Jellyfin SDK 1.9.0 (Jellyfin Server 12.0+)
 - **Image Loading**: Coil 3.3.0 with custom performance optimizations
 - **Security**: Android Keystore encryption, dynamic certificate pinning with TOFU model
 
