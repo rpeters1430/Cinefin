@@ -226,6 +226,28 @@ class JellyfinAuthRepositoryTest {
         assertTrue(result is ApiResult.Success)
     }
 
+    @Test
+    fun `testServerConnection accepts a null server version`() = runTest {
+        val serverInfo = mockk<PublicSystemInfo>(relaxed = true)
+        every { serverInfo.version } returns null
+        coEvery { connectionOptimizer.testServerConnection(SERVER_URL) } returns ApiResult.Success(serverInfo)
+
+        val result = repository.testServerConnection(SERVER_URL)
+
+        assertTrue(result is ApiResult.Success)
+    }
+
+    @Test
+    fun `testServerConnection accepts an unparseable server version`() = runTest {
+        val serverInfo = mockk<PublicSystemInfo>(relaxed = true)
+        every { serverInfo.version } returns "unknown"
+        coEvery { connectionOptimizer.testServerConnection(SERVER_URL) } returns ApiResult.Success(serverInfo)
+
+        val result = repository.testServerConnection(SERVER_URL)
+
+        assertTrue(result is ApiResult.Success)
+    }
+
     private fun buildQuickConnectResult(authenticated: Boolean): SdkQuickConnectResult {
         return SdkQuickConnectResult(
             authenticated = authenticated,
