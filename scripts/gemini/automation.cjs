@@ -57,10 +57,16 @@ function parseReport(raw, mode) {
           !string(f.title, 300) || !string(f.body, 3000)) throw Error('Invalid finding');
     }
   } else {
+    report.questions = report.questions || [];
+    report.possibleDuplicates = report.possibleDuplicates || [];
+    report.potentialCauses = report.potentialCauses || [];
+    report.details = report.details || {};
     if (!Array.isArray(report.questions) || report.questions.length > 3 ||
         report.questions.some(x => !string(x, 1000)) ||
         !Array.isArray(report.possibleDuplicates) || report.possibleDuplicates.length > 3 ||
         report.possibleDuplicates.some(x => !Number.isSafeInteger(x) || x < 1)) throw Error('Invalid triage');
+    if (!Array.isArray(report.potentialCauses) || report.potentialCauses.length > 3 ||
+        report.potentialCauses.some(x => !string(x, 1000))) throw Error('Invalid potentialCauses');
   }
   return report;
 }
@@ -76,19 +82,37 @@ async function prepare({github, context, core}) {
     if (event.pull_request.draft) return;
     mode = 'review'; number = event.pull_request.number;
   } else if (context.eventName === 'issue_comment' || context.eventName === 'workflow_dispatch') {
-    // Verify actual write permission, not just a claimed author association.
-    const {data: permission} = await github.rest.repos.getCollaboratorPermissionLevel({
-      ...repo, username: context.actor,
-    });
-    if (!['admin', 'maintain', 'write'].includes(permission.permission)) return;
     if (context.eventName === 'workflow_dispatch') {
+      const {data: permission} = await github.rest.repos.getCollaboratorPermissionLevel({
+        ...repo, username: context.actor,
+      });
+      if (!['admin', 'maintain', 'write'].includes(permission.permission)) return;
       if (context.ref !== `refs/heads/${event.repository.default_branch}`) return;
       mode = event.inputs.task; number = Number(event.inputs.number);
     } else {
       const command = (event.comment.body || '').trim();
-      if ((command === '@gemini-cli /review' || command.startsWith('@gemini-cli /review')) && event.issue.pull_request) mode = 'review';
-      if ((command === '@gemini-cli /triage' || command.startsWith('@gemini-cli /triage')) && !event.issue.pull_request) mode = 'triage';
-      if (!mode) return;
+      const isPr = Boolean(event.issue.pull_request);
+      if (isPr) {
+        if (!command.includes('@gemini-cli /review') && !command.startsWith('@gemini-cli /review')) return;
+        const {data: permission} = await github.rest.repos.getCollaboratorPermissionLevel({
+          ...repo, username: context.actor,
+        });
+        if (!['admin', 'maintain', 'write'].includes(permission.permission)) return;
+        mode = 'review';
+      } else {
+        if (!command.includes('@gemini-cli')) return;
+        // Issue author or maintainers with write access can trigger triage / replies
+        const isAuthor = event.issue.user?.login === context.actor;
+        let hasAccess = isAuthor;
+        if (!hasAccess) {
+          const {data: permission} = await github.rest.repos.getCollaboratorPermissionLevel({
+            ...repo, username: context.actor,
+          });
+          hasAccess = ['admin', 'maintain', 'write'].includes(permission.permission);
+        }
+        if (!hasAccess) return;
+        mode = 'triage';
+      }
       number = event.issue.number;
     }
   }
@@ -132,8 +156,20 @@ async function prepare({github, context, core}) {
     if (issue.pull_request || issue.state !== 'open' || issue.user.type === 'Bot') return;
     input.title = issue.title; input.body = (issue.body || '').slice(0, 20000);
     input.incomplete = (issue.body || '').length > 20000;
-    // Track content only: our own comments/labels also change updated_at.
-    revision = require('node:crypto').createHash('sha256').update(issue.title + '\n' + (issue.body || '')).digest('hex');
+
+    // Include recent conversation comments for context awareness
+    const comments = github.paginate
+      ? await github.paginate(github.rest.issues.listComments, {...repo, issue_number: number, per_page: 100})
+      : [];
+    const userComments = comments.filter(c => !c.body?.includes('<!-- cinefin-gemini-triage -->'));
+    input.comments = userComments.slice(-10).map(c => ({
+      author: c.user?.login,
+      body: (c.body || '').slice(0, 3000)
+    }));
+
+    const lastComment = userComments.slice(-1)[0];
+    const commentHash = lastComment ? `\ncomment:${lastComment.id}:${lastComment.body}` : '';
+    revision = require('node:crypto').createHash('sha256').update(issue.title + '\n' + (issue.body || '') + commentHash).digest('hex');
     const {data: recent} = await github.rest.issues.listForRepo({...repo, state: 'all', per_page: 50});
     input.recentIssues = recent.filter(i => !i.pull_request && i.number !== number)
       .map(i => ({number: i.number, title: i.title, body: (i.body || '').slice(0, 1000)}));
@@ -162,7 +198,13 @@ async function publish({github, context, core}) {
     if (report.findings.some(f => !paths.has(f.path))) throw Error('Finding is outside the PR diff');
   } else {
     ({data: current} = await github.rest.issues.get({...repo, issue_number: number}));
-    const hash = require('node:crypto').createHash('sha256').update(current.title + '\n' + (current.body || '')).digest('hex');
+    const comments = github.paginate
+      ? await github.paginate(github.rest.issues.listComments, {...repo, issue_number: number, per_page: 100})
+      : [];
+    const userComments = comments.filter(c => !c.body?.includes('<!-- cinefin-gemini-triage -->'));
+    const lastComment = userComments.slice(-1)[0];
+    const commentHash = lastComment ? `\ncomment:${lastComment.id}:${lastComment.body}` : '';
+    const hash = require('node:crypto').createHash('sha256').update(current.title + '\n' + (current.body || '') + commentHash).digest('hex');
     if (current.state !== 'open' || hash !== revision) {core.notice('Issue changed; stale triage discarded.'); return;}
     const input = JSON.parse(fs.readFileSync('gemini-result/input.json', 'utf8'));
     const candidates = new Set(input.recentIssues.map(i => i.number));
@@ -208,15 +250,33 @@ async function publish({github, context, core}) {
     await github.rest.pulls.createReview({...repo, pull_number: number, commit_id: revision, event: 'COMMENT', body});
   } else {
     const marker = '<!-- cinefin-gemini-triage -->';
-    const questionsSection = report.questions.length > 0
-      ? `### ❓ Clarification Questions\n\n${report.questions.map(q => '- ' + safe(q)).join('\n')}\n\n`
-      : '✅ *Reproduction details appear complete for initial triage.*\n\n';
 
-    const duplicatesSection = report.possibleDuplicates.length > 0
+    let detailsSection = '';
+    if (report.details && (report.details.versions || report.details.environment || (report.details.keyFacts && report.details.keyFacts.length))) {
+      const facts = (report.details.keyFacts || []).map(f => `- ${safe(f)}`).join('\n');
+      detailsSection = `### 📋 Extracted Context & Details\n` +
+        (report.details.versions ? `- **Versions:** ${safe(report.details.versions)}\n` : '') +
+        (report.details.environment ? `- **Environment:** ${safe(report.details.environment)}\n` : '') +
+        (facts ? `${facts}\n` : '') +
+        `\n`;
+    }
+
+    let causesSection = '';
+    if (report.potentialCauses && report.potentialCauses.length > 0) {
+      causesSection = `### 💡 Potential Causes & Hypotheses\n\n` +
+        report.potentialCauses.map(c => `- ${safe(c)}`).join('\n') +
+        `\n\n`;
+    }
+
+    const questionsSection = (report.questions && report.questions.length > 0)
+      ? `### ❓ Clarification Questions\n\n${report.questions.map(q => '- ' + safe(q)).join('\n')}\n\n`
+      : '✅ *All necessary reproduction details appear to be provided.*\n\n';
+
+    const duplicatesSection = (report.possibleDuplicates && report.possibleDuplicates.length > 0)
       ? `### 🔗 Possible Related Issues\n\n${report.possibleDuplicates.map(n => `- #${n}`).join('\n')}\n\n`
       : '';
 
-    const body = `${marker}\n## 🤖 Gemini Issue Triage\n\n> ${safe(report.summary)}\n\n${questionsSection}${duplicatesSection}*Automated triage by Gemini CLI. Maintainers can re-run with \`@gemini-cli /triage\`.* • [Workflow run](${run})`;
+    const body = `${marker}\n## 🤖 Gemini Issue Triage\n\n> ${safe(report.summary)}\n\n${detailsSection}${causesSection}${questionsSection}${duplicatesSection}*Automated triage by Gemini CLI. Reply with \`@gemini-cli\` to provide updates or logs.* • [Workflow run](${run})`;
     const comments = await github.paginate(github.rest.issues.listComments, {...repo, issue_number: number, per_page: 100});
     const existing = comments.find(c => c.user?.login === 'github-actions[bot]' && c.body?.includes(marker));
     if (existing) await github.rest.issues.updateComment({...repo, comment_id: existing.id, body});

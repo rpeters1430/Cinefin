@@ -22,11 +22,15 @@ automatically cached in GitHub Actions to minimize latency and avoid network fla
 | --- | --- |
 | Issue opened/reopened | Suggested type/area labels and one updated triage comment |
 | PR opened, reopened, updated, or marked ready | Code/security review with direct file/line links and area labels |
-| `@gemini-cli /triage` on an issue | Rerun triage (verified write/maintain/admin permission required; whitespace-tolerant) |
-| `@gemini-cli /review` on a PR | Rerun review (same permission requirement; whitespace-tolerant) |
+| Reply with `@gemini-cli` on an issue | Context-aware triage rerun: parses comments, extracts verified details (versions, logs), and suggests potential architectural causes |
+| `@gemini-cli /triage` on an issue | Rerun triage (allowed for the issue author or collaborators) |
+| `@gemini-cli /review` on a PR | Rerun review (verified write/maintain/admin permission required) |
 | Manual workflow dispatch | Review or triage an existing number |
 
-Commands can be commented with or without trailing newlines/whitespace. Draft PRs and bot-authored issues are skipped.
+Commands and replies can be commented with or without trailing newlines/whitespace.
+When an issue author or collaborator replies to `@gemini-cli` with answers (e.g. server logs, device models, version numbers),
+Gemini reads the comment thread, extracts verified context, proposes potential architectural causes, and updates the existing triage comment.
+Draft PRs and bot-authored issues are skipped.
 PRs from bots and forks are reviewed using GitHub's patch data. Source files (`.kt`, `.kts`, `.xml`, `.java`)
 are prioritized over lockfiles and binary assets so that diff budgets are spent on code changes.
 Existing labels are preserved; missing labels from the finite allowlist are created as needed.
