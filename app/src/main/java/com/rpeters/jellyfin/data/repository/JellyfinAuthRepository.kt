@@ -10,6 +10,7 @@ import com.rpeters.jellyfin.data.model.QuickConnectResult
 import com.rpeters.jellyfin.data.model.QuickConnectState
 import com.rpeters.jellyfin.data.network.TokenProvider
 import com.rpeters.jellyfin.data.repository.common.ApiResult
+import com.rpeters.jellyfin.data.repository.common.ErrorType
 import com.rpeters.jellyfin.data.utils.RepositoryUtils
 import com.rpeters.jellyfin.utils.SecureLogger
 import com.rpeters.jellyfin.utils.normalizeServerUrl
@@ -94,7 +95,36 @@ class JellyfinAuthRepository @Inject constructor(
 
     override suspend fun testServerConnection(serverUrl: String): ApiResult<PublicSystemInfo> {
         SecureLogger.d(TAG, "testServerConnection: Testing connection for $serverUrl using optimizer")
-        return connectionOptimizerProvider.get().testServerConnection(serverUrl)
+        val result = connectionOptimizerProvider.get().testServerConnection(serverUrl)
+        if (result is ApiResult.Success) {
+            val serverVersion = result.data.version
+            if (!isServerVersionSupported(serverVersion)) {
+                SecureLogger.w(
+                    TAG,
+                    "testServerConnection: Server version $serverVersion is below the minimum supported " +
+                        "version (${Constants.ServerCompatibility.MIN_SUPPORTED_SERVER_MAJOR_VERSION}.0)",
+                )
+                return ApiResult.Error(
+                    message = "This app requires Jellyfin Server " +
+                        "${Constants.ServerCompatibility.MIN_SUPPORTED_SERVER_MAJOR_VERSION}.0 or later. " +
+                        "Your server is running version ${serverVersion ?: "unknown"}. " +
+                        "Please update your Jellyfin server, or install an older version of this app.",
+                    errorType = ErrorType.UNSUPPORTED_SERVER_VERSION,
+                )
+            }
+        }
+        return result
+    }
+
+    /**
+     * Returns false only when the server reports a version we can confidently parse as older
+     * than [Constants.ServerCompatibility.MIN_SUPPORTED_SERVER_MAJOR_VERSION]. An unparseable or
+     * missing version string is treated as supported so we never block a connection based on a
+     * server that merely reports its version in an unexpected format.
+     */
+    private fun isServerVersionSupported(version: String?): Boolean {
+        val majorVersion = version?.substringBefore('.')?.toIntOrNull() ?: return true
+        return majorVersion >= Constants.ServerCompatibility.MIN_SUPPORTED_SERVER_MAJOR_VERSION
     }
 
     override suspend fun authenticateUser(

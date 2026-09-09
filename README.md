@@ -121,7 +121,7 @@ A modern, beautiful Android client for Jellyfin media servers built with Materia
 
 | Component | Version |
 |-----------|---------|
-| **Jellyfin SDK** | 1.8.12 |
+| **Jellyfin SDK** | 1.9.0 |
 | **HTTP Client** | Retrofit 3.0.0 + OkHttp 5.4.0 |
 | **Serialization** | Kotlinx Serialization 1.11.0 |
 | **Image Loading** | Coil 3.5.0 |
@@ -141,7 +141,7 @@ A modern, beautiful Android client for Jellyfin media servers built with Materia
 ## 📱 Requirements
 
 - **Android 8.0** (API level 26) or higher
-- **Active Jellyfin server** (version 10.8.0 or later recommended)
+- **Active Jellyfin server** (version 12.0.0 or later — required by Jellyfin SDK 1.9.0)
 - **Internet connection** for streaming
 - **Java 21** with core library desugaring enabled
 

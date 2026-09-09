@@ -21,6 +21,10 @@ sealed class ApiResult<out T> {
  * DNS_RESOLUTION: Specific to hostname resolution failures (DNS errors like EAI_NODATA, EAI_NONAME).
  * This allows the UI to provide specific guidance to users, such as suggesting they use an IP address
  * directly or check their DNS configuration. See KNOWN_ISSUES.md for troubleshooting guidance.
+ *
+ * UNSUPPORTED_SERVER_VERSION: The reachable server is running a Jellyfin version older than what the
+ * bundled Jellyfin SDK supports (currently Jellyfin Server 12.0+). Distinguishing this from a generic
+ * connection failure lets the UI tell the user to upgrade their server instead of retrying.
  */
 enum class ErrorType {
     NETWORK,
@@ -35,5 +39,6 @@ enum class ErrorType {
     TIMEOUT,
     VALIDATION,
     PINNING,
+    UNSUPPORTED_SERVER_VERSION,
     UNKNOWN,
 }

@@ -99,4 +99,11 @@ object Constants {
     object ErrorMessages {
         const val DNS_RESOLUTION_ERROR = "Could not resolve server hostname. Please check the server address for typos, or try using an IP address (e.g., 192.168.1.100)"
     }
+
+    // Server Compatibility
+    object ServerCompatibility {
+        // Jellyfin SDK Kotlin 1.9.0 dropped support for servers older than Jellyfin 12.0.
+        // See https://github.com/jellyfin/jellyfin-sdk-kotlin/releases/tag/v1.9.0
+        const val MIN_SUPPORTED_SERVER_MAJOR_VERSION = 12
+    }
 }
