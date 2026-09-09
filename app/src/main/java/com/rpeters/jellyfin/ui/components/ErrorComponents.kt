@@ -288,6 +288,7 @@ private fun getErrorIcon(errorType: ErrorType) = when (errorType) {
     ErrorType.TIMEOUT -> Icons.Default.Warning
     ErrorType.VALIDATION -> Icons.Default.Warning
     ErrorType.PINNING -> Icons.Default.Error
+    ErrorType.UNSUPPORTED_SERVER_VERSION -> Icons.Default.Warning
     ErrorType.UNKNOWN -> Icons.Default.Error
 }
 
@@ -304,6 +305,7 @@ private fun getErrorTitle(errorType: ErrorType) = when (errorType) {
     ErrorType.TIMEOUT -> "Request Timeout"
     ErrorType.VALIDATION -> "Invalid Input"
     ErrorType.PINNING -> "Security Certificate Error"
+    ErrorType.UNSUPPORTED_SERVER_VERSION -> "Unsupported Server Version"
     ErrorType.UNKNOWN -> "Unexpected Error"
 }
 

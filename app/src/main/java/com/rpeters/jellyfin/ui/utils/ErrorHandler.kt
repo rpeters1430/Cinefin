@@ -297,6 +297,7 @@ object ErrorHandler {
             ErrorType.TIMEOUT -> true // Retry timeout errors
             ErrorType.VALIDATION -> false // Don't retry validation errors
             ErrorType.PINNING -> false // Don't retry certificate pinning errors - requires user action
+            ErrorType.UNSUPPORTED_SERVER_VERSION -> false // Requires a server upgrade, retrying won't help
         }
     }
 

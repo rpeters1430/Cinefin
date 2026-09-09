@@ -21,6 +21,7 @@ import org.jellyfin.sdk.api.client.exception.InvalidStatusException
 import org.jellyfin.sdk.api.client.extensions.authenticationApi
 import org.jellyfin.sdk.api.operations.AuthenticationApi
 import org.jellyfin.sdk.model.api.AuthenticationResult
+import org.jellyfin.sdk.model.api.PublicSystemInfo
 import org.jellyfin.sdk.model.api.UserDto
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -200,6 +201,51 @@ class JellyfinAuthRepositoryTest {
 
         assertTrue(result is ApiResult.Error)
         assertEquals(ErrorType.UNAUTHORIZED, (result as ApiResult.Error).errorType)
+    }
+
+    @Test
+    fun `testServerConnection rejects servers older than the minimum supported version`() = runTest {
+        val serverInfo = mockk<PublicSystemInfo>(relaxed = true)
+        every { serverInfo.version } returns "10.10.7"
+        coEvery { connectionOptimizer.testServerConnection(SERVER_URL) } returns ApiResult.Success(serverInfo)
+
+        val result = repository.testServerConnection(SERVER_URL)
+
+        assertTrue(result is ApiResult.Error)
+        assertEquals(ErrorType.UNSUPPORTED_SERVER_VERSION, (result as ApiResult.Error).errorType)
+    }
+
+    @Test
+    fun `testServerConnection accepts servers on the minimum supported version or newer`() = runTest {
+        val serverInfo = mockk<PublicSystemInfo>(relaxed = true)
+        every { serverInfo.version } returns "12.0.0"
+        coEvery { connectionOptimizer.testServerConnection(SERVER_URL) } returns ApiResult.Success(serverInfo)
+
+        val result = repository.testServerConnection(SERVER_URL)
+
+        assertTrue(result is ApiResult.Success)
+    }
+
+    @Test
+    fun `testServerConnection accepts a null server version`() = runTest {
+        val serverInfo = mockk<PublicSystemInfo>(relaxed = true)
+        every { serverInfo.version } returns null
+        coEvery { connectionOptimizer.testServerConnection(SERVER_URL) } returns ApiResult.Success(serverInfo)
+
+        val result = repository.testServerConnection(SERVER_URL)
+
+        assertTrue(result is ApiResult.Success)
+    }
+
+    @Test
+    fun `testServerConnection accepts an unparseable server version`() = runTest {
+        val serverInfo = mockk<PublicSystemInfo>(relaxed = true)
+        every { serverInfo.version } returns "unknown"
+        coEvery { connectionOptimizer.testServerConnection(SERVER_URL) } returns ApiResult.Success(serverInfo)
+
+        val result = repository.testServerConnection(SERVER_URL)
+
+        assertTrue(result is ApiResult.Success)
     }
 
     private fun buildQuickConnectResult(authenticated: Boolean): SdkQuickConnectResult {

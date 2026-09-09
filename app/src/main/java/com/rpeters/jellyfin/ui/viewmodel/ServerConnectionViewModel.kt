@@ -478,6 +478,7 @@ class ServerConnectionViewModel @Inject constructor(
                                 "Could not find an IP address for the server hostname. " +
                                     "Please check the server address for typos, or try using " +
                                     "an IP address directly (e.g., 192.168.1.100:8096)."
+                            ErrorType.UNSUPPORTED_SERVER_VERSION -> serverResult.message
                             else -> "Cannot connect to server: ${serverResult.message}"
                         }
                         _connectionState.value = _connectionState.value.copy(
@@ -1052,6 +1053,7 @@ class ServerConnectionViewModel @Inject constructor(
                             "Could not find an IP address for the server hostname. " +
                                 "Please check the server address for typos, or try using " +
                                 "an IP address directly (e.g., 192.168.1.100:8096)."
+                        ErrorType.UNSUPPORTED_SERVER_VERSION -> serverResult.message
                         else -> "Cannot connect to server: ${serverResult.message}"
                     }
                     _connectionState.value = _connectionState.value.copy(
