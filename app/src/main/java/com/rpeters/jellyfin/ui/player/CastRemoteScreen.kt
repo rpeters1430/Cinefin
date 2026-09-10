@@ -385,26 +385,35 @@ fun CastNowPlayingOverlay(
                         modifier = Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
-                        var seekPosition by remember { mutableStateOf(playerState.castPosition.toFloat()) }
+                        var seekPosition by remember { mutableFloatStateOf(playerState.castPosition.toFloat()) }
                         var isSeeking by remember { mutableStateOf(false) }
+                        val seekRange = 0f..playerState.castDuration.toFloat().coerceAtLeast(1f)
+                        val seekSliderState = remember(seekRange) {
+                            SliderState(
+                                value = seekPosition.coerceIn(seekRange),
+                                trackRange = seekRange,
+                            )
+                        }
 
                         LaunchedEffect(playerState.castPosition) {
                             if (!isSeeking) {
-                                seekPosition = playerState.castPosition.toFloat()
+                                val current = playerState.castPosition.toFloat()
+                                seekPosition = current
+                                seekSliderState.value = current.coerceIn(seekSliderState.trackRange)
                             }
                         }
 
                         Slider(
-                            value = seekPosition,
+                            state = seekSliderState,
                             onValueChange = { newValue ->
                                 isSeeking = true
                                 seekPosition = newValue
+                                seekSliderState.value = newValue
                             },
                             onValueChangeFinished = {
                                 onSeekCast(seekPosition.toLong())
                                 isSeeking = false
                             },
-                            valueRange = 0f..playerState.castDuration.toFloat(),
                             modifier = Modifier.fillMaxWidth(),
                             colors = SliderDefaults.colors(
                                 thumbColor = MaterialTheme.colorScheme.primary,
@@ -443,10 +452,21 @@ fun CastNowPlayingOverlay(
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp),
                     )
+                    val volumeSliderState = remember {
+                        SliderState(
+                            value = playerState.castVolume.coerceIn(0f, 1f),
+                            trackRange = 0f..1f,
+                        )
+                    }
+                    LaunchedEffect(playerState.castVolume) {
+                        volumeSliderState.value = playerState.castVolume.coerceIn(0f, 1f)
+                    }
                     Slider(
-                        value = playerState.castVolume,
-                        onValueChange = onVolumeChange,
-                        valueRange = 0f..1f,
+                        state = volumeSliderState,
+                        onValueChange = { newVolume ->
+                            volumeSliderState.value = newVolume
+                            onVolumeChange(newVolume)
+                        },
                         modifier = Modifier.weight(1f),
                         colors = SliderDefaults.colors(
                             thumbColor = MaterialTheme.colorScheme.secondary,

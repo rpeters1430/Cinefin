@@ -53,6 +53,7 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.SliderState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -677,6 +678,17 @@ private fun ExpressiveWavySlider(
     progressColor: Color = MaterialTheme.colorScheme.primary,
     modifier: Modifier = Modifier,
 ) {
+    val sliderState = remember {
+        SliderState(
+            value = progress.coerceIn(0f, 1f),
+            trackRange = 0f..1f,
+        )
+    }
+
+    LaunchedEffect(progress) {
+        sliderState.value = progress.coerceIn(sliderState.trackRange)
+    }
+
     Box(
         modifier = modifier
             .height(44.dp)
@@ -717,8 +729,11 @@ private fun ExpressiveWavySlider(
 
         // Standard slider for interaction (invisible track)
         Slider(
-            value = progress,
-            onValueChange = onValueChange,
+            state = sliderState,
+            onValueChange = {
+                sliderState.value = it
+                onValueChange(it)
+            },
             onValueChangeFinished = onValueChangeFinished,
             modifier = Modifier.fillMaxWidth(),
             colors = SliderDefaults.colors(

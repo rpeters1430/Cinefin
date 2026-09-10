@@ -34,6 +34,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.SliderState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -354,10 +355,19 @@ private fun ProgressSection(
     modifier: Modifier = Modifier,
 ) {
     var pendingSeekPosition by remember { mutableStateOf(currentPosition.toFloat()) }
+    val seekRange = 0f..duration.toFloat().coerceAtLeast(1f)
+    val sliderState = remember(seekRange) {
+        SliderState(
+            value = if (duration > 0) pendingSeekPosition else 0f,
+            trackRange = seekRange,
+        )
+    }
 
-    LaunchedEffect(currentPosition, isSeeking) {
+    LaunchedEffect(currentPosition, isSeeking, duration) {
         if (!isSeeking) {
-            pendingSeekPosition = currentPosition.toFloat()
+            val target = if (duration > 0) currentPosition.toFloat() else 0f
+            pendingSeekPosition = target
+            sliderState.value = target.coerceIn(sliderState.trackRange)
         }
     }
 
@@ -386,13 +396,13 @@ private fun ProgressSection(
             )
 
             Slider(
-                value = if (duration > 0) pendingSeekPosition else 0f,
+                state = sliderState,
                 onValueChange = {
                     onSeekStart()
                     pendingSeekPosition = it
+                    sliderState.value = it
                     onSeekChange(it.toLong())
                 },
-                valueRange = 0f..duration.toFloat().coerceAtLeast(1f),
                 onValueChangeFinished = { onSeekEnd(pendingSeekPosition.toLong()) },
                 colors = SliderDefaults.colors(
                     thumbColor = MaterialTheme.colorScheme.primary,
