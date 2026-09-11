@@ -115,7 +115,6 @@
       "groupName": "Safe non-major dependency updates",
       "groupSlug": "safe-non-major-dependencies",
       "groupSingleUpdates": true,
-      "minimumReleaseAge": "3 days",
       "minimumReleaseAgeBehaviour": "timestamp-optional",
       "automerge": true,
       "automergeType": "pr"
