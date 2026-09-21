@@ -43,7 +43,6 @@ import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -61,6 +60,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -73,16 +73,14 @@ import com.rpeters.jellyfin.ui.components.AiSummaryCard
 import com.rpeters.jellyfin.ui.components.PlaybackBreakdownDetails
 import com.rpeters.jellyfin.ui.components.PlaybackStatusBadge
 import com.rpeters.jellyfin.ui.components.QualitySelectionDialog
-import com.rpeters.jellyfin.ui.components.immersive.AudioInfoCard
 import com.rpeters.jellyfin.ui.components.immersive.HdrType
 import com.rpeters.jellyfin.ui.components.immersive.ResolutionQuality
 import com.rpeters.jellyfin.ui.components.immersive.StaticHeroSection
-import com.rpeters.jellyfin.ui.components.immersive.VideoInfoCard
+import com.rpeters.jellyfin.ui.components.immersive.rememberScrollCollapseFraction
 import com.rpeters.jellyfin.ui.downloads.DownloadsViewModel
 import com.rpeters.jellyfin.ui.screens.details.components.ActionButton
 import com.rpeters.jellyfin.ui.screens.details.components.ChapterListSection
 import com.rpeters.jellyfin.ui.screens.details.components.DetailCastAndCrewSection
-import com.rpeters.jellyfin.ui.screens.details.components.DetailSubtitleRow
 import com.rpeters.jellyfin.ui.screens.details.components.MovieHeroContent
 import com.rpeters.jellyfin.ui.screens.details.components.WhyYoullLoveThisCard
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
@@ -182,8 +180,8 @@ fun ImmersiveMovieDetailScreen(
     )
 }
 
-/** Taller than the shared default so the hero image has room to breathe and feels less crowded. */
-private val MovieDetailHeroHeight = ImmersiveDimens.HeroHeightPhone + 100.dp
+/** Overlap of the poster over the bottom edge of the collapsing backdrop (density pass). */
+private val DetailPosterOverlap = 58.dp
 
 @OptIn(UnstableApi::class)
 @OptInAppExperimentalApis
@@ -238,8 +236,22 @@ private fun ImmersiveMovieDetailContent(
         var showDeleteDialog by remember { mutableStateOf(false) }
         var showDownloadQualityDialog by remember { mutableStateOf(false) }
         var showMoreOptions by remember { mutableStateOf(false) }
+        var synopsisExpanded by remember(movie.id) { mutableStateOf(false) }
 
         val listState = remember(movie.id) { LazyListState() }
+
+        // Density pass: collapsing backdrop (200dp -> 56dp) tied to scroll position.
+        val backdropCollapseRangePx = with(LocalDensity.current) {
+            (ImmersiveDimens.DetailBackdropHeight - ImmersiveDimens.DetailBackdropCollapsed).toPx()
+        }
+        val backdropCollapseFraction by rememberScrollCollapseFraction(
+            listState = listState,
+            collapseRangePx = backdropCollapseRangePx,
+        )
+        val backdropHeight = ImmersiveDimens.DetailBackdropHeight -
+            (ImmersiveDimens.DetailBackdropHeight - ImmersiveDimens.DetailBackdropCollapsed) * backdropCollapseFraction
+        // The poster/title header sits just below the backdrop, overlapping its bottom edge.
+        val heroContentTopOffset = (backdropHeight - DetailPosterOverlap).coerceAtLeast(0.dp)
 
         // Permission launcher for downloads
         val permissionLauncher = rememberLauncherForActivityResult(
@@ -255,10 +267,10 @@ private fun ImmersiveMovieDetailContent(
             onRefresh = onRefresh,
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
-                // 1. Background Backdrop (Hero)
+                // 1. Background Backdrop (Hero) - collapses from 200dp to 56dp as the user scrolls.
                 StaticHeroSection(
                     imageUrl = getBackdropUrl(movie),
-                    height = MovieDetailHeroHeight,
+                    height = backdropHeight,
                     itemId = movie.id.toString(),
                     animatedVisibilityScope = animatedVisibilityScope,
                 )
@@ -269,11 +281,12 @@ private fun ImmersiveMovieDetailContent(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(bottom = 32.dp),
                 ) {
-                    // Header (Hero Overlay + Metadata)
+                    // Header (poster overlapping backdrop + left-aligned title block)
                     item {
                         MovieHeroContent(
                             movie = movie,
-                            getLogoUrl = getLogoUrl,
+                            posterUrl = getImageUrl(movie),
+                            modifier = Modifier.padding(top = heroContentTopOffset),
                         )
                     }
 
@@ -451,13 +464,26 @@ private fun ImmersiveMovieDetailContent(
                                     fontWeight = FontWeight.Bold,
                                     textAlign = TextAlign.Center,
                                 )
+                                var synopsisOverflowing by remember(movie.id) { mutableStateOf(false) }
                                 Text(
                                     text = movie.overview ?: "No synopsis available.",
                                     style = MaterialTheme.typography.bodyLarge,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     lineHeight = MaterialTheme.typography.bodyLarge.lineHeight.times(1.4f),
                                     textAlign = TextAlign.Center,
+                                    maxLines = if (synopsisExpanded) Int.MAX_VALUE else 4,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                    onTextLayout = { result ->
+                                        if (!synopsisExpanded) {
+                                            synopsisOverflowing = result.hasVisualOverflow
+                                        }
+                                    },
                                 )
+                                if (synopsisOverflowing || synopsisExpanded) {
+                                    TextButton(onClick = { synopsisExpanded = !synopsisExpanded }) {
+                                        Text(if (synopsisExpanded) "Less" else "More")
+                                    }
+                                }
 
                                 playbackAnalysis?.let { analysis ->
                                     Column(
@@ -514,7 +540,7 @@ private fun ImmersiveMovieDetailContent(
                                 .fillMaxWidth()
                                 .background(MaterialTheme.colorScheme.background),
                         ) {
-                            MovieTechSpecsSection(movie)
+                            MovieTechSpecsSection(movie, playbackAnalysis)
                         }
                     }
 
@@ -871,13 +897,27 @@ private fun MovieActionRow(
     }
 }
 
+/**
+ * Density-pass tech-spec row: a single wrapping row of compact chips (replacing the previous
+ * stacked VideoInfoCard/AudioInfoCard cards). The first chip reuses [PlaybackStatusBadge], which
+ * already derives its label/color from the existing transcode-decision logic
+ * ([playbackAnalysis]) - that decision is not reimplemented here.
+ */
 @Composable
-private fun MovieTechSpecsSection(movie: BaseItemDto) {
+private fun MovieTechSpecsSection(
+    movie: BaseItemDto,
+    playbackAnalysis: PlaybackCapabilityAnalysis?,
+) {
+    val mediaSource = movie.mediaSources?.firstOrNull()
+    val videoStream = mediaSource?.mediaStreams?.find { it.type == MediaStreamType.VIDEO }
+    val audioStream = mediaSource?.mediaStreams?.find { it.type == MediaStreamType.AUDIO }
+    val subtitles = mediaSource?.mediaStreams?.filter { it.type == MediaStreamType.SUBTITLE } ?: emptyList()
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(
             text = "Technical Specs",
@@ -885,86 +925,82 @@ private fun MovieTechSpecsSection(movie: BaseItemDto) {
             fontWeight = FontWeight.Bold,
         )
 
-        val mediaSource = movie.mediaSources?.firstOrNull()
-        val videoStream = mediaSource?.mediaStreams?.find { it.type == MediaStreamType.VIDEO }
-        val audioStream = mediaSource?.mediaStreams?.find { it.type == MediaStreamType.AUDIO }
-        val subtitles = mediaSource?.mediaStreams?.filter { it.type == MediaStreamType.SUBTITLE } ?: emptyList()
-
-        androidx.compose.material3.ElevatedCard(
-            colors = CardDefaults.elevatedCardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-            ),
-            shape = MaterialTheme.shapes.large,
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                // Video Info Card
-                videoStream?.let { stream ->
-                    val resolution = ResolutionQuality.fromResolution(stream.width, stream.height)
-                    val codecText = when (stream.codec?.lowercase()) {
-                        "hevc", "h265" -> "HEVC"
-                        "h264", "avc" -> "AVC"
-                        "av1" -> "AV1"
-                        "vp9" -> "VP9"
-                        else -> stream.codec?.uppercase().orEmpty()
-                    }
-                    val hdrType = HdrType.detect(
-                        stream.videoRange.toString(),
-                        stream.videoRangeType.toString(),
-                    )
+            playbackAnalysis?.let { analysis ->
+                PlaybackStatusBadge(analysis = analysis)
+            }
 
-                    VideoInfoCard(
-                        resolution = resolution,
-                        codec = codecText,
-                        bitDepth = stream.bitDepth,
-                        frameRate = stream.averageFrameRate?.toDouble(),
-                        isHdr = hdrType != null,
-                        hdrType = hdrType ?: HdrType.HDR,
-                    )
+            videoStream?.let { stream ->
+                val resolution = ResolutionQuality.fromResolution(stream.width, stream.height)
+                val codecText = when (stream.codec?.lowercase()) {
+                    "hevc", "h265" -> "HEVC"
+                    "h264", "avc" -> "AVC"
+                    "av1" -> "AV1"
+                    "vp9" -> "VP9"
+                    else -> stream.codec?.uppercase().orEmpty()
+                }
+                val hdrType = HdrType.detect(
+                    stream.videoRange.toString(),
+                    stream.videoRangeType.toString(),
+                )
+
+                AssistChip(onClick = {}, enabled = false, label = { Text(resolution.name) })
+                if (codecText.isNotBlank()) {
+                    AssistChip(onClick = {}, enabled = false, label = { Text(codecText) })
+                }
+                if (hdrType != null) {
+                    AssistChip(onClick = {}, enabled = false, label = { Text(hdrType.name) })
+                }
+            }
+
+            audioStream?.let { stream ->
+                val channelText = when (stream.channels) {
+                    8 -> "7.1"
+                    6 -> "5.1"
+                    2 -> "Stereo"
+                    1 -> "Mono"
+                    else -> stream.channels?.toString()?.let { "$it.0" }.orEmpty()
                 }
 
-                // Audio Info Card
-                audioStream?.let { stream ->
-                    val channelText = when (stream.channels) {
-                        8 -> "7.1"
-                        6 -> "5.1"
-                        2 -> "Stereo"
-                        1 -> "Mono"
-                        else -> stream.channels?.toString()?.let { "$it.0" }.orEmpty()
-                    }
-
-                    val codecText = when (stream.codec?.lowercase()) {
-                        "truehd" -> "TrueHD"
-                        "eac3" -> "DD+"
-                        "aac" -> "AAC"
-                        "ac3" -> "DD"
-                        "dca", "dts" -> "DTS"
-                        "dtshd" -> "DTS-HD"
-                        "flac" -> "FLAC"
-                        else -> stream.codec?.uppercase().orEmpty()
-                    }
-
-                    val isAtmos = stream.title?.contains("atmos", ignoreCase = true) == true ||
-                        stream.codec?.contains("atmos", ignoreCase = true) == true
-
-                    AudioInfoCard(
-                        channels = channelText,
-                        codec = codecText,
-                        isAtmos = isAtmos,
-                        language = stream.language?.uppercase(),
-                    )
+                val codecText = when (stream.codec?.lowercase()) {
+                    "truehd" -> "TrueHD"
+                    "eac3" -> "DD+"
+                    "aac" -> "AAC"
+                    "ac3" -> "DD"
+                    "dca", "dts" -> "DTS"
+                    "dtshd" -> "DTS-HD"
+                    "flac" -> "FLAC"
+                    else -> stream.codec?.uppercase().orEmpty()
                 }
 
-                // Subtitles Row
-                if (subtitles.isNotEmpty()) {
-                    DetailSubtitleRow(
-                        subtitles = subtitles,
-                        selectedSubtitleIndex = null,
-                        onSubtitleSelect = {},
-                    )
+                val isAtmos = stream.title?.contains("atmos", ignoreCase = true) == true ||
+                    stream.codec?.contains("atmos", ignoreCase = true) == true
+
+                val audioLabel = buildString {
+                    if (channelText.isNotBlank()) append(channelText)
+                    if (codecText.isNotBlank()) {
+                        if (isNotEmpty()) append(" ")
+                        append(codecText)
+                    }
+                    if (isAtmos) {
+                        if (isNotEmpty()) append(" ")
+                        append("Atmos")
+                    }
                 }
+                if (audioLabel.isNotBlank()) {
+                    AssistChip(onClick = {}, enabled = false, label = { Text(audioLabel) })
+                }
+            }
+
+            if (subtitles.isNotEmpty()) {
+                AssistChip(
+                    onClick = {},
+                    enabled = false,
+                    label = { Text("${subtitles.size} subtitle${if (subtitles.size == 1) "" else "s"}") },
+                )
             }
         }
     }
