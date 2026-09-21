@@ -91,4 +91,8 @@ object ImmersiveDimens {
     // Cast Member dimensions
     val CastMemberWidth = 128.dp
     val CastMemberImageSize = 108.dp
+
+    // Density-pass chip rail (e.g. Home library rail, TV season rail)
+    val ChipRailHeight = 36.dp
+    val ChipRailHorizontalPadding = 14.dp
 }
