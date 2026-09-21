@@ -52,6 +52,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.ui.components.expressiveGlow
 import com.rpeters.jellyfin.ui.image.ImageQuality
@@ -388,4 +389,148 @@ enum class ImmersiveCardSize {
     SMALL,
     MEDIUM,
     LARGE,
+}
+
+/**
+ * Density-pass poster card used by the compact rails introduced in the density redesign
+ * (Next Up, recently added, more-like-this, library grid, continue watching).
+ *
+ * Unlike [ImmersiveMediaCard] (which overlays title/subtitle on a bottom gradient), this
+ * variant renders the title/subtitle BELOW the poster image. Badges (rating top-left,
+ * unwatched-count top-right) remain overlaid on the image itself. An optional inset progress
+ * bar can be drawn on the image (used by continue-watching thumbnails).
+ */
+@Composable
+fun ImmersivePosterCard(
+    title: String,
+    imageUrl: String,
+    onCardClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    subtitle: String = "",
+    rating: Float? = null,
+    unwatchedEpisodeCount: Int? = null,
+    watchProgress: Float? = null,
+    posterWidth: androidx.compose.ui.unit.Dp = ImmersiveDimens.PosterCardWidth,
+    posterHeight: androidx.compose.ui.unit.Dp = ImmersiveDimens.PosterCardHeight,
+    posterShape: androidx.compose.foundation.shape.CornerBasedShape = ImmersiveShapes.PosterImage,
+    loadImage: Boolean = true,
+    imageQuality: ImageQuality = ImageQuality.HIGH,
+) {
+    val haptics = com.rpeters.jellyfin.ui.utils.rememberExpressiveHaptics()
+
+    Column(
+        modifier = modifier
+            .width(posterWidth)
+            .clickable(onClickLabel = "Open $title") {
+                haptics.lightClick()
+                onCardClick()
+            },
+    ) {
+        Box(
+            modifier = Modifier
+                .width(posterWidth)
+                .height(posterHeight)
+                .clip(posterShape),
+        ) {
+            OptimizedImage(
+                imageUrl = if (loadImage) imageUrl else "",
+                contentDescription = title,
+                contentScale = ContentScale.Crop,
+                size = ImageSize.THUMBNAIL,
+                quality = imageQuality,
+                modifier = Modifier.fillMaxSize(),
+            )
+
+            // Rating badge – top-left, scaled down for compact posters.
+            if (rating != null && rating in 0f..10f) {
+                Surface(
+                    shape = ImmersiveShapes.PosterRatingBadge,
+                    color = Color.Black.copy(alpha = 0.6f),
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(4.dp),
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = null,
+                            tint = Color(0xFFFFD700),
+                            modifier = Modifier.size(9.dp),
+                        )
+                        Text(
+                            text = String.format(java.util.Locale.ROOT, "%.1f", rating),
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            modifier = Modifier.padding(start = 2.dp),
+                        )
+                    }
+                }
+            }
+
+            // Unwatched-count badge – top-right, 20dp circle.
+            if (unwatchedEpisodeCount != null && unwatchedEpisodeCount > 0) {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(4.dp)
+                        .size(20.dp),
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        val countText = if (unwatchedEpisodeCount > 99) "99+" else unwatchedEpisodeCount.toString()
+                        Text(
+                            text = countText,
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                        )
+                    }
+                }
+            }
+
+            // Inset watch-progress bar (continue-watching thumbnails).
+            if (watchProgress != null && watchProgress in 0f..1f) {
+                androidx.compose.material3.LinearProgressIndicator(
+                    progress = { watchProgress },
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(horizontal = 8.dp)
+                        .padding(bottom = 8.dp)
+                        .fillMaxWidth()
+                        .height(4.dp)
+                        .clip(androidx.compose.foundation.shape.RoundedCornerShape(2.dp)),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = Color.White.copy(alpha = 0.3f),
+                )
+            }
+        }
+
+        Text(
+            text = title,
+            style = MaterialTheme.typography.labelMedium.copy(fontSize = 12.sp, lineHeight = 16.sp),
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier
+                .padding(top = 6.dp)
+                .width(posterWidth),
+        )
+
+        if (subtitle.isNotEmpty()) {
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp, lineHeight = 16.sp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.width(posterWidth),
+            )
+        }
+    }
 }

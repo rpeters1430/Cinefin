@@ -61,4 +61,9 @@ val JellyfinShapes = Shapes(
 object ImmersiveShapes {
     val Card: CornerBasedShape = RoundedCornerShape(ImmersiveDimens.CardCornerRadius)
     val RatingBadge: CornerBasedShape = RoundedCornerShape(ImmersiveDimens.RatingBadgeCornerRadius)
+
+    // Density-pass poster card (rails: Next Up, recently added, more like this, library grid)
+    val PosterImage: CornerBasedShape = RoundedCornerShape(8.dp)
+    val PosterRatingBadge: CornerBasedShape = RoundedCornerShape(8.dp)
+    val ContinueThumb: CornerBasedShape = RoundedCornerShape(12.dp)
 }
