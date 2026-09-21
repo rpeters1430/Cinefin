@@ -3,6 +3,7 @@ package com.rpeters.jellyfin.ui.player
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -37,8 +38,12 @@ fun GestureFeedbackOverlay(
     ) {
         Card(
             colors = CardDefaults.cardColors(
-                containerColor = overlayScrim,
+                // Density pass: an opaque (92%) surfaceVariant background with a subtle white
+                // border reads reliably against any video frame; the previous overlayScrim
+                // (translucent black/white) could wash out or disappear depending on content.
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.92f),
             ),
+            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.14f)),
             shape = MaterialTheme.shapes.extraLarge,
             modifier = Modifier.size(120.dp),
         ) {

@@ -36,6 +36,7 @@ import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Hd
 import androidx.compose.material.icons.filled.HighQuality
 import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PictureInPictureAlt
@@ -503,96 +504,24 @@ private fun ExpressiveBottomControls(
                         )
                     }
 
-                    // Action buttons (right side)
+                    // Action buttons (right side) - density pass: reduced from ~7 buttons to 4
+                    // (subtitles, audio track, quality, overflow). Aspect ratio, playback speed,
+                    // PiP and cast moved into the overflow bottom sheet below.
+                    var showOverflowSheet by remember { mutableStateOf(false) }
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        // Aspect Ratio button
-                        var showAspectRatioMenu by remember { mutableStateOf(false) }
-                        Box {
-                            ExpressiveIconButton(
-                                icon = Icons.Default.AspectRatio,
-                                contentDescription = "Aspect Ratio",
-                                onClick = { showAspectRatioMenu = true },
-                                contentColor = overlayContent,
-                                containerColor = overlayScrim.copy(alpha = 0.35f),
-                            )
-
-                            DropdownMenu(
-                                expanded = showAspectRatioMenu,
-                                onDismissRequest = { showAspectRatioMenu = false },
-                                containerColor = overlayScrim.copy(alpha = 0.96f),
-                            ) {
-                                Text(
-                                    text = "Aspect Ratio",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = overlayContent,
-                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                                )
-                                playerState.availableAspectRatios.forEach { mode ->
-                                    ExpressiveSelectableMenuItem(
-                                        text = mode.label,
-                                        selected = mode == playerState.selectedAspectRatio,
-                                        onSelectedChange = {
-                                            onAspectRatioChange(mode)
-                                            showAspectRatioMenu = false
-                                        },
-                                        textColor = overlayContent,
-                                        selectedColor = MaterialTheme.colorScheme.primary,
-                                    )
-                                }
-                            }
-                        }
-
-                        // Playback Speed button
-                        var showSpeedMenu by remember { mutableStateOf(false) }
-                        Box {
-                            ExpressiveIconButton(
-                                icon = Icons.Default.Speed,
-                                contentDescription = "Playback Speed",
-                                onClick = { showSpeedMenu = true },
-                                contentColor = overlayContent,
-                                containerColor = overlayScrim.copy(alpha = 0.35f),
-                            )
-
-                            DropdownMenu(
-                                expanded = showSpeedMenu,
-                                onDismissRequest = { showSpeedMenu = false },
-                                containerColor = overlayScrim.copy(alpha = 0.96f),
-                            ) {
-                                Text(
-                                    text = "Playback Speed",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = overlayContent,
-                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                                )
-                                listOf(0.25f, 0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 1.75f, 2.0f).forEach { speed ->
-                                    ExpressiveSelectableMenuItem(
-                                        text = "${speed}x",
-                                        selected = speed == playerState.playbackSpeed,
-                                        onSelectedChange = {
-                                            onPlaybackSpeedChange(speed)
-                                            showSpeedMenu = false
-                                        },
-                                        textColor = overlayContent,
-                                        selectedColor = MaterialTheme.colorScheme.primary,
-                                    )
-                                }
-                            }
-                        }
-
-                        // Audio selection button
+                        // Subtitles (CC) button
                         ExpressiveIconButton(
-                            icon = if (playerState.isMuted) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
-                            contentDescription = if (playerState.isMuted) "Unmute" else "Mute",
-                            onClick = onToggleMute,
-                            isActive = playerState.isMuted,
+                            icon = Icons.Default.ClosedCaption,
+                            contentDescription = "Subtitles",
+                            onClick = onSubtitlesClick,
                             contentColor = overlayContent,
                             containerColor = overlayScrim.copy(alpha = 0.35f),
                         )
 
-                        // Audio selection button
+                        // Audio track button
                         ExpressiveIconButton(
                             icon = Icons.Default.MusicNote,
                             contentDescription = "Audio Selection",
@@ -610,28 +539,174 @@ private fun ExpressiveBottomControls(
                             containerColor = overlayScrim.copy(alpha = 0.35f),
                         )
 
-                        // Subtitles button
+                        // Overflow (more options) button
                         ExpressiveIconButton(
-                            icon = Icons.Default.ClosedCaption,
-                            contentDescription = "Subtitles",
-                            onClick = onSubtitlesClick,
+                            icon = Icons.Default.MoreVert,
+                            contentDescription = "More Options",
+                            onClick = { showOverflowSheet = true },
                             contentColor = overlayContent,
                             containerColor = overlayScrim.copy(alpha = 0.35f),
                         )
+                    }
 
-                        // PiP button
-                        if (supportsPip) {
-                            ExpressiveIconButton(
-                                icon = Icons.Default.PictureInPictureAlt,
-                                contentDescription = "Picture in Picture",
-                                onClick = onPictureInPictureClick,
-                                contentColor = overlayContent,
-                                containerColor = overlayScrim.copy(alpha = 0.35f),
-                            )
-                        }
+                    if (showOverflowSheet) {
+                        PlayerOverflowSheet(
+                            playerState = playerState,
+                            onDismiss = { showOverflowSheet = false },
+                            onAspectRatioChange = onAspectRatioChange,
+                            onPlaybackSpeedChange = onPlaybackSpeedChange,
+                            onToggleMute = onToggleMute,
+                            onCastClick = onCastClick,
+                            onPictureInPictureClick = onPictureInPictureClick,
+                            supportsPip = supportsPip,
+                        )
                     }
                 }
             }
+        }
+    }
+}
+
+/**
+ * Bottom sheet for the overflow actions pulled out of the trailing icon row (density pass,
+ * item 5 of the redesign spec): playback speed, aspect ratio, PiP and cast. Mute is also kept
+ * here since the redesign spec's trailing-row list didn't have room for it and it has no other
+ * home in the reduced control set (judgment call - see commit message).
+ */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun PlayerOverflowSheet(
+    playerState: VideoPlayerState,
+    onDismiss: () -> Unit,
+    onAspectRatioChange: (AspectRatioMode) -> Unit,
+    onPlaybackSpeedChange: (Float) -> Unit,
+    onToggleMute: () -> Unit,
+    onCastClick: () -> Unit,
+    onPictureInPictureClick: () -> Unit,
+    supportsPip: Boolean,
+) {
+    val sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var showAspectRatioMenu by remember { mutableStateOf(false) }
+    var showSpeedMenu by remember { mutableStateOf(false) }
+
+    androidx.compose.material3.ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 8.dp),
+        ) {
+            Box {
+                PlayerOverflowRow(
+                    icon = Icons.Default.Speed,
+                    label = "Playback Speed",
+                    trailingText = "${playerState.playbackSpeed}x",
+                    onClick = { showSpeedMenu = true },
+                )
+                DropdownMenu(
+                    expanded = showSpeedMenu,
+                    onDismissRequest = { showSpeedMenu = false },
+                ) {
+                    listOf(0.25f, 0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 1.75f, 2.0f).forEach { speed ->
+                        ExpressiveSelectableMenuItem(
+                            text = "${speed}x",
+                            selected = speed == playerState.playbackSpeed,
+                            onSelectedChange = {
+                                onPlaybackSpeedChange(speed)
+                                showSpeedMenu = false
+                            },
+                            textColor = MaterialTheme.colorScheme.onSurface,
+                            selectedColor = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
+            }
+
+            Box {
+                PlayerOverflowRow(
+                    icon = Icons.Default.AspectRatio,
+                    label = "Aspect Ratio",
+                    trailingText = playerState.selectedAspectRatio.label,
+                    onClick = { showAspectRatioMenu = true },
+                )
+                DropdownMenu(
+                    expanded = showAspectRatioMenu,
+                    onDismissRequest = { showAspectRatioMenu = false },
+                ) {
+                    playerState.availableAspectRatios.forEach { mode ->
+                        ExpressiveSelectableMenuItem(
+                            text = mode.label,
+                            selected = mode == playerState.selectedAspectRatio,
+                            onSelectedChange = {
+                                onAspectRatioChange(mode)
+                                showAspectRatioMenu = false
+                            },
+                            textColor = MaterialTheme.colorScheme.onSurface,
+                            selectedColor = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
+            }
+
+            PlayerOverflowRow(
+                icon = if (playerState.isMuted) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
+                label = if (playerState.isMuted) "Unmute" else "Mute",
+                onClick = onToggleMute,
+            )
+
+            PlayerOverflowRow(
+                icon = if (playerState.isCastConnected) Icons.Default.CastConnected else Icons.Default.Cast,
+                label = if (playerState.isCastConnected) "Disconnect Cast" else "Cast to Device",
+                onClick = {
+                    onCastClick()
+                    onDismiss()
+                },
+            )
+
+            if (supportsPip) {
+                PlayerOverflowRow(
+                    icon = Icons.Default.PictureInPictureAlt,
+                    label = "Picture in Picture",
+                    onClick = {
+                        onPictureInPictureClick()
+                        onDismiss()
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlayerOverflowRow(
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit,
+    trailingText: String? = null,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Icon(imageVector = icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface)
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f),
+        )
+        if (trailingText != null) {
+            Text(
+                text = trailingText,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
