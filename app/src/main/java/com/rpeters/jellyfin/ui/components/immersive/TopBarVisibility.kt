@@ -4,6 +4,8 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -57,6 +59,32 @@ fun rememberAutoHideTopBarVisible(
     }
 
     return isVisible
+}
+
+/**
+ * Continuous 0f..1f collapse fraction derived from scroll position, for a leading item
+ * (index 0) whose height shrinks/reveals a collapsed top bar as the user scrolls past it
+ * (e.g. a collapsing hero). Returns 0f while item 0 is fully visible at offset 0, ramping
+ * linearly to 1f once the user has scrolled [collapseRangePx] past the top, and staying at
+ * 1f for any further scroll (including once item 0 has scrolled entirely out of view).
+ *
+ * @param listState The LazyListState to monitor
+ * @param collapseRangePx The scroll distance, in px, over which the collapse should animate
+ */
+@Composable
+fun rememberScrollCollapseFraction(
+    listState: LazyListState,
+    collapseRangePx: Float,
+): State<Float> = remember(listState, collapseRangePx) {
+    derivedStateOf {
+        if (collapseRangePx <= 0f) {
+            if (listState.firstVisibleItemIndex == 0) 0f else 1f
+        } else if (listState.firstVisibleItemIndex == 0) {
+            (listState.firstVisibleItemScrollOffset / collapseRangePx).coerceIn(0f, 1f)
+        } else {
+            1f
+        }
+    }
 }
 
 /**

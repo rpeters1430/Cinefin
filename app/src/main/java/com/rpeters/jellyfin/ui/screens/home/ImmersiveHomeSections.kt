@@ -53,6 +53,7 @@ internal fun MobileExpressiveHomeContent(
     contentPadding: PaddingValues,
     bottomSpacing: Dp,
     animatedVisibilityScope: androidx.compose.animation.AnimatedVisibilityScope? = null,
+    heroHeight: Dp = ImmersiveDimens.HeroHeightPhone,
     modifier: Modifier = Modifier,
 ) {
     val unknownText = androidx.compose.ui.res.stringResource(id = R.string.unknown)
@@ -108,6 +109,7 @@ internal fun MobileExpressiveHomeContent(
                         onPlayClick = { selected ->
                             heroItems.firstOrNull { it.id.toString() == selected.id }?.let(onItemClick)
                         },
+                        heroHeight = heroHeight,
                         modifier = Modifier.fillMaxWidth(),
                     )
                 } else {
@@ -115,7 +117,7 @@ internal fun MobileExpressiveHomeContent(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(ImmersiveDimens.HeroHeightPhone),
+                            .height(heroHeight),
                     )
                 }
             }

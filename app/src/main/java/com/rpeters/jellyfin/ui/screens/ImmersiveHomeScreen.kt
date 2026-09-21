@@ -13,10 +13,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
@@ -165,6 +167,19 @@ fun ImmersiveHomeScreen(
             )
         }
 
+        // Density pass: collapsing hero + fading-in top bar (phone only). The hero shrinks
+        // from HeroHeightPhone to HeroHeightCollapsed as the user scrolls past it, and a
+        // compact 56dp top bar fades in over the same range.
+        val heroCollapseRangePx = with(LocalDensity.current) {
+            (ImmersiveDimens.HeroHeightPhone - ImmersiveDimens.HeroHeightCollapsed).toPx()
+        }
+        val heroCollapseFraction by rememberScrollCollapseFraction(
+            listState = listState,
+            collapseRangePx = heroCollapseRangePx,
+        )
+        val collapsedHeroHeight = ImmersiveDimens.HeroHeightPhone -
+            (ImmersiveDimens.HeroHeightPhone - ImmersiveDimens.HeroHeightCollapsed) * heroCollapseFraction
+
         Box(modifier = modifier.fillMaxSize()) {
             ImmersiveScaffold(
                 // No top bar title, but we pass the visibility state for consistent behavior
@@ -174,6 +189,36 @@ fun ImmersiveHomeScreen(
                 // ...
                 scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(),
                 overlayContent = {
+                    // Density pass: compact 56dp top bar that fades in as the hero collapses.
+                    if (!adaptiveConfig.isTablet && heroCollapseFraction > 0f) {
+                        Surface(
+                            color = MaterialTheme.colorScheme.surface,
+                            tonalElevation = 2.dp,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .align(Alignment.TopCenter)
+                                .graphicsLayer { alpha = heroCollapseFraction },
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .statusBarsPadding()
+                                    .fillMaxWidth()
+                                    .height(56.dp)
+                                    .padding(horizontal = 16.dp),
+                                contentAlignment = Alignment.CenterStart,
+                            ) {
+                                Text(
+                                    text = currentServer?.name ?: stringResource(id = R.string.app_name),
+                                    style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp),
+                                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 1,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                )
+                            }
+                        }
+                    }
+
                     // Floating settings icon based on scroll direction
                     val haptics = com.rpeters.jellyfin.ui.utils.rememberExpressiveHaptics()
 
@@ -295,6 +340,7 @@ fun ImmersiveHomeScreen(
                         adaptiveConfig = adaptiveConfig,
                         contentPadding = paddingValues,
                         animatedVisibilityScope = animatedVisibilityScope,
+                        heroHeight = collapsedHeroHeight,
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
@@ -380,6 +426,7 @@ private fun ImmersiveHomeContent(
     adaptiveConfig: com.rpeters.jellyfin.ui.adaptive.AdaptiveLayoutConfig,
     contentPadding: PaddingValues,
     animatedVisibilityScope: androidx.compose.animation.AnimatedVisibilityScope? = null,
+    heroHeight: androidx.compose.ui.unit.Dp = ImmersiveDimens.HeroHeightPhone,
     modifier: Modifier = Modifier,
 ) {
     // Consolidate all derived state computations
@@ -507,6 +554,7 @@ private fun ImmersiveHomeContent(
                 contentPadding = contentPadding,
                 bottomSpacing = homeContentBottomPadding,
                 animatedVisibilityScope = animatedVisibilityScope,
+                heroHeight = heroHeight,
                 modifier = Modifier.fillMaxSize(),
             )
         }
