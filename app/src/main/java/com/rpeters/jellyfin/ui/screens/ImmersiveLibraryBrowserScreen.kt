@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.ui.screens
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -88,6 +89,7 @@ data class ImmersiveSortOption(
  * - Building [featuredItems] for the hero carousel (pass empty list to hide carousel)
  * - Providing [buildCarouselItem] to map each featured item to carousel metadata
  */
+@OptIn(ExperimentalFoundationApi::class)
 @OptInAppExperimentalApis
 @Composable
 fun ImmersiveLibraryBrowserScreen(
