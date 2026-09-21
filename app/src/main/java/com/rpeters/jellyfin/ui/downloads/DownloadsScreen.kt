@@ -192,6 +192,15 @@ fun DownloadsScreen(
             )
         },
     ) { paddingValues ->
+        // Density pass (item 9): split into an "IN PROGRESS" section (downloading/paused/queued)
+        // and an "ON THIS DEVICE" section (completed), each with their own row style.
+        val inProgressDownloads = remember(downloads) {
+            downloads.filter { it.status != DownloadStatus.COMPLETED }
+        }
+        val onDeviceDownloads = remember(downloads) {
+            downloads.filter { it.status == DownloadStatus.COMPLETED }
+        }
+
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(paddingValues),
             contentPadding = PaddingValues(16.dp),
@@ -200,7 +209,7 @@ fun DownloadsScreen(
             // Storage Usage Section
             storageInfo?.let { info ->
                 item(key = "storage_info") {
-                    ExpressiveStorageCard(storageInfo = info)
+                    ExpressiveStorageCard(storageInfo = info, downloads = downloads)
                 }
             }
 
@@ -225,35 +234,56 @@ fun DownloadsScreen(
                 )
             }
 
-            // Downloads List Header
-            if (downloads.isNotEmpty()) {
-                item {
+            if (inProgressDownloads.isNotEmpty()) {
+                item(key = "in_progress_header") {
                     Text(
-                        text = "Active & Completed Downloads",
-                        style = MaterialTheme.typography.titleMedium,
+                        text = "IN PROGRESS",
+                        style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 0.84.sp),
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(horizontal = 4.dp),
                     )
                 }
+
+                items(
+                    inProgressDownloads,
+                    key = { it.id },
+                    contentType = { "download_in_progress_row" },
+                ) { download ->
+                    DownloadInProgressRow(
+                        download = download,
+                        progress = downloadProgress[download.id],
+                        onPause = { downloadsViewModel.pauseDownload(download.id) },
+                        onResume = { downloadsViewModel.resumeDownload(download.id) },
+                        onCancel = { downloadsViewModel.cancelDownload(download.id) },
+                        onDelete = { deleteTarget = download },
+                    )
+                }
             }
 
-            items(
-                downloads,
-                key = { it.id },
-                contentType = { "download_item" },
-            ) { download ->
-                ExpressiveDownloadItem(
-                    download = download,
-                    progress = downloadProgress[download.id],
-                    onPause = { downloadsViewModel.pauseDownload(download.id) },
-                    onResume = { downloadsViewModel.resumeDownload(download.id) },
-                    onCancel = { downloadsViewModel.cancelDownload(download.id) },
-                    onDelete = { deleteTarget = download },
-                    onRedownload = { },
-                    onOpenDetail = { onOpenItemDetail(download) },
-                    onPlay = { downloadsViewModel.playOfflineContent(download.jellyfinItemId) },
-                )
+            if (onDeviceDownloads.isNotEmpty()) {
+                item(key = "on_device_header") {
+                    Text(
+                        text = "ON THIS DEVICE",
+                        style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 0.84.sp),
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
+                    )
+                }
+
+                items(
+                    onDeviceDownloads,
+                    key = { it.id },
+                    contentType = { "download_on_device_row" },
+                ) { download ->
+                    DownloadOnDeviceRow(
+                        download = download,
+                        onOpenDetail = { onOpenItemDetail(download) },
+                        onPlay = { downloadsViewModel.playOfflineContent(download.jellyfinItemId) },
+                        onDelete = { deleteTarget = download },
+                    )
+                }
             }
 
             if (downloads.isEmpty()) {
@@ -290,6 +320,7 @@ fun DownloadsScreen(
 @Composable
 private fun ExpressiveStorageCard(
     storageInfo: com.rpeters.jellyfin.data.offline.OfflineStorageInfo,
+    downloads: List<OfflineDownload>,
 ) {
     ExpressiveContentCard(
         modifier = Modifier.fillMaxWidth(),
@@ -332,12 +363,53 @@ private fun ExpressiveStorageCard(
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                ExpressiveWavyLinearProgress(
-                    progress = storageInfo.usedSpacePercentage / 100f,
-                    modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape),
-                    trackColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    color = MaterialTheme.colorScheme.primary,
-                )
+                // Density pass (item 9): a 6dp segmented storage bar - outline@25% track,
+                // primary segment for downloaded (completed) bytes, tertiaryContainer segment
+                // for pending (downloading/paused/queued) bytes.
+                val downloadedBytes = downloads
+                    .filter { it.status == DownloadStatus.COMPLETED }
+                    .sumOf { it.fileSize.takeIf { size -> size > 0L } ?: it.downloadedBytes }
+                val pendingBytes = downloads
+                    .filter { it.status != DownloadStatus.COMPLETED }
+                    .sumOf { it.fileSize.takeIf { size -> size > 0L } ?: it.downloadedBytes }
+                val totalSpace = storageInfo.totalSpaceBytes.takeIf { it > 0L }
+                val downloadedFraction = totalSpace?.let { (downloadedBytes.toFloat() / it).coerceIn(0f, 1f) } ?: 0f
+                val pendingFraction = totalSpace?.let {
+                    (pendingBytes.toFloat() / it).coerceIn(0f, 1f - downloadedFraction)
+                } ?: 0f
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(6.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)),
+                ) {
+                    if (downloadedFraction > 0f) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .weight(downloadedFraction)
+                                .background(MaterialTheme.colorScheme.primary),
+                        )
+                    }
+                    if (pendingFraction > 0f) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .weight(pendingFraction)
+                                .background(MaterialTheme.colorScheme.tertiaryContainer),
+                        )
+                    }
+                    val remainingFraction = (1f - downloadedFraction - pendingFraction).coerceAtLeast(0f)
+                    if (remainingFraction > 0f) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .weight(remainingFraction),
+                        )
+                    }
+                }
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -359,32 +431,25 @@ private fun ExpressiveStorageCard(
     }
 }
 
+/**
+ * Density-pass "IN PROGRESS" row (item 9): active downloads show live progress %/speed and a
+ * Pause button; paused downloads show Resume/Cancel; queued (PENDING) downloads show no progress
+ * bar and only a Cancel button; failed downloads show Retry/Delete.
+ */
 @Composable
-private fun ExpressiveDownloadItem(
+private fun DownloadInProgressRow(
     download: OfflineDownload,
     progress: DownloadProgress?,
     onPause: () -> Unit,
     onResume: () -> Unit,
     onCancel: () -> Unit,
     onDelete: () -> Unit,
-    onRedownload: () -> Unit,
-    onOpenDetail: () -> Unit,
-    onPlay: () -> Unit,
 ) {
-    val isCompleted = download.status == DownloadStatus.COMPLETED
-
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.extraLarge,
-        colors = CardDefaults.cardColors(
-            containerColor = if (isCompleted) {
-                MaterialTheme.colorScheme.surfaceContainerLow
-            } else {
-                MaterialTheme.colorScheme.surfaceContainer
-            },
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isCompleted) 0.dp else 2.dp),
-        border = if (isCompleted) BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)) else null,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -428,11 +493,12 @@ private fun ExpressiveDownloadItem(
                 DownloadStatusChipEnhanced(download.status)
             }
 
+            // Only actively-downloading rows get a live progress bar; queued (PENDING) rows
+            // intentionally show none, per the redesign spec.
             if (download.status == DownloadStatus.DOWNLOADING && progress != null) {
                 DownloadProgressIndicatorEnhanced(progress)
             }
 
-            // Actions
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End,
@@ -447,19 +513,112 @@ private fun ExpressiveDownloadItem(
                         ActionIconButton(Icons.Default.PlayArrow, "Resume", onResume)
                         ActionIconButton(Icons.Default.Close, "Cancel", onCancel)
                     }
-                    DownloadStatus.COMPLETED -> {
-                        ActionIconButton(Icons.Default.PlayArrow, "Play", onPlay, containerColor = MaterialTheme.colorScheme.primaryContainer)
-                        ActionIconButton(Icons.Default.Info, "Details", onOpenDetail)
-                        ActionIconButton(Icons.Default.Delete, "Delete", onDelete, contentColor = MaterialTheme.colorScheme.error)
-                    }
                     DownloadStatus.FAILED -> {
                         ActionIconButton(Icons.Default.Refresh, "Retry", onResume)
                         ActionIconButton(Icons.Default.Delete, "Delete", onDelete, contentColor = MaterialTheme.colorScheme.error)
                     }
+                    // PENDING (queued) and CANCELLED both fall back to a single Cancel action.
                     else -> {
                         ActionIconButton(Icons.Default.Close, "Cancel", onCancel)
                     }
                 }
+            }
+        }
+    }
+}
+
+/**
+ * Density-pass "ON THIS DEVICE" row (item 9): completed downloads. Partly-watched items show a
+ * thumb progress bar and "time left"; the trailing slot shows a watched check when finished, or
+ * a plain complete check otherwise. There is no "expiry" concept in the current offline download
+ * model (see commit message), so an expiry badge is not shown.
+ */
+@Composable
+private fun DownloadOnDeviceRow(
+    download: OfflineDownload,
+    onOpenDetail: () -> Unit,
+    onPlay: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    val runtimeMs = download.runtimeTicks?.let { it / 10_000L }
+    val positionMs = download.lastPlaybackPositionMs
+    val watchedFraction = if (runtimeMs != null && runtimeMs > 0L && positionMs != null) {
+        (positionMs.toFloat() / runtimeMs.toFloat()).coerceIn(0f, 1f)
+    } else {
+        null
+    }
+    val isPartlyWatched = watchedFraction != null && watchedFraction in 0.02f..0.95f
+    val isFullyWatched = watchedFraction != null && watchedFraction > 0.95f
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.extraLarge,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        download.itemName,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = formatBytes(download.fileSize.takeIf { it > 0L } ?: download.downloadedBytes),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+
+                // Trailing state slot: watched check, or a plain complete check.
+                Icon(
+                    imageVector = Icons.Default.CheckCircle,
+                    contentDescription = if (isFullyWatched) "Watched" else "Downloaded",
+                    tint = if (isFullyWatched) {
+                        MaterialTheme.colorScheme.tertiary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+
+            if (isPartlyWatched && watchedFraction != null && runtimeMs != null && positionMs != null) {
+                val remainingMinutes = ((runtimeMs - positionMs) / 60_000L).coerceAtLeast(0L)
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    ExpressiveWavyLinearProgress(
+                        progress = watchedFraction,
+                        modifier = Modifier.fillMaxWidth().height(4.dp).clip(CircleShape),
+                        trackColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    Text(
+                        text = "${remainingMinutes}m left",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                ActionIconButton(Icons.Default.PlayArrow, "Play", onPlay, containerColor = MaterialTheme.colorScheme.primaryContainer)
+                ActionIconButton(Icons.Default.Info, "Details", onOpenDetail)
+                ActionIconButton(Icons.Default.Delete, "Delete", onDelete, contentColor = MaterialTheme.colorScheme.error)
             }
         }
     }
