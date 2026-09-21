@@ -23,12 +23,33 @@ object Dimens {
 }
 
 object ImmersiveDimens {
-    // Hero section heights
-    val HeroHeightPhone = 480.dp
+    // Hero section heights (density pass: 480 -> 300, plus a collapsed state)
+    val HeroHeightPhone = 300.dp
+    val HeroHeightCollapsed = 104.dp
     val HeroHeightTablet = 600.dp
     val HeroHeightTV = 720.dp
 
-    // Card dimensions (larger than expressive cards)
+    // Detail backdrop heights (density pass: 580 -> 200, plus a collapsed state)
+    val DetailBackdropHeight = 200.dp
+    val DetailBackdropCollapsed = 56.dp
+
+    // Poster card dimensions (density pass: 200x300 -> 88x132)
+    val PosterCardWidth = 88.dp
+    val PosterCardHeight = 132.dp
+
+    // Continue watching card dimensions (density pass: 320x180 -> 200x112)
+    val ContinueCardWidth = 200.dp
+    val ContinueThumbHeight = 112.dp
+
+    // Library grid cell (new: 115 wide x 173 tall, 2:3 poster)
+    val LibraryGridCellWidth = 115.dp
+    val LibraryGridCellHeight = 173.dp
+
+    // Episode thumb dimensions (density pass: 100x56 -> 80x45)
+    val EpisodeThumbWidth = 80.dp
+    val EpisodeThumbHeight = 45.dp
+
+    // Card dimensions (larger than expressive cards) - retained for non-density screens
     val CardWidthXSmall = 130.dp
     val CardWidthSmall = 200.dp // Increased from 176dp in usage or 200dp default
     val CardWidthMedium = 320.dp // Increased from 280dp
@@ -43,6 +64,11 @@ object ImmersiveDimens {
     val SpacingRowMedium = 20.dp
     val SpacingContentPadding = 24.dp
     val SpacingSectionVertical = 32.dp
+
+    // Density-pass row gaps: 8dp between posters, 10dp between grid/continue-watching cards
+    val CardGapPoster = 8.dp
+    val CardGapGrid = 10.dp
+    val ScreenPadding = 16.dp
 
     // Border radius
     val CornerRadiusCinematic = 12.dp
