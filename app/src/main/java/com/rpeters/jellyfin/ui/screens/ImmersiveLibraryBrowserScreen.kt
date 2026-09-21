@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -15,6 +16,7 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.lazy.grid.stickyHeader
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -22,6 +24,7 @@ import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -39,7 +42,10 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
@@ -50,17 +56,13 @@ import com.rpeters.jellyfin.ui.components.ExpressiveSimpleEmptyState
 import com.rpeters.jellyfin.ui.components.immersive.FabAction
 import com.rpeters.jellyfin.ui.components.immersive.FabOrientation
 import com.rpeters.jellyfin.ui.components.immersive.FloatingActionGroup
-import com.rpeters.jellyfin.ui.components.immersive.ImmersiveCardSize
 import com.rpeters.jellyfin.ui.components.immersive.ImmersiveHeroCarousel
-import com.rpeters.jellyfin.ui.components.immersive.ImmersiveMediaCard
+import com.rpeters.jellyfin.ui.components.immersive.ImmersivePosterCard
 import com.rpeters.jellyfin.ui.components.immersive.ImmersiveScaffold
-import com.rpeters.jellyfin.ui.components.immersive.ResolutionQuality
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
 import com.rpeters.jellyfin.utils.getUnwatchedEpisodeCount
-import com.rpeters.jellyfin.utils.isWatched
 import kotlinx.coroutines.flow.distinctUntilChanged
 import org.jellyfin.sdk.model.api.BaseItemDto
-import org.jellyfin.sdk.model.api.MediaStreamType
 
 /** Theme and empty-state configuration for [ImmersiveLibraryBrowserScreen]. */
 data class ImmersiveLibraryConfig(
@@ -68,6 +70,8 @@ data class ImmersiveLibraryConfig(
     val emptyStateIcon: ImageVector,
     val emptyStateTitle: String,
     val emptyStateSubtitle: String,
+    /** Display name shown in the sticky header (e.g. "Movies"). Empty hides the header text. */
+    val libraryName: String = "",
 )
 
 /** A single entry in the sort dropdown for [ImmersiveLibraryBrowserScreen]. */
@@ -122,6 +126,12 @@ fun ImmersiveLibraryBrowserScreen(
     val errorTitle = stringResource(R.string.library_error_loading_title)
     var showSortMenu by remember { mutableStateOf(false) }
     val gridState = rememberLazyGridState()
+
+    // Density pass (item 7): single-select filter chip row in the sticky header, reusing the
+    // same FilterType/applyFilter pattern as LibraryFilterRow (LibraryFilters.kt). Filtering
+    // here only affects the already-loaded page of items (client-side), same as elsewhere.
+    var selectedFilter by remember { mutableStateOf(FilterType.getDefault()) }
+    val filteredItems = remember(items, selectedFilter) { applyFilter(items, selectedFilter) }
 
     LaunchedEffect(gridState, items, hasMoreItems, isLoadingMore) {
         snapshotFlow { gridState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1 }
@@ -178,18 +188,20 @@ fun ImmersiveLibraryBrowserScreen(
                         )
                     }
                     else -> {
+                        // Density pass: dense 3-column grid (115x173 poster cells, 10dp gaps)
+                        // instead of the previous adaptive/160dp overlay-card grid.
                         LazyVerticalGrid(
-                            columns = GridCells.Adaptive(minSize = 160.dp),
+                            columns = GridCells.Fixed(3),
                             state = gridState,
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(
                                 top = 0.dp,
-                                start = 0.dp,
-                                end = 0.dp,
+                                start = ImmersiveDimens.CardGapGrid,
+                                end = ImmersiveDimens.CardGapGrid,
                                 bottom = 120.dp,
                             ),
-                            verticalArrangement = Arrangement.spacedBy(ImmersiveDimens.SpacingRowTight),
-                            horizontalArrangement = Arrangement.spacedBy(ImmersiveDimens.SpacingRowTight),
+                            verticalArrangement = Arrangement.spacedBy(ImmersiveDimens.CardGapGrid),
+                            horizontalArrangement = Arrangement.spacedBy(ImmersiveDimens.CardGapGrid),
                         ) {
                             if (carouselItems.isNotEmpty()) {
                                 item(
@@ -212,29 +224,30 @@ fun ImmersiveLibraryBrowserScreen(
                                 }
                             }
 
+                            // Sticky header: library name + item count + filter chip row.
+                            stickyHeader(key = "library_sticky_header") {
+                                LibraryStickyHeader(
+                                    libraryName = config.libraryName,
+                                    itemCount = items.size,
+                                    selectedFilter = selectedFilter,
+                                    onFilterSelected = { selectedFilter = it },
+                                    themeColor = config.themeColor,
+                                )
+                            }
+
                             gridItems(
-                                items = items,
+                                items = filteredItems,
                                 key = { it.id.toString() },
                             ) { item ->
-                                val videoStream = item.mediaSources
-                                    ?.firstOrNull()
-                                    ?.mediaStreams
-                                    ?.firstOrNull { it.type == MediaStreamType.VIDEO }
-                                val resolution = videoStream?.let {
-                                    ResolutionQuality.fromResolution(it.width, it.height)
-                                }
-                                ImmersiveMediaCard(
-                                    modifier = Modifier.padding(horizontal = 8.dp),
+                                ImmersivePosterCard(
                                     title = item.name ?: "Unknown",
                                     subtitle = buildItemSubtitle(item),
                                     imageUrl = getImageUrl(item) ?: "",
                                     rating = item.communityRating,
-                                    resolution = resolution,
-                                    onCardClick = { onItemClick(item.id.toString()) },
-                                    onPlayClick = { onItemClick(item.id.toString()) },
-                                    isWatched = item.isWatched(),
                                     unwatchedEpisodeCount = item.getUnwatchedEpisodeCount().takeIf { it > 0 },
-                                    cardSize = ImmersiveCardSize.SMALL,
+                                    onCardClick = { onItemClick(item.id.toString()) },
+                                    posterWidth = ImmersiveDimens.LibraryGridCellWidth,
+                                    posterHeight = ImmersiveDimens.LibraryGridCellHeight,
                                 )
                             }
                         }
@@ -307,6 +320,68 @@ fun ImmersiveLibraryBrowserScreen(
                             }
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Sticky header for the density-pass library grid (item 7 of the redesign spec): library name,
+ * item count, and a single-select filter chip row (reusing [FilterType]/[applyFilter], the same
+ * pattern as [LibraryFilterRow] elsewhere in this app).
+ */
+@Composable
+private fun LibraryStickyHeader(
+    libraryName: String,
+    itemCount: Int,
+    selectedFilter: FilterType,
+    onFilterSelected: (FilterType) -> Unit,
+    themeColor: Color,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.background),
+    ) {
+        if (libraryName.isNotBlank()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(
+                    text = libraryName,
+                    style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp),
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = "$itemCount item${if (itemCount == 1) "" else "s"}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
+        androidx.compose.foundation.lazy.LazyRow(
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            FilterType.getAllFilters().forEach { filter ->
+                item {
+                    FilterChip(
+                        onClick = { onFilterSelected(filter) },
+                        label = { Text(filter.displayName) },
+                        selected = selectedFilter == filter,
+                        colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = themeColor.copy(alpha = 0.18f),
+                            selectedLabelColor = themeColor,
+                        ),
+                    )
                 }
             }
         }

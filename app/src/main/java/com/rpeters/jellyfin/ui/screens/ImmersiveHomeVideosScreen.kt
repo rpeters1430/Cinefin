@@ -140,6 +140,7 @@ fun ImmersiveHomeVideosScreenContainer(
             emptyStateIcon = Icons.Default.Photo,
             emptyStateTitle = emptyTitle,
             emptyStateSubtitle = emptySubtitle,
+            libraryName = "Home Videos",
         ),
         sortOptions = homeVideosSortOptions,
         selectedSortIndex = selectedSortIndex,

@@ -67,6 +67,7 @@ fun ImmersiveMoviesScreenContainer(
             emptyStateIcon = Icons.Default.Movie,
             emptyStateTitle = "No movies found",
             emptyStateSubtitle = "Try adding some movies to your library",
+            libraryName = "Movies",
         ),
         sortOptions = moviesSortOptions,
         selectedSortIndex = selectedSortIndex,
