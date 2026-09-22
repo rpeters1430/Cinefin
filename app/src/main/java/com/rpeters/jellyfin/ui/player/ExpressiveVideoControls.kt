@@ -63,6 +63,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -80,6 +81,7 @@ import androidx.media3.common.util.UnstableApi
 import com.rpeters.jellyfin.ui.components.ExpressiveSelectableMenuItem
 import com.rpeters.jellyfin.ui.theme.MotionTokens
 import com.rpeters.jellyfin.ui.utils.rememberExpressiveHaptics
+import kotlinx.coroutines.launch
 
 @UnstableApi
 @Composable
@@ -689,6 +691,7 @@ private fun PlayerOverflowSheet(
     supportsPip: Boolean,
 ) {
     val sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val coroutineScope = rememberCoroutineScope()
     var showAspectRatioMenu by remember { mutableStateOf(false) }
     var showSpeedMenu by remember { mutableStateOf(false) }
 
@@ -773,8 +776,11 @@ private fun PlayerOverflowSheet(
                     icon = Icons.Default.PictureInPictureAlt,
                     label = "Picture in Picture",
                     onClick = {
-                        onPictureInPictureClick()
-                        onDismiss()
+                        coroutineScope.launch {
+                            sheetState.hide()
+                            onDismiss()
+                            onPictureInPictureClick()
+                        }
                     },
                 )
             }

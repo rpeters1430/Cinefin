@@ -107,6 +107,12 @@ fun androidx.navigation.NavGraphBuilder.profileNavGraph(
                         }
                     }
 
+                    org.jellyfin.sdk.model.api.BaseItemKind.PERSON -> {
+                        navController.navigate(
+                            Screen.PersonDetail.createRoute(item.id.toString(), item.name.orEmpty()),
+                        )
+                    }
+
                     else -> {
                         item.id.let { genericId ->
                             navController.navigate(Screen.ItemDetail.createRoute(genericId.toString()))
