@@ -26,8 +26,6 @@ fun GestureFeedbackOverlay(
     visible: Boolean,
     icon: ImageVector,
     text: String,
-    overlayScrim: Color,
-    overlayContent: Color,
     modifier: Modifier = Modifier,
 ) {
     AnimatedVisibility(
@@ -38,13 +36,13 @@ fun GestureFeedbackOverlay(
     ) {
         // This panel has an opaque surfaceVariant background (see below), which is a light
         // color in the app's light theme, so its foreground must track onSurfaceVariant rather
-        // than the caller-supplied overlayContent (which assumes a dark, scrim-backed panel).
+        // than a caller-supplied content color (which would assume a dark, scrim-backed panel).
         val panelContent = MaterialTheme.colorScheme.onSurfaceVariant
         Card(
             colors = CardDefaults.cardColors(
                 // Density pass: an opaque (92%) surfaceVariant background with a subtle white
-                // border reads reliably against any video frame; the previous overlayScrim
-                // (translucent black/white) could wash out or disappear depending on content.
+                // border reads reliably against any video frame; a translucent scrim color
+                // (black/white) could wash out or disappear depending on content.
                 containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.92f),
             ),
             border = BorderStroke(1.dp, Color.White.copy(alpha = 0.14f)),

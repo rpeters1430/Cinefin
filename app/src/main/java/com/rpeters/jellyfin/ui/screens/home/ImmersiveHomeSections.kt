@@ -126,7 +126,6 @@ internal fun MobileExpressiveHomeContent(
         item(key = "libraries", contentType = "libraries") {
             LibraryNavigationCarousel(
                 libraries = appState.libraries,
-                getImageUrl = getImageUrl,
                 onLibraryClick = onLibraryClick,
             )
         }
@@ -193,7 +192,6 @@ internal fun MobileExpressiveHomeContent(
 @Composable
 private fun LibraryNavigationCarousel(
     libraries: List<BaseItemDto>,
-    getImageUrl: (BaseItemDto) -> String?,
     onLibraryClick: (BaseItemDto) -> Unit,
 ) {
     val visibleLibraries = libraries
