@@ -94,9 +94,10 @@ Automates the full Android release flow for this repository.
 - Increments the trailing numeric segment of `versionName` by 1
 - Commits the version bump
 - Builds a signed release bundle with `./gradlew bundleRelease`
+- Verifies native debug symbols are generated at `app/build/outputs/native-debug-symbols/release/native-debug-symbols.zip`
 - Creates an annotated git tag like `v14.57`
 - Pushes the branch and tag
-- Publishes a GitHub release with generated release notes and uploads the AAB
+- Publishes a GitHub release with generated release notes and uploads the AAB + native debug symbols zip
 
 **Usage:**
 

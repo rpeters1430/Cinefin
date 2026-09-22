@@ -419,7 +419,9 @@ jobs:
           token: ${{ github.token }}
           tag_name: ${{ steps.version.outputs.tag }}
           name:     "Cinefin ${{ steps.version.outputs.new_name }}"
-          files:    app/build/outputs/bundle/release/app-release.aab
+          files: |
+            app/build/outputs/bundle/release/app-release.aab
+            app/build/outputs/native-debug-symbols/release/native-debug-symbols.zip
           draft:    false
           prerelease: false
           generate_release_notes: true
@@ -432,8 +434,13 @@ jobs:
             | versionCode | `${{ steps.version.outputs.new_code }}` |
 
             ### Play Store upload
-            Download **`app-release.aab`** from the assets below and upload it in
-            [Google Play Console → Releases](https://play.google.com/console) to submit the update.
+            Download both assets below:
+            - **`app-release.aab`** (upload in Google Play Console release)
+            - **`native-debug-symbols.zip`** (upload in Play Console native debug symbols)
+
+            Upload both in
+            [Google Play Console → Releases](https://play.google.com/console)
+            to avoid missing native debug symbols warnings and improve native crash/ANR diagnostics.
         env:
           GITHUB_TOKEN: ${{ github.token }}
 

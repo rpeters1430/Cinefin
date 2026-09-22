@@ -5,6 +5,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BUILD_FILE="$ROOT_DIR/app/build.gradle.kts"
 BUNDLE_PATH="$ROOT_DIR/app/build/outputs/bundle/release/app-release.aab"
+NATIVE_SYMBOLS_PATH="$ROOT_DIR/app/build/outputs/native-debug-symbols/release/native-debug-symbols.zip"
 GRADLE_RELEASE_CMD=("./gradlew" "--no-daemon" "bundleRelease")
 
 SKIP_PUSH=0
@@ -179,6 +180,7 @@ Release summary
   versionName: $current_version_name -> $new_version_name
   Tag:         $new_tag
   Bundle:      $BUNDLE_PATH
+  Symbols:     $NATIVE_SYMBOLS_PATH
 EOF
 
 if [[ $SHOW_CHANGELOG -eq 1 && $SKIP_RELEASE -ne 1 ]]; then
@@ -244,6 +246,12 @@ if [[ ! -f "$BUNDLE_PATH" ]]; then
   exit 1
 fi
 
+if [[ ! -f "$NATIVE_SYMBOLS_PATH" ]]; then
+  echo "Native debug symbols not found after build: $NATIVE_SYMBOLS_PATH" >&2
+  echo "Ensure release build keeps native debug symbols for Play Console upload." >&2
+  exit 1
+fi
+
 git tag -a "$new_tag" -m "$new_tag"
 
 if [[ $SKIP_PUSH -ne 1 ]]; then
@@ -252,7 +260,7 @@ if [[ $SKIP_PUSH -ne 1 ]]; then
 fi
 
 if [[ $SKIP_RELEASE -ne 1 ]]; then
-  gh release create "$new_tag" "$BUNDLE_PATH" \
+  gh release create "$new_tag" "$BUNDLE_PATH" "$NATIVE_SYMBOLS_PATH" \
     --title "$new_tag" \
     --generate-notes
 fi
@@ -263,3 +271,4 @@ echo "  versionCode: $new_version_code"
 echo "  versionName: $new_version_name"
 echo "  tag:         $new_tag"
 echo "  bundle:      $BUNDLE_PATH"
+echo "  symbols:     $NATIVE_SYMBOLS_PATH"
