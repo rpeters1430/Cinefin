@@ -3,6 +3,7 @@
 package com.rpeters.jellyfin.ui.navigation
 
 import androidx.annotation.OptIn
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.Lifecycle
@@ -29,6 +30,25 @@ import com.rpeters.jellyfin.ui.screens.settings.SeerrSettingsScreen
 import com.rpeters.jellyfin.ui.screens.settings.SettingsSectionScreen
 import com.rpeters.jellyfin.ui.screens.settings.SubtitleSettingsScreen
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
+import org.jellyfin.sdk.model.api.BaseItemDto
+import org.jellyfin.sdk.model.api.BaseItemKind
+
+/**
+ * Shared navigation logic for an item selected from search/favorites/diagnostics lists.
+ */
+private fun navigateToMediaItem(navController: NavHostController, item: BaseItemDto) {
+    when (item.type) {
+        BaseItemKind.MOVIE -> navController.navigate(Screen.MovieDetail.createRoute(item.id.toString()))
+        BaseItemKind.VIDEO -> navController.navigate(Screen.HomeVideoDetail.createRoute(item.id.toString()))
+        BaseItemKind.SERIES -> navController.navigate(Screen.TVSeasons.createRoute(item.id.toString()))
+        BaseItemKind.EPISODE -> navController.navigate(Screen.TVEpisodeDetail.createRoute(item.id.toString()))
+        BaseItemKind.PLAYLIST -> navController.navigate(Screen.PlaylistDetail.createRoute(item.id.toString()))
+        BaseItemKind.PERSON -> navController.navigate(
+            Screen.PersonDetail.createRoute(item.id.toString(), item.name.orEmpty()),
+        )
+        else -> navController.navigate(Screen.ItemDetail.createRoute(item.id.toString()))
+    }
+}
 
 /**
  * Profile, search, favorites, and settings routes.
@@ -48,231 +68,19 @@ fun androidx.navigation.NavGraphBuilder.profileNavGraph(
             },
         ),
     ) { backStackEntry ->
-        val query = backStackEntry.arguments?.getString("query")
-        val viewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<MainAppViewModel>()
-
-        // If a query was passed via navigation, trigger a search immediately
-        LaunchedEffect(query) {
-            if (!query.isNullOrBlank()) {
-                viewModel.search(query)
-            }
-        }
-
-        val lifecycleOwner = LocalLifecycleOwner.current
-        val appState by viewModel.appState.collectAsStateWithLifecycle(
-            lifecycle = lifecycleOwner.lifecycle,
-            minActiveState = Lifecycle.State.STARTED,
-        )
-
-        // Use ImmersiveSearchScreen by default
-        ImmersiveSearchScreen(
-            appState = appState,
-            onSearch = { searchQuery -> viewModel.search(searchQuery) },
-            onClearSearch = { viewModel.clearSearch() },
-            getImageUrl = { item -> viewModel.getImageUrl(item) },
-            onBackClick = { navController.popBackStack() },
-            onNowPlayingClick = { navController.navigate(Screen.NowPlaying.route) },
-            onSearchRequests = { requestQuery ->
-                navController.navigate(Screen.Requests.createRoute(requestQuery))
-            },
-            onItemClick = { item ->
-                when (item.type) {
-                    org.jellyfin.sdk.model.api.BaseItemKind.MOVIE -> {
-                        item.id.let { movieId ->
-                            navController.navigate(Screen.MovieDetail.createRoute(movieId.toString()))
-                        }
-                    }
-
-                    org.jellyfin.sdk.model.api.BaseItemKind.VIDEO -> {
-                        item.id.let { videoId ->
-                            navController.navigate(Screen.HomeVideoDetail.createRoute(videoId.toString()))
-                        }
-                    }
-
-                    org.jellyfin.sdk.model.api.BaseItemKind.SERIES -> {
-                        item.id.let { seriesId ->
-                            navController.navigate(Screen.TVSeasons.createRoute(seriesId.toString()))
-                        }
-                    }
-
-                    org.jellyfin.sdk.model.api.BaseItemKind.EPISODE -> {
-                        item.id.let { episodeId ->
-                            navController.navigate(Screen.TVEpisodeDetail.createRoute(episodeId.toString()))
-                        }
-                    }
-
-                    org.jellyfin.sdk.model.api.BaseItemKind.PLAYLIST -> {
-                        item.id.let { playlistId ->
-                            navController.navigate(Screen.PlaylistDetail.createRoute(playlistId.toString()))
-                        }
-                    }
-
-                    org.jellyfin.sdk.model.api.BaseItemKind.PERSON -> {
-                        navController.navigate(
-                            Screen.PersonDetail.createRoute(item.id.toString(), item.name.orEmpty()),
-                        )
-                    }
-
-                    else -> {
-                        item.id.let { genericId ->
-                            navController.navigate(Screen.ItemDetail.createRoute(genericId.toString()))
-                        }
-                    }
-                }
-            },
-        )
+        SearchRoute(navController, backStackEntry.arguments?.getString("query"))
     }
 
     composable(Screen.Favorites.route) {
-        val viewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<MainAppViewModel>()
-        val lifecycleOwner = LocalLifecycleOwner.current
-        val appState by viewModel.appState.collectAsStateWithLifecycle(
-            lifecycle = lifecycleOwner.lifecycle,
-            minActiveState = Lifecycle.State.STARTED,
-        )
-
-        LaunchedEffect(Unit) {
-            viewModel.loadFavorites()
-        }
-
-        // Use ImmersiveFavoritesScreen by default
-        ImmersiveFavoritesScreen(
-            favorites = appState.favorites,
-            isLoading = appState.isLoading,
-            errorMessage = appState.errorMessage,
-            onRefresh = { viewModel.loadFavorites() },
-            getImageUrl = { item -> viewModel.getImageUrl(item) },
-            onBackClick = { navController.popBackStack() },
-            onNowPlayingClick = { navController.navigate(Screen.NowPlaying.route) },
-            onItemClick = { item ->
-                when (item.type) {
-                    org.jellyfin.sdk.model.api.BaseItemKind.MOVIE -> {
-                        item.id.let { movieId ->
-                            navController.navigate(Screen.MovieDetail.createRoute(movieId.toString()))
-                        }
-                    }
-
-                    org.jellyfin.sdk.model.api.BaseItemKind.VIDEO -> {
-                        item.id.let { videoId ->
-                            navController.navigate(Screen.HomeVideoDetail.createRoute(videoId.toString()))
-                        }
-                    }
-
-                    org.jellyfin.sdk.model.api.BaseItemKind.SERIES -> {
-                        item.id.let { seriesId ->
-                            navController.navigate(Screen.TVSeasons.createRoute(seriesId.toString()))
-                        }
-                    }
-
-                    org.jellyfin.sdk.model.api.BaseItemKind.EPISODE -> {
-                        item.id.let { episodeId ->
-                            navController.navigate(Screen.TVEpisodeDetail.createRoute(episodeId.toString()))
-                        }
-                    }
-
-                    org.jellyfin.sdk.model.api.BaseItemKind.PLAYLIST -> {
-                        item.id.let { playlistId ->
-                            navController.navigate(Screen.PlaylistDetail.createRoute(playlistId.toString()))
-                        }
-                    }
-
-                    else -> {
-                        item.id.let { genericId ->
-                            navController.navigate(Screen.ItemDetail.createRoute(genericId.toString()))
-                        }
-                    }
-                }
-            },
-        )
+        FavoritesRoute(navController)
     }
 
     composable(Screen.Profile.route) {
-        val viewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<MainAppViewModel>()
-        val lifecycleOwner = LocalLifecycleOwner.current
-        val currentServer by viewModel.currentServer.collectAsStateWithLifecycle(
-            lifecycle = lifecycleOwner.lifecycle,
-            initialValue = null,
-        )
-        val appState by viewModel.appState.collectAsStateWithLifecycle(
-            lifecycle = lifecycleOwner.lifecycle,
-            minActiveState = Lifecycle.State.STARTED,
-        )
-        val serverInfoResult by viewModel.serverInfo.collectAsStateWithLifecycle(
-            lifecycle = lifecycleOwner.lifecycle,
-            minActiveState = Lifecycle.State.STARTED,
-        )
-
-        LaunchedEffect(Unit) {
-            viewModel.loadCurrentUser()
-            viewModel.loadServerInfo()
-        }
-
-        ProfileScreen(
-            currentServer = currentServer,
-            serverInfo = (serverInfoResult as? com.rpeters.jellyfin.data.repository.common.ApiResult.Success)?.data,
-            currentUser = appState.currentUser,
-            userAvatarUrl = viewModel.getUserAvatarUrl(
-                currentServer?.userId,
-                appState.currentUser?.primaryImageTag,
-            ),
-            onLogout = {
-                viewModel.logout()
-                onLogout()
-                navController.navigate(Screen.ServerConnection.route) {
-                    popUpTo(0) { inclusive = true }
-                }
-            },
-            onSettingsClick = { navController.navigate(Screen.Settings.route) },
-            onBackClick = { navController.popBackStack() },
-            onNowPlayingClick = { navController.navigate(Screen.NowPlaying.route) },
-        )
+        ProfileRoute(navController, onLogout)
     }
 
     composable(Screen.Settings.route) {
-        val viewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<MainAppViewModel>()
-        val lifecycleOwner = LocalLifecycleOwner.current
-        val currentServer by viewModel.currentServer.collectAsStateWithLifecycle(
-            lifecycle = lifecycleOwner.lifecycle,
-            initialValue = null,
-        )
-        val appState by viewModel.appState.collectAsStateWithLifecycle(
-            lifecycle = lifecycleOwner.lifecycle,
-            minActiveState = Lifecycle.State.STARTED,
-        )
-
-        LaunchedEffect(Unit) {
-            viewModel.loadCurrentUser()
-        }
-
-        SettingsScreen(
-            onBackClick = { navController.popBackStack() },
-            currentServer = currentServer,
-            currentUser = appState.currentUser,
-            userAvatarUrl = viewModel.getUserAvatarUrl(
-                currentServer?.userId,
-                appState.currentUser?.primaryImageTag,
-            ),
-            onLogout = {
-                viewModel.logout()
-                onLogout()
-                navController.navigate(Screen.ServerConnection.route) {
-                    popUpTo(0) { inclusive = true }
-                }
-            },
-            onNowPlayingClick = { navController.navigate(Screen.NowPlaying.route) },
-            onManagePinsClick = { navController.navigate(Screen.PinSettings.route) },
-            onSubtitleSettingsClick = { navController.navigate(Screen.SubtitleSettings.route) },
-            onPrivacyPolicyClick = { navController.navigate(Screen.PrivacyPolicy.route) },
-            onAppearanceSettingsClick = { navController.navigate(Screen.AppearanceSettings.route) },
-            onPlaybackSettingsClick = { navController.navigate(Screen.PlaybackSettings.route) },
-            onDownloadsSettingsClick = { navController.navigate(Screen.DownloadsSettings.route) },
-            onNotificationsSettingsClick = { navController.navigate(Screen.NotificationsSettings.route) },
-            onPrivacySettingsClick = { navController.navigate(Screen.PrivacySettings.route) },
-            onAccessibilitySettingsClick = { navController.navigate(Screen.AccessibilitySettings.route) },
-            onSeerrSettingsClick = { navController.navigate(Screen.MediaRequestSettings.route) },
-            onTranscodingDiagnosticsClick = { navController.navigate(Screen.TranscodingDiagnostics.route) },
-            onAiDiagnosticsClick = { navController.navigate(Screen.AiDiagnostics.route) },
-        )
+        SettingsRoute(navController, onLogout)
     }
 
     composable(Screen.SeerrSettings.route) {
@@ -297,22 +105,7 @@ fun androidx.navigation.NavGraphBuilder.profileNavGraph(
     }
 
     composable(Screen.DownloadsSettings.route) {
-        DownloadsScreen(
-            onNavigateBack = { navController.popBackStack() },
-            onOpenItemDetail = { download ->
-                when (download.itemType.uppercase()) {
-                    org.jellyfin.sdk.model.api.BaseItemKind.MOVIE.name -> {
-                        navController.navigate(Screen.MovieDetail.createRoute(download.jellyfinItemId))
-                    }
-                    org.jellyfin.sdk.model.api.BaseItemKind.EPISODE.name -> {
-                        navController.navigate(Screen.TVEpisodeDetail.createRoute(download.jellyfinItemId))
-                    }
-                    else -> {
-                        navController.navigate(Screen.ItemDetail.createRoute(download.jellyfinItemId))
-                    }
-                }
-            },
-        )
+        DownloadsSettingsRoute(navController)
     }
 
     composable(Screen.NotificationsSettings.route) {
@@ -349,48 +142,7 @@ fun androidx.navigation.NavGraphBuilder.profileNavGraph(
     }
 
     composable(Screen.TranscodingDiagnostics.route) {
-        TranscodingDiagnosticsScreen(
-            onNavigateBack = { navController.popBackStack() },
-            onItemClick = { item ->
-                when (item.type) {
-                    org.jellyfin.sdk.model.api.BaseItemKind.MOVIE -> {
-                        item.id.let { movieId ->
-                            navController.navigate(Screen.MovieDetail.createRoute(movieId.toString()))
-                        }
-                    }
-
-                    org.jellyfin.sdk.model.api.BaseItemKind.VIDEO -> {
-                        item.id.let { videoId ->
-                            navController.navigate(Screen.HomeVideoDetail.createRoute(videoId.toString()))
-                        }
-                    }
-
-                    org.jellyfin.sdk.model.api.BaseItemKind.SERIES -> {
-                        item.id.let { seriesId ->
-                            navController.navigate(Screen.TVSeasons.createRoute(seriesId.toString()))
-                        }
-                    }
-
-                    org.jellyfin.sdk.model.api.BaseItemKind.EPISODE -> {
-                        item.id.let { episodeId ->
-                            navController.navigate(Screen.TVEpisodeDetail.createRoute(episodeId.toString()))
-                        }
-                    }
-
-                    org.jellyfin.sdk.model.api.BaseItemKind.PLAYLIST -> {
-                        item.id.let { playlistId ->
-                            navController.navigate(Screen.PlaylistDetail.createRoute(playlistId.toString()))
-                        }
-                    }
-
-                    else -> {
-                        item.id.let { genericId ->
-                            navController.navigate(Screen.ItemDetail.createRoute(genericId.toString()))
-                        }
-                    }
-                }
-            },
-        )
+        TranscodingDiagnosticsRoute(navController)
     }
 
     composable(Screen.AiDiagnostics.route) {
@@ -404,4 +156,181 @@ fun androidx.navigation.NavGraphBuilder.profileNavGraph(
             onNavigateBack = { navController.popBackStack() },
         )
     }
+}
+
+@Composable
+private fun SearchRoute(navController: NavHostController, query: String?) {
+    val viewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<MainAppViewModel>()
+
+    // If a query was passed via navigation, trigger a search immediately
+    LaunchedEffect(query) {
+        if (!query.isNullOrBlank()) {
+            viewModel.search(query)
+        }
+    }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val appState by viewModel.appState.collectAsStateWithLifecycle(
+        lifecycle = lifecycleOwner.lifecycle,
+        minActiveState = Lifecycle.State.STARTED,
+    )
+
+    // Use ImmersiveSearchScreen by default
+    ImmersiveSearchScreen(
+        appState = appState,
+        onSearch = { searchQuery -> viewModel.search(searchQuery) },
+        onClearSearch = { viewModel.clearSearch() },
+        getImageUrl = { item -> viewModel.getImageUrl(item) },
+        onBackClick = { navController.popBackStack() },
+        onNowPlayingClick = { navController.navigate(Screen.NowPlaying.route) },
+        onSearchRequests = { requestQuery ->
+            navController.navigate(Screen.Requests.createRoute(requestQuery))
+        },
+        onItemClick = { item -> navigateToMediaItem(navController, item) },
+    )
+}
+
+@Composable
+private fun FavoritesRoute(navController: NavHostController) {
+    val viewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<MainAppViewModel>()
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val appState by viewModel.appState.collectAsStateWithLifecycle(
+        lifecycle = lifecycleOwner.lifecycle,
+        minActiveState = Lifecycle.State.STARTED,
+    )
+
+    LaunchedEffect(Unit) {
+        viewModel.loadFavorites()
+    }
+
+    // Use ImmersiveFavoritesScreen by default
+    ImmersiveFavoritesScreen(
+        favorites = appState.favorites,
+        isLoading = appState.isLoading,
+        errorMessage = appState.errorMessage,
+        onRefresh = { viewModel.loadFavorites() },
+        getImageUrl = { item -> viewModel.getImageUrl(item) },
+        onBackClick = { navController.popBackStack() },
+        onNowPlayingClick = { navController.navigate(Screen.NowPlaying.route) },
+        onItemClick = { item -> navigateToMediaItem(navController, item) },
+    )
+}
+
+@Composable
+private fun ProfileRoute(navController: NavHostController, onLogout: () -> Unit) {
+    val viewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<MainAppViewModel>()
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val currentServer by viewModel.currentServer.collectAsStateWithLifecycle(
+        lifecycle = lifecycleOwner.lifecycle,
+        initialValue = null,
+    )
+    val appState by viewModel.appState.collectAsStateWithLifecycle(
+        lifecycle = lifecycleOwner.lifecycle,
+        minActiveState = Lifecycle.State.STARTED,
+    )
+    val serverInfoResult by viewModel.serverInfo.collectAsStateWithLifecycle(
+        lifecycle = lifecycleOwner.lifecycle,
+        minActiveState = Lifecycle.State.STARTED,
+    )
+
+    LaunchedEffect(Unit) {
+        viewModel.loadCurrentUser()
+        viewModel.loadServerInfo()
+    }
+
+    ProfileScreen(
+        currentServer = currentServer,
+        serverInfo = (serverInfoResult as? com.rpeters.jellyfin.data.repository.common.ApiResult.Success)?.data,
+        currentUser = appState.currentUser,
+        userAvatarUrl = viewModel.getUserAvatarUrl(
+            currentServer?.userId,
+            appState.currentUser?.primaryImageTag,
+        ),
+        onLogout = {
+            viewModel.logout()
+            onLogout()
+            navController.navigate(Screen.ServerConnection.route) {
+                popUpTo(0) { inclusive = true }
+            }
+        },
+        onSettingsClick = { navController.navigate(Screen.Settings.route) },
+        onBackClick = { navController.popBackStack() },
+        onNowPlayingClick = { navController.navigate(Screen.NowPlaying.route) },
+    )
+}
+
+@Composable
+private fun SettingsRoute(navController: NavHostController, onLogout: () -> Unit) {
+    val viewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<MainAppViewModel>()
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val currentServer by viewModel.currentServer.collectAsStateWithLifecycle(
+        lifecycle = lifecycleOwner.lifecycle,
+        initialValue = null,
+    )
+    val appState by viewModel.appState.collectAsStateWithLifecycle(
+        lifecycle = lifecycleOwner.lifecycle,
+        minActiveState = Lifecycle.State.STARTED,
+    )
+
+    LaunchedEffect(Unit) {
+        viewModel.loadCurrentUser()
+    }
+
+    SettingsScreen(
+        onBackClick = { navController.popBackStack() },
+        currentServer = currentServer,
+        currentUser = appState.currentUser,
+        userAvatarUrl = viewModel.getUserAvatarUrl(
+            currentServer?.userId,
+            appState.currentUser?.primaryImageTag,
+        ),
+        onLogout = {
+            viewModel.logout()
+            onLogout()
+            navController.navigate(Screen.ServerConnection.route) {
+                popUpTo(0) { inclusive = true }
+            }
+        },
+        onNowPlayingClick = { navController.navigate(Screen.NowPlaying.route) },
+        onManagePinsClick = { navController.navigate(Screen.PinSettings.route) },
+        onSubtitleSettingsClick = { navController.navigate(Screen.SubtitleSettings.route) },
+        onPrivacyPolicyClick = { navController.navigate(Screen.PrivacyPolicy.route) },
+        onAppearanceSettingsClick = { navController.navigate(Screen.AppearanceSettings.route) },
+        onPlaybackSettingsClick = { navController.navigate(Screen.PlaybackSettings.route) },
+        onDownloadsSettingsClick = { navController.navigate(Screen.DownloadsSettings.route) },
+        onNotificationsSettingsClick = { navController.navigate(Screen.NotificationsSettings.route) },
+        onPrivacySettingsClick = { navController.navigate(Screen.PrivacySettings.route) },
+        onAccessibilitySettingsClick = { navController.navigate(Screen.AccessibilitySettings.route) },
+        onSeerrSettingsClick = { navController.navigate(Screen.MediaRequestSettings.route) },
+        onTranscodingDiagnosticsClick = { navController.navigate(Screen.TranscodingDiagnostics.route) },
+        onAiDiagnosticsClick = { navController.navigate(Screen.AiDiagnostics.route) },
+    )
+}
+
+@Composable
+private fun DownloadsSettingsRoute(navController: NavHostController) {
+    DownloadsScreen(
+        onNavigateBack = { navController.popBackStack() },
+        onOpenItemDetail = { download ->
+            when (download.itemType.uppercase()) {
+                BaseItemKind.MOVIE.name -> {
+                    navController.navigate(Screen.MovieDetail.createRoute(download.jellyfinItemId))
+                }
+                BaseItemKind.EPISODE.name -> {
+                    navController.navigate(Screen.TVEpisodeDetail.createRoute(download.jellyfinItemId))
+                }
+                else -> {
+                    navController.navigate(Screen.ItemDetail.createRoute(download.jellyfinItemId))
+                }
+            }
+        },
+    )
+}
+
+@Composable
+private fun TranscodingDiagnosticsRoute(navController: NavHostController) {
+    TranscodingDiagnosticsScreen(
+        onNavigateBack = { navController.popBackStack() },
+        onItemClick = { item -> navigateToMediaItem(navController, item) },
+    )
 }
