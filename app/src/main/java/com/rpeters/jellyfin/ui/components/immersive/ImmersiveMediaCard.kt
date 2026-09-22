@@ -7,6 +7,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -410,6 +411,7 @@ fun ImmersivePosterCard(
     rating: Float? = null,
     unwatchedEpisodeCount: Int? = null,
     watchProgress: Float? = null,
+    onCardLongClick: (() -> Unit)? = null,
     posterWidth: androidx.compose.ui.unit.Dp = ImmersiveDimens.PosterCardWidth,
     posterHeight: androidx.compose.ui.unit.Dp = ImmersiveDimens.PosterCardHeight,
     posterShape: androidx.compose.foundation.shape.CornerBasedShape = ImmersiveShapes.PosterImage,
@@ -421,10 +423,19 @@ fun ImmersivePosterCard(
     Column(
         modifier = modifier
             .width(posterWidth)
-            .clickable(onClickLabel = "Open $title") {
-                haptics.lightClick()
-                onCardClick()
-            },
+            .combinedClickable(
+                onClickLabel = "Open $title",
+                onClick = {
+                    haptics.lightClick()
+                    onCardClick()
+                },
+                onLongClick = onCardLongClick?.let { longClick ->
+                    {
+                        haptics.heavyClick()
+                        longClick()
+                    }
+                },
+            ),
     ) {
         Box(
             modifier = Modifier
