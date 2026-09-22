@@ -911,7 +911,7 @@ private fun MovieTechSpecsSection(
     val mediaSource = movie.mediaSources?.firstOrNull()
     val videoStream = mediaSource?.mediaStreams?.find { it.type == MediaStreamType.VIDEO }
     val audioStream = mediaSource?.mediaStreams?.find { it.type == MediaStreamType.AUDIO }
-    val subtitles = mediaSource?.mediaStreams?.filter { it.type == MediaStreamType.SUBTITLE } ?: emptyList()
+    val subtitles = mediaSource?.mediaStreams?.filter { it.type == MediaStreamType.SUBTITLE }.orEmpty()
 
     Column(
         modifier = Modifier
@@ -929,80 +929,102 @@ private fun MovieTechSpecsSection(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            playbackAnalysis?.let { analysis ->
-                PlaybackStatusBadge(analysis = analysis)
-            }
-
-            videoStream?.let { stream ->
-                val resolution = ResolutionQuality.fromResolution(stream.width, stream.height)
-                val codecText = when (stream.codec?.lowercase()) {
-                    "hevc", "h265" -> "HEVC"
-                    "h264", "avc" -> "AVC"
-                    "av1" -> "AV1"
-                    "vp9" -> "VP9"
-                    else -> stream.codec?.uppercase().orEmpty()
-                }
-                val hdrType = HdrType.detect(
-                    stream.videoRange.toString(),
-                    stream.videoRangeType.toString(),
-                )
-
-                AssistChip(onClick = {}, enabled = false, label = { Text(resolution.name) })
-                if (codecText.isNotBlank()) {
-                    AssistChip(onClick = {}, enabled = false, label = { Text(codecText) })
-                }
-                if (hdrType != null) {
-                    AssistChip(onClick = {}, enabled = false, label = { Text(hdrType.name) })
-                }
-            }
-
-            audioStream?.let { stream ->
-                val channelText = when (stream.channels) {
-                    8 -> "7.1"
-                    6 -> "5.1"
-                    2 -> "Stereo"
-                    1 -> "Mono"
-                    else -> stream.channels?.toString()?.let { "$it.0" }.orEmpty()
-                }
-
-                val codecText = when (stream.codec?.lowercase()) {
-                    "truehd" -> "TrueHD"
-                    "eac3" -> "DD+"
-                    "aac" -> "AAC"
-                    "ac3" -> "DD"
-                    "dca", "dts" -> "DTS"
-                    "dtshd" -> "DTS-HD"
-                    "flac" -> "FLAC"
-                    else -> stream.codec?.uppercase().orEmpty()
-                }
-
-                val isAtmos = stream.title?.contains("atmos", ignoreCase = true) == true ||
-                    stream.codec?.contains("atmos", ignoreCase = true) == true
-
-                val audioLabel = buildString {
-                    if (channelText.isNotBlank()) append(channelText)
-                    if (codecText.isNotBlank()) {
-                        if (isNotEmpty()) append(" ")
-                        append(codecText)
-                    }
-                    if (isAtmos) {
-                        if (isNotEmpty()) append(" ")
-                        append("Atmos")
-                    }
-                }
-                if (audioLabel.isNotBlank()) {
-                    AssistChip(onClick = {}, enabled = false, label = { Text(audioLabel) })
-                }
-            }
-
-            if (subtitles.isNotEmpty()) {
-                AssistChip(
-                    onClick = {},
-                    enabled = false,
-                    label = { Text("${subtitles.size} subtitle${if (subtitles.size == 1) "" else "s"}") },
-                )
-            }
+            PlaybackStatusChip(playbackAnalysis)
+            VideoSpecChips(videoStream)
+            AudioSpecChip(audioStream)
+            SubtitleCountChip(subtitles.size)
         }
+    }
+}
+
+/** Reuses the existing transcode-decision logic in [PlaybackStatusBadge]; only the call site moved. */
+@Composable
+private fun PlaybackStatusChip(playbackAnalysis: PlaybackCapabilityAnalysis?) {
+    playbackAnalysis?.let { analysis ->
+        PlaybackStatusBadge(analysis = analysis)
+    }
+}
+
+/** Resolution + codec + HDR chips derived from the movie's primary video stream. */
+@Composable
+private fun VideoSpecChips(videoStream: org.jellyfin.sdk.model.api.MediaStream?) {
+    val stream = videoStream ?: return
+
+    val resolution = ResolutionQuality.fromResolution(stream.width, stream.height)
+    val codecText = when (stream.codec?.lowercase()) {
+        "hevc", "h265" -> "HEVC"
+        "h264", "avc" -> "AVC"
+        "av1" -> "AV1"
+        "vp9" -> "VP9"
+        else -> stream.codec?.uppercase().orEmpty()
+    }
+    val hdrType = HdrType.detect(
+        stream.videoRange.toString(),
+        stream.videoRangeType.toString(),
+    )
+
+    AssistChip(onClick = {}, enabled = false, label = { Text(resolution.name) })
+    if (codecText.isNotBlank()) {
+        AssistChip(onClick = {}, enabled = false, label = { Text(codecText) })
+    }
+    if (hdrType != null) {
+        AssistChip(onClick = {}, enabled = false, label = { Text(hdrType.name) })
+    }
+}
+
+/** Builds the audio-channel/codec/Atmos label chip from the movie's primary audio stream. */
+private fun audioChannelText(channels: Int?): String = when (channels) {
+    8 -> "7.1"
+    6 -> "5.1"
+    2 -> "Stereo"
+    1 -> "Mono"
+    else -> channels?.toString()?.let { "$it.0" }.orEmpty()
+}
+
+private fun audioCodecText(codec: String?): String = when (codec?.lowercase()) {
+    "truehd" -> "TrueHD"
+    "eac3" -> "DD+"
+    "aac" -> "AAC"
+    "ac3" -> "DD"
+    "dca", "dts" -> "DTS"
+    "dtshd" -> "DTS-HD"
+    "flac" -> "FLAC"
+    else -> codec?.uppercase().orEmpty()
+}
+
+@Composable
+private fun AudioSpecChip(audioStream: org.jellyfin.sdk.model.api.MediaStream?) {
+    val stream = audioStream ?: return
+
+    val channelText = audioChannelText(stream.channels)
+    val codecText = audioCodecText(stream.codec)
+    val isAtmos = stream.title?.contains("atmos", ignoreCase = true) == true ||
+        stream.codec?.contains("atmos", ignoreCase = true) == true
+
+    val audioLabel = buildString {
+        if (channelText.isNotBlank()) append(channelText)
+        if (codecText.isNotBlank()) {
+            if (isNotEmpty()) append(" ")
+            append(codecText)
+        }
+        if (isAtmos) {
+            if (isNotEmpty()) append(" ")
+            append("Atmos")
+        }
+    }
+    if (audioLabel.isNotBlank()) {
+        AssistChip(onClick = {}, enabled = false, label = { Text(audioLabel) })
+    }
+}
+
+@Composable
+private fun SubtitleCountChip(subtitleCount: Int) {
+    if (subtitleCount > 0) {
+        AssistChip(
+            onClick = {},
+            enabled = false,
+            label = { Text("$subtitleCount subtitle${if (subtitleCount == 1) "" else "s"}") },
+        )
     }
 }
 
