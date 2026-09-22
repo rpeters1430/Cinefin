@@ -729,7 +729,7 @@ private fun LazyListScope.movieRelatedItem(
                     items(relatedItems) { relatedMovie ->
                         com.rpeters.jellyfin.ui.components.immersive.ImmersiveMediaCard(
                             title = relatedMovie.name ?: "Unknown",
-                            imageUrl = getImageUrl(relatedMovie) ?: "",
+                            imageUrl = getImageUrl(relatedMovie).orEmpty(),
                             rating = relatedMovie.communityRating,
                             onCardClick = { onRelatedMovieClick(relatedMovie.id.toString()) },
                             cardSize = com.rpeters.jellyfin.ui.components.immersive.ImmersiveCardSize.SMALL,

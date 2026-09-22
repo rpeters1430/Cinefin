@@ -111,6 +111,8 @@ import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemPerson
 import java.util.Locale
 
+private const val UNKNOWN_TITLE = "Unknown"
+
 private enum class ImmersiveShowDetailState {
     LOADING,
     ERROR,
@@ -526,13 +528,13 @@ private fun LazyListScope.showSimilarSection(
                 maxVisibleItems = maxVisibleItems,
             ) { similarShow, _, _ ->
                 ImmersiveMediaCard(
-                    title = similarShow.name ?: "Unknown",
+                    title = similarShow.name ?: UNKNOWN_TITLE,
                     subtitle = buildYearRangeText(
                         startYear = similarShow.productionYear,
                         endYear = similarShow.endDate?.year,
                         status = similarShow.status,
                     ),
-                    imageUrl = getImageUrl(similarShow) ?: "",
+                    imageUrl = getImageUrl(similarShow).orEmpty(),
                     rating = similarShow.communityRating,
                     onCardClick = {
                         onSeriesClick(similarShow.id.toString())
@@ -583,7 +585,7 @@ private fun ShowHeroContent(
                 )
             } else {
                 Text(
-                    text = series.name ?: "Unknown",
+                    text = series.name ?: UNKNOWN_TITLE,
                     style = MaterialTheme.typography.displaySmall,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
@@ -1084,7 +1086,7 @@ private fun ImmersiveCastSection(
                     modifier = Modifier
                         .width(ImmersiveDimens.CastMemberWidth)
                         .clickable {
-                            onPersonClick(person.id.toString(), person.name ?: "Unknown")
+                            onPersonClick(person.id.toString(), person.name ?: UNKNOWN_TITLE)
                         },
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
