@@ -42,6 +42,76 @@ import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 
+/** Stable long-press handler: opens the manage sheet, or shows a snackbar when management is disabled. */
+@Composable
+private fun rememberItemLongPressHandler(
+    managementEnabled: Boolean,
+    coroutineScope: kotlinx.coroutines.CoroutineScope,
+    snackbarHostState: SnackbarHostState,
+    managementDisabledMessage: String,
+    onLongPress: (BaseItemDto) -> Unit,
+): (BaseItemDto) -> Unit = remember(managementEnabled, coroutineScope, managementDisabledMessage) {
+    { item: BaseItemDto ->
+        if (managementEnabled) {
+            onLongPress(item)
+        } else {
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar(message = managementDisabledMessage)
+            }
+        }
+    }
+}
+
+/** Stable play handler: starts playback, or shows a snackbar when no stream URL is available. */
+@Composable
+private fun rememberPlayHandler(
+    viewModel: MainAppViewModel,
+    context: android.content.Context,
+    coroutineScope: kotlinx.coroutines.CoroutineScope,
+    snackbarHostState: SnackbarHostState,
+): (BaseItemDto) -> Unit = remember(viewModel, context, coroutineScope) {
+    { item: BaseItemDto ->
+        val streamUrl = viewModel.getStreamUrl(item)
+        if (streamUrl != null) {
+            MediaPlayerUtils.playMedia(context, streamUrl, item)
+        } else {
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar("Unable to start playback")
+            }
+        }
+    }
+}
+
+/** Loads library type data for any library whose items haven't been fetched yet. */
+@Composable
+private fun LoadMissingLibraryDataEffect(appState: MainAppState, viewModel: MainAppViewModel) {
+    LaunchedEffect(appState.libraries) {
+        appState.libraries.forEach { library ->
+            val libraryId = library.id.toString()
+            if (appState.itemsByLibrary[libraryId].isNullOrEmpty()) {
+                library.toLibraryTypeOrNull()?.let { libraryType ->
+                    viewModel.loadLibraryTypeData(library = library, libraryType = libraryType)
+                }
+            }
+        }
+    }
+}
+
+/** Auto-hide top bar visibility, tracking the grid on tablet and the list otherwise. */
+@Composable
+private fun rememberHomeTopBarVisible(
+    isTablet: Boolean,
+    gridState: LazyGridState,
+    listState: LazyListState,
+): Boolean {
+    val nearTopOffsetPx = with(LocalDensity.current) { ImmersiveDimens.HeroHeightPhone.toPx().toInt() }
+    return if (isTablet) {
+        rememberAutoHideTopBarVisible(gridState = gridState, nearTopOffsetPx = nearTopOffsetPx)
+    } else {
+        rememberAutoHideTopBarVisible(listState = listState, nearTopOffsetPx = nearTopOffsetPx)
+    }
+}
+
 /**
  * Immersive home screen with Netflix/Disney+ inspired design.
  * Features:
@@ -95,45 +165,22 @@ fun ImmersiveHomeScreen(
         val managementDisabledMessage = stringResource(id = R.string.library_actions_management_disabled)
 
         // ✅ Performance: Stabilize internal callbacks
-        val handleItemLongPress = remember(managementEnabled, coroutineScope, managementDisabledMessage) {
-            {
-                    item: BaseItemDto ->
-                if (managementEnabled) {
-                    selectedItem = item
-                    showManageSheet = true
-                } else {
-                    coroutineScope.launch {
-                        snackbarHostState.showSnackbar(message = managementDisabledMessage)
-                    }
-                }
-                Unit
-            }
-        }
+        val handleItemLongPress = rememberItemLongPressHandler(
+            managementEnabled = managementEnabled,
+            coroutineScope = coroutineScope,
+            snackbarHostState = snackbarHostState,
+            managementDisabledMessage = managementDisabledMessage,
+            onLongPress = { item -> selectedItem = item; showManageSheet = true },
+        )
 
-        val handlePlay = remember(viewModel, context, coroutineScope) {
-            {
-                    item: BaseItemDto ->
-                val streamUrl = viewModel.getStreamUrl(item)
-                if (streamUrl != null) {
-                    MediaPlayerUtils.playMedia(context, streamUrl, item)
-                } else {
-                    coroutineScope.launch {
-                        snackbarHostState.showSnackbar("Unable to start playback")
-                    }
-                }
-            }
-        }
+        val handlePlay = rememberPlayHandler(
+            viewModel = viewModel,
+            context = context,
+            coroutineScope = coroutineScope,
+            snackbarHostState = snackbarHostState,
+        )
 
-        LaunchedEffect(appState.libraries) {
-            appState.libraries.forEach { library ->
-                val libraryId = library.id.toString()
-                if (appState.itemsByLibrary[libraryId].isNullOrEmpty()) {
-                    library.toLibraryTypeOrNull()?.let { libraryType ->
-                        viewModel.loadLibraryTypeData(library = library, libraryType = libraryType)
-                    }
-                }
-            }
-        }
+        LoadMissingLibraryDataEffect(appState = appState, viewModel = viewModel)
 
         // Calculate window size class for adaptive layout
         val adaptiveConfig = com.rpeters.jellyfin.ui.adaptive.LocalAdaptiveLayoutConfig.current
@@ -155,17 +202,11 @@ fun ImmersiveHomeScreen(
         }
 
         // Use hero height as threshold to avoid flickering within hero
-        val topBarVisible = if (adaptiveConfig.isTablet) {
-            rememberAutoHideTopBarVisible(
-                gridState = gridState,
-                nearTopOffsetPx = with(LocalDensity.current) { ImmersiveDimens.HeroHeightPhone.toPx().toInt() },
-            )
-        } else {
-            rememberAutoHideTopBarVisible(
-                listState = listState,
-                nearTopOffsetPx = with(LocalDensity.current) { ImmersiveDimens.HeroHeightPhone.toPx().toInt() },
-            )
-        }
+        val topBarVisible = rememberHomeTopBarVisible(
+            isTablet = adaptiveConfig.isTablet,
+            gridState = gridState,
+            listState = listState,
+        )
 
         // Density pass: collapsing hero + fading-in top bar (phone only). The hero shrinks
         // from HeroHeightPhone to HeroHeightCollapsed as the user scrolls past it, and a

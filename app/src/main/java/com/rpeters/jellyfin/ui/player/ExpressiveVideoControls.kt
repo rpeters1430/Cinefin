@@ -447,6 +447,33 @@ private fun PlayerProgressSection(
         modifier = Modifier.fillMaxWidth(),
     )
 
+    PlayerTimeRow(
+        playerState = playerState,
+        effectiveDuration = effectiveDuration,
+        isDragging = isDragging,
+        sliderPosition = sliderPosition,
+        overlayContent = overlayContent,
+    )
+
+    Spacer(modifier = Modifier.height(8.dp))
+
+    PlayerSkipRow(
+        playerState = playerState,
+        onSeek = onSeek,
+        overlayContent = overlayContent,
+        overlayScrim = overlayScrim,
+    )
+}
+
+/** Current position / total duration, shown below the scrub bar. */
+@Composable
+private fun PlayerTimeRow(
+    playerState: VideoPlayerState,
+    effectiveDuration: Long?,
+    isDragging: Boolean,
+    sliderPosition: Float,
+    overlayContent: Color,
+) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -470,9 +497,16 @@ private fun PlayerProgressSection(
             style = MaterialTheme.typography.bodySmall,
         )
     }
+}
 
-    Spacer(modifier = Modifier.height(8.dp))
-
+/** Skip-intro / skip-credits action chips, shown only during their respective windows. */
+@Composable
+private fun PlayerSkipRow(
+    playerState: VideoPlayerState,
+    onSeek: (Long) -> Unit,
+    overlayContent: Color,
+    overlayScrim: Color,
+) {
     val showSkipIntro = remember(playerState.introStartMs, playerState.introEndMs, playerState.currentPosition) {
         val start = playerState.introStartMs
         val end = playerState.introEndMs
@@ -482,33 +516,33 @@ private fun PlayerProgressSection(
         val start = playerState.outroStartMs
         start != null && playerState.currentPosition >= start
     }
-    if (showSkipIntro || showSkipCredits) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            if (showSkipIntro) {
-                PlayerActionChip(
-                    label = "Skip Intro",
-                    onClick = {
-                        onSeek(playerState.introEndMs ?: (playerState.currentPosition + 10_000))
-                    },
-                    overlayContent = overlayContent,
-                    overlayScrim = overlayScrim,
-                )
-            }
-            if (showSkipCredits) {
-                PlayerActionChip(
-                    label = "Skip Credits",
-                    onClick = {
-                        onSeek(playerState.outroEndMs ?: (playerState.currentPosition + 10_000))
-                    },
-                    overlayContent = overlayContent,
-                    overlayScrim = overlayScrim,
-                )
-            }
+    if (!showSkipIntro && !showSkipCredits) return
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        if (showSkipIntro) {
+            PlayerActionChip(
+                label = "Skip Intro",
+                onClick = {
+                    onSeek(playerState.introEndMs ?: (playerState.currentPosition + 10_000))
+                },
+                overlayContent = overlayContent,
+                overlayScrim = overlayScrim,
+            )
+        }
+        if (showSkipCredits) {
+            PlayerActionChip(
+                label = "Skip Credits",
+                onClick = {
+                    onSeek(playerState.outroEndMs ?: (playerState.currentPosition + 10_000))
+                },
+                overlayContent = overlayContent,
+                overlayScrim = overlayScrim,
+            )
         }
     }
 }
