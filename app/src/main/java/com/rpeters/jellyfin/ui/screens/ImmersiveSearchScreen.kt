@@ -167,19 +167,7 @@ fun ImmersiveSearchScreen(
     }
 
     LaunchedEffect(debouncedQuery, aiSearchEnabled) {
-        if (debouncedQuery.isBlank()) {
-            onClearSearch()
-        } else {
-            // Use AI to enhance query if enabled
-            if (aiSearchEnabled && debouncedQuery.length > 3) {
-                coroutineScope.launch {
-                    val enhancedQuery = viewModel.enhanceSearchQuery(debouncedQuery)
-                    onSearch(enhancedQuery)
-                }
-            } else {
-                onSearch(debouncedQuery)
-            }
-        }
+        triggerSearch(debouncedQuery, aiSearchEnabled, viewModel, coroutineScope, onSearch, onClearSearch)
     }
 
     val listState = rememberLazyListState()
@@ -228,53 +216,19 @@ fun ImmersiveSearchScreen(
                 onScopeSelected = { selectedScope = it },
             )
 
-            // Content Type Filters
-            if (isFilterExpanded) {
-                contentTypeFiltersSection(
-                    selectedContentTypes = selectedContentTypes,
-                    onToggleContentType = { kind ->
-                        selectedContentTypes = if (selectedContentTypes.contains(kind)) {
-                            selectedContentTypes - kind
-                        } else {
-                            selectedContentTypes + kind
-                        }
-                    },
-                )
-            }
-
-            // Search suggestions when no active search
-            if (searchQuery.isBlank() && appState.searchResults.isEmpty()) {
-                searchSuggestionsSection(
-                    recentSearches = recentSearches,
-                    smartSuggestions = smartSuggestions,
-                    maxRowItems = perfConfig.maxRowItems,
-                    onSuggestionClick = { searchQuery = it },
-                )
-            }
-
-            // Search results
-            if (appState.isSearching) {
-                searchingIndicatorSection()
-            }
-
-            appState.errorMessage?.let { error ->
-                searchErrorSection(error)
-            }
-
-            if (appState.searchResults.isEmpty() && !appState.isSearching && appState.errorMessage == null && searchQuery.isNotBlank()) {
-                noResultsSection(
-                    searchQuery = searchQuery,
-                    onSearchRequests = onSearchRequests,
-                )
-            }
-
-            if (scopedResults.isEmpty() && appState.searchResults.isNotEmpty()) {
-                noScopeResultsSection(selectedScope)
-            }
-
-            // Grouped results by type (density pass: list rows instead of a poster grid)
-            groupedResultsSection(
-                groupedResults = scopedResults.groupBy { it.type },
+            searchResultsSections(
+                appState = appState,
+                searchQuery = searchQuery,
+                scopedResults = scopedResults,
+                selectedScope = selectedScope,
+                isFilterExpanded = isFilterExpanded,
+                selectedContentTypes = selectedContentTypes,
+                onSelectedContentTypesChange = { selectedContentTypes = it },
+                recentSearches = recentSearches,
+                smartSuggestions = smartSuggestions,
+                maxRowItems = perfConfig.maxRowItems,
+                onSuggestionClick = { searchQuery = it },
+                onSearchRequests = onSearchRequests,
                 getImageUrl = getImageUrl,
                 onItemClick = onItemClick,
             )
@@ -292,6 +246,104 @@ fun ImmersiveSearchScreen(
                 .padding(end = 16.dp, bottom = 96.dp), // Above MiniPlayer
         )
     }
+}
+
+/** Debounced-query effect body, extracted to keep [ImmersiveSearchScreen]'s branch count low. */
+private fun triggerSearch(
+    debouncedQuery: String,
+    aiSearchEnabled: Boolean,
+    viewModel: SearchViewModel,
+    coroutineScope: kotlinx.coroutines.CoroutineScope,
+    onSearch: (String) -> Unit,
+    onClearSearch: () -> Unit,
+) {
+    if (debouncedQuery.isBlank()) {
+        onClearSearch()
+        return
+    }
+    if (aiSearchEnabled && debouncedQuery.length > 3) {
+        coroutineScope.launch {
+            val enhancedQuery = viewModel.enhanceSearchQuery(debouncedQuery)
+            onSearch(enhancedQuery)
+        }
+    } else {
+        onSearch(debouncedQuery)
+    }
+}
+
+/**
+ * The body of the results [LazyColumn]: content-type filters, suggestions, loading/error state,
+ * empty states, and the grouped results list. Extracted from [ImmersiveSearchScreen] to keep that
+ * composable's own branch count low (DeepSource flags high cyclomatic complexity otherwise).
+ */
+private fun LazyListScope.searchResultsSections(
+    appState: MainAppState,
+    searchQuery: String,
+    scopedResults: List<BaseItemDto>,
+    selectedScope: SearchScope,
+    isFilterExpanded: Boolean,
+    selectedContentTypes: Set<BaseItemKind>,
+    onSelectedContentTypesChange: (Set<BaseItemKind>) -> Unit,
+    recentSearches: List<String>,
+    smartSuggestions: List<String>,
+    maxRowItems: Int,
+    onSuggestionClick: (String) -> Unit,
+    onSearchRequests: (String) -> Unit,
+    getImageUrl: (BaseItemDto) -> String?,
+    onItemClick: (BaseItemDto) -> Unit,
+) {
+    if (isFilterExpanded) {
+        contentTypeFiltersSection(
+            selectedContentTypes = selectedContentTypes,
+            onToggleContentType = { kind ->
+                val updated = if (selectedContentTypes.contains(kind)) {
+                    selectedContentTypes - kind
+                } else {
+                    selectedContentTypes + kind
+                }
+                onSelectedContentTypesChange(updated)
+            },
+        )
+    }
+
+    if (searchQuery.isBlank() && appState.searchResults.isEmpty()) {
+        searchSuggestionsSection(
+            recentSearches = recentSearches,
+            smartSuggestions = smartSuggestions,
+            maxRowItems = maxRowItems,
+            onSuggestionClick = onSuggestionClick,
+        )
+    }
+
+    if (appState.isSearching) {
+        searchingIndicatorSection()
+    }
+
+    appState.errorMessage?.let { error ->
+        searchErrorSection(error)
+    }
+
+    val noResultsAtAll = appState.searchResults.isEmpty() &&
+        !appState.isSearching &&
+        appState.errorMessage == null &&
+        searchQuery.isNotBlank()
+    if (noResultsAtAll) {
+        noResultsSection(
+            searchQuery = searchQuery,
+            onSearchRequests = onSearchRequests,
+        )
+    }
+
+    if (scopedResults.isEmpty() && appState.searchResults.isNotEmpty()) {
+        noScopeResultsSection(selectedScope)
+    }
+
+    // Grouped results by type (density pass: list rows instead of a poster grid)
+    groupedResultsSection(
+        groupedResults = scopedResults.groupBy { it.type },
+        getImageUrl = getImageUrl,
+        onItemClick = onItemClick,
+    )
 }
 
 /** Sticky search field + scope chip row, pinned to the top of the results list. */
