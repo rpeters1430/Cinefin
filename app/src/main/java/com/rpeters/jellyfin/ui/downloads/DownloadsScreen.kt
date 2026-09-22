@@ -375,19 +375,23 @@ private fun ExpressiveStorageCard(
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                // Density pass (item 9): a 6dp segmented storage bar - outline@25% track,
-                // primary segment for downloaded (completed) bytes, tertiaryContainer segment
-                // for pending (downloading/paused/queued) bytes.
-                val downloadedBytes = downloads
+                // Only count bytes already stored on this device. Queued file sizes are estimates,
+                // and failed/cancelled records may no longer have a file on disk.
+                val usedBytes = storageInfo.usedSpaceBytes.coerceAtLeast(0L)
+                val completedBytes = downloads
                     .filter { it.status == DownloadStatus.COMPLETED }
-                    .sumOf { it.fileSize.takeIf { size -> size > 0L } ?: it.downloadedBytes }
-                val pendingBytes = downloads
-                    .filter { it.status != DownloadStatus.COMPLETED }
-                    .sumOf { it.fileSize.takeIf { size -> size > 0L } ?: it.downloadedBytes }
+                    .sumOf { (it.fileSize.takeIf { size -> size > 0L } ?: it.downloadedBytes).coerceAtLeast(0L) }
+                    .coerceAtMost(usedBytes)
+                val activeBytes = downloads
+                    .filter { it.status == DownloadStatus.DOWNLOADING || it.status == DownloadStatus.PAUSED }
+                    .sumOf { it.downloadedBytes.coerceAtLeast(0L) }
+                    .coerceAtMost(usedBytes - completedBytes)
+                val otherUsedBytes = usedBytes - completedBytes - activeBytes
                 val totalSpace = storageInfo.totalSpaceBytes.takeIf { it > 0L }
-                val downloadedFraction = totalSpace?.let { (downloadedBytes.toFloat() / it).coerceIn(0f, 1f) } ?: 0f
-                val pendingFraction = totalSpace?.let {
-                    (pendingBytes.toFloat() / it).coerceIn(0f, 1f - downloadedFraction)
+                val downloadedFraction = totalSpace?.let { (completedBytes.toFloat() / it).coerceIn(0f, 1f) } ?: 0f
+                val activeFraction = totalSpace?.let { (activeBytes.toFloat() / it).coerceIn(0f, 1f - downloadedFraction) } ?: 0f
+                val otherUsedFraction = totalSpace?.let {
+                    (otherUsedBytes.toFloat() / it).coerceIn(0f, 1f - downloadedFraction - activeFraction)
                 } ?: 0f
 
                 Row(
@@ -405,15 +409,23 @@ private fun ExpressiveStorageCard(
                                 .background(MaterialTheme.colorScheme.primary),
                         )
                     }
-                    if (pendingFraction > 0f) {
+                    if (activeFraction > 0f) {
                         Box(
                             modifier = Modifier
                                 .fillMaxHeight()
-                                .weight(pendingFraction)
+                                .weight(activeFraction)
                                 .background(MaterialTheme.colorScheme.tertiaryContainer),
                         )
                     }
-                    val remainingFraction = (1f - downloadedFraction - pendingFraction).coerceAtLeast(0f)
+                    if (otherUsedFraction > 0f) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .weight(otherUsedFraction)
+                                .background(MaterialTheme.colorScheme.outlineVariant),
+                        )
+                    }
+                    val remainingFraction = (1f - downloadedFraction - activeFraction - otherUsedFraction).coerceAtLeast(0f)
                     if (remainingFraction > 0f) {
                         Box(
                             modifier = Modifier
