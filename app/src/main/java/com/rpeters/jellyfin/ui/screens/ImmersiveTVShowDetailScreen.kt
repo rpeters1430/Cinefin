@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -365,88 +366,15 @@ private fun ImmersiveShowDetailContent(
                 }
             }
 
-            // 3. Seasons & Episodes
-            item {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.background)
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Seasons",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    state.seriesDetails?.let { series ->
-                        TextButton(
-                            onClick = { series.name?.takeIf { it.isNotBlank() }?.let(onSearchRequests) }
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.AddCircle,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Request Seasons")
-                        }
-                    }
-                }
-            }
-
-            if (state.seasons.isEmpty()) {
-                item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(MaterialTheme.colorScheme.background)
-                            .padding(horizontal = 16.dp, vertical = 24.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "No seasons available.",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            } else {
-                item(key = "season_chip_rail") {
-                    Box(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)) {
-                        SeasonChipRail(
-                            seasons = state.seasons,
-                            selectedSeasonId = selectedSeasonId,
-                            onSeasonSelected = { season ->
-                                val seasonId = season.id.toString()
-                                selectedSeasonId = seasonId
-                                onSeasonExpand(seasonId)
-                            },
-                        )
-                    }
-                }
-
-                val currentSeasonId = selectedSeasonId
-                item(key = "season_episode_list") {
-                    Box(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            if (currentSeasonId != null && currentSeasonId in state.loadingSeasonIds) {
-                                repeat(2) { ExpressiveLoadingCard(modifier = Modifier.fillMaxWidth().height(80.dp)) }
-                            } else {
-                                state.episodesBySeasonId[currentSeasonId].orEmpty().forEach { episode ->
-                                    EpisodeRow(episode = episode, getImageUrl = getImageUrl, onClick = { onEpisodeClick(episode) })
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            showSeasonsSection(
+                state = state,
+                selectedSeasonId = selectedSeasonId,
+                onSelectedSeasonIdChange = { selectedSeasonId = it },
+                getImageUrl = getImageUrl,
+                onSearchRequests = onSearchRequests,
+                onSeasonExpand = onSeasonExpand,
+                onEpisodeClick = onEpisodeClick,
+            )
 
             // 4. Cast & Crew
             state.seriesDetails?.people?.takeIf { it.isNotEmpty() }?.let { people ->
@@ -462,48 +390,158 @@ private fun ImmersiveShowDetailContent(
                 }
             }
 
-            // 5. Similar Shows (aligned with Movies implementation)
-            if (state.similarSeries.isNotEmpty()) {
-                item {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(MaterialTheme.colorScheme.background)
-                            .padding(horizontal = 16.dp)
-                            .padding(top = 24.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        Text(
-                            text = "More Like This",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                        )
+            showSimilarSection(
+                similarSeries = state.similarSeries,
+                getImageUrl = getImageUrl,
+                onSeriesClick = onSeriesClick,
+                maxVisibleItems = perfConfig.maxRowItems,
+            )
+        } // End LazyColumn
+    } // End Box
+}
 
-                        PerformanceOptimizedLazyRow(
-                            items = state.similarSeries,
-                            horizontalArrangement = Arrangement.spacedBy(ImmersiveDimens.SpacingRowTight),
-                            maxVisibleItems = perfConfig.maxRowItems,
-                        ) { similarShow, _, _ ->
-                            ImmersiveMediaCard(
-                                title = similarShow.name ?: "Unknown",
-                                subtitle = buildYearRangeText(
-                                    startYear = similarShow.productionYear,
-                                    endYear = similarShow.endDate?.year,
-                                    status = similarShow.status,
-                                ),
-                                imageUrl = getImageUrl(similarShow) ?: "",
-                                rating = similarShow.communityRating,
-                                onCardClick = {
-                                    onSeriesClick(similarShow.id.toString())
-                                },
-                                cardSize = ImmersiveCardSize.SMALL,
-                            )
-                        }
+/**
+ * "Seasons" header (+ request-seasons action), season chip rail and the selected season's
+ * episode list.
+ */
+private fun LazyListScope.showSeasonsSection(
+    state: TVSeasonState,
+    selectedSeasonId: String?,
+    onSelectedSeasonIdChange: (String) -> Unit,
+    getImageUrl: (BaseItemDto) -> String?,
+    onSearchRequests: (String) -> Unit,
+    onSeasonExpand: (String) -> Unit,
+    onEpisodeClick: (BaseItemDto) -> Unit,
+) {
+    item {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Seasons",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+            )
+            state.seriesDetails?.let { series ->
+                TextButton(
+                    onClick = { series.name?.takeIf { it.isNotBlank() }?.let(onSearchRequests) }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AddCircle,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Request Seasons")
+                }
+            }
+        }
+    }
+
+    if (state.seasons.isEmpty()) {
+        item {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.background)
+                    .padding(horizontal = 16.dp, vertical = 24.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "No seasons available.",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+        return
+    }
+
+    item(key = "season_chip_rail") {
+        Box(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)) {
+            SeasonChipRail(
+                seasons = state.seasons,
+                selectedSeasonId = selectedSeasonId,
+                onSeasonSelected = { season ->
+                    val seasonId = season.id.toString()
+                    onSelectedSeasonIdChange(seasonId)
+                    onSeasonExpand(seasonId)
+                },
+            )
+        }
+    }
+
+    item(key = "season_episode_list") {
+        Box(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                if (selectedSeasonId != null && selectedSeasonId in state.loadingSeasonIds) {
+                    repeat(2) { ExpressiveLoadingCard(modifier = Modifier.fillMaxWidth().height(80.dp)) }
+                } else {
+                    state.episodesBySeasonId[selectedSeasonId].orEmpty().forEach { episode ->
+                        EpisodeRow(episode = episode, getImageUrl = getImageUrl, onClick = { onEpisodeClick(episode) })
                     }
                 }
             }
-        } // End LazyColumn
-    } // End Box
+        }
+    }
+}
+
+/** "More Like This" similar-shows row (aligned with the Movies implementation). */
+private fun LazyListScope.showSimilarSection(
+    similarSeries: List<BaseItemDto>,
+    getImageUrl: (BaseItemDto) -> String?,
+    onSeriesClick: (String) -> Unit,
+    maxVisibleItems: Int,
+) {
+    if (similarSeries.isEmpty()) return
+
+    item {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(horizontal = 16.dp)
+                .padding(top = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = "More Like This",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+            )
+
+            PerformanceOptimizedLazyRow(
+                items = similarSeries,
+                horizontalArrangement = Arrangement.spacedBy(ImmersiveDimens.SpacingRowTight),
+                maxVisibleItems = maxVisibleItems,
+            ) { similarShow, _, _ ->
+                ImmersiveMediaCard(
+                    title = similarShow.name ?: "Unknown",
+                    subtitle = buildYearRangeText(
+                        startYear = similarShow.productionYear,
+                        endYear = similarShow.endDate?.year,
+                        status = similarShow.status,
+                    ),
+                    imageUrl = getImageUrl(similarShow) ?: "",
+                    rating = similarShow.communityRating,
+                    onCardClick = {
+                        onSeriesClick(similarShow.id.toString())
+                    },
+                    cardSize = ImmersiveCardSize.SMALL,
+                )
+            }
+        }
+    }
 }
 
 @Composable
