@@ -77,7 +77,11 @@ fun MovieHeroContent(
                 style = MaterialTheme.typography.headlineSmall.copy(fontSize = 24.sp, lineHeight = 30.sp),
                 fontWeight = FontWeight.ExtraBold,
                 textAlign = TextAlign.Start,
-                color = Color.White,
+                // Not Color.White: with a 156dp poster and a -58dp overlap over the 200dp
+                // backdrop, a long (3-line) title routinely extends past the backdrop onto the
+                // plain screen background, which is light in the app's light theme. Theme-aware
+                // tokens keep it readable regardless of what's behind it.
+                color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -92,7 +96,7 @@ fun MovieHeroContent(
                         text = year.toString(),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White.copy(alpha = 0.78f),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
 
@@ -106,7 +110,7 @@ fun MovieHeroContent(
                             text = durationText,
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White.copy(alpha = 0.78f),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
