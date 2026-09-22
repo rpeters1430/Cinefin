@@ -929,7 +929,9 @@ private fun MovieTechSpecsSection(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            PlaybackStatusChip(playbackAnalysis)
+            if (playbackAnalysis != null) {
+                PlaybackStatusChip(playbackAnalysis)
+            }
             VideoSpecChips(videoStream)
             AudioSpecChip(audioStream)
             SubtitleCountChip(subtitles.size)
@@ -939,10 +941,8 @@ private fun MovieTechSpecsSection(
 
 /** Reuses the existing transcode-decision logic in [PlaybackStatusBadge]; only the call site moved. */
 @Composable
-private fun PlaybackStatusChip(playbackAnalysis: PlaybackCapabilityAnalysis?) {
-    playbackAnalysis?.let { analysis ->
-        PlaybackStatusBadge(analysis = analysis)
-    }
+private fun PlaybackStatusChip(playbackAnalysis: PlaybackCapabilityAnalysis) {
+    PlaybackStatusBadge(analysis = playbackAnalysis)
 }
 
 /** Resolution + codec + HDR chips derived from the movie's primary video stream. */

@@ -658,7 +658,7 @@ private fun LazyListScope.groupedResultsSection(
         ) { item ->
             SearchResultRow(
                 item = item,
-                imageUrl = getImageUrl(item) ?: "",
+                imageUrl = getImageUrl(item).orEmpty(),
                 onClick = { onItemClick(item) },
             )
         }
