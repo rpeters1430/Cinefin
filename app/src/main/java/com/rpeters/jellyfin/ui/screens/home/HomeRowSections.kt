@@ -15,9 +15,21 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.ui.components.MediaCard
-import com.rpeters.jellyfin.ui.components.PosterMediaCard
+import com.rpeters.jellyfin.ui.components.immersive.ImmersivePosterCard
+import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
 import com.rpeters.jellyfin.utils.getItemKey
+import com.rpeters.jellyfin.utils.getUnwatchedEpisodeCount
 import org.jellyfin.sdk.model.api.BaseItemDto
+import org.jellyfin.sdk.model.api.BaseItemKind
+
+/**
+ * Compact poster subtitle for the density-redesign rails: the series name for episodes,
+ * otherwise the production year — mirrors the metadata shown by the legacy [PosterMediaCard].
+ */
+private fun posterRowSubtitle(item: BaseItemDto): String = when {
+    item.type == BaseItemKind.EPISODE && !item.seriesName.isNullOrBlank() -> item.seriesName.orEmpty()
+    else -> item.productionYear?.toString().orEmpty()
+}
 
 @Composable
 fun PosterRowSection(
@@ -26,9 +38,12 @@ fun PosterRowSection(
     getImageUrl: (BaseItemDto) -> String?,
     onItemClick: (BaseItemDto) -> Unit,
     onItemLongPress: (BaseItemDto) -> Unit = {},
-    cardWidth: Dp = 150.dp,
+    cardWidth: Dp = ImmersiveDimens.PosterCardWidth,
     modifier: Modifier = Modifier,
 ) {
+    // Density-redesign spec targets an 88x132 (2:3) poster; derive the height from whatever
+    // width a caller passes so existing adaptive-layout call sites keep working unchanged.
+    val cardHeight = cardWidth * (ImmersiveDimens.PosterCardHeight / ImmersiveDimens.PosterCardWidth)
     HomeRowSection(
         title = title,
         modifier = modifier,
@@ -38,15 +53,16 @@ fun PosterRowSection(
             key = { it.getItemKey() },
             contentType = { "poster_media_card" },
         ) { item ->
-            PosterMediaCard(
-                item = item,
-                getImageUrl = getImageUrl,
-                onClick = onItemClick,
-                onLongPress = onItemLongPress,
-                cardWidth = cardWidth,
-                showTitle = true,
-                showMetadata = true,
-                titleMinLines = 2,
+            ImmersivePosterCard(
+                title = item.name.orEmpty(),
+                imageUrl = getImageUrl(item).orEmpty(),
+                onCardClick = { onItemClick(item) },
+                onCardLongClick = { onItemLongPress(item) },
+                subtitle = posterRowSubtitle(item),
+                rating = item.communityRating,
+                unwatchedEpisodeCount = item.getUnwatchedEpisodeCount().takeIf { it > 0 },
+                posterWidth = cardWidth,
+                posterHeight = cardHeight,
             )
         }
     }

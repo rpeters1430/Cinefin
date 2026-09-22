@@ -17,103 +17,114 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil3.compose.SubcomposeAsyncImage
-import coil3.request.ImageRequest
-import coil3.request.crossfade
+import androidx.compose.ui.unit.sp
 import com.rpeters.jellyfin.ui.components.OfficialRatingBadge
 import com.rpeters.jellyfin.ui.components.RatingRow
-import com.rpeters.jellyfin.utils.normalizeOfficialRating
+import com.rpeters.jellyfin.ui.image.ImageQuality
+import com.rpeters.jellyfin.ui.image.ImageSize
+import com.rpeters.jellyfin.ui.image.OptimizedImage
+import com.rpeters.jellyfin.ui.theme.ImmersiveShapes
 import org.jellyfin.sdk.model.api.BaseItemDto
-import kotlin.math.roundToInt
+
+/** Density-pass poster overlapping the collapsing backdrop (item 4 of the redesign spec). */
+private val DetailPosterWidth = 104.dp
+private val DetailPosterHeight = 156.dp
 
 @Composable
 fun MovieHeroContent(
     movie: BaseItemDto,
-    getLogoUrl: (BaseItemDto) -> String?,
+    posterUrl: String?,
     modifier: Modifier = Modifier,
 ) {
-    Column(
+    Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(top = 220.dp) // Offset for taller background hero (less crowded at the top)
-            .padding(horizontal = 16.dp, vertical = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+            .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.Bottom,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        // 1. Logo or Title
-        val logoUrl = getLogoUrl(movie)
-        if (logoUrl != null) {
-            SubcomposeAsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(logoUrl)
-                    .crossfade(true)
-                    .build(),
-                contentDescription = movie.name,
-                modifier = Modifier
-                    .fillMaxWidth(0.7f)
-                    .height(100.dp),
-                contentScale = ContentScale.Fit,
-            )
-        } else {
+        // Poster overlapping the backdrop above it.
+        OptimizedImage(
+            imageUrl = posterUrl,
+            contentDescription = movie.name,
+            contentScale = ContentScale.Crop,
+            size = ImageSize.CARD,
+            quality = ImageQuality.HIGH,
+            modifier = Modifier
+                .width(DetailPosterWidth)
+                .height(DetailPosterHeight)
+                .clip(ImmersiveShapes.PosterImage),
+        )
+
+        // Left-aligned title block.
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(bottom = 8.dp),
+            horizontalAlignment = Alignment.Start,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
             Text(
                 text = movie.name ?: "Unknown Movie",
-                style = MaterialTheme.typography.headlineLarge,
+                style = MaterialTheme.typography.headlineSmall.copy(fontSize = 24.sp, lineHeight = 30.sp),
                 fontWeight = FontWeight.ExtraBold,
-                textAlign = TextAlign.Center,
-                color = Color.White,
+                textAlign = TextAlign.Start,
+                // Not Color.White: with a 156dp poster and a -58dp overlap over the 200dp
+                // backdrop, a long (3-line) title routinely extends past the backdrop onto the
+                // plain screen background, which is light in the app's light theme. Theme-aware
+                // tokens keep it readable regardless of what's behind it.
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
             )
-        }
 
-        // 2. Primary Metadata Row (Year, Duration, Rating)
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            // Year
-            movie.productionYear?.let { year ->
-                Text(
-                    text = year.toString(),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White.copy(alpha = 0.78f),
-                )
-            }
-
-            // Duration
-            movie.runTimeTicks?.let { ticks ->
-                val minutes = (ticks / 10_000 / 1000 / 60).toInt()
-                if (minutes > 0) {
-                    val hours = minutes / 60
-                    val remainingMinutes = minutes % 60
-                    val durationText = if (hours > 0) "${hours}h ${remainingMinutes}m" else "${minutes}m"
+            // Primary metadata row (Year, Duration, Rating)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                movie.productionYear?.let { year ->
                     Text(
-                        text = durationText,
+                        text = year.toString(),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White.copy(alpha = 0.78f),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                }
+
+                movie.runTimeTicks?.let { ticks ->
+                    val minutes = (ticks / 10_000 / 1000 / 60).toInt()
+                    if (minutes > 0) {
+                        val hours = minutes / 60
+                        val remainingMinutes = minutes % 60
+                        val durationText = if (hours > 0) "${hours}h ${remainingMinutes}m" else "${minutes}m"
+                        Text(
+                            text = durationText,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+
+                movie.officialRating?.let { rating ->
+                    OfficialRatingBadge(rating = rating)
                 }
             }
 
-            // Official Rating
-            movie.officialRating?.let { rating ->
-                OfficialRatingBadge(rating = rating)
-            }
+            RatingRow(
+                communityRating = movie.communityRating,
+                criticRating = movie.criticRating,
+            )
         }
-
-        // 3. Critics Rating and Community (if available)
-        RatingRow(
-            communityRating = movie.communityRating,
-            criticRating = movie.criticRating,
-        )
     }
 }
 

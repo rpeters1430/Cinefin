@@ -425,7 +425,6 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                     mainViewModel.getChapterImageUrl(resolvedMovie.id.toString(), chapterIndex, imageTag)
                 },
                 getBackdropUrl = { item -> mainViewModel.getBackdropUrl(item) },
-                getLogoUrl = { item -> mainViewModel.getLogoUrl(item) },
                 getPersonImageUrl = { person -> mainViewModel.getPersonImageUrl(person) },
                 serverUrl = currentServer?.url,
                 onGenerateAiSummary = { detailViewModel.generateAiSummary() },

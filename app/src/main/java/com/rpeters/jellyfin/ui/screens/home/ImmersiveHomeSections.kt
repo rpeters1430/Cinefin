@@ -8,13 +8,11 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.components.*
@@ -54,6 +53,7 @@ internal fun MobileExpressiveHomeContent(
     contentPadding: PaddingValues,
     bottomSpacing: Dp,
     animatedVisibilityScope: androidx.compose.animation.AnimatedVisibilityScope? = null,
+    heroHeight: Dp = ImmersiveDimens.HeroHeightPhone,
     modifier: Modifier = Modifier,
 ) {
     val unknownText = androidx.compose.ui.res.stringResource(id = R.string.unknown)
@@ -109,6 +109,7 @@ internal fun MobileExpressiveHomeContent(
                         onPlayClick = { selected ->
                             heroItems.firstOrNull { it.id.toString() == selected.id }?.let(onItemClick)
                         },
+                        heroHeight = heroHeight,
                         modifier = Modifier.fillMaxWidth(),
                     )
                 } else {
@@ -116,7 +117,7 @@ internal fun MobileExpressiveHomeContent(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(ImmersiveDimens.HeroHeightPhone),
+                            .height(heroHeight),
                     )
                 }
             }
@@ -125,7 +126,6 @@ internal fun MobileExpressiveHomeContent(
         item(key = "libraries", contentType = "libraries") {
             LibraryNavigationCarousel(
                 libraries = appState.libraries,
-                getImageUrl = getImageUrl,
                 onLibraryClick = onLibraryClick,
             )
         }
@@ -192,7 +192,6 @@ internal fun MobileExpressiveHomeContent(
 @Composable
 private fun LibraryNavigationCarousel(
     libraries: List<BaseItemDto>,
-    getImageUrl: (BaseItemDto) -> String?,
     onLibraryClick: (BaseItemDto) -> Unit,
 ) {
     val visibleLibraries = libraries
@@ -204,45 +203,63 @@ private fun LibraryNavigationCarousel(
             modifier = Modifier.padding(top = 8.dp),
         )
 
-        // Display libraries in a 2-column grid so all cards are fully visible.
-        // HorizontalUncontainedCarousel is intentionally avoided here because it
-        // clips the last visible card, causing the "Shows card cut off" issue.
-        //
-        // A manually chunked Row/Column is used instead of FlowRow.weight() because
-        // FlowRowScope.weight() requires intrinsic measurements of its children, and
-        // LibraryExpressiveCard's content (HeroImageWithGradient) contains
-        // BoxWithConstraints/SubcomposeAsyncImage, which are SubcomposeLayout-based and
-        // do not support intrinsic measurement. Combining the two crashes with
-        // "Asking for intrinsic measurements of SubcomposeLayout layouts is not
-        // supported." Plain RowScope.weight() does not require intrinsics, so it is safe.
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+        // Density pass: the library rail is a horizontally scrollable row of compact,
+        // fully-rounded chips (icon + label) rather than a 2x2 grid of poster cards.
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            visibleLibraries.chunked(2).forEach { rowLibraries ->
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    rowLibraries.forEach { library ->
-                        key(library.id) {
-                            LibraryExpressiveCard(
-                                library = library,
-                                imageUrl = getImageUrl(library),
-                                onClick = { onLibraryClick(library) },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(160.dp),
-                            )
-                        }
-                    }
-                    if (rowLibraries.size == 1) {
-                        Spacer(modifier = Modifier.weight(1f))
-                    }
-                }
+            items(
+                items = visibleLibraries,
+                key = { it.id },
+                contentType = { "library_chip" },
+            ) { library ->
+                LibraryChip(
+                    library = library,
+                    onClick = { onLibraryClick(library) },
+                )
             }
+        }
+    }
+}
+
+@Composable
+private fun LibraryChip(
+    library: BaseItemDto,
+    onClick: () -> Unit,
+) {
+    val haptics = com.rpeters.jellyfin.ui.utils.rememberExpressiveHaptics()
+
+    Surface(
+        onClick = {
+            haptics.lightClick()
+            onClick()
+        },
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        modifier = Modifier.height(ImmersiveDimens.ChipRailHeight),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            modifier = Modifier
+                .fillMaxHeight()
+                .padding(horizontal = ImmersiveDimens.ChipRailHorizontalPadding),
+        ) {
+            Icon(
+                imageVector = library.toLibraryTypeOrNull()?.icon ?: Icons.Default.Folder,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(16.dp),
+            )
+            Text(
+                text = library.name ?: "Library",
+                style = MaterialTheme.typography.labelLarge.copy(fontSize = 13.sp),
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
     }
 }
@@ -351,94 +368,6 @@ private fun HomeLibraryMediaRow(
                 onLongPress = onItemLongPress,
                 cardWidth = cardWidth,
             )
-        }
-    }
-}
-
-@Composable
-private fun LibraryExpressiveCard(
-    library: BaseItemDto,
-    imageUrl: String?,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val haptics = com.rpeters.jellyfin.ui.utils.rememberExpressiveHaptics()
-    val sharedTransitionScope = com.rpeters.jellyfin.ui.navigation.LocalSharedTransitionScope.current
-    val animatedVisibilityScope = com.rpeters.jellyfin.ui.navigation.LocalAnimatedVisibilityScope.current
-    val libraryId = library.id.toString()
-
-    val sharedElementModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null) {
-        with(sharedTransitionScope) {
-            Modifier.sharedElement(
-                rememberSharedContentState(key = "library_$libraryId"),
-                animatedVisibilityScope = animatedVisibilityScope,
-            )
-        }
-    } else {
-        Modifier
-    }
-
-    ElevatedCard(
-        onClick = {
-            haptics.lightClick()
-            onClick()
-        },
-        modifier = modifier
-            .then(sharedElementModifier)
-            .expressiveGlow(
-                color = MaterialTheme.colorScheme.primary,
-                alpha = 0.18f,
-                borderRadius = 28.dp,
-            ),
-        shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.82f),
-        ),
-        elevation = CardDefaults.elevatedCardElevation(
-            defaultElevation = 8.dp,
-            pressedElevation = 4.dp,
-            hoveredElevation = 12.dp,
-        ),
-    ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            HeroImageWithGradient(
-                imageUrl = imageUrl,
-                contentDescription = library.name ?: "Library",
-                modifier = Modifier.fillMaxSize(),
-            )
-            Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-                Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surface.copy(alpha = 0.82f)) {
-                    Icon(
-                        imageVector = library.toLibraryTypeOrNull()?.icon ?: Icons.Default.Folder,
-                        contentDescription = null,
-                        modifier = Modifier.padding(10.dp).size(20.dp),
-                    )
-                }
-                Column(modifier = Modifier.align(Alignment.BottomStart), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.86f),
-                        tonalElevation = 2.dp,
-                    ) {
-                        Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                            Text(
-                                text = library.name ?: "Library",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                fontWeight = FontWeight.Bold,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                            Text(
-                                text = library.collectionType?.toString()?.replace("_", " ") ?: "Collection",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1,
-                            )
-                        }
-                    }
-                }
-            }
         }
     }
 }

@@ -31,8 +31,6 @@ internal fun BoxScope.VideoPlayerOverlays(
         visible = feedbackVisible,
         icon = feedbackIcon,
         text = feedbackText,
-        overlayScrim = overlayScrim,
-        overlayContent = overlayContent,
         modifier = Modifier.align(Alignment.Center),
     )
 

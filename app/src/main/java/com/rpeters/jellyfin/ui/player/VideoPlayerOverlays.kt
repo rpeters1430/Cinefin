@@ -3,6 +3,7 @@ package com.rpeters.jellyfin.ui.player
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -25,8 +26,6 @@ fun GestureFeedbackOverlay(
     visible: Boolean,
     icon: ImageVector,
     text: String,
-    overlayScrim: Color,
-    overlayContent: Color,
     modifier: Modifier = Modifier,
 ) {
     AnimatedVisibility(
@@ -35,10 +34,18 @@ fun GestureFeedbackOverlay(
         exit = fadeOut(),
         modifier = modifier,
     ) {
+        // This panel has an opaque surfaceVariant background (see below), which is a light
+        // color in the app's light theme, so its foreground must track onSurfaceVariant rather
+        // than a caller-supplied content color (which would assume a dark, scrim-backed panel).
+        val panelContent = MaterialTheme.colorScheme.onSurfaceVariant
         Card(
             colors = CardDefaults.cardColors(
-                containerColor = overlayScrim,
+                // Density pass: an opaque (92%) surfaceVariant background with a subtle white
+                // border reads reliably against any video frame; a translucent scrim color
+                // (black/white) could wash out or disappear depending on content.
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.92f),
             ),
+            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.14f)),
             shape = MaterialTheme.shapes.extraLarge,
             modifier = Modifier.size(120.dp),
         ) {
@@ -50,12 +57,12 @@ fun GestureFeedbackOverlay(
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = overlayContent,
+                    tint = panelContent,
                     modifier = Modifier.size(36.dp),
                 )
                 Text(
                     text = text,
-                    color = overlayContent,
+                    color = panelContent,
                     style = MaterialTheme.typography.labelLarge,
                     modifier = Modifier.padding(top = 4.dp),
                 )

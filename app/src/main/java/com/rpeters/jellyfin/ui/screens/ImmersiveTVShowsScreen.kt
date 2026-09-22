@@ -77,6 +77,7 @@ fun ImmersiveTVShowsScreenContainer(
             emptyStateIcon = Icons.Default.Tv,
             emptyStateTitle = emptyTitle,
             emptyStateSubtitle = emptySubtitle,
+            libraryName = "TV Shows",
         ),
         sortOptions = tvShowsSortOptions,
         selectedSortIndex = selectedSortIndex,

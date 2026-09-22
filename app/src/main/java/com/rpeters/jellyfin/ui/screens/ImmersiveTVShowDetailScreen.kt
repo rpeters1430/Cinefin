@@ -2,12 +2,8 @@ package com.rpeters.jellyfin.ui.screens
 
 import android.net.Uri
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -19,6 +15,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -27,6 +24,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -39,7 +37,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.NotificationsOff
@@ -63,7 +60,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
@@ -71,6 +67,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rpeters.jellyfin.OptInAppExperimentalApis
@@ -113,6 +110,8 @@ import com.rpeters.jellyfin.utils.normalizeOfficialRating
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemPerson
 import java.util.Locale
+
+private const val UNKNOWN_TITLE = "Unknown"
 
 private enum class ImmersiveShowDetailState {
     LOADING,
@@ -281,8 +280,29 @@ private fun ImmersiveShowDetailContent(
     onToggleEpisodeNotifications: (Boolean) -> Unit = {},
 ) {
     val perfConfig = rememberImmersivePerformanceConfig()
-    var expandedSeasonId by rememberSaveable { mutableStateOf<String?>(null) }
-    val listState = remember(state.seriesDetails?.id?.toString()) { LazyListState() }
+    val seriesId = state.seriesDetails?.id?.toString()
+    // Density pass (item 6): a season chip rail replaces the season accordion. Selecting a chip
+    // swaps the episode list in place - no navigation, no expand/collapse animation.
+    // Keyed on the series ID so navigating directly from one series' detail screen to another
+    // (e.g. via launchSingleTop) resets the selection instead of carrying over a season ID that
+    // belongs to the previous series.
+    var selectedSeasonId by rememberSaveable(seriesId) { mutableStateOf<String?>(null) }
+    val listState = remember(seriesId) { LazyListState() }
+
+    // Default to the first season once seasons load, and whenever the currently selected season
+    // is no longer part of this series' season list (belt-and-suspenders alongside the
+    // seriesId-keyed reset above), then load its episodes.
+    LaunchedEffect(state.seasons, selectedSeasonId) {
+        val hasValidSelection = selectedSeasonId != null &&
+            state.seasons.any { it.id.toString() == selectedSeasonId }
+        if (!hasValidSelection) {
+            state.seasons.firstOrNull()?.let { firstSeason ->
+                val firstSeasonId = firstSeason.id.toString()
+                selectedSeasonId = firstSeasonId
+                onSeasonExpand(firstSeasonId)
+            }
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         // 1. Static Hero Background (Fixed) - Extended to edges
@@ -348,74 +368,15 @@ private fun ImmersiveShowDetailContent(
                 }
             }
 
-            // 3. Seasons & Episodes
-            item {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.background)
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Seasons",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    state.seriesDetails?.let { series ->
-                        TextButton(
-                            onClick = { series.name?.takeIf { it.isNotBlank() }?.let(onSearchRequests) }
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.AddCircle,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Request Seasons")
-                        }
-                    }
-                }
-            }
-
-            if (state.seasons.isEmpty()) {
-                item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(MaterialTheme.colorScheme.background)
-                            .padding(horizontal = 16.dp, vertical = 24.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "No seasons available.",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            } else {
-                items(state.seasons, key = { it.getItemKey() }) { season ->
-                    val seasonId = season.id.toString()
-                    val isExpanded = expandedSeasonId == seasonId
-
-                    Box(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)) {
-                        SeasonItem(
-                            season = season,
-                            isExpanded = isExpanded,
-                            episodes = state.episodesBySeasonId[seasonId].orEmpty(),
-                            isLoadingEpisodes = seasonId in state.loadingSeasonIds,
-                            getImageUrl = getImageUrl,
-                            onExpand = {
-                                expandedSeasonId = if (isExpanded) null else seasonId
-                                if (!isExpanded) onSeasonExpand(seasonId)
-                            },
-                            onEpisodeClick = onEpisodeClick,
-                        )
-                    }
-                }
-            }
+            showSeasonsSection(
+                state = state,
+                selectedSeasonId = selectedSeasonId,
+                onSelectedSeasonIdChange = { selectedSeasonId = it },
+                getImageUrl = getImageUrl,
+                onSearchRequests = onSearchRequests,
+                onSeasonExpand = onSeasonExpand,
+                onEpisodeClick = onEpisodeClick,
+            )
 
             // 4. Cast & Crew
             state.seriesDetails?.people?.takeIf { it.isNotEmpty() }?.let { people ->
@@ -431,48 +392,158 @@ private fun ImmersiveShowDetailContent(
                 }
             }
 
-            // 5. Similar Shows (aligned with Movies implementation)
-            if (state.similarSeries.isNotEmpty()) {
-                item {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(MaterialTheme.colorScheme.background)
-                            .padding(horizontal = 16.dp)
-                            .padding(top = 24.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        Text(
-                            text = "More Like This",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                        )
+            showSimilarSection(
+                similarSeries = state.similarSeries,
+                getImageUrl = getImageUrl,
+                onSeriesClick = onSeriesClick,
+                maxVisibleItems = perfConfig.maxRowItems,
+            )
+        } // End LazyColumn
+    } // End Box
+}
 
-                        PerformanceOptimizedLazyRow(
-                            items = state.similarSeries,
-                            horizontalArrangement = Arrangement.spacedBy(ImmersiveDimens.SpacingRowTight),
-                            maxVisibleItems = perfConfig.maxRowItems,
-                        ) { similarShow, _, _ ->
-                            ImmersiveMediaCard(
-                                title = similarShow.name ?: "Unknown",
-                                subtitle = buildYearRangeText(
-                                    startYear = similarShow.productionYear,
-                                    endYear = similarShow.endDate?.year,
-                                    status = similarShow.status,
-                                ),
-                                imageUrl = getImageUrl(similarShow) ?: "",
-                                rating = similarShow.communityRating,
-                                onCardClick = {
-                                    onSeriesClick(similarShow.id.toString())
-                                },
-                                cardSize = ImmersiveCardSize.SMALL,
-                            )
-                        }
+/**
+ * "Seasons" header (+ request-seasons action), season chip rail and the selected season's
+ * episode list.
+ */
+private fun LazyListScope.showSeasonsSection(
+    state: TVSeasonState,
+    selectedSeasonId: String?,
+    onSelectedSeasonIdChange: (String) -> Unit,
+    getImageUrl: (BaseItemDto) -> String?,
+    onSearchRequests: (String) -> Unit,
+    onSeasonExpand: (String) -> Unit,
+    onEpisodeClick: (BaseItemDto) -> Unit,
+) {
+    item {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Seasons",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+            )
+            state.seriesDetails?.let { series ->
+                TextButton(
+                    onClick = { series.name?.takeIf { it.isNotBlank() }?.let(onSearchRequests) }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AddCircle,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Request Seasons")
+                }
+            }
+        }
+    }
+
+    if (state.seasons.isEmpty()) {
+        item {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.background)
+                    .padding(horizontal = 16.dp, vertical = 24.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "No seasons available.",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+        return
+    }
+
+    item(key = "season_chip_rail") {
+        Box(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)) {
+            SeasonChipRail(
+                seasons = state.seasons,
+                selectedSeasonId = selectedSeasonId,
+                onSeasonSelected = { season ->
+                    val seasonId = season.id.toString()
+                    onSelectedSeasonIdChange(seasonId)
+                    onSeasonExpand(seasonId)
+                },
+            )
+        }
+    }
+
+    item(key = "season_episode_list") {
+        Box(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                if (selectedSeasonId != null && selectedSeasonId in state.loadingSeasonIds) {
+                    repeat(2) { ExpressiveLoadingCard(modifier = Modifier.fillMaxWidth().height(80.dp)) }
+                } else {
+                    state.episodesBySeasonId[selectedSeasonId].orEmpty().forEach { episode ->
+                        EpisodeRow(episode = episode, getImageUrl = getImageUrl, onClick = { onEpisodeClick(episode) })
                     }
                 }
             }
-        } // End LazyColumn
-    } // End Box
+        }
+    }
+}
+
+/** "More Like This" similar-shows row (aligned with the Movies implementation). */
+private fun LazyListScope.showSimilarSection(
+    similarSeries: List<BaseItemDto>,
+    getImageUrl: (BaseItemDto) -> String?,
+    onSeriesClick: (String) -> Unit,
+    maxVisibleItems: Int,
+) {
+    if (similarSeries.isEmpty()) return
+
+    item {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(horizontal = 16.dp)
+                .padding(top = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = "More Like This",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+            )
+
+            PerformanceOptimizedLazyRow(
+                items = similarSeries,
+                horizontalArrangement = Arrangement.spacedBy(ImmersiveDimens.SpacingRowTight),
+                maxVisibleItems = maxVisibleItems,
+            ) { similarShow, _, _ ->
+                ImmersiveMediaCard(
+                    title = similarShow.name ?: UNKNOWN_TITLE,
+                    subtitle = buildYearRangeText(
+                        startYear = similarShow.productionYear,
+                        endYear = similarShow.endDate?.year,
+                        status = similarShow.status,
+                    ),
+                    imageUrl = getImageUrl(similarShow).orEmpty(),
+                    rating = similarShow.communityRating,
+                    onCardClick = {
+                        onSeriesClick(similarShow.id.toString())
+                    },
+                    cardSize = ImmersiveCardSize.SMALL,
+                )
+            }
+        }
+    }
 }
 
 @Composable
@@ -514,7 +585,7 @@ private fun ShowHeroContent(
                 )
             } else {
                 Text(
-                    text = series.name ?: "Unknown",
+                    text = series.name ?: UNKNOWN_TITLE,
                     style = MaterialTheme.typography.displaySmall,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
@@ -840,124 +911,60 @@ private fun ShowMetadataSection(
     }
 }
 
+/**
+ * Density-pass season selector (item 6 of the redesign spec): a horizontally scrollable rail of
+ * 36dp chips, one per season. The selected chip shows the full season name (e.g. "Season 3");
+ * others abbreviate ("S1"/"S2"/"Specials"). Tapping a chip swaps the episode list below it in
+ * place - there is no accordion expand/collapse.
+ */
 @Composable
-private fun SeasonItem(
-    season: BaseItemDto,
-    isExpanded: Boolean,
-    episodes: List<BaseItemDto>,
-    isLoadingEpisodes: Boolean,
-    getImageUrl: (BaseItemDto) -> String?,
-    onExpand: () -> Unit,
-    onEpisodeClick: (BaseItemDto) -> Unit,
+private fun SeasonChipRail(
+    seasons: List<BaseItemDto>,
+    selectedSeasonId: String?,
+    onSeasonSelected: (BaseItemDto) -> Unit,
 ) {
-    val rotation by animateFloatAsState(if (isExpanded) 180f else 0f, label = "chevron")
-
-    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
-        Surface(
-            onClick = onExpand,
-            shape = MaterialTheme.shapes.medium,
-            color = MaterialTheme.colorScheme.surfaceContainer,
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                // Season Poster
-                Surface(
-                    shape = MaterialTheme.shapes.small,
-                    modifier = Modifier.size(width = 60.dp, height = 90.dp),
-                ) {
-                    JellyfinAsyncImage(
-                        model = getImageUrl(season),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(16.dp))
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = season.name ?: "Season",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                    )
-
-                    val unwatchedCount = season.userData?.unplayedItemCount ?: 0
-                    if (unwatchedCount > 0) {
-                        Surface(
-                            shape = MaterialTheme.shapes.extraSmall,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(top = 4.dp),
-                        ) {
-                            Text(
-                                text = "$unwatchedCount unwatched",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                            )
-                        }
-                    } else if (season.isCompletelyWatched()) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(top = 4.dp),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Check,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.tertiary,
-                                modifier = Modifier.size(14.dp),
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "Watched",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.tertiary,
-                            )
-                        }
-                    } else {
-                        // Fallback to total episode count
-                        val episodeCount = if (episodes.isNotEmpty()) {
-                            episodes.size
-                        } else {
-                            season.childCount?.takeIf { it > 0 }
-                        }
-
-                        episodeCount.let { count ->
-                            Text(
-                                text = "${count} Episode${if (count != 1) "s" else ""}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                }
-
-                Icon(
-                    Icons.Default.ExpandMore,
-                    contentDescription = null,
-                    modifier = Modifier.rotate(rotation),
-                )
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        items(seasons, key = { it.getItemKey() }) { season ->
+            val seasonId = season.id.toString()
+            val isSelected = seasonId == selectedSeasonId
+            val abbreviatedLabel = when {
+                season.indexNumber == null -> season.name ?: "Season"
+                season.indexNumber == 0 -> "Specials"
+                else -> "S${season.indexNumber}"
             }
-        }
+            val fullLabel = season.name ?: abbreviatedLabel
 
-        AnimatedVisibility(
-            visible = isExpanded,
-            enter = expandVertically() + fadeIn(),
-            exit = shrinkVertically() + fadeOut(),
-        ) {
-            Column(
-                modifier = Modifier.padding(top = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                if (isLoadingEpisodes) {
-                    repeat(2) { ExpressiveLoadingCard(modifier = Modifier.fillMaxWidth().height(80.dp)) }
+            Surface(
+                onClick = { onSeasonSelected(season) },
+                shape = CircleShape,
+                color = if (isSelected) {
+                    MaterialTheme.colorScheme.primary
                 } else {
-                    episodes.forEach { episode ->
-                        EpisodeRow(episode = episode, getImageUrl = getImageUrl, onClick = { onEpisodeClick(episode) })
-                    }
+                    MaterialTheme.colorScheme.surfaceContainer
+                },
+                modifier = Modifier.height(ImmersiveDimens.ChipRailHeight),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .padding(horizontal = ImmersiveDimens.ChipRailHorizontalPadding),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = if (isSelected) fullLabel else abbreviatedLabel,
+                        style = MaterialTheme.typography.labelLarge.copy(fontSize = 13.sp),
+                        fontWeight = FontWeight.Medium,
+                        color = if (isSelected) {
+                            MaterialTheme.colorScheme.onPrimary
+                        } else {
+                            MaterialTheme.colorScheme.onSurface
+                        },
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 }
             }
         }
@@ -1079,7 +1086,7 @@ private fun ImmersiveCastSection(
                     modifier = Modifier
                         .width(ImmersiveDimens.CastMemberWidth)
                         .clickable {
-                            onPersonClick(person.id.toString(), person.name ?: "Unknown")
+                            onPersonClick(person.id.toString(), person.name ?: UNKNOWN_TITLE)
                         },
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {

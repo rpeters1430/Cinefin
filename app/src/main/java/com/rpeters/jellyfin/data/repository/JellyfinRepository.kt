@@ -947,6 +947,10 @@ open class JellyfinRepository @Inject constructor(
                     BaseItemKind.MUSIC_ARTIST,
                     BaseItemKind.BOOK,
                     BaseItemKind.AUDIO_BOOK,
+                    // Needed so the search screen's "People" scope chip (ImmersiveSearchScreen)
+                    // has any PERSON results to filter to — it filters appState.searchResults
+                    // client-side and never issues its own request.
+                    BaseItemKind.PERSON,
                 ),
                 limit = limit,
             )

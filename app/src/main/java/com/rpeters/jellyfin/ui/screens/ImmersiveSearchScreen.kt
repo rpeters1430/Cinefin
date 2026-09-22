@@ -1,12 +1,7 @@
 package com.rpeters.jellyfin.ui.screens
 
 import android.app.Activity
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,12 +10,16 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
@@ -46,7 +45,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -71,20 +69,16 @@ import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
 import com.rpeters.jellyfin.ui.adaptive.rememberAdaptiveLayoutConfig
 import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
 import com.rpeters.jellyfin.ui.components.aiAura
-import com.rpeters.jellyfin.ui.components.immersive.ImmersiveCardSize
-import com.rpeters.jellyfin.ui.components.immersive.ImmersiveMediaCard
 import com.rpeters.jellyfin.ui.components.immersive.rememberImmersivePerformanceConfig
-import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
+import com.rpeters.jellyfin.ui.image.ImageQuality
+import com.rpeters.jellyfin.ui.image.ImageSize
+import com.rpeters.jellyfin.ui.image.OptimizedImage
+import com.rpeters.jellyfin.ui.theme.ImmersiveShapes
 import com.rpeters.jellyfin.ui.viewmodel.MainAppState
 import com.rpeters.jellyfin.ui.viewmodel.SearchViewModel
 import com.rpeters.jellyfin.utils.getItemKey
 import com.rpeters.jellyfin.utils.rememberDebouncedState
 import kotlinx.coroutines.launch
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.foundation.lazy.grid.GridItemSpan
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 
@@ -96,6 +90,7 @@ import org.jellyfin.sdk.model.api.BaseItemKind
  * - Tighter spacing for cinematic feel
  * - Material 3 Expressive animations
  */
+@OptIn(ExperimentalFoundationApi::class)
 @OptInAppExperimentalApis
 @Composable
 fun ImmersiveSearchScreen(
@@ -172,31 +167,20 @@ fun ImmersiveSearchScreen(
     }
 
     LaunchedEffect(debouncedQuery, aiSearchEnabled) {
-        if (debouncedQuery.isBlank()) {
-            onClearSearch()
-        } else {
-            // Use AI to enhance query if enabled
-            if (aiSearchEnabled && debouncedQuery.length > 3) {
-                coroutineScope.launch {
-                    val enhancedQuery = viewModel.enhanceSearchQuery(debouncedQuery)
-                    onSearch(enhancedQuery)
-                }
-            } else {
-                onSearch(debouncedQuery)
-            }
-        }
+        triggerSearch(debouncedQuery, aiSearchEnabled, viewModel, coroutineScope, onSearch, onClearSearch)
     }
 
-    val listState = rememberLazyGridState()
+    val listState = rememberLazyListState()
 
-    // Auto-hide search bar when scrolling down
-    val showSearchBar by remember {
-        derivedStateOf {
-            listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset < 100
-        }
+    // Density pass (item 8): scope chips (All/Movies/Shows/People, with counts) filter the
+    // already-loaded search results client-side.
+    var selectedScope by remember { mutableStateOf(SearchScope.ALL) }
+    val scopeCounts = remember(appState.searchResults) {
+        SearchScope.entries.associateWith { scope -> appState.searchResults.count { matchesScope(it, scope) } }
     }
-
-    val columns = adaptiveConfig.gridColumns.coerceAtMost(3) // Ensure cards are large
+    val scopedResults = remember(appState.searchResults, selectedScope) {
+        appState.searchResults.filter { matchesScope(it, selectedScope) }
+    }
 
     Box(
         modifier = modifier
@@ -204,319 +188,201 @@ fun ImmersiveSearchScreen(
             .background(MaterialTheme.colorScheme.background),
     ) {
         // Main content
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(columns),
+        LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
                 start = 16.dp,
                 end = 16.dp,
-                top = 100.dp, // Space for floating search bar
                 bottom = 120.dp, // Space for MiniPlayer + FABs
             ),
-            verticalArrangement = Arrangement.spacedBy(ImmersiveDimens.SpacingRowTight),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            // Content Type Filters
-            if (isFilterExpanded) {
-                item(key = "filters", span = { GridItemSpan(maxLineSpan) }) {
-                    OutlinedCard(
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                        ) {
-                            Text(
-                                text = "Content Types",
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.SemiBold,
-                                modifier = Modifier.padding(bottom = 8.dp),
-                            )
+            // Density pass: sticky search field + scope chip row, always pinned at the top.
+            searchStickyHeader(
+                searchQuery = searchQuery,
+                onQueryChange = { searchQuery = it },
+                focusRequester = focusRequester,
+                onBackClick = {
+                    focusManager.clearFocus()
+                    onBackClick()
+                },
+                onClearSearch = {
+                    searchQuery = ""
+                    onClearSearch()
+                },
+                showScopeChips = appState.searchResults.isNotEmpty(),
+                selectedScope = selectedScope,
+                scopeCounts = scopeCounts,
+                onScopeSelected = { selectedScope = it },
+            )
 
-                            LazyRow(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                contentPadding = PaddingValues(horizontal = 0.dp),
-                            ) {
-                                val contentTypes = listOf(
-                                    BaseItemKind.MOVIE to "Movies",
-                                    BaseItemKind.SERIES to "TV Shows",
-                                    BaseItemKind.AUDIO to "Music",
-                                    BaseItemKind.BOOK to "Books",
-                                    BaseItemKind.AUDIO_BOOK to "Audiobooks",
-                                    BaseItemKind.VIDEO to "Videos",
-                                )
-
-                                items(
-                                    items = contentTypes,
-                                    key = { (kind, _) -> kind },
-                                    contentType = { "immersive_search_content_type_filter" },
-                                ) { (kind, label) ->
-                                    FilterChip(
-                                        selected = selectedContentTypes.contains(kind),
-                                        onClick = {
-                                            selectedContentTypes = if (selectedContentTypes.contains(kind)) {
-                                                selectedContentTypes - kind
-                                            } else {
-                                                selectedContentTypes + kind
-                                            }
-                                        },
-                                        label = { Text(label) },
-                                        colors = FilterChipDefaults.filterChipColors(
-                                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                                            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                                        ),
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Search suggestions when no active search
-            if (searchQuery.isBlank() && appState.searchResults.isEmpty()) {
-                item(key = "suggestions", span = { GridItemSpan(maxLineSpan) }) {
-                    Column(
-                        modifier = Modifier.padding(vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                    ) {
-                        // Recent searches
-                        if (recentSearches.isNotEmpty()) {
-                            Column(
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.History,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                    Text(
-                                        text = "Recent Searches",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-
-                                LazyRow(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    contentPadding = PaddingValues(horizontal = 0.dp),
-                                ) {
-                                    items(
-                                        items = recentSearches.take(perfConfig.maxRowItems),
-                                        key = { it },
-                                        contentType = { "immersive_recent_search" },
-                                    ) { search ->
-                                        SuggestionChip(
-                                            onClick = { searchQuery = search },
-                                            label = { Text(search) },
-                                        )
-                                    }
-                                }
-                            }
-                        }
-
-                        // Smart suggestions
-                        if (smartSuggestions.isNotEmpty()) {
-                            Column(
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                Text(
-                                    text = "Popular in Your Library",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-
-                                LazyRow(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    contentPadding = PaddingValues(horizontal = 0.dp),
-                                ) {
-                                    val limitedSuggestions = smartSuggestions.take(perfConfig.maxRowItems)
-                                    items(
-                                        count = limitedSuggestions.size,
-                                        key = { index -> "immersive_suggestion_$index" },
-                                        contentType = { "immersive_smart_suggestion" },
-                                    ) { index ->
-                                        val suggestion = limitedSuggestions[index]
-                                        SuggestionChip(
-                                            onClick = { searchQuery = suggestion },
-                                            label = { Text(suggestion) },
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Search results
-            if (appState.isSearching) {
-                item(key = "searching", span = { GridItemSpan(maxLineSpan) }) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 48.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
-                            ExpressiveCircularLoading(size = 24.dp)
-                            Text(
-                                text = "Searching...",
-                                style = MaterialTheme.typography.bodyLarge,
-                            )
-                        }
-                    }
-                }
-            }
-
-            appState.errorMessage?.let { error ->
-                item(key = "error", span = { GridItemSpan(maxLineSpan) }) {
-                    Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer,
-                        ),
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text(
-                            text = error,
-                            color = MaterialTheme.colorScheme.onErrorContainer,
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.padding(16.dp),
-                        )
-                    }
-                }
-            }
-
-            if (appState.searchResults.isEmpty() && !appState.isSearching && appState.errorMessage == null && searchQuery.isNotBlank()) {
-                item(key = "no_results", span = { GridItemSpan(maxLineSpan) }) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 64.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = null,
-                            modifier = Modifier.size(64.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                        )
-                        Text(
-                            text = "No results found",
-                            style = MaterialTheme.typography.headlineMedium,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            textAlign = TextAlign.Center,
-                        )
-                        Text(
-                            text = "Try a different search term or check the request catalog",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center,
-                        )
-                        SuggestionChip(
-                            onClick = { onSearchRequests(searchQuery.trim()) },
-                            label = { Text("Search request catalog") },
-                            icon = {
-                                Icon(
-                                    imageVector = Icons.Default.Search,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp),
-                                )
-                            },
-                        )
-                    }
-                }
-            }
-
-            // Grouped results by type
-            val groupedResults = appState.searchResults.groupBy { it.type }
-            groupedResults.forEach { (type, items) ->
-                item(key = "header_$type", span = { GridItemSpan(maxLineSpan) }) {
-                    Text(
-                        text = when (type) {
-                            BaseItemKind.MOVIE -> "Movies"
-                            BaseItemKind.SERIES -> "TV Shows"
-                            BaseItemKind.EPISODE -> "Episodes"
-                            BaseItemKind.AUDIO -> "Music"
-                            BaseItemKind.MUSIC_ALBUM -> "Albums"
-                            BaseItemKind.MUSIC_ARTIST -> "Artists"
-                            BaseItemKind.BOOK -> "Books"
-                            BaseItemKind.AUDIO_BOOK -> "Audiobooks"
-                            else -> type.toString()
-                        },
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(top = 16.dp, bottom = 8.dp),
-                    )
-                }
-
-                items(
-                    items = items,
-                    key = { it.getItemKey() },
-                    contentType = { "immersive_search_result" },
-                ) { item ->
-                    ImmersiveMediaCard(
-                        title = item.name ?: "",
-                        imageUrl = getImageUrl(item) ?: "",
-                        onCardClick = { onItemClick(item) },
-                        subtitle = when (item.type) {
-                            BaseItemKind.EPISODE -> item.seriesName ?: ""
-                            else -> item.productionYear?.toString() ?: ""
-                        },
-                        rating = item.communityRating,
-                        isFavorite = item.userData?.isFavorite == true,
-                        isWatched = item.userData?.played == true,
-                        watchProgress = (item.userData?.playedPercentage ?: 0.0).toFloat() / 100f,
-                        cardSize = ImmersiveCardSize.MEDIUM, // 280dp width
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-            }
+            searchResultsSections(
+                appState = appState,
+                searchQuery = searchQuery,
+                scopedResults = scopedResults,
+                selectedScope = selectedScope,
+                isFilterExpanded = isFilterExpanded,
+                selectedContentTypes = selectedContentTypes,
+                onSelectedContentTypesChange = { selectedContentTypes = it },
+                recentSearches = recentSearches,
+                smartSuggestions = smartSuggestions,
+                maxRowItems = perfConfig.maxRowItems,
+                onSuggestionClick = { searchQuery = it },
+                onSearchRequests = onSearchRequests,
+                getImageUrl = getImageUrl,
+                onItemClick = onItemClick,
+            )
         }
 
-
-        // Floating search bar (auto-hides on scroll)
-        AnimatedVisibility(
-            visible = showSearchBar,
-            enter = fadeIn(animationSpec = tween(300)) + slideInVertically(
-                initialOffsetY = { -it },
-                animationSpec = tween(300),
-            ),
-            exit = fadeOut(animationSpec = tween(300)) + slideOutVertically(
-                targetOffsetY = { -it },
-                animationSpec = tween(300),
-            ),
+        // Floating action buttons (bottom-right). Always visible now that the search field is a
+        // sticky header rather than an auto-hiding overlay.
+        SearchFabColumn(
+            aiSearchEnabled = aiSearchEnabled,
+            onToggleAiSearch = { aiSearchEnabled = !aiSearchEnabled },
+            isFilterExpanded = isFilterExpanded,
+            onToggleFilters = { isFilterExpanded = !isFilterExpanded },
             modifier = Modifier
-                .align(Alignment.TopCenter)
+                .align(Alignment.BottomEnd)
+                .padding(end = 16.dp, bottom = 96.dp), // Above MiniPlayer
+        )
+    }
+}
+
+/** Debounced-query effect body, extracted to keep [ImmersiveSearchScreen]'s branch count low. */
+private fun triggerSearch(
+    debouncedQuery: String,
+    aiSearchEnabled: Boolean,
+    viewModel: SearchViewModel,
+    coroutineScope: kotlinx.coroutines.CoroutineScope,
+    onSearch: (String) -> Unit,
+    onClearSearch: () -> Unit,
+) {
+    if (debouncedQuery.isBlank()) {
+        onClearSearch()
+        return
+    }
+    if (aiSearchEnabled && debouncedQuery.length > 3) {
+        coroutineScope.launch {
+            val enhancedQuery = viewModel.enhanceSearchQuery(debouncedQuery)
+            onSearch(enhancedQuery)
+        }
+    } else {
+        onSearch(debouncedQuery)
+    }
+}
+
+/**
+ * The body of the results [LazyColumn]: content-type filters, suggestions, loading/error state,
+ * empty states, and the grouped results list. Extracted from [ImmersiveSearchScreen] to keep that
+ * composable's own branch count low (DeepSource flags high cyclomatic complexity otherwise).
+ */
+private fun LazyListScope.searchResultsSections(
+    appState: MainAppState,
+    searchQuery: String,
+    scopedResults: List<BaseItemDto>,
+    selectedScope: SearchScope,
+    isFilterExpanded: Boolean,
+    selectedContentTypes: Set<BaseItemKind>,
+    onSelectedContentTypesChange: (Set<BaseItemKind>) -> Unit,
+    recentSearches: List<String>,
+    smartSuggestions: List<String>,
+    maxRowItems: Int,
+    onSuggestionClick: (String) -> Unit,
+    onSearchRequests: (String) -> Unit,
+    getImageUrl: (BaseItemDto) -> String?,
+    onItemClick: (BaseItemDto) -> Unit,
+) {
+    if (isFilterExpanded) {
+        contentTypeFiltersSection(
+            selectedContentTypes = selectedContentTypes,
+            onToggleContentType = { kind ->
+                val updated = if (selectedContentTypes.contains(kind)) {
+                    selectedContentTypes - kind
+                } else {
+                    selectedContentTypes + kind
+                }
+                onSelectedContentTypesChange(updated)
+            },
+        )
+    }
+
+    if (searchQuery.isBlank() && appState.searchResults.isEmpty()) {
+        searchSuggestionsSection(
+            recentSearches = recentSearches,
+            smartSuggestions = smartSuggestions,
+            maxRowItems = maxRowItems,
+            onSuggestionClick = onSuggestionClick,
+        )
+    }
+
+    if (appState.isSearching) {
+        searchingIndicatorSection()
+    }
+
+    appState.errorMessage?.let { error ->
+        searchErrorSection(error)
+    }
+
+    val noResultsAtAll = appState.searchResults.isEmpty() &&
+        !appState.isSearching &&
+        appState.errorMessage == null &&
+        searchQuery.isNotBlank()
+    if (noResultsAtAll) {
+        noResultsSection(
+            searchQuery = searchQuery,
+            onSearchRequests = onSearchRequests,
+        )
+    }
+
+    if (scopedResults.isEmpty() && appState.searchResults.isNotEmpty()) {
+        noScopeResultsSection(selectedScope)
+    }
+
+    // Grouped results by type (density pass: list rows instead of a poster grid)
+    groupedResultsSection(
+        groupedResults = scopedResults.groupBy { it.type },
+        getImageUrl = getImageUrl,
+        onItemClick = onItemClick,
+    )
+}
+
+/** Sticky search field + scope chip row, pinned to the top of the results list. */
+@OptIn(ExperimentalFoundationApi::class)
+private fun LazyListScope.searchStickyHeader(
+    searchQuery: String,
+    onQueryChange: (String) -> Unit,
+    focusRequester: FocusRequester,
+    onBackClick: () -> Unit,
+    onClearSearch: () -> Unit,
+    showScopeChips: Boolean,
+    selectedScope: SearchScope,
+    scopeCounts: Map<SearchScope, Int>,
+    onScopeSelected: (SearchScope) -> Unit,
+) {
+    stickyHeader(key = "search_header") {
+        Column(
+            modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .background(MaterialTheme.colorScheme.background)
+                .padding(bottom = 8.dp),
         ) {
             Surface(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 12.dp),
                 shape = MaterialTheme.shapes.extraLarge,
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
-                tonalElevation = 6.dp,
+                color = MaterialTheme.colorScheme.surfaceContainer,
+                tonalElevation = 2.dp,
             ) {
                 TextField(
                     value = searchQuery,
-                    onValueChange = { searchQuery = it },
+                    onValueChange = onQueryChange,
                     modifier = Modifier
                         .fillMaxWidth()
                         .focusRequester(focusRequester),
                     placeholder = { Text(stringResource(id = R.string.search_hint)) },
                     leadingIcon = {
-                        IconButton(onClick = {
-                            focusManager.clearFocus()
-                            onBackClick()
-                        }) {
+                        IconButton(onClick = onBackClick) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = stringResource(id = R.string.navigate_up),
@@ -525,10 +391,7 @@ fun ImmersiveSearchScreen(
                     },
                     trailingIcon = if (searchQuery.isNotEmpty()) {
                         {
-                            IconButton(onClick = {
-                                searchQuery = ""
-                                onClearSearch()
-                            }) {
+                            IconButton(onClick = onClearSearch) {
                                 Icon(
                                     imageVector = Icons.Default.Clear,
                                     contentDescription = "Clear Search",
@@ -548,66 +411,462 @@ fun ImmersiveSearchScreen(
                     ),
                 )
             }
-        }
 
-        // Floating action buttons (bottom-right)
+            if (showScopeChips) {
+                LazyRow(
+                    modifier = Modifier.padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(vertical = 4.dp),
+                ) {
+                    items(
+                        items = SearchScope.entries,
+                        key = { it.name },
+                        contentType = { "immersive_search_scope_chip" },
+                    ) { scope ->
+                        FilterChip(
+                            selected = selectedScope == scope,
+                            onClick = { onScopeSelected(scope) },
+                            label = { Text("${scope.label} (${scopeCounts[scope] ?: 0})") },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            ),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Shared display label for a [BaseItemKind] used both by the content-type filter chips and the grouped-results headers. */
+private fun contentTypeDisplayLabel(type: BaseItemKind?): String = when (type) {
+    BaseItemKind.MOVIE -> "Movies"
+    BaseItemKind.SERIES -> "TV Shows"
+    BaseItemKind.EPISODE -> "Episodes"
+    BaseItemKind.AUDIO -> "Music"
+    BaseItemKind.MUSIC_ALBUM -> "Albums"
+    BaseItemKind.MUSIC_ARTIST -> "Artists"
+    BaseItemKind.BOOK -> "Books"
+    BaseItemKind.AUDIO_BOOK -> "Audiobooks"
+    BaseItemKind.VIDEO -> "Videos"
+    else -> type.toString()
+}
+
+/** Expandable "Content Types" filter card. */
+private fun LazyListScope.contentTypeFiltersSection(
+    selectedContentTypes: Set<BaseItemKind>,
+    onToggleContentType: (BaseItemKind) -> Unit,
+) {
+    item(key = "filters") {
+        OutlinedCard(
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+            ) {
+                Text(
+                    text = "Content Types",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(bottom = 8.dp),
+                )
+
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(horizontal = 0.dp),
+                ) {
+                    val contentTypes = listOf(
+                        BaseItemKind.MOVIE,
+                        BaseItemKind.SERIES,
+                        BaseItemKind.AUDIO,
+                        BaseItemKind.BOOK,
+                        BaseItemKind.AUDIO_BOOK,
+                        BaseItemKind.VIDEO,
+                    ).map { it to contentTypeDisplayLabel(it) }
+
+                    items(
+                        items = contentTypes,
+                        key = { (kind, _) -> kind },
+                        contentType = { "immersive_search_content_type_filter" },
+                    ) { (kind, label) ->
+                        FilterChip(
+                            selected = selectedContentTypes.contains(kind),
+                            onClick = { onToggleContentType(kind) },
+                            label = { Text(label) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            ),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Recent-searches + smart-suggestions chips shown before the user has searched. */
+private fun LazyListScope.searchSuggestionsSection(
+    recentSearches: List<String>,
+    smartSuggestions: List<String>,
+    maxRowItems: Int,
+    onSuggestionClick: (String) -> Unit,
+) {
+    item(key = "suggestions") {
+        Column(
+            modifier = Modifier.padding(vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            // Recent searches
+            if (recentSearches.isNotEmpty()) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.History,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            text = "Recent Searches",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(horizontal = 0.dp),
+                    ) {
+                        items(
+                            items = recentSearches.take(maxRowItems),
+                            key = { it },
+                            contentType = { "immersive_recent_search" },
+                        ) { search ->
+                            SuggestionChip(
+                                onClick = { onSuggestionClick(search) },
+                                label = { Text(search) },
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Smart suggestions
+            if (smartSuggestions.isNotEmpty()) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        text = "Popular in Your Library",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(horizontal = 0.dp),
+                    ) {
+                        val limitedSuggestions = smartSuggestions.take(maxRowItems)
+                        items(
+                            count = limitedSuggestions.size,
+                            key = { index -> "immersive_suggestion_$index" },
+                            contentType = { "immersive_smart_suggestion" },
+                        ) { index ->
+                            val suggestion = limitedSuggestions[index]
+                            SuggestionChip(
+                                onClick = { onSuggestionClick(suggestion) },
+                                label = { Text(suggestion) },
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** "Searching..." loading row. */
+private fun LazyListScope.searchingIndicatorSection() {
+    item(key = "searching") {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 48.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                ExpressiveCircularLoading(size = 24.dp)
+                Text(
+                    text = "Searching...",
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+            }
+        }
+    }
+}
+
+/** Error card shown when [error] is non-null. */
+private fun LazyListScope.searchErrorSection(error: String) {
+    item(key = "error") {
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.errorContainer,
+            ),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(
+                text = error,
+                color = MaterialTheme.colorScheme.onErrorContainer,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(16.dp),
+            )
+        }
+    }
+}
+
+/** Empty-state shown when a completed search returned zero results. */
+private fun LazyListScope.noResultsSection(
+    searchQuery: String,
+    onSearchRequests: (String) -> Unit,
+) {
+    item(key = "no_results") {
         Column(
             modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = 16.dp, bottom = 96.dp), // Above MiniPlayer
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                .fillMaxWidth()
+                .padding(vertical = 64.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            // AI Search toggle FAB
-            AnimatedVisibility(
-                visible = showSearchBar,
-                enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
-                exit = fadeOut() + slideOutVertically(targetOffsetY = { it }),
-            ) {
-                FloatingActionButton(
-                    onClick = { aiSearchEnabled = !aiSearchEnabled },
-                    containerColor = if (aiSearchEnabled) {
-                        MaterialTheme.colorScheme.primaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
-                    },
-                    contentColor = if (aiSearchEnabled) {
-                        MaterialTheme.colorScheme.onPrimaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.onSurface
-                    },
-                    modifier = Modifier.aiAura(enabled = aiSearchEnabled),
-                ) {
+            Icon(
+                imageVector = Icons.Default.Search,
+                contentDescription = null,
+                modifier = Modifier.size(64.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+            )
+            Text(
+                text = "No results found",
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                text = "Try a different search term or check the request catalog",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+            SuggestionChip(
+                onClick = { onSearchRequests(searchQuery.trim()) },
+                label = { Text("Search request catalog") },
+                icon = {
                     Icon(
-                        imageVector = Icons.Default.AutoAwesome,
-                        contentDescription = "AI Search",
+                        imageVector = Icons.Default.Search,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                },
+            )
+        }
+    }
+}
+
+/** Shown when the active scope chip filters out every loaded result. */
+private fun LazyListScope.noScopeResultsSection(selectedScope: SearchScope) {
+    item(key = "no_scope_results") {
+        Text(
+            text = "No ${selectedScope.label.lowercase()} results for this search.",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(vertical = 32.dp),
+        )
+    }
+}
+
+/** Results grouped by item type (density pass: list rows instead of a poster grid). */
+private fun LazyListScope.groupedResultsSection(
+    groupedResults: Map<BaseItemKind?, List<BaseItemDto>>,
+    getImageUrl: (BaseItemDto) -> String?,
+    onItemClick: (BaseItemDto) -> Unit,
+) {
+    groupedResults.forEach { (type, items) ->
+        item(key = "header_$type") {
+            Text(
+                text = contentTypeDisplayLabel(type),
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(top = 16.dp, bottom = 8.dp),
+            )
+        }
+
+        items(
+            items = items,
+            key = { it.getItemKey() },
+            contentType = { "immersive_search_result_row" },
+        ) { item ->
+            SearchResultRow(
+                item = item,
+                imageUrl = getImageUrl(item).orEmpty(),
+                onClick = { onItemClick(item) },
+            )
+        }
+    }
+}
+
+/** Bottom-right floating action buttons for AI search and content-type filters. */
+@Composable
+private fun SearchFabColumn(
+    aiSearchEnabled: Boolean,
+    onToggleAiSearch: () -> Unit,
+    isFilterExpanded: Boolean,
+    onToggleFilters: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        // AI Search toggle FAB
+        FloatingActionButton(
+            onClick = onToggleAiSearch,
+            containerColor = if (aiSearchEnabled) {
+                MaterialTheme.colorScheme.primaryContainer
+            } else {
+                MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
+            },
+            contentColor = if (aiSearchEnabled) {
+                MaterialTheme.colorScheme.onPrimaryContainer
+            } else {
+                MaterialTheme.colorScheme.onSurface
+            },
+            modifier = Modifier.aiAura(enabled = aiSearchEnabled),
+        ) {
+            Icon(
+                imageVector = Icons.Default.AutoAwesome,
+                contentDescription = "AI Search",
+            )
+        }
+
+        // Filter toggle FAB
+        FloatingActionButton(
+            onClick = onToggleFilters,
+            containerColor = if (isFilterExpanded) {
+                MaterialTheme.colorScheme.primaryContainer
+            } else {
+                MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
+            },
+            contentColor = if (isFilterExpanded) {
+                MaterialTheme.colorScheme.onPrimaryContainer
+            } else {
+                MaterialTheme.colorScheme.onSurface
+            },
+        ) {
+            Icon(
+                imageVector = Icons.Default.Tune,
+                contentDescription = "Search Filters",
+            )
+        }
+    }
+}
+
+/** All/Movies/Shows/People scope for the density-pass search scope chip row (item 8). */
+private enum class SearchScope(val label: String) {
+    ALL("All"),
+    MOVIES("Movies"),
+    SHOWS("Shows"),
+    PEOPLE("People"),
+}
+
+private fun matchesScope(item: BaseItemDto, scope: SearchScope): Boolean = when (scope) {
+    SearchScope.ALL -> true
+    SearchScope.MOVIES -> item.type == BaseItemKind.MOVIE
+    SearchScope.SHOWS -> item.type == BaseItemKind.SERIES || item.type == BaseItemKind.EPISODE
+    SearchScope.PEOPLE -> item.type == BaseItemKind.PERSON
+}
+
+/**
+ * Density-pass search result row (item 8): a 78dp-tall row with a 44x66dp poster thumbnail,
+ * title/metadata, and a trailing state slot (Watched label, or nothing).
+ *
+ * Note: a "NEW" badge was part of the original spec but is intentionally not implemented here -
+ * BaseItemDto.dateCreated's exact type couldn't be confirmed against the Jellyfin SDK sources in
+ * this sandbox (dependencies are unavailable / network-blocked), so date-arithmetic was avoided
+ * rather than guessed. See the commit message.
+ */
+@Composable
+private fun SearchResultRow(
+    item: BaseItemDto,
+    imageUrl: String,
+    onClick: () -> Unit,
+) {
+    val subtitle = when (item.type) {
+        BaseItemKind.EPISODE -> item.seriesName.orEmpty()
+        else -> item.productionYear?.toString().orEmpty()
+    }
+    val isWatched = item.userData?.played == true
+
+    Surface(
+        onClick = onClick,
+        color = Color.Transparent,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(78.dp),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            OptimizedImage(
+                imageUrl = imageUrl,
+                contentDescription = item.name,
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                size = ImageSize.THUMBNAIL,
+                quality = ImageQuality.MEDIUM,
+                modifier = Modifier
+                    .width(44.dp)
+                    .height(66.dp)
+                    .clip(ImmersiveShapes.PosterImage),
+            )
+
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Text(
+                    text = item.name.orEmpty(),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                )
+                if (subtitle.isNotEmpty()) {
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                     )
                 }
             }
 
-            // Filter toggle FAB
-            AnimatedVisibility(
-                visible = showSearchBar,
-                enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
-                exit = fadeOut() + slideOutVertically(targetOffsetY = { it }),
-            ) {
-                FloatingActionButton(
-                    onClick = { isFilterExpanded = !isFilterExpanded },
-                    containerColor = if (isFilterExpanded) {
-                        MaterialTheme.colorScheme.primaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
-                    },
-                    contentColor = if (isFilterExpanded) {
-                        MaterialTheme.colorScheme.onPrimaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.onSurface
-                    },
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Tune,
-                        contentDescription = "Search Filters",
-                    )
-                }
+            if (isWatched) {
+                Text(
+                    text = "Watched",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.tertiary,
+                )
             }
         }
     }

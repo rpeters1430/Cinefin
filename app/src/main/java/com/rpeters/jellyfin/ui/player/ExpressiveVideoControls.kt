@@ -36,6 +36,7 @@ import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Hd
 import androidx.compose.material.icons.filled.HighQuality
 import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PictureInPictureAlt
@@ -62,6 +63,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -79,6 +81,7 @@ import androidx.media3.common.util.UnstableApi
 import com.rpeters.jellyfin.ui.components.ExpressiveSelectableMenuItem
 import com.rpeters.jellyfin.ui.theme.MotionTokens
 import com.rpeters.jellyfin.ui.utils.rememberExpressiveHaptics
+import kotlinx.coroutines.launch
 
 @UnstableApi
 @Composable
@@ -171,6 +174,7 @@ fun ExpressiveVideoControls(
                     onSubtitlesClick = onSubtitlesClick,
                     onAspectRatioChange = onAspectRatioChange,
                     onPlaybackSpeedChange = onPlaybackSpeedChange,
+                    onCastClick = onCastClick,
                     onSyncPlayClick = onSyncPlayClick,
                     onPictureInPictureClick = onPictureInPictureClick,
                     supportsPip = supportsPip,
@@ -339,6 +343,7 @@ private fun ExpressiveBottomControls(
     onSubtitlesClick: () -> Unit,
     onAspectRatioChange: (AspectRatioMode) -> Unit,
     onPlaybackSpeedChange: (Float) -> Unit,
+    onCastClick: () -> Unit,
     onSyncPlayClick: () -> Unit,
     onPictureInPictureClick: () -> Unit,
     supportsPip: Boolean,
@@ -362,102 +367,12 @@ private fun ExpressiveBottomControls(
                     .navigationBarsPadding()
                     .padding(horizontal = 16.dp, vertical = 12.dp),
             ) {
-                val effectiveDuration = playerState.duration.takeIf { it > 0L }
-                var sliderPosition by remember(playerState.itemId) { mutableFloatStateOf(0f) }
-                var isDragging by remember(playerState.itemId) { mutableStateOf(false) }
-
-                LaunchedEffect(playerState.currentPosition, playerState.duration, isDragging) {
-                    if (effectiveDuration != null && !isDragging) {
-                        sliderPosition =
-                            (playerState.currentPosition.toFloat() / effectiveDuration.toFloat()).coerceIn(0f, 1f)
-                    }
-                }
-
-                ExpressiveWavySlider(
-                    progress = sliderPosition,
-                    bufferedProgress = if (effectiveDuration != null) {
-                        (playerState.bufferedPosition.toFloat() / effectiveDuration.toFloat()).coerceIn(0f, 1f)
-                    } else {
-                        0f
-                    },
-                    onValueChange = { progress ->
-                        sliderPosition = progress
-                        isDragging = true
-                    },
-                    onValueChangeFinished = {
-                        effectiveDuration?.let { duration ->
-                            val newPosition = (sliderPosition * duration).toLong()
-                            onSeek(newPosition)
-                        }
-                        isDragging = false
-                    },
-                    modifier = Modifier.fillMaxWidth(),
+                PlayerProgressSection(
+                    playerState = playerState,
+                    onSeek = onSeek,
+                    overlayContent = overlayContent,
+                    overlayScrim = overlayScrim,
                 )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    val displayedPosition = if (isDragging && effectiveDuration != null) {
-                        (sliderPosition * effectiveDuration).toLong()
-                    } else {
-                        playerState.currentPosition
-                    }
-                    Text(
-                        text = formatTime(displayedPosition),
-                        color = overlayContent,
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            fontWeight = FontWeight.Medium,
-                        ),
-                    )
-
-                    Text(
-                        text = effectiveDuration?.let(::formatTime) ?: "--:--",
-                        color = overlayContent.copy(alpha = 0.72f),
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                val showSkipIntro = remember(playerState.introStartMs, playerState.introEndMs, playerState.currentPosition) {
-                    val start = playerState.introStartMs
-                    val end = playerState.introEndMs
-                    start != null && end != null && playerState.currentPosition in start..end
-                }
-                val showSkipCredits = remember(playerState.outroStartMs, playerState.currentPosition) {
-                    val start = playerState.outroStartMs
-                    start != null && playerState.currentPosition >= start
-                }
-                if (showSkipIntro || showSkipCredits) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 12.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        if (showSkipIntro) {
-                            PlayerActionChip(
-                                label = "Skip Intro",
-                                onClick = {
-                                    onSeek(playerState.introEndMs ?: (playerState.currentPosition + 10_000))
-                                },
-                                overlayContent = overlayContent,
-                                overlayScrim = overlayScrim,
-                            )
-                        }
-                        if (showSkipCredits) {
-                            PlayerActionChip(
-                                label = "Skip Credits",
-                                onClick = {
-                                    onSeek(playerState.outroEndMs ?: (playerState.currentPosition + 10_000))
-                                },
-                                overlayContent = overlayContent,
-                                overlayScrim = overlayScrim,
-                            )
-                        }
-                    }
-                }
 
                 // Play/Pause and action buttons row
                 Row(
@@ -465,173 +380,442 @@ private fun ExpressiveBottomControls(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    // Left side: Play/Pause and Skip buttons
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        // Play/Pause button
-                        AnimatedContent(
-                            targetState = playerState.isPlaying,
-                            label = "play_pause_button",
-                        ) { playing ->
-                            ExpressivePlayButton(
-                                icon = if (playing) Icons.Default.Pause else Icons.Default.PlayArrow,
-                                contentDescription = if (playing) "Pause" else "Play",
-                                onClick = onPlayPause,
-                                isLoading = showPrimaryLoadingUi,
-                                contentColor = overlayContent,
-                            )
-                        }
+                    PlayerPrimaryControls(
+                        playerState = playerState,
+                        showPrimaryLoadingUi = showPrimaryLoadingUi,
+                        onPlayPause = onPlayPause,
+                        onSeek = onSeek,
+                        overlayContent = overlayContent,
+                        overlayScrim = overlayScrim,
+                    )
 
-                        // Skip Backward 10s
-                        ExpressiveIconButton(
-                            icon = Icons.Default.Replay10,
-                            contentDescription = "Skip Backward 10s",
-                            onClick = { onSeek((playerState.currentPosition - 10000L).coerceAtLeast(0L)) },
-                            contentColor = overlayContent,
-                            containerColor = overlayScrim.copy(alpha = 0.35f),
+                    PlayerSecondaryControls(
+                        playerState = playerState,
+                        onAudioClick = onAudioClick,
+                        onToggleMute = onToggleMute,
+                        onQualityClick = onQualityClick,
+                        onSubtitlesClick = onSubtitlesClick,
+                        onAspectRatioChange = onAspectRatioChange,
+                        onPlaybackSpeedChange = onPlaybackSpeedChange,
+                        onCastClick = onCastClick,
+                        onPictureInPictureClick = onPictureInPictureClick,
+                        supportsPip = supportsPip,
+                        overlayContent = overlayContent,
+                        overlayScrim = overlayScrim,
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** Scrub bar, elapsed/remaining time, and skip-intro/skip-credits chips. */
+@Composable
+private fun PlayerProgressSection(
+    playerState: VideoPlayerState,
+    onSeek: (Long) -> Unit,
+    overlayContent: Color,
+    overlayScrim: Color,
+) {
+    val effectiveDuration = playerState.duration.takeIf { it > 0L }
+    var sliderPosition by remember(playerState.itemId) { mutableFloatStateOf(0f) }
+    var isDragging by remember(playerState.itemId) { mutableStateOf(false) }
+
+    LaunchedEffect(playerState.currentPosition, playerState.duration, isDragging) {
+        if (effectiveDuration != null && !isDragging) {
+            sliderPosition =
+                (playerState.currentPosition.toFloat() / effectiveDuration.toFloat()).coerceIn(0f, 1f)
+        }
+    }
+
+    ExpressiveWavySlider(
+        progress = sliderPosition,
+        bufferedProgress = if (effectiveDuration != null) {
+            (playerState.bufferedPosition.toFloat() / effectiveDuration.toFloat()).coerceIn(0f, 1f)
+        } else {
+            0f
+        },
+        onValueChange = { progress ->
+            sliderPosition = progress
+            isDragging = true
+        },
+        onValueChangeFinished = {
+            effectiveDuration?.let { duration ->
+                val newPosition = (sliderPosition * duration).toLong()
+                onSeek(newPosition)
+            }
+            isDragging = false
+        },
+        modifier = Modifier.fillMaxWidth(),
+    )
+
+    PlayerTimeRow(
+        playerState = playerState,
+        effectiveDuration = effectiveDuration,
+        isDragging = isDragging,
+        sliderPosition = sliderPosition,
+        overlayContent = overlayContent,
+    )
+
+    Spacer(modifier = Modifier.height(8.dp))
+
+    PlayerSkipRow(
+        playerState = playerState,
+        onSeek = onSeek,
+        overlayContent = overlayContent,
+        overlayScrim = overlayScrim,
+    )
+}
+
+/** Current position / total duration, shown below the scrub bar. */
+@Composable
+private fun PlayerTimeRow(
+    playerState: VideoPlayerState,
+    effectiveDuration: Long?,
+    isDragging: Boolean,
+    sliderPosition: Float,
+    overlayContent: Color,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        val displayedPosition = if (isDragging && effectiveDuration != null) {
+            (sliderPosition * effectiveDuration).toLong()
+        } else {
+            playerState.currentPosition
+        }
+        Text(
+            text = formatTime(displayedPosition),
+            color = overlayContent,
+            style = MaterialTheme.typography.bodySmall.copy(
+                fontWeight = FontWeight.Medium,
+            ),
+        )
+
+        Text(
+            text = effectiveDuration?.let(::formatTime) ?: "--:--",
+            color = overlayContent.copy(alpha = 0.72f),
+            style = MaterialTheme.typography.bodySmall,
+        )
+    }
+}
+
+/** Skip-intro / skip-credits action chips, shown only during their respective windows. */
+@Composable
+private fun PlayerSkipRow(
+    playerState: VideoPlayerState,
+    onSeek: (Long) -> Unit,
+    overlayContent: Color,
+    overlayScrim: Color,
+) {
+    val showSkipIntro = remember(playerState.introStartMs, playerState.introEndMs, playerState.currentPosition) {
+        val start = playerState.introStartMs
+        val end = playerState.introEndMs
+        start != null && end != null && playerState.currentPosition in start..end
+    }
+    val showSkipCredits = remember(playerState.outroStartMs, playerState.currentPosition) {
+        val start = playerState.outroStartMs
+        start != null && playerState.currentPosition >= start
+    }
+    if (!showSkipIntro && !showSkipCredits) return
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        if (showSkipIntro) {
+            PlayerActionChip(
+                label = "Skip Intro",
+                onClick = {
+                    onSeek(playerState.introEndMs ?: (playerState.currentPosition + 10_000))
+                },
+                overlayContent = overlayContent,
+                overlayScrim = overlayScrim,
+            )
+        }
+        if (showSkipCredits) {
+            PlayerActionChip(
+                label = "Skip Credits",
+                onClick = {
+                    onSeek(playerState.outroEndMs ?: (playerState.currentPosition + 10_000))
+                },
+                overlayContent = overlayContent,
+                overlayScrim = overlayScrim,
+            )
+        }
+    }
+}
+
+/** Left-hand play/pause and +-10s skip buttons. */
+@Composable
+private fun PlayerPrimaryControls(
+    playerState: VideoPlayerState,
+    showPrimaryLoadingUi: Boolean,
+    onPlayPause: () -> Unit,
+    onSeek: (Long) -> Unit,
+    overlayContent: Color,
+    overlayScrim: Color,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        // Play/Pause button
+        AnimatedContent(
+            targetState = playerState.isPlaying,
+            label = "play_pause_button",
+        ) { playing ->
+            ExpressivePlayButton(
+                icon = if (playing) Icons.Default.Pause else Icons.Default.PlayArrow,
+                contentDescription = if (playing) "Pause" else "Play",
+                onClick = onPlayPause,
+                isLoading = showPrimaryLoadingUi,
+                contentColor = overlayContent,
+            )
+        }
+
+        // Skip Backward 10s
+        ExpressiveIconButton(
+            icon = Icons.Default.Replay10,
+            contentDescription = "Skip Backward 10s",
+            onClick = { onSeek((playerState.currentPosition - 10000L).coerceAtLeast(0L)) },
+            contentColor = overlayContent,
+            containerColor = overlayScrim.copy(alpha = 0.35f),
+        )
+
+        // Skip Forward 10s
+        ExpressiveIconButton(
+            icon = Icons.Default.Forward10,
+            contentDescription = "Skip Forward 10s",
+            onClick = { onSeek((playerState.currentPosition + 10000L).coerceAtMost(playerState.duration)) },
+            contentColor = overlayContent,
+            containerColor = overlayScrim.copy(alpha = 0.35f),
+        )
+    }
+}
+
+/**
+ * Right-hand subtitles/audio/quality/overflow buttons (density pass: reduced from ~7 buttons to
+ * 4). Aspect ratio, playback speed, PiP and cast live in the overflow bottom sheet this row opens.
+ */
+@Composable
+private fun PlayerSecondaryControls(
+    playerState: VideoPlayerState,
+    onAudioClick: () -> Unit,
+    onToggleMute: () -> Unit,
+    onQualityClick: () -> Unit,
+    onSubtitlesClick: () -> Unit,
+    onAspectRatioChange: (AspectRatioMode) -> Unit,
+    onPlaybackSpeedChange: (Float) -> Unit,
+    onCastClick: () -> Unit,
+    onPictureInPictureClick: () -> Unit,
+    supportsPip: Boolean,
+    overlayContent: Color,
+    overlayScrim: Color,
+) {
+    var showOverflowSheet by remember { mutableStateOf(false) }
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        // Subtitles (CC) button
+        ExpressiveIconButton(
+            icon = Icons.Default.ClosedCaption,
+            contentDescription = "Subtitles",
+            onClick = onSubtitlesClick,
+            contentColor = overlayContent,
+            containerColor = overlayScrim.copy(alpha = 0.35f),
+        )
+
+        // Audio track button
+        ExpressiveIconButton(
+            icon = Icons.Default.MusicNote,
+            contentDescription = "Audio Selection",
+            onClick = onAudioClick,
+            contentColor = overlayContent,
+            containerColor = overlayScrim.copy(alpha = 0.35f),
+        )
+
+        // Quality button with dynamic icon based on current quality
+        ExpressiveIconButton(
+            icon = getQualityIcon(playerState.selectedQuality?.label),
+            contentDescription = "Quality",
+            onClick = onQualityClick,
+            contentColor = overlayContent,
+            containerColor = overlayScrim.copy(alpha = 0.35f),
+        )
+
+        // Overflow (more options) button
+        ExpressiveIconButton(
+            icon = Icons.Default.MoreVert,
+            contentDescription = "More Options",
+            onClick = { showOverflowSheet = true },
+            contentColor = overlayContent,
+            containerColor = overlayScrim.copy(alpha = 0.35f),
+        )
+    }
+
+    if (showOverflowSheet) {
+        PlayerOverflowSheet(
+            playerState = playerState,
+            onDismiss = { showOverflowSheet = false },
+            onAspectRatioChange = onAspectRatioChange,
+            onPlaybackSpeedChange = onPlaybackSpeedChange,
+            onToggleMute = onToggleMute,
+            onCastClick = onCastClick,
+            onPictureInPictureClick = onPictureInPictureClick,
+            supportsPip = supportsPip,
+        )
+    }
+}
+
+/**
+ * Bottom sheet for the overflow actions pulled out of the trailing icon row (density pass,
+ * item 5 of the redesign spec): playback speed, aspect ratio, PiP and cast. Mute is also kept
+ * here since the redesign spec's trailing-row list didn't have room for it and it has no other
+ * home in the reduced control set (judgment call - see commit message).
+ */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun PlayerOverflowSheet(
+    playerState: VideoPlayerState,
+    onDismiss: () -> Unit,
+    onAspectRatioChange: (AspectRatioMode) -> Unit,
+    onPlaybackSpeedChange: (Float) -> Unit,
+    onToggleMute: () -> Unit,
+    onCastClick: () -> Unit,
+    onPictureInPictureClick: () -> Unit,
+    supportsPip: Boolean,
+) {
+    val sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val coroutineScope = rememberCoroutineScope()
+    var showAspectRatioMenu by remember { mutableStateOf(false) }
+    var showSpeedMenu by remember { mutableStateOf(false) }
+
+    androidx.compose.material3.ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 8.dp),
+        ) {
+            Box {
+                PlayerOverflowRow(
+                    icon = Icons.Default.Speed,
+                    label = "Playback Speed",
+                    trailingText = "${playerState.playbackSpeed}x",
+                    onClick = { showSpeedMenu = true },
+                )
+                DropdownMenu(
+                    expanded = showSpeedMenu,
+                    onDismissRequest = { showSpeedMenu = false },
+                ) {
+                    listOf(0.25f, 0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 1.75f, 2.0f).forEach { speed ->
+                        ExpressiveSelectableMenuItem(
+                            text = "${speed}x",
+                            selected = speed == playerState.playbackSpeed,
+                            onSelectedChange = {
+                                onPlaybackSpeedChange(speed)
+                                showSpeedMenu = false
+                            },
+                            textColor = MaterialTheme.colorScheme.onSurface,
+                            selectedColor = MaterialTheme.colorScheme.primary,
                         )
-
-                        // Skip Forward 10s
-                        ExpressiveIconButton(
-                            icon = Icons.Default.Forward10,
-                            contentDescription = "Skip Forward 10s",
-                            onClick = { onSeek((playerState.currentPosition + 10000L).coerceAtMost(playerState.duration)) },
-                            contentColor = overlayContent,
-                            containerColor = overlayScrim.copy(alpha = 0.35f),
-                        )
-                    }
-
-                    // Action buttons (right side)
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        // Aspect Ratio button
-                        var showAspectRatioMenu by remember { mutableStateOf(false) }
-                        Box {
-                            ExpressiveIconButton(
-                                icon = Icons.Default.AspectRatio,
-                                contentDescription = "Aspect Ratio",
-                                onClick = { showAspectRatioMenu = true },
-                                contentColor = overlayContent,
-                                containerColor = overlayScrim.copy(alpha = 0.35f),
-                            )
-
-                            DropdownMenu(
-                                expanded = showAspectRatioMenu,
-                                onDismissRequest = { showAspectRatioMenu = false },
-                                containerColor = overlayScrim.copy(alpha = 0.96f),
-                            ) {
-                                Text(
-                                    text = "Aspect Ratio",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = overlayContent,
-                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                                )
-                                playerState.availableAspectRatios.forEach { mode ->
-                                    ExpressiveSelectableMenuItem(
-                                        text = mode.label,
-                                        selected = mode == playerState.selectedAspectRatio,
-                                        onSelectedChange = {
-                                            onAspectRatioChange(mode)
-                                            showAspectRatioMenu = false
-                                        },
-                                        textColor = overlayContent,
-                                        selectedColor = MaterialTheme.colorScheme.primary,
-                                    )
-                                }
-                            }
-                        }
-
-                        // Playback Speed button
-                        var showSpeedMenu by remember { mutableStateOf(false) }
-                        Box {
-                            ExpressiveIconButton(
-                                icon = Icons.Default.Speed,
-                                contentDescription = "Playback Speed",
-                                onClick = { showSpeedMenu = true },
-                                contentColor = overlayContent,
-                                containerColor = overlayScrim.copy(alpha = 0.35f),
-                            )
-
-                            DropdownMenu(
-                                expanded = showSpeedMenu,
-                                onDismissRequest = { showSpeedMenu = false },
-                                containerColor = overlayScrim.copy(alpha = 0.96f),
-                            ) {
-                                Text(
-                                    text = "Playback Speed",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = overlayContent,
-                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                                )
-                                listOf(0.25f, 0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 1.75f, 2.0f).forEach { speed ->
-                                    ExpressiveSelectableMenuItem(
-                                        text = "${speed}x",
-                                        selected = speed == playerState.playbackSpeed,
-                                        onSelectedChange = {
-                                            onPlaybackSpeedChange(speed)
-                                            showSpeedMenu = false
-                                        },
-                                        textColor = overlayContent,
-                                        selectedColor = MaterialTheme.colorScheme.primary,
-                                    )
-                                }
-                            }
-                        }
-
-                        // Audio selection button
-                        ExpressiveIconButton(
-                            icon = if (playerState.isMuted) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
-                            contentDescription = if (playerState.isMuted) "Unmute" else "Mute",
-                            onClick = onToggleMute,
-                            isActive = playerState.isMuted,
-                            contentColor = overlayContent,
-                            containerColor = overlayScrim.copy(alpha = 0.35f),
-                        )
-
-                        // Audio selection button
-                        ExpressiveIconButton(
-                            icon = Icons.Default.MusicNote,
-                            contentDescription = "Audio Selection",
-                            onClick = onAudioClick,
-                            contentColor = overlayContent,
-                            containerColor = overlayScrim.copy(alpha = 0.35f),
-                        )
-
-                        // Quality button with dynamic icon based on current quality
-                        ExpressiveIconButton(
-                            icon = getQualityIcon(playerState.selectedQuality?.label),
-                            contentDescription = "Quality",
-                            onClick = onQualityClick,
-                            contentColor = overlayContent,
-                            containerColor = overlayScrim.copy(alpha = 0.35f),
-                        )
-
-                        // Subtitles button
-                        ExpressiveIconButton(
-                            icon = Icons.Default.ClosedCaption,
-                            contentDescription = "Subtitles",
-                            onClick = onSubtitlesClick,
-                            contentColor = overlayContent,
-                            containerColor = overlayScrim.copy(alpha = 0.35f),
-                        )
-
-                        // PiP button
-                        if (supportsPip) {
-                            ExpressiveIconButton(
-                                icon = Icons.Default.PictureInPictureAlt,
-                                contentDescription = "Picture in Picture",
-                                onClick = onPictureInPictureClick,
-                                contentColor = overlayContent,
-                                containerColor = overlayScrim.copy(alpha = 0.35f),
-                            )
-                        }
                     }
                 }
             }
+
+            Box {
+                PlayerOverflowRow(
+                    icon = Icons.Default.AspectRatio,
+                    label = "Aspect Ratio",
+                    trailingText = playerState.selectedAspectRatio.label,
+                    onClick = { showAspectRatioMenu = true },
+                )
+                DropdownMenu(
+                    expanded = showAspectRatioMenu,
+                    onDismissRequest = { showAspectRatioMenu = false },
+                ) {
+                    playerState.availableAspectRatios.forEach { mode ->
+                        ExpressiveSelectableMenuItem(
+                            text = mode.label,
+                            selected = mode == playerState.selectedAspectRatio,
+                            onSelectedChange = {
+                                onAspectRatioChange(mode)
+                                showAspectRatioMenu = false
+                            },
+                            textColor = MaterialTheme.colorScheme.onSurface,
+                            selectedColor = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
+            }
+
+            PlayerOverflowRow(
+                icon = if (playerState.isMuted) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
+                label = if (playerState.isMuted) "Unmute" else "Mute",
+                onClick = onToggleMute,
+            )
+
+            PlayerOverflowRow(
+                icon = if (playerState.isCastConnected) Icons.Default.CastConnected else Icons.Default.Cast,
+                label = if (playerState.isCastConnected) "Disconnect Cast" else "Cast to Device",
+                onClick = {
+                    onCastClick()
+                    onDismiss()
+                },
+            )
+
+            if (supportsPip) {
+                PlayerOverflowRow(
+                    icon = Icons.Default.PictureInPictureAlt,
+                    label = "Picture in Picture",
+                    onClick = {
+                        coroutineScope.launch {
+                            sheetState.hide()
+                            onDismiss()
+                            onPictureInPictureClick()
+                        }
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlayerOverflowRow(
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit,
+    trailingText: String? = null,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Icon(imageVector = icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface)
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f),
+        )
+        if (trailingText != null) {
+            Text(
+                text = trailingText,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
