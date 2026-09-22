@@ -4,6 +4,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -189,10 +190,15 @@ fun ImmersiveLibraryBrowserScreen(
                         )
                     }
                     else -> {
-                        // Density pass: dense 3-column grid (115x173 poster cells, 10dp gaps)
-                        // instead of the previous adaptive/160dp overlay-card grid.
+                        // Density pass: dense poster grid (~115x173 cells, 10dp gaps) instead of
+                        // the previous adaptive/160dp overlay-card grid. The 115dp cell width was
+                        // computed for a 412dp reference screen; GridCells.Fixed(3) would squeeze
+                        // cells below that on a typical ~360dp phone (after padding/gaps, each
+                        // cell would be ~93-107dp), so this uses Adaptive with a slightly smaller
+                        // minimum and derives each card's actual size from its measured cell
+                        // width, keeping the 115:173 (2:3) poster ratio at any column count.
                         LazyVerticalGrid(
-                            columns = GridCells.Fixed(3),
+                            columns = GridCells.Adaptive(minSize = 108.dp),
                             state = gridState,
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(
@@ -240,16 +246,24 @@ fun ImmersiveLibraryBrowserScreen(
                                 items = filteredItems,
                                 key = { it.id.toString() },
                             ) { item ->
-                                ImmersivePosterCard(
-                                    title = item.name ?: "Unknown",
-                                    subtitle = buildItemSubtitle(item),
-                                    imageUrl = getImageUrl(item) ?: "",
-                                    rating = item.communityRating,
-                                    unwatchedEpisodeCount = item.getUnwatchedEpisodeCount().takeIf { it > 0 },
-                                    onCardClick = { onItemClick(item.id.toString()) },
-                                    posterWidth = ImmersiveDimens.LibraryGridCellWidth,
-                                    posterHeight = ImmersiveDimens.LibraryGridCellHeight,
-                                )
+                                BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                                    // Adaptive columns mean the actual cell width varies by
+                                    // screen size; size the poster from it directly rather than
+                                    // asserting the fixed 115dp spec width.
+                                    val cellWidth = maxWidth
+                                    val cellHeight = cellWidth *
+                                        (ImmersiveDimens.LibraryGridCellHeight / ImmersiveDimens.LibraryGridCellWidth)
+                                    ImmersivePosterCard(
+                                        title = item.name ?: "Unknown",
+                                        subtitle = buildItemSubtitle(item),
+                                        imageUrl = getImageUrl(item) ?: "",
+                                        rating = item.communityRating,
+                                        unwatchedEpisodeCount = item.getUnwatchedEpisodeCount().takeIf { it > 0 },
+                                        onCardClick = { onItemClick(item.id.toString()) },
+                                        posterWidth = cellWidth,
+                                        posterHeight = cellHeight,
+                                    )
+                                }
                             }
                         }
                     }
