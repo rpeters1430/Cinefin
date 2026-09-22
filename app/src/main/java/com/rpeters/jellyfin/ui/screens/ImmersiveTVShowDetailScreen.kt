@@ -897,12 +897,12 @@ private fun SeasonChipRail(
                 } else {
                     MaterialTheme.colorScheme.surfaceContainer
                 },
-                modifier = Modifier.height(Dimens.ChipRailHeight),
+                modifier = Modifier.height(ImmersiveDimens.ChipRailHeight),
             ) {
                 Box(
                     modifier = Modifier
                         .fillMaxHeight()
-                        .padding(horizontal = Dimens.ChipRailHorizontalPadding),
+                        .padding(horizontal = ImmersiveDimens.ChipRailHorizontalPadding),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(

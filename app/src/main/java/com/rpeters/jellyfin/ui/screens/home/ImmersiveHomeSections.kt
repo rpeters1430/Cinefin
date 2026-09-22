@@ -239,14 +239,14 @@ private fun LibraryChip(
         },
         shape = CircleShape,
         color = MaterialTheme.colorScheme.surfaceContainer,
-        modifier = Modifier.height(Dimens.ChipRailHeight),
+        modifier = Modifier.height(ImmersiveDimens.ChipRailHeight),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             modifier = Modifier
                 .fillMaxHeight()
-                .padding(horizontal = Dimens.ChipRailHorizontalPadding),
+                .padding(horizontal = ImmersiveDimens.ChipRailHorizontalPadding),
         ) {
             Icon(
                 imageVector = library.toLibraryTypeOrNull()?.icon ?: Icons.Default.Folder,
