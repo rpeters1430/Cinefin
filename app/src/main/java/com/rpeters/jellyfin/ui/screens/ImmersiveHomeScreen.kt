@@ -189,118 +189,15 @@ fun ImmersiveHomeScreen(
                 // ...
                 scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(),
                 overlayContent = {
-                    // Density pass: compact 56dp top bar that fades in as the hero collapses.
-                    if (!adaptiveConfig.isTablet && heroCollapseFraction > 0f) {
-                        Surface(
-                            color = MaterialTheme.colorScheme.surface,
-                            tonalElevation = 2.dp,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .align(Alignment.TopCenter)
-                                .graphicsLayer { alpha = heroCollapseFraction },
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .statusBarsPadding()
-                                    .fillMaxWidth()
-                                    .height(56.dp)
-                                    .padding(horizontal = 16.dp),
-                                contentAlignment = Alignment.CenterStart,
-                            ) {
-                                Text(
-                                    text = currentServer?.name ?: stringResource(id = R.string.app_name),
-                                    style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp),
-                                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    maxLines = 1,
-                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                                )
-                            }
-                        }
-                    }
-
-                    // Floating settings icon based on scroll direction
-                    val haptics = com.rpeters.jellyfin.ui.utils.rememberExpressiveHaptics()
-
-                    androidx.compose.animation.AnimatedVisibility(
-                        visible = topBarVisible,
-                        enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.expandVertically(),
-                        exit = androidx.compose.animation.fadeOut() + androidx.compose.animation.shrinkVertically(),
-                        modifier = Modifier.align(Alignment.TopEnd),
-                    ) {
-                        Surface(
-                            onClick = {
-                                haptics.lightClick()
-                                onSettingsClick()
-                            },
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
-                            tonalElevation = 2.dp,
-                            modifier = Modifier
-                                .statusBarsPadding()
-                                .padding(horizontal = 12.dp, vertical = 12.dp)
-                                .size(48.dp),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Settings,
-                                contentDescription = stringResource(id = R.string.settings),
-                                tint = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier
-                                    .padding(12.dp)
-                                    .size(24.dp),
-                            )
-                        }
-                    }
-
-                    // Floating Search and AI Action Buttons
-                    androidx.compose.animation.AnimatedVisibility(
-                        visible = topBarVisible,
-                        enter = androidx.compose.animation.scaleIn() + androidx.compose.animation.fadeIn(),
-                        exit = androidx.compose.animation.scaleOut() + androidx.compose.animation.fadeOut(),
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .padding(end = 16.dp, bottom = 64.dp), // Just above navigation bar
-                    ) {
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(16.dp),
-                            horizontalAlignment = Alignment.End,
-                        ) {
-                            FloatingActionButton(
-                                onClick = {
-                                    haptics.heavyClick()
-                                    onAiAssistantClick()
-                                },
-                                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                                contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-                                modifier = Modifier.aiAura(),
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.AutoAwesome,
-                                    contentDescription = stringResource(id = R.string.ai_assistant),
-                                )
-                            }
-
-                            FloatingActionButton(
-                                onClick = {
-                                    haptics.lightClick()
-                                    onSearchClick()
-                                },
-                                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Search,
-                                    contentDescription = stringResource(id = R.string.search),
-                                )
-                            }
-                        }
-                    }
-
-                    SnackbarHost(
-                        hostState = snackbarHostState,
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(bottom = 16.dp),
+                    ImmersiveHomeOverlayContent(
+                        currentServer = currentServer,
+                        adaptiveConfig = adaptiveConfig,
+                        heroCollapseFraction = heroCollapseFraction,
+                        topBarVisible = topBarVisible,
+                        onSettingsClick = onSettingsClick,
+                        onAiAssistantClick = onAiAssistantClick,
+                        onSearchClick = onSearchClick,
+                        snackbarHostState = snackbarHostState,
                     )
                 },
             ) { paddingValues ->
@@ -347,60 +244,214 @@ fun ImmersiveHomeScreen(
             }
         }
 
-        selectedItem?.let { item ->
-            if (showManageSheet) {
-                val itemName = item.name ?: stringResource(id = R.string.unknown)
-                val deleteSuccessMessage = stringResource(id = R.string.library_actions_delete_success, itemName)
-                val deleteFailureTemplate = stringResource(id = R.string.library_actions_delete_failure, itemName, "%s")
-                val refreshRequestedMessage = stringResource(id = R.string.library_actions_refresh_requested)
-                val unknownErrorMessage = stringResource(id = R.string.unknown_error)
+        ItemManagementSheetHost(
+            selectedItem = selectedItem,
+            showManageSheet = showManageSheet,
+            sheetState = sheetState,
+            viewModel = viewModel,
+            coroutineScope = coroutineScope,
+            snackbarHostState = snackbarHostState,
+            onRefresh = onRefresh,
+            onPlay = handlePlay,
+            onDismiss = {
+                showManageSheet = false
+                selectedItem = null
+            },
+            onSheetHidden = { showManageSheet = false },
+        )
+    }
+}
 
-                // ✅ Performance: Stabilize bottom sheet callbacks
-                val onDismissSheet = remember {
-                    {
-                        showManageSheet = false
-                        selectedItem = null
-                    }
-                }
-                val onPlayFromSheet = remember(item) {
-                    {
-                        handlePlay(item)
-                        showManageSheet = false
-                    }
-                }
-                val onDeleteFromSheet = remember(item, viewModel, deleteSuccessMessage, deleteFailureTemplate) {
-                    {
-                            dismissed: Boolean, errorMessage: String? ->
-                        if (dismissed) {
-                            viewModel.deleteItem(item) { success, error ->
-                                coroutineScope.launch {
-                                    if (success) {
-                                        snackbarHostState.showSnackbar(deleteSuccessMessage)
-                                        onRefresh()
-                                    } else {
-                                        snackbarHostState.showSnackbar(
-                                            deleteFailureTemplate.format(error ?: unknownErrorMessage),
-                                        )
-                                    }
-                                    showManageSheet = false
-                                }
-                            }
+/**
+ * Hosts the [MediaItemActionsSheet] bottom sheet for the currently selected item, including its
+ * play/delete callbacks with snackbar feedback. A no-op when nothing is selected or the sheet is
+ * hidden.
+ */
+@Composable
+private fun ItemManagementSheetHost(
+    selectedItem: BaseItemDto?,
+    showManageSheet: Boolean,
+    sheetState: androidx.compose.material3.SheetState,
+    viewModel: MainAppViewModel,
+    coroutineScope: kotlinx.coroutines.CoroutineScope,
+    snackbarHostState: SnackbarHostState,
+    onRefresh: () -> Unit,
+    onPlay: (BaseItemDto) -> Unit,
+    onDismiss: () -> Unit,
+    onSheetHidden: () -> Unit,
+) {
+    val item = selectedItem ?: return
+    if (!showManageSheet) return
+
+    val itemName = item.name ?: stringResource(id = R.string.unknown)
+    val deleteSuccessMessage = stringResource(id = R.string.library_actions_delete_success, itemName)
+    val deleteFailureTemplate = stringResource(id = R.string.library_actions_delete_failure, itemName, "%s")
+    val unknownErrorMessage = stringResource(id = R.string.unknown_error)
+
+    // ✅ Performance: Stabilize bottom sheet callbacks
+    val onPlayFromSheet = remember(item) {
+        {
+            onPlay(item)
+            onSheetHidden()
+        }
+    }
+    val onDeleteFromSheet = remember(item, viewModel, deleteSuccessMessage, deleteFailureTemplate) {
+        {
+                dismissed: Boolean, errorMessage: String? ->
+            if (dismissed) {
+                viewModel.deleteItem(item) { success, error ->
+                    coroutineScope.launch {
+                        if (success) {
+                            snackbarHostState.showSnackbar(deleteSuccessMessage)
+                            onRefresh()
                         } else {
-                            showManageSheet = false
+                            snackbarHostState.showSnackbar(
+                                deleteFailureTemplate.format(error ?: unknownErrorMessage),
+                            )
                         }
+                        onSheetHidden()
                     }
                 }
+            } else {
+                onSheetHidden()
+            }
+        }
+    }
 
-                MediaItemActionsSheet(
-                    item = item,
-                    sheetState = sheetState,
-                    onDismiss = onDismissSheet,
-                    onPlay = onPlayFromSheet,
-                    onDelete = onDeleteFromSheet,
+    MediaItemActionsSheet(
+        item = item,
+        sheetState = sheetState,
+        onDismiss = onDismiss,
+        onPlay = onPlayFromSheet,
+        onDelete = onDeleteFromSheet,
+    )
+}
+
+/** Floating top bar, settings button and Search/AI action buttons overlaid on the home hero. */
+@Composable
+private fun BoxScope.ImmersiveHomeOverlayContent(
+    currentServer: JellyfinServer?,
+    adaptiveConfig: com.rpeters.jellyfin.ui.adaptive.AdaptiveLayoutConfig,
+    heroCollapseFraction: Float,
+    topBarVisible: Boolean,
+    onSettingsClick: () -> Unit,
+    onAiAssistantClick: () -> Unit,
+    onSearchClick: () -> Unit,
+    snackbarHostState: SnackbarHostState,
+) {
+    // Density pass: compact 56dp top bar that fades in as the hero collapses.
+    if (!adaptiveConfig.isTablet && heroCollapseFraction > 0f) {
+        Surface(
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 2.dp,
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.TopCenter)
+                .graphicsLayer { alpha = heroCollapseFraction },
+        ) {
+            Box(
+                modifier = Modifier
+                    .statusBarsPadding()
+                    .fillMaxWidth()
+                    .height(56.dp)
+                    .padding(horizontal = 16.dp),
+                contentAlignment = Alignment.CenterStart,
+            ) {
+                Text(
+                    text = currentServer?.name ?: stringResource(id = R.string.app_name),
+                    style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp),
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                 )
             }
         }
     }
+
+    // Floating settings icon based on scroll direction
+    val haptics = com.rpeters.jellyfin.ui.utils.rememberExpressiveHaptics()
+
+    androidx.compose.animation.AnimatedVisibility(
+        visible = topBarVisible,
+        enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.expandVertically(),
+        exit = androidx.compose.animation.fadeOut() + androidx.compose.animation.shrinkVertically(),
+        modifier = Modifier.align(Alignment.TopEnd),
+    ) {
+        Surface(
+            onClick = {
+                haptics.lightClick()
+                onSettingsClick()
+            },
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+            tonalElevation = 2.dp,
+            modifier = Modifier
+                .statusBarsPadding()
+                .padding(horizontal = 12.dp, vertical = 12.dp)
+                .size(48.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Default.Settings,
+                contentDescription = stringResource(id = R.string.settings),
+                tint = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier
+                    .padding(12.dp)
+                    .size(24.dp),
+            )
+        }
+    }
+
+    // Floating Search and AI Action Buttons
+    androidx.compose.animation.AnimatedVisibility(
+        visible = topBarVisible,
+        enter = androidx.compose.animation.scaleIn() + androidx.compose.animation.fadeIn(),
+        exit = androidx.compose.animation.scaleOut() + androidx.compose.animation.fadeOut(),
+        modifier = Modifier
+            .align(Alignment.BottomEnd)
+            .padding(end = 16.dp, bottom = 64.dp), // Just above navigation bar
+    ) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalAlignment = Alignment.End,
+        ) {
+            FloatingActionButton(
+                onClick = {
+                    haptics.heavyClick()
+                    onAiAssistantClick()
+                },
+                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                modifier = Modifier.aiAura(),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.AutoAwesome,
+                    contentDescription = stringResource(id = R.string.ai_assistant),
+                )
+            }
+
+            FloatingActionButton(
+                onClick = {
+                    haptics.lightClick()
+                    onSearchClick()
+                },
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = stringResource(id = R.string.search),
+                )
+            }
+        }
+    }
+
+    SnackbarHost(
+        hostState = snackbarHostState,
+        modifier = Modifier
+            .align(Alignment.BottomCenter)
+            .padding(bottom = 16.dp),
+    )
 }
 
 /**

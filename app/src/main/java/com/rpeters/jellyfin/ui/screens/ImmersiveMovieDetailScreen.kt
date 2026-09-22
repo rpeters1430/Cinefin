@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -233,7 +234,6 @@ private fun ImmersiveMovieDetailContent(
         var showDeleteDialog by remember { mutableStateOf(false) }
         var showDownloadQualityDialog by remember { mutableStateOf(false) }
         var showMoreOptions by remember { mutableStateOf(false) }
-        var synopsisExpanded by remember(movie.id) { mutableStateOf(false) }
 
         val listState = remember(movie.id) { LazyListState() }
 
@@ -340,195 +340,21 @@ private fun ImmersiveMovieDetailContent(
                         }
                     }
 
-                    // AI Features
-                    item {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(MaterialTheme.colorScheme.background),
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                                verticalArrangement = Arrangement.spacedBy(16.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                            ) {
-                                if (isLoadingWhyYoullLoveThis || !whyYoullLoveThis.isNullOrBlank()) {
-                                    WhyYoullLoveThisCard(
-                                        pitch = whyYoullLoveThis,
-                                        isLoading = isLoadingWhyYoullLoveThis,
-                                    )
-                                } else {
-                                    TextButton(onClick = onGenerateWhyYoullLoveThis) {
-                                        Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text("Why You'll Love This")
-                                    }
-                                }
+                    movieAiFeaturesItem(
+                        isLoadingWhyYoullLoveThis = isLoadingWhyYoullLoveThis,
+                        whyYoullLoveThis = whyYoullLoveThis,
+                        onGenerateWhyYoullLoveThis = onGenerateWhyYoullLoveThis,
+                        onGenerateAiSummary = onGenerateAiSummary,
+                        isLoadingAiSummary = isLoadingAiSummary,
+                        aiSummary = aiSummary,
+                        isLoadingContentWarnings = isLoadingContentWarnings,
+                        contentWarnings = contentWarnings,
+                    )
 
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    Text(
-                                        text = "AI Summary",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                    )
-                                    TextButton(onClick = onGenerateAiSummary, enabled = !isLoadingAiSummary) {
-                                        Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(if (aiSummary != null) "Regenerate" else "Generate")
-                                    }
-                                }
-
-                                if (isLoadingAiSummary || !aiSummary.isNullOrBlank()) {
-                                    AiSummaryCard(
-                                        summary = aiSummary,
-                                        isLoading = isLoadingAiSummary,
-                                    )
-                                }
-
-                                if (isLoadingContentWarnings || contentWarnings.isNotEmpty()) {
-                                    Column(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                    ) {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Icon(
-                                                imageVector = Icons.Default.Warning,
-                                                contentDescription = "Content Warnings",
-                                                tint = MaterialTheme.colorScheme.error,
-                                                modifier = Modifier.size(16.dp)
-                                            )
-                                            Spacer(modifier = Modifier.width(8.dp))
-                                            Text(
-                                                text = "Content Warnings",
-                                                style = MaterialTheme.typography.labelLarge,
-                                                color = MaterialTheme.colorScheme.error
-                                            )
-                                        }
-                                        if (isLoadingContentWarnings) {
-                                            com.rpeters.jellyfin.ui.components.ExpressiveWavyLinearLoading(
-                                                modifier = Modifier.fillMaxWidth(),
-                                                color = MaterialTheme.colorScheme.error
-                                            )
-                                        } else {
-                                            FlowRow(
-                                                modifier = Modifier.fillMaxWidth(),
-                                                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-                                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                                            ) {
-                                                contentWarnings.forEach { warning ->
-                                                    AssistChip(
-                                                        onClick = { },
-                                                        label = { Text(warning) },
-                                                        colors = androidx.compose.material3.AssistChipDefaults.assistChipColors(
-                                                            containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f),
-                                                            labelColor = MaterialTheme.colorScheme.onErrorContainer
-                                                        ),
-                                                        border = null
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // Synopsis
-                    item {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(MaterialTheme.colorScheme.background),
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 16.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                            ) {
-                                Text(
-                                    text = "Synopsis",
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    textAlign = TextAlign.Center,
-                                )
-                                var synopsisOverflowing by remember(movie.id) { mutableStateOf(false) }
-                                Text(
-                                    text = movie.overview ?: "No synopsis available.",
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    lineHeight = MaterialTheme.typography.bodyLarge.lineHeight.times(1.4f),
-                                    textAlign = TextAlign.Center,
-                                    maxLines = if (synopsisExpanded) Int.MAX_VALUE else 4,
-                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                                    onTextLayout = { result ->
-                                        if (!synopsisExpanded) {
-                                            synopsisOverflowing = result.hasVisualOverflow
-                                        }
-                                    },
-                                )
-                                if (synopsisOverflowing || synopsisExpanded) {
-                                    TextButton(onClick = { synopsisExpanded = !synopsisExpanded }) {
-                                        Text(if (synopsisExpanded) "Less" else "More")
-                                    }
-                                }
-
-                                playbackAnalysis?.let { analysis ->
-                                    Column(
-                                        modifier = Modifier.padding(top = 12.dp),
-                                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                                    ) {
-                                        PlaybackStatusBadge(analysis = analysis)
-                                        if (analysis.transcodeReasons.isNotEmpty()) {
-                                            FlowRow(
-                                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                                            ) {
-                                                analysis.transcodeReasons.distinct().forEach { reason ->
-                                                    AssistChip(
-                                                        onClick = {},
-                                                        enabled = false,
-                                                        label = { Text(reason) },
-                                                    )
-                                                }
-                                            }
-                                        }
-                                        if (analysis.breakdown.isNotEmpty()) {
-                                            PlaybackBreakdownDetails(
-                                                breakdown = analysis.breakdown,
-                                                modifier = Modifier.fillMaxWidth(),
-                                            )
-                                        }
-                                    }
-                                }
-
-                                movie.genres?.let { genres ->
-                                    FlowRow(
-                                        modifier = Modifier.padding(top = 8.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                                    ) {
-                                        genres.forEach { genre ->
-                                            AssistChip(
-                                                onClick = { /* Navigate to genre */ },
-                                                label = { Text(genre) },
-                                                shape = MaterialTheme.shapes.small,
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    movieSynopsisItem(
+                        movie = movie,
+                        playbackAnalysis = playbackAnalysis,
+                    )
 
                     // Tech Specs / Detailed Info
                     item {
@@ -541,55 +367,12 @@ private fun ImmersiveMovieDetailContent(
                         }
                     }
 
-                    // Chapters
-                    val movieChapters = movie.chapters ?: emptyList()
-                    val displayChapters = movieChapters.ifEmpty { aiChapterMarkers }
-                    if (displayChapters.isNotEmpty()) {
-                        item(key = "chapters") {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .background(MaterialTheme.colorScheme.background),
-                            ) {
-                                Column {
-                                    if (movieChapters.isEmpty() && aiChapterMarkers.isNotEmpty()) {
-                                        Column(
-                                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                                        ) {
-                                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                                Icon(
-                                                    imageVector = Icons.Default.AutoAwesome,
-                                                    contentDescription = "AI Generated",
-                                                    tint = MaterialTheme.colorScheme.secondary,
-                                                    modifier = Modifier.size(16.dp)
-                                                )
-                                                Spacer(modifier = Modifier.width(4.dp))
-                                                Text(
-                                                    text = "AI Generated Chapters",
-                                                    style = MaterialTheme.typography.labelMedium,
-                                                    color = MaterialTheme.colorScheme.secondary
-                                                )
-                                            }
-                                            Text(
-                                                text = "This movie has no chapter markers from the server, " +
-                                                    "so these approximate scene breaks were estimated from its runtime.",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                modifier = Modifier.padding(top = 2.dp),
-                                            )
-                                        }
-                                    }
-                                    ChapterListSection(
-                                        chapters = displayChapters,
-                                        onChapterClick = { positionMs -> onPlayClick(movie, null, positionMs) },
-                                        getChapterImageUrl = { chapter, index ->
-                                            getChapterImageUrl(index, chapter.imageTag)
-                                        },
-                                    )
-                                }
-                            }
-                        }
-                    }
+                    movieChaptersItem(
+                        movie = movie,
+                        aiChapterMarkers = aiChapterMarkers,
+                        onPlayClick = onPlayClick,
+                        getChapterImageUrl = getChapterImageUrl,
+                    )
 
                     // Cast & Crew
                     item {
@@ -610,161 +393,483 @@ private fun ImmersiveMovieDetailContent(
                         }
                     }
 
-                    // Related Movies
-                    if (relatedItems.isNotEmpty()) {
-                        item {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .background(MaterialTheme.colorScheme.background),
+                    movieRelatedItem(
+                        relatedItems = relatedItems,
+                        getImageUrl = getImageUrl,
+                        onRelatedMovieClick = onRelatedMovieClick,
+                    )
+                }
+
+                MovieDetailTopBar(
+                    isDownloaded = isDownloaded,
+                    showMoreOptions = showMoreOptions,
+                    onShowMoreOptionsChange = { showMoreOptions = it },
+                    onBackClick = onBackClick,
+                    onShareClick = { onShareClick(movie) },
+                    onDeleteOfflineCopy = onDeleteOfflineCopy,
+                    onDeleteRequested = { showDeleteDialog = true },
+                    modifier = Modifier.align(Alignment.TopStart),
+                )
+            }
+        }
+
+        MovieDetailDialogs(
+            movie = movie,
+            showDownloadQualityDialog = showDownloadQualityDialog,
+            onDownloadQualityDialogDismiss = { showDownloadQualityDialog = false },
+            onQualitySelected = { quality ->
+                onDownloadClick(movie, quality)
+                showDownloadQualityDialog = false
+            },
+            downloadsViewModel = downloadsViewModel,
+            showDeleteDialog = showDeleteDialog,
+            onDeleteDialogDismiss = { showDeleteDialog = false },
+            onDeleteConfirmed = {
+                onDeleteClick(movie)
+                showDeleteDialog = false
+            },
+        )
+    }
+}
+
+/** AI-powered "Why You'll Love This" / AI Summary / content-warnings section. */
+private fun LazyListScope.movieAiFeaturesItem(
+    isLoadingWhyYoullLoveThis: Boolean,
+    whyYoullLoveThis: String?,
+    onGenerateWhyYoullLoveThis: () -> Unit,
+    onGenerateAiSummary: () -> Unit,
+    isLoadingAiSummary: Boolean,
+    aiSummary: String?,
+    isLoadingContentWarnings: Boolean,
+    contentWarnings: List<String>,
+) {
+    item {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.background),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                if (isLoadingWhyYoullLoveThis || !whyYoullLoveThis.isNullOrBlank()) {
+                    WhyYoullLoveThisCard(
+                        pitch = whyYoullLoveThis,
+                        isLoading = isLoadingWhyYoullLoveThis,
+                    )
+                } else {
+                    TextButton(onClick = onGenerateWhyYoullLoveThis) {
+                        Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Why You'll Love This")
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "AI Summary",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    TextButton(onClick = onGenerateAiSummary, enabled = !isLoadingAiSummary) {
+                        Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(if (aiSummary != null) "Regenerate" else "Generate")
+                    }
+                }
+
+                if (isLoadingAiSummary || !aiSummary.isNullOrBlank()) {
+                    AiSummaryCard(
+                        summary = aiSummary,
+                        isLoading = isLoadingAiSummary,
+                    )
+                }
+
+                if (isLoadingContentWarnings || contentWarnings.isNotEmpty()) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Warning,
+                                contentDescription = "Content Warnings",
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Content Warnings",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                        if (isLoadingContentWarnings) {
+                            com.rpeters.jellyfin.ui.components.ExpressiveWavyLinearLoading(
+                                modifier = Modifier.fillMaxWidth(),
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        } else {
+                            FlowRow(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 16.dp),
-                                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                                ) {
-                                    Text(
-                                        text = "More Like This",
-                                        style = MaterialTheme.typography.titleLarge,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 16.dp),
+                                contentWarnings.forEach { warning ->
+                                    AssistChip(
+                                        onClick = { },
+                                        label = { Text(warning) },
+                                        colors = androidx.compose.material3.AssistChipDefaults.assistChipColors(
+                                            containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f),
+                                            labelColor = MaterialTheme.colorScheme.onErrorContainer
+                                        ),
+                                        border = null
                                     )
-                                    androidx.compose.foundation.lazy.LazyRow(
-                                        contentPadding = PaddingValues(horizontal = 16.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                    ) {
-                                        items(relatedItems) { relatedMovie ->
-                                            com.rpeters.jellyfin.ui.components.immersive.ImmersiveMediaCard(
-                                                title = relatedMovie.name ?: "Unknown",
-                                                imageUrl = getImageUrl(relatedMovie) ?: "",
-                                                rating = relatedMovie.communityRating,
-                                                onCardClick = { onRelatedMovieClick(relatedMovie.id.toString()) },
-                                                cardSize = com.rpeters.jellyfin.ui.components.immersive.ImmersiveCardSize.SMALL,
-                                            )
-                                        }
-                                    }
                                 }
                             }
                         }
                     }
                 }
+            }
+        }
+    }
+}
 
-                // Top Bar
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 48.dp, start = 16.dp, end = 16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Surface(
-                        shape = androidx.compose.foundation.shape.CircleShape,
-                        color = Color.Black.copy(alpha = 0.5f),
-                        modifier = Modifier.size(40.dp),
-                        onClick = onBackClick,
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Color.White,
-                            modifier = Modifier.padding(8.dp),
-                        )
+/** Synopsis, playback-capability breakdown and genre chips section. */
+private fun LazyListScope.movieSynopsisItem(
+    movie: BaseItemDto,
+    playbackAnalysis: PlaybackCapabilityAnalysis?,
+) {
+    item {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.background),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = "Synopsis",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                )
+                var synopsisExpanded by remember(movie.id) { mutableStateOf(false) }
+                var synopsisOverflowing by remember(movie.id) { mutableStateOf(false) }
+                Text(
+                    text = movie.overview ?: "No synopsis available.",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    lineHeight = MaterialTheme.typography.bodyLarge.lineHeight.times(1.4f),
+                    textAlign = TextAlign.Center,
+                    maxLines = if (synopsisExpanded) Int.MAX_VALUE else 4,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    onTextLayout = { result ->
+                        if (!synopsisExpanded) {
+                            synopsisOverflowing = result.hasVisualOverflow
+                        }
+                    },
+                )
+                if (synopsisOverflowing || synopsisExpanded) {
+                    TextButton(onClick = { synopsisExpanded = !synopsisExpanded }) {
+                        Text(if (synopsisExpanded) "Less" else "More")
                     }
+                }
 
-                    Box {
-                        Surface(
-                            shape = androidx.compose.foundation.shape.CircleShape,
-                            color = Color.Black.copy(alpha = 0.5f),
-                            modifier = Modifier.size(40.dp),
-                            onClick = { showMoreOptions = true },
-                        ) {
-                            Icon(
-                                imageVector = Icons.Rounded.MoreVert,
-                                contentDescription = "More options",
-                                tint = Color.White,
-                                modifier = Modifier.padding(8.dp),
+                playbackAnalysis?.let { analysis ->
+                    Column(
+                        modifier = Modifier.padding(top = 12.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        PlaybackStatusBadge(analysis = analysis)
+                        if (analysis.transcodeReasons.isNotEmpty()) {
+                            FlowRow(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                analysis.transcodeReasons.distinct().forEach { reason ->
+                                    AssistChip(
+                                        onClick = {},
+                                        enabled = false,
+                                        label = { Text(reason) },
+                                    )
+                                }
+                            }
+                        }
+                        if (analysis.breakdown.isNotEmpty()) {
+                            PlaybackBreakdownDetails(
+                                breakdown = analysis.breakdown,
+                                modifier = Modifier.fillMaxWidth(),
                             )
                         }
+                    }
+                }
 
-                        DropdownMenu(
-                            expanded = showMoreOptions,
-                            onDismissRequest = { showMoreOptions = false },
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text("Share") },
-                                onClick = {
-                                    onShareClick(movie)
-                                    showMoreOptions = false
-                                },
-                                leadingIcon = {
-                                    Icon(Icons.Rounded.Share, contentDescription = null)
-                                },
-                            )
-                            if (isDownloaded) {
-                                DropdownMenuItem(
-                                    text = { Text("Delete offline copy") },
-                                    onClick = {
-                                        onDeleteOfflineCopy()
-                                        showMoreOptions = false
-                                    },
-                                    leadingIcon = {
-                                        Icon(Icons.Rounded.FileDownload, contentDescription = null)
-                                    },
-                                )
-                            }
-                            DropdownMenuItem(
-                                text = { Text("Delete movie") },
-                                onClick = {
-                                    showDeleteDialog = true
-                                    showMoreOptions = false
-                                },
-                                leadingIcon = {
-                                    Icon(Icons.Rounded.Delete, contentDescription = null)
-                                },
+                movie.genres?.let { genres ->
+                    FlowRow(
+                        modifier = Modifier.padding(top = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        genres.forEach { genre ->
+                            AssistChip(
+                                onClick = { /* Navigate to genre */ },
+                                label = { Text(genre) },
+                                shape = MaterialTheme.shapes.small,
                             )
                         }
                     }
                 }
             }
         }
+    }
+}
 
-        if (showDownloadQualityDialog && downloadsViewModel != null) {
-            QualitySelectionDialog(
-                item = movie,
-                onDismiss = { showDownloadQualityDialog = false },
-                onQualitySelected = { quality ->
-                    onDownloadClick(movie, quality)
-                    showDownloadQualityDialog = false
-                },
-                downloadsViewModel = downloadsViewModel,
-            )
-        }
+/** Chapter list section, with an "AI generated" note when chapters were estimated. */
+private fun LazyListScope.movieChaptersItem(
+    movie: BaseItemDto,
+    aiChapterMarkers: List<org.jellyfin.sdk.model.api.ChapterInfo>,
+    onPlayClick: (BaseItemDto, Int?, Long?) -> Unit,
+    getChapterImageUrl: (chapterIndex: Int, imageTag: String?) -> String?,
+) {
+    val movieChapters = movie.chapters ?: emptyList()
+    val displayChapters = movieChapters.ifEmpty { aiChapterMarkers }
+    if (displayChapters.isEmpty()) return
 
-        // Dialogs
-        if (showDeleteDialog) {
-            AlertDialog(
-                onDismissRequest = { showDeleteDialog = false },
-                title = { Text("Delete Movie") },
-                text = { Text("Are you sure you want to delete ${movie.name}? This cannot be undone.") },
-                confirmButton = {
-                    TextButton(
-                        onClick = {
-                            onDeleteClick(movie)
-                            showDeleteDialog = false
-                        },
-                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+    item(key = "chapters") {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.background),
+        ) {
+            Column {
+                if (movieChapters.isEmpty() && aiChapterMarkers.isNotEmpty()) {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                     ) {
-                        Text("Delete")
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.AutoAwesome,
+                                contentDescription = "AI Generated",
+                                tint = MaterialTheme.colorScheme.secondary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "AI Generated Chapters",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.secondary
+                            )
+                        }
+                        Text(
+                            text = "This movie has no chapter markers from the server, " +
+                                "so these approximate scene breaks were estimated from its runtime.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 2.dp),
+                        )
                     }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showDeleteDialog = false }) {
-                        Text("Cancel")
+                }
+                ChapterListSection(
+                    chapters = displayChapters,
+                    onChapterClick = { positionMs -> onPlayClick(movie, null, positionMs) },
+                    getChapterImageUrl = { chapter, index ->
+                        getChapterImageUrl(index, chapter.imageTag)
+                    },
+                )
+            }
+        }
+    }
+}
+
+/** "More Like This" related-movies row. */
+private fun LazyListScope.movieRelatedItem(
+    relatedItems: List<BaseItemDto>,
+    getImageUrl: (BaseItemDto) -> String?,
+    onRelatedMovieClick: (String) -> Unit,
+) {
+    if (relatedItems.isEmpty()) return
+
+    item {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.background),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Text(
+                    text = "More Like This",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                )
+                androidx.compose.foundation.lazy.LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    items(relatedItems) { relatedMovie ->
+                        com.rpeters.jellyfin.ui.components.immersive.ImmersiveMediaCard(
+                            title = relatedMovie.name ?: "Unknown",
+                            imageUrl = getImageUrl(relatedMovie) ?: "",
+                            rating = relatedMovie.communityRating,
+                            onCardClick = { onRelatedMovieClick(relatedMovie.id.toString()) },
+                            cardSize = com.rpeters.jellyfin.ui.components.immersive.ImmersiveCardSize.SMALL,
+                        )
                     }
-                },
+                }
+            }
+        }
+    }
+}
+
+/** Floating back / more-options top bar overlaid on the collapsing backdrop. */
+@Composable
+private fun MovieDetailTopBar(
+    isDownloaded: Boolean,
+    showMoreOptions: Boolean,
+    onShowMoreOptionsChange: (Boolean) -> Unit,
+    onBackClick: () -> Unit,
+    onShareClick: () -> Unit,
+    onDeleteOfflineCopy: () -> Unit,
+    onDeleteRequested: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(top = 48.dp, start = 16.dp, end = 16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Surface(
+            shape = androidx.compose.foundation.shape.CircleShape,
+            color = Color.Black.copy(alpha = 0.5f),
+            modifier = Modifier.size(40.dp),
+            onClick = onBackClick,
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "Back",
+                tint = Color.White,
+                modifier = Modifier.padding(8.dp),
             )
         }
+
+        Box {
+            Surface(
+                shape = androidx.compose.foundation.shape.CircleShape,
+                color = Color.Black.copy(alpha = 0.5f),
+                modifier = Modifier.size(40.dp),
+                onClick = { onShowMoreOptionsChange(true) },
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.MoreVert,
+                    contentDescription = "More options",
+                    tint = Color.White,
+                    modifier = Modifier.padding(8.dp),
+                )
+            }
+
+            DropdownMenu(
+                expanded = showMoreOptions,
+                onDismissRequest = { onShowMoreOptionsChange(false) },
+            ) {
+                DropdownMenuItem(
+                    text = { Text("Share") },
+                    onClick = {
+                        onShareClick()
+                        onShowMoreOptionsChange(false)
+                    },
+                    leadingIcon = {
+                        Icon(Icons.Rounded.Share, contentDescription = null)
+                    },
+                )
+                if (isDownloaded) {
+                    DropdownMenuItem(
+                        text = { Text("Delete offline copy") },
+                        onClick = {
+                            onDeleteOfflineCopy()
+                            onShowMoreOptionsChange(false)
+                        },
+                        leadingIcon = {
+                            Icon(Icons.Rounded.FileDownload, contentDescription = null)
+                        },
+                    )
+                }
+                DropdownMenuItem(
+                    text = { Text("Delete movie") },
+                    onClick = {
+                        onDeleteRequested()
+                        onShowMoreOptionsChange(false)
+                    },
+                    leadingIcon = {
+                        Icon(Icons.Rounded.Delete, contentDescription = null)
+                    },
+                )
+            }
+        }
+    }
+}
+
+/** Download-quality picker and delete-confirmation dialogs for the movie detail screen. */
+@Composable
+private fun MovieDetailDialogs(
+    movie: BaseItemDto,
+    showDownloadQualityDialog: Boolean,
+    onDownloadQualityDialogDismiss: () -> Unit,
+    onQualitySelected: (com.rpeters.jellyfin.data.offline.VideoQuality) -> Unit,
+    downloadsViewModel: DownloadsViewModel?,
+    showDeleteDialog: Boolean,
+    onDeleteDialogDismiss: () -> Unit,
+    onDeleteConfirmed: () -> Unit,
+) {
+    if (showDownloadQualityDialog && downloadsViewModel != null) {
+        QualitySelectionDialog(
+            item = movie,
+            onDismiss = onDownloadQualityDialogDismiss,
+            onQualitySelected = onQualitySelected,
+            downloadsViewModel = downloadsViewModel,
+        )
+    }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = onDeleteDialogDismiss,
+            title = { Text("Delete Movie") },
+            text = { Text("Are you sure you want to delete ${movie.name}? This cannot be undone.") },
+            confirmButton = {
+                TextButton(
+                    onClick = onDeleteConfirmed,
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onDeleteDialogDismiss) {
+                    Text("Cancel")
+                }
+            },
+        )
     }
 }
 
