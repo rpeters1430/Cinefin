@@ -434,7 +434,8 @@ private fun ExpressiveStorageCard(
 /**
  * Density-pass "IN PROGRESS" row (item 9): active downloads show live progress %/speed and a
  * Pause button; paused downloads show Resume/Cancel; queued (PENDING) downloads show no progress
- * bar and only a Cancel button; failed downloads show Retry/Delete.
+ * bar and only a Cancel button; failed downloads show Retry/Delete; cancelled downloads show only
+ * Delete, since re-cancelling an already-cancelled download is a no-op.
  */
 @Composable
 private fun DownloadInProgressRow(
@@ -517,7 +518,12 @@ private fun DownloadInProgressRow(
                         ActionIconButton(Icons.Default.Refresh, "Retry", onResume)
                         ActionIconButton(Icons.Default.Delete, "Delete", onDelete, contentColor = MaterialTheme.colorScheme.error)
                     }
-                    // PENDING (queued) and CANCELLED both fall back to a single Cancel action.
+                    DownloadStatus.CANCELLED -> {
+                        // A cancelled download is a terminal state — cancelling it again is a
+                        // no-op, so it only gets a Delete action to clear the stuck record.
+                        ActionIconButton(Icons.Default.Delete, "Delete", onDelete, contentColor = MaterialTheme.colorScheme.error)
+                    }
+                    // PENDING (queued) falls back to a single Cancel action.
                     else -> {
                         ActionIconButton(Icons.Default.Close, "Cancel", onCancel)
                     }
