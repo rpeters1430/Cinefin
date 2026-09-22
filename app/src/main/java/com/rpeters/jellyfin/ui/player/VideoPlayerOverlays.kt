@@ -36,6 +36,10 @@ fun GestureFeedbackOverlay(
         exit = fadeOut(),
         modifier = modifier,
     ) {
+        // This panel has an opaque surfaceVariant background (see below), which is a light
+        // color in the app's light theme, so its foreground must track onSurfaceVariant rather
+        // than the caller-supplied overlayContent (which assumes a dark, scrim-backed panel).
+        val panelContent = MaterialTheme.colorScheme.onSurfaceVariant
         Card(
             colors = CardDefaults.cardColors(
                 // Density pass: an opaque (92%) surfaceVariant background with a subtle white
@@ -55,12 +59,12 @@ fun GestureFeedbackOverlay(
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = overlayContent,
+                    tint = panelContent,
                     modifier = Modifier.size(36.dp),
                 )
                 Text(
                     text = text,
-                    color = overlayContent,
+                    color = panelContent,
                     style = MaterialTheme.typography.labelLarge,
                     modifier = Modifier.padding(top = 4.dp),
                 )
