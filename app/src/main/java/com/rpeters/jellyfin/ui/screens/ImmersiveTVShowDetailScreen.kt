@@ -277,14 +277,22 @@ private fun ImmersiveShowDetailContent(
     onToggleEpisodeNotifications: (Boolean) -> Unit = {},
 ) {
     val perfConfig = rememberImmersivePerformanceConfig()
+    val seriesId = state.seriesDetails?.id?.toString()
     // Density pass (item 6): a season chip rail replaces the season accordion. Selecting a chip
     // swaps the episode list in place - no navigation, no expand/collapse animation.
-    var selectedSeasonId by rememberSaveable { mutableStateOf<String?>(null) }
-    val listState = remember(state.seriesDetails?.id?.toString()) { LazyListState() }
+    // Keyed on the series ID so navigating directly from one series' detail screen to another
+    // (e.g. via launchSingleTop) resets the selection instead of carrying over a season ID that
+    // belongs to the previous series.
+    var selectedSeasonId by rememberSaveable(seriesId) { mutableStateOf<String?>(null) }
+    val listState = remember(seriesId) { LazyListState() }
 
-    // Default to the first season once seasons load, and load its episodes.
-    LaunchedEffect(state.seasons) {
-        if (selectedSeasonId == null) {
+    // Default to the first season once seasons load, and whenever the currently selected season
+    // is no longer part of this series' season list (belt-and-suspenders alongside the
+    // seriesId-keyed reset above), then load its episodes.
+    LaunchedEffect(state.seasons, selectedSeasonId) {
+        val hasValidSelection = selectedSeasonId != null &&
+            state.seasons.any { it.id.toString() == selectedSeasonId }
+        if (!hasValidSelection) {
             state.seasons.firstOrNull()?.let { firstSeason ->
                 val firstSeasonId = firstSeason.id.toString()
                 selectedSeasonId = firstSeasonId
