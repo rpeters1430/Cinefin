@@ -256,7 +256,7 @@ fun ImmersiveLibraryBrowserScreen(
                                     ImmersivePosterCard(
                                         title = item.name ?: "Unknown",
                                         subtitle = buildItemSubtitle(item),
-                                        imageUrl = getImageUrl(item) ?: "",
+                                        imageUrl = getImageUrl(item).orEmpty(),
                                         rating = item.communityRating,
                                         unwatchedEpisodeCount = item.getUnwatchedEpisodeCount().takeIf { it > 0 },
                                         onCardClick = { onItemClick(item.id.toString()) },

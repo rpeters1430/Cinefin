@@ -75,7 +75,7 @@ fun ContinueWatchingCard(
 
     ImmersivePosterCard(
         title = item.name ?: stringResource(id = R.string.unknown),
-        imageUrl = getImageUrl(item) ?: "",
+        imageUrl = getImageUrl(item).orEmpty(),
         onCardClick = { onItemClick(item) },
         onCardLongClick = { onItemLongPress(item) },
         modifier = modifier,

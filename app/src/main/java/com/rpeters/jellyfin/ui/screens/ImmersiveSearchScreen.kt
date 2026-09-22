@@ -439,6 +439,20 @@ private fun LazyListScope.searchStickyHeader(
     }
 }
 
+/** Shared display label for a [BaseItemKind] used both by the content-type filter chips and the grouped-results headers. */
+private fun contentTypeDisplayLabel(type: BaseItemKind?): String = when (type) {
+    BaseItemKind.MOVIE -> "Movies"
+    BaseItemKind.SERIES -> "TV Shows"
+    BaseItemKind.EPISODE -> "Episodes"
+    BaseItemKind.AUDIO -> "Music"
+    BaseItemKind.MUSIC_ALBUM -> "Albums"
+    BaseItemKind.MUSIC_ARTIST -> "Artists"
+    BaseItemKind.BOOK -> "Books"
+    BaseItemKind.AUDIO_BOOK -> "Audiobooks"
+    BaseItemKind.VIDEO -> "Videos"
+    else -> type.toString()
+}
+
 /** Expandable "Content Types" filter card. */
 private fun LazyListScope.contentTypeFiltersSection(
     selectedContentTypes: Set<BaseItemKind>,
@@ -463,13 +477,13 @@ private fun LazyListScope.contentTypeFiltersSection(
                     contentPadding = PaddingValues(horizontal = 0.dp),
                 ) {
                     val contentTypes = listOf(
-                        BaseItemKind.MOVIE to "Movies",
-                        BaseItemKind.SERIES to "TV Shows",
-                        BaseItemKind.AUDIO to "Music",
-                        BaseItemKind.BOOK to "Books",
-                        BaseItemKind.AUDIO_BOOK to "Audiobooks",
-                        BaseItemKind.VIDEO to "Videos",
-                    )
+                        BaseItemKind.MOVIE,
+                        BaseItemKind.SERIES,
+                        BaseItemKind.AUDIO,
+                        BaseItemKind.BOOK,
+                        BaseItemKind.AUDIO_BOOK,
+                        BaseItemKind.VIDEO,
+                    ).map { it to contentTypeDisplayLabel(it) }
 
                     items(
                         items = contentTypes,
@@ -686,17 +700,7 @@ private fun LazyListScope.groupedResultsSection(
     groupedResults.forEach { (type, items) ->
         item(key = "header_$type") {
             Text(
-                text = when (type) {
-                    BaseItemKind.MOVIE -> "Movies"
-                    BaseItemKind.SERIES -> "TV Shows"
-                    BaseItemKind.EPISODE -> "Episodes"
-                    BaseItemKind.AUDIO -> "Music"
-                    BaseItemKind.MUSIC_ALBUM -> "Albums"
-                    BaseItemKind.MUSIC_ARTIST -> "Artists"
-                    BaseItemKind.BOOK -> "Books"
-                    BaseItemKind.AUDIO_BOOK -> "Audiobooks"
-                    else -> type.toString()
-                },
+                text = contentTypeDisplayLabel(type),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(top = 16.dp, bottom = 8.dp),
@@ -804,7 +808,7 @@ private fun SearchResultRow(
     onClick: () -> Unit,
 ) {
     val subtitle = when (item.type) {
-        BaseItemKind.EPISODE -> item.seriesName ?: ""
+        BaseItemKind.EPISODE -> item.seriesName.orEmpty()
         else -> item.productionYear?.toString().orEmpty()
     }
     val isWatched = item.userData?.played == true
@@ -840,7 +844,7 @@ private fun SearchResultRow(
                 verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 Text(
-                    text = item.name ?: "",
+                    text = item.name.orEmpty(),
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,

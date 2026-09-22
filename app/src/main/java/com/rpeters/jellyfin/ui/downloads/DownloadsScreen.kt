@@ -40,6 +40,18 @@ import com.rpeters.jellyfin.ui.components.ExpressiveWavyLinearProgress
 import com.rpeters.jellyfin.ui.theme.JellyfinExpressiveTheme
 import kotlin.math.roundToInt
 
+/** Section header for active downloads (downloading/paused/queued). */
+private const val IN_PROGRESS_HEADER = "IN PROGRESS"
+
+/** Section header for completed downloads stored on-device. */
+private const val ON_THIS_DEVICE_HEADER = "ON THIS DEVICE"
+
+/** Content description shared by the cancel-download action icons. */
+private const val ACTION_CANCEL = "Cancel"
+
+/** Content description shared by the delete-download action icons. */
+private const val ACTION_DELETE = "Delete"
+
 @androidx.media3.common.util.UnstableApi
 @OptInAppExperimentalApis
 @Composable
@@ -237,7 +249,7 @@ fun DownloadsScreen(
             if (inProgressDownloads.isNotEmpty()) {
                 item(key = "in_progress_header") {
                     Text(
-                        text = "IN PROGRESS",
+                        text = IN_PROGRESS_HEADER,
                         style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 0.84.sp),
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary,
@@ -264,7 +276,7 @@ fun DownloadsScreen(
             if (onDeviceDownloads.isNotEmpty()) {
                 item(key = "on_device_header") {
                     Text(
-                        text = "ON THIS DEVICE",
+                        text = ON_THIS_DEVICE_HEADER,
                         style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 0.84.sp),
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary,
@@ -508,24 +520,24 @@ private fun DownloadInProgressRow(
                 when (download.status) {
                     DownloadStatus.DOWNLOADING -> {
                         ActionIconButton(Icons.Default.Pause, "Pause", onPause)
-                        ActionIconButton(Icons.Default.Close, "Cancel", onCancel)
+                        ActionIconButton(Icons.Default.Close, ACTION_CANCEL, onCancel)
                     }
                     DownloadStatus.PAUSED -> {
                         ActionIconButton(Icons.Default.PlayArrow, "Resume", onResume)
-                        ActionIconButton(Icons.Default.Close, "Cancel", onCancel)
+                        ActionIconButton(Icons.Default.Close, ACTION_CANCEL, onCancel)
                     }
                     DownloadStatus.FAILED -> {
                         ActionIconButton(Icons.Default.Refresh, "Retry", onResume)
-                        ActionIconButton(Icons.Default.Delete, "Delete", onDelete, contentColor = MaterialTheme.colorScheme.error)
+                        ActionIconButton(Icons.Default.Delete, ACTION_DELETE, onDelete, contentColor = MaterialTheme.colorScheme.error)
                     }
                     DownloadStatus.CANCELLED -> {
                         // A cancelled download is a terminal state — cancelling it again is a
                         // no-op, so it only gets a Delete action to clear the stuck record.
-                        ActionIconButton(Icons.Default.Delete, "Delete", onDelete, contentColor = MaterialTheme.colorScheme.error)
+                        ActionIconButton(Icons.Default.Delete, ACTION_DELETE, onDelete, contentColor = MaterialTheme.colorScheme.error)
                     }
                     // PENDING (queued) falls back to a single Cancel action.
                     else -> {
-                        ActionIconButton(Icons.Default.Close, "Cancel", onCancel)
+                        ActionIconButton(Icons.Default.Close, ACTION_CANCEL, onCancel)
                     }
                 }
             }
@@ -624,7 +636,7 @@ private fun DownloadOnDeviceRow(
             ) {
                 ActionIconButton(Icons.Default.PlayArrow, "Play", onPlay, containerColor = MaterialTheme.colorScheme.primaryContainer)
                 ActionIconButton(Icons.Default.Info, "Details", onOpenDetail)
-                ActionIconButton(Icons.Default.Delete, "Delete", onDelete, contentColor = MaterialTheme.colorScheme.error)
+                ActionIconButton(Icons.Default.Delete, ACTION_DELETE, onDelete, contentColor = MaterialTheme.colorScheme.error)
             }
         }
     }

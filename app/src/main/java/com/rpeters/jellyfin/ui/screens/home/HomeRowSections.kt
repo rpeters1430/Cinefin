@@ -54,8 +54,8 @@ fun PosterRowSection(
             contentType = { "poster_media_card" },
         ) { item ->
             ImmersivePosterCard(
-                title = item.name ?: "",
-                imageUrl = getImageUrl(item) ?: "",
+                title = item.name.orEmpty(),
+                imageUrl = getImageUrl(item).orEmpty(),
                 onCardClick = { onItemClick(item) },
                 onCardLongClick = { onItemLongPress(item) },
                 subtitle = posterRowSubtitle(item),
