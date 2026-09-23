@@ -81,8 +81,48 @@ jobs:
       - name: Build debug APK
         run: ./gradlew --no-daemon --stacktrace :app:assembleDebug
 
-      - name: Run unit tests
-        run: ./gradlew --no-daemon --stacktrace :app:testDebugUnitTest
+      - name: Run unit tests with coverage
+        run: ./gradlew --no-daemon --stacktrace -PenableCoverage=true :app:jacocoUnitTestReport
+
+      - name: Coverage summary
+        if: always()
+        shell: bash
+        run: |
+          REPORT="app/build/reports/jacoco/jacocoUnitTestReport/jacocoUnitTestReport.xml"
+          if [ ! -f "$REPORT" ]; then
+            echo "No coverage report found at $REPORT"
+            exit 0
+          fi
+          python3 - "$REPORT" >> "$GITHUB_STEP_SUMMARY" <<'PY'
+          import sys
+          import xml.etree.ElementTree as ET
+
+          root = ET.parse(sys.argv[1]).getroot()
+          print("### Unit test coverage")
+          print()
+          print("| Metric | Covered | Total | % |")
+          print("|---|---:|---:|---:|")
+          for counter in root.findall("counter"):
+              kind = counter.get("type")
+              if kind not in ("LINE", "BRANCH", "METHOD", "CLASS"):
+                  continue
+              missed, covered = int(counter.get("missed")), int(counter.get("covered"))
+              total = missed + covered
+              pct = 100.0 * covered / total if total else 0.0
+              print(f"| {kind.title()} | {covered} | {total} | {pct:.1f}% |")
+          PY
+
+      - name: Upload coverage to Codecov
+        if: always()
+        # Tokenless upload works for public repos once the Codecov GitHub App is installed;
+        # set the CODECOV_TOKEN secret for private repos. Never fails the build.
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: app/build/reports/jacoco/jacocoUnitTestReport/jacocoUnitTestReport.xml
+          disable_search: true
+          flags: unit
+          fail_ci_if_error: false
 
       - name: Run lint
         run: ./gradlew --no-daemon --stacktrace :app:lintDebug
@@ -132,6 +172,7 @@ jobs:
           path: |
             app/build/reports/tests/testDebugUnitTest/**
             app/build/test-results/testDebugUnitTest/**
+            app/build/reports/jacoco/jacocoUnitTestReport/**
           if-no-files-found: warn
           retention-days: 14
 

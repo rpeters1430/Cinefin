@@ -29,8 +29,8 @@
 # Lint
 ./gradlew lintDebug
 
-# Coverage (HTML under app/build/reports)
-./gradlew jacocoTestReport
+# Coverage (HTML under app/build/reports/jacoco)
+./gradlew jacocoUnitTestReport -PenableCoverage=true
 ```
 
 ## Checklist

@@ -16,7 +16,7 @@
 - JVM unit tests: `./gradlew testDebugUnitTest`.
 - Instrumentation tests (device/emulator; Hilt runner): `./gradlew connectedAndroidTest`.
 - Lint (HTML report under `app/build/reports/lint`): `./gradlew lintDebug`.
-- Coverage (HTML/XML under `app/build/reports`): `./gradlew jacocoTestReport`.
+- Coverage (HTML/XML under `app/build/reports/jacoco`): `./gradlew jacocoUnitTestReport -PenableCoverage=true` (unit tests only; `jacocoTestReport` adds instrumentation and needs a device).
 
 ## Coding Style & Naming Conventions
 
@@ -32,7 +32,7 @@
 - Focus on ViewModel/Repository logic; mock network/I/O boundaries.
 - Name tests descriptively (e.g., `loadMovieDetails_updates_state_on_success`).
 - Run: unit `testDebugUnitTest`; instrumentation `connectedAndroidTest`.
-- Coverage: `jacocoTestReport` (generated/DI classes already filtered).
+- Coverage: `jacocoUnitTestReport -PenableCoverage=true` (generated/DI/Hilt classes already filtered).
 
 ## Commit & Pull Request Guidelines
 

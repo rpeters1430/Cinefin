@@ -338,39 +338,68 @@ dependencies {
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 }
 
-tasks.register<JacocoReport>("jacocoTestReport") {
-    dependsOn("testDebugUnitTest", "createDebugCoverageReport")
+val jacocoExcludes = listOf(
+    "**/R.class",
+    "**/R$*.class",
+    "**/BuildConfig.*",
+    "**/Manifest*.*",
+    "**/*Test*.*",
+    "android/**/*.*",
+    "**/data/model/*.*",
+    "**/di/*.*",
+    // Hilt / Dagger generated code
+    "**/Hilt_*.*",
+    "**/*_Factory*.*",
+    "**/*_MembersInjector*.*",
+    "**/*_HiltModules*.*",
+    "**/*_GeneratedInjector*.*",
+    "**/dagger/hilt/**",
+    "hilt_aggregated_deps/**",
+    // Compose compiler generated code
+    "**/ComposableSingletons*.*",
+)
 
+fun JacocoReport.configureCinefinCoverage(executionPatterns: List<String>) {
     reports {
         xml.required.set(true)
         html.required.set(true)
         csv.required.set(false)
     }
 
-    val fileFilter = listOf(
-        "**/R.class",
-        "**/R$*.class",
-        "**/BuildConfig.*",
-        "**/Manifest*.*",
-        "**/*Test*.*",
-        "android/**/*.*",
-        "**/data/model/*.*",
-        "**/di/*.*",
+    val buildDir = layout.buildDirectory.asFile.get()
+    // AGP 9 built-in Kotlin and the legacy KGP output location, plus javac output.
+    val classTrees = listOf(
+        "intermediates/built_in_kotlinc/debug/compileDebugKotlin/classes",
+        "tmp/kotlin-classes/debug",
+        "intermediates/javac/debug/compileDebugJavaWithJavac/classes",
+    ).map { dir -> fileTree("$buildDir/$dir") { exclude(jacocoExcludes) } }
+
+    sourceDirectories.setFrom(files("${project.projectDir}/src/main/java"))
+    classDirectories.setFrom(files(classTrees))
+    executionData.setFrom(fileTree(buildDir) { include(executionPatterns) })
+}
+
+// Unit + instrumentation coverage (requires a connected device).
+//   ./gradlew :app:jacocoTestReport -PenableCoverage=true
+tasks.register<JacocoReport>("jacocoTestReport") {
+    dependsOn("testDebugUnitTest", "createDebugCoverageReport")
+    configureCinefinCoverage(
+        listOf(
+            "outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec",
+            "outputs/code_coverage/debugAndroidTest/connected/*/coverage.ec",
+        ),
     )
+}
 
-    val debugTree = fileTree("${layout.buildDirectory.asFile.get()}/tmp/kotlin-classes/debug") {
-        exclude(fileFilter)
-    }
-
-    val mainSrc = "${project.projectDir}/src/main/java"
-
-    sourceDirectories.setFrom(files(mainSrc))
-    classDirectories.setFrom(files(debugTree))
-    executionData.setFrom(
-        fileTree(layout.buildDirectory.asFile.get()) {
-            include("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec")
-            include("outputs/code_coverage/debugAndroidTest/connected/*/coverage.ec")
-        },
+// JVM unit test coverage only; safe for CI without an emulator.
+//   ./gradlew :app:jacocoUnitTestReport -PenableCoverage=true
+// Report: app/build/reports/jacoco/jacocoUnitTestReport/
+tasks.register<JacocoReport>("jacocoUnitTestReport") {
+    group = "verification"
+    description = "Generates a JaCoCo coverage report from JVM unit tests only."
+    dependsOn("testDebugUnitTest")
+    configureCinefinCoverage(
+        listOf("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec"),
     )
 }
 
@@ -379,5 +408,7 @@ tasks.withType<Test> {
     // MockK/ByteBuddy self-attach its inline-mocking agent at runtime; JDK 21+ restricts
     // dynamic agent loading (JEP 451). Without this, mocking final Kotlin classes can fail.
     jvmArgs("-XX:+UseG1GC", "-XX:+EnableDynamicAgentLoading", "-Djdk.attach.allowAttachSelf=true")
-    forkEvery = 1
+    // Reuse test JVMs across classes so Robolectric sandboxes and MockK agents are
+    // initialized once per fork instead of once per class; run forks in parallel.
+    maxParallelForks = (Runtime.getRuntime().availableProcessors() / 2).coerceAtLeast(1)
 }

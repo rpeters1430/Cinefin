@@ -129,10 +129,13 @@ class ServerConnectionViewModelTest {
     }
 
     @After
-    fun tearDown() = runTest(mainDispatcherRule.dispatcher) {
-        if (::viewModel.isInitialized) {
-            viewModel.viewModelScope.coroutineContext[Job]?.cancelAndJoin()
+    fun tearDown() {
+        runTest(mainDispatcherRule.dispatcher) {
+            if (::viewModel.isInitialized) {
+                viewModel.viewModelScope.coroutineContext[Job]?.cancelAndJoin()
+            }
         }
+        context.drainLoginDataStore(mainDispatcherRule.dispatcher.scheduler)
         unmockkAll()
     }
 

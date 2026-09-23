@@ -95,6 +95,7 @@ class ServerConnectionViewModelOfflineTest {
         if (::viewModel.isInitialized) {
             viewModel.viewModelScope.cancel()
         }
+        context.drainLoginDataStore(testDispatcher.scheduler)
         io.mockk.unmockkAll()
         Dispatchers.resetMain()
     }

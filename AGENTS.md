@@ -42,8 +42,11 @@ This file provides guidance to Codex (Codex.ai/code) when working with code in t
 # Run Android Lint
 ./gradlew lintDebug
 
-# Generate JaCoCo coverage report (HTML/XML in app/build/reports)
-./gradlew jacocoTestReport
+# Unit-test coverage report, no device needed (HTML/XML in app/build/reports/jacoco/jacocoUnitTestReport)
+./gradlew jacocoUnitTestReport -PenableCoverage=true
+
+# Unit + instrumentation coverage (requires device/emulator)
+./gradlew jacocoTestReport -PenableCoverage=true
 ```
 
 ### Environment Setup (CI/Codex/Web Environments)

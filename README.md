@@ -283,7 +283,8 @@ Feature-complete ExoPlayer-backed player:
 | `./gradlew testDebugUnitTest` | Run JVM unit tests |
 | `./gradlew connectedAndroidTest` | Run instrumentation tests (device required) |
 | `./gradlew lintDebug` | Run Android Lint |
-| `./gradlew jacocoTestReport` | Generate JaCoCo coverage report |
+| `./gradlew jacocoUnitTestReport -PenableCoverage=true` | JaCoCo coverage from unit tests (no device needed) |
+| `./gradlew jacocoTestReport -PenableCoverage=true` | JaCoCo coverage from unit + instrumentation tests (needs device) |
 | `./gradlew ciTest` | Run all tests (unit + instrumentation) |
 
 > **Windows**: Replace `./gradlew` with `./gradlew.bat` in all commands above.
@@ -450,7 +451,7 @@ Examples: `feat: add movie detail screen`, `fix: prevent crash on empty library`
 - Name tests descriptively: `loadMovieDetails_updatesState_onSuccess`
 - Use `StandardTestDispatcher` with `advanceUntilIdle()` in coroutine tests
 - Use `coEvery` (not `every`) when mocking Flows and suspend functions
-- Coverage via `jacocoTestReport`; generated/DI classes are already excluded
+- Coverage via `jacocoUnitTestReport -PenableCoverage=true` (CI uploads it to Codecov); generated/DI/Hilt classes are already excluded
 - Hilt testing configured; use `HiltAndroidRule` and `HiltTestRunner` for instrumented tests
 
 See **[Testing Guide](docs/development/TESTING_GUIDE.md)** for comprehensive patterns and examples.

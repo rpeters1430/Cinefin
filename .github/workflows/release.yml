@@ -35,6 +35,12 @@ jobs:
   # Job 1: parse the trigger, validate auth, post ACK
   # ─────────────────────────────────────────────────────────────
   check-trigger:
+    # Skip bot comments and non-command comments before a runner is allocated.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.comment.user.type != 'Bot' &&
+       (startsWith(github.event.comment.body, '/build') ||
+        startsWith(github.event.comment.body, '/release')))
     runs-on: ubuntu-latest
     permissions:
       issues: write

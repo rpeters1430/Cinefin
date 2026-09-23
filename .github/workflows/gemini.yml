@@ -23,10 +23,6 @@ on:
 
 permissions: {}
 
-concurrency:
-  group: gemini-${{ github.event.pull_request.number || github.event.issue.number || inputs.number || github.run_id }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request_target' }}
-
 jobs:
   analyze:
     if: >-
@@ -34,7 +30,13 @@ jobs:
       (github.event_name != 'workflow_dispatch' ||
        github.ref == format('refs/heads/{0}', github.event.repository.default_branch)) &&
       (github.event_name != 'issue_comment' ||
-       contains(github.event.comment.body, '@gemini-cli'))
+       (github.event.comment.user.type != 'Bot' &&
+        contains(github.event.comment.body, '@gemini-cli')))
+    # Job-level so skipped runs (e.g. bot comments) never join the group and
+    # cancel a pending review for the same PR.
+    concurrency:
+      group: gemini-${{ github.event.pull_request.number || github.event.issue.number || inputs.number || github.run_id }}
+      cancel-in-progress: ${{ github.event_name == 'pull_request_target' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
