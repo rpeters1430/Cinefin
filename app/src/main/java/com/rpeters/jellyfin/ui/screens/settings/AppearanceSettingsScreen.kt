@@ -54,7 +54,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -698,19 +697,16 @@ private fun CustomColorPickerDialog(
         android.graphics.Color.colorToHSV(initialColor.toArgb(), hsv)
         hsv
     }
-    val hueSliderState = remember(initialHsv) {
-        SliderState(value = initialHsv[0], trackRange = 0f..360f)
-    }
-    val saturationSliderState = remember(initialHsv) {
-        SliderState(value = initialHsv[1], trackRange = 0f..1f)
-    }
-    val brightnessSliderState = remember(initialHsv) {
-        SliderState(value = initialHsv[2], trackRange = 0.05f..1f)
-    }
+    val hueRange = 0f..360f
+    val saturationRange = 0f..1f
+    val brightnessRange = 0.05f..1f
+    var hue by remember(initialHsv) { mutableFloatStateOf(initialHsv[0].coerceIn(hueRange)) }
+    var saturation by remember(initialHsv) { mutableFloatStateOf(initialHsv[1].coerceIn(saturationRange)) }
+    var brightness by remember(initialHsv) { mutableFloatStateOf(initialHsv[2].coerceIn(brightnessRange)) }
     val hsvArray = remember { FloatArray(3) }
-    hsvArray[0] = hueSliderState.value
-    hsvArray[1] = saturationSliderState.value
-    hsvArray[2] = brightnessSliderState.value
+    hsvArray[0] = hue
+    hsvArray[1] = saturation
+    hsvArray[2] = brightness
     val previewColor = Color(android.graphics.Color.HSVToColor(hsvArray))
     var hexText by remember(initialColor) {
         mutableStateOf(
@@ -736,9 +732,9 @@ private fun CustomColorPickerDialog(
         if (parsedArgb != null) {
             val hsv = FloatArray(3)
             android.graphics.Color.colorToHSV(parsedArgb, hsv)
-            hueSliderState.value = hsv[0].coerceIn(hueSliderState.trackRange)
-            saturationSliderState.value = hsv[1].coerceIn(saturationSliderState.trackRange)
-            brightnessSliderState.value = hsv[2].coerceIn(brightnessSliderState.trackRange)
+            hue = hsv[0].coerceIn(hueRange)
+            saturation = hsv[1].coerceIn(saturationRange)
+            brightness = hsv[2].coerceIn(brightnessRange)
         }
     }
 
@@ -756,15 +752,15 @@ private fun CustomColorPickerDialog(
                 )
                 Column {
                     Text("Hue", style = MaterialTheme.typography.labelMedium)
-                    Slider(state = hueSliderState)
+                    Slider(value = hue, onValueChange = { hue = it }, valueRange = hueRange)
                 }
                 Column {
                     Text("Saturation", style = MaterialTheme.typography.labelMedium)
-                    Slider(state = saturationSliderState)
+                    Slider(value = saturation, onValueChange = { saturation = it }, valueRange = saturationRange)
                 }
                 Column {
                     Text("Brightness", style = MaterialTheme.typography.labelMedium)
-                    Slider(state = brightnessSliderState)
+                    Slider(value = brightness, onValueChange = { brightness = it }, valueRange = brightnessRange)
                 }
                 OutlinedTextField(
                     value = hexText,
