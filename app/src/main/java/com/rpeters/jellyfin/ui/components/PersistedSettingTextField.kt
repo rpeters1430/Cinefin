@@ -7,7 +7,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
@@ -19,6 +18,10 @@ import androidx.compose.ui.text.input.VisualTransformation
  * Keeps the text being edited locally so that the delayed (and possibly normalized) value coming
  * back from storage doesn't overwrite what the user is typing or pasting. The stored [value] is
  * only shown again once the field isn't focused, e.g. on first load or after an import.
+ *
+ * The draft is deliberately not kept in saved instance state: callers use this for API keys, which
+ * must stay in encrypted storage. Every change is persisted, so after recreation the field simply
+ * starts again from the stored value.
  */
 @Composable
 fun PersistedSettingTextField(
@@ -31,7 +34,7 @@ fun PersistedSettingTextField(
     visualTransformation: VisualTransformation = VisualTransformation.None,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
 ) {
-    var text by rememberSaveable { mutableStateOf(value) }
+    var text by remember { mutableStateOf(value) }
     var isFocused by remember { mutableStateOf(false) }
 
     LaunchedEffect(value, isFocused) {
