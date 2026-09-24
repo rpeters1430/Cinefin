@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -25,7 +26,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -35,6 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -46,6 +47,7 @@ import com.rpeters.jellyfin.ui.components.ExpressiveContentCard
 import com.rpeters.jellyfin.ui.components.ExpressiveFilledButton
 import com.rpeters.jellyfin.ui.components.ExpressiveSwitchListItem
 import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBar
+import com.rpeters.jellyfin.ui.components.PersistedSettingTextField
 import com.rpeters.jellyfin.ui.theme.JellyfinExpressiveTheme
 import com.rpeters.jellyfin.ui.viewmodel.ConnectionTestState
 import com.rpeters.jellyfin.ui.viewmodel.MediaRequestSettingsViewModel
@@ -167,15 +169,16 @@ fun MediaRequestSettingsScreen(
 
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
-                OutlinedTextField(
+                PersistedSettingTextField(
                     value = seerrPrefs.baseUrl,
                     onValueChange = viewModel::updateSeerrUrl,
                     label = { Text("URL") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                     placeholder = { Text("https://yourhost.com/overseerr") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                 )
-                OutlinedTextField(
+                PersistedSettingTextField(
                     value = seerrPrefs.apiKey,
                     onValueChange = viewModel::updateSeerrApiKey,
                     label = { Text("API Key") },
@@ -207,15 +210,16 @@ fun MediaRequestSettingsScreen(
 
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
-                OutlinedTextField(
+                PersistedSettingTextField(
                     value = sonarrPrefs.baseUrl,
                     onValueChange = viewModel::updateSonarrUrl,
                     label = { Text("URL") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                     placeholder = { Text("https://yourhost.com/sonarr") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                 )
-                OutlinedTextField(
+                PersistedSettingTextField(
                     value = sonarrPrefs.apiKey,
                     onValueChange = viewModel::updateSonarrApiKey,
                     label = { Text("API Key") },
@@ -247,15 +251,16 @@ fun MediaRequestSettingsScreen(
 
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
-                OutlinedTextField(
+                PersistedSettingTextField(
                     value = radarrPrefs.baseUrl,
                     onValueChange = viewModel::updateRadarrUrl,
                     label = { Text("URL") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                     placeholder = { Text("https://yourhost.com/radarr") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                 )
-                OutlinedTextField(
+                PersistedSettingTextField(
                     value = radarrPrefs.apiKey,
                     onValueChange = viewModel::updateRadarrApiKey,
                     label = { Text("API Key") },
