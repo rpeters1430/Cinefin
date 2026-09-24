@@ -27,7 +27,6 @@ import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
 import com.rpeters.jellyfin.data.JellyfinServer
 import com.rpeters.jellyfin.ui.components.*
-import com.rpeters.jellyfin.ui.components.aiAura
 import com.rpeters.jellyfin.ui.components.immersive.*
 import com.rpeters.jellyfin.ui.screens.home.*
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
@@ -452,38 +451,18 @@ private fun BoxScope.ImmersiveHomeOverlayContent(
             .align(Alignment.BottomEnd)
             .padding(end = 16.dp, bottom = 64.dp), // Just above navigation bar
     ) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            horizontalAlignment = Alignment.End,
+        FloatingActionButton(
+            onClick = {
+                haptics.lightClick()
+                onSearchClick()
+            },
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
         ) {
-            FloatingActionButton(
-                onClick = {
-                    haptics.heavyClick()
-                    onAiAssistantClick()
-                },
-                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-                modifier = Modifier.aiAura(),
-            ) {
-                Icon(
-                    imageVector = Icons.Default.AutoAwesome,
-                    contentDescription = stringResource(id = R.string.ai_assistant),
-                )
-            }
-
-            FloatingActionButton(
-                onClick = {
-                    haptics.lightClick()
-                    onSearchClick()
-                },
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Search,
-                    contentDescription = stringResource(id = R.string.search),
-                )
-            }
+            Icon(
+                imageVector = Icons.Default.Search,
+                contentDescription = stringResource(id = R.string.search),
+            )
         }
     }
 
@@ -618,38 +597,24 @@ private fun ImmersiveHomeContent(
         modifier = modifier,
         indicatorSize = 48.dp, // Standard expressive size
     ) {
-        if (adaptiveConfig.isTablet) {
-            ExpressiveBentoGrid(
-                contentLists = contentLists,
-                windowSizeClass = windowSizeClass,
-                getImageUrl = getImageUrl,
-                onItemClick = stableOnItemClick,
-                onItemLongPress = stableOnItemLongPress,
-                onAiAssistantClick = onAiAssistantClick,
-                gridState = gridState,
-                contentPadding = contentPadding,
-                modifier = Modifier.fillMaxSize(),
-            )
-        } else {
-            MobileExpressiveHomeContent(
-                appState = appState,
-                contentLists = contentLists,
-                currentServer = currentServer,
-                getImageUrl = getImageUrl,
-                getBackdropUrl = getBackdropUrl,
-                getSeriesImageUrl = getSeriesImageUrl,
-                onItemClick = stableOnItemClick,
-                onItemLongPress = stableOnItemLongPress,
-                onLibraryClick = onLibraryClick,
-                viewingMood = viewingMood,
-                listState = listState,
-                contentPadding = contentPadding,
-                bottomSpacing = homeContentBottomPadding,
-                animatedVisibilityScope = animatedVisibilityScope,
-                heroHeight = heroHeight,
-                modifier = Modifier.fillMaxSize(),
-            )
-        }
+        MobileExpressiveHomeContent(
+            appState = appState,
+            contentLists = contentLists,
+            currentServer = currentServer,
+            getImageUrl = getImageUrl,
+            getBackdropUrl = getBackdropUrl,
+            getSeriesImageUrl = getSeriesImageUrl,
+            onItemClick = stableOnItemClick,
+            onItemLongPress = stableOnItemLongPress,
+            onLibraryClick = onLibraryClick,
+            viewingMood = viewingMood,
+            listState = listState,
+            contentPadding = contentPadding,
+            bottomSpacing = homeContentBottomPadding,
+            animatedVisibilityScope = animatedVisibilityScope,
+            heroHeight = heroHeight,
+            modifier = Modifier.fillMaxSize(),
+        )
     }
 }
 

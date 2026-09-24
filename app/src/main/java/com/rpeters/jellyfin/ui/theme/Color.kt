@@ -3,6 +3,25 @@ package com.rpeters.jellyfin.ui.theme
 import androidx.compose.ui.graphics.Color
 
 // ============================================================================
+// CINEFIN "PROJECTION BOOTH" DESIGN SYSTEM PALETTE (DESIGN.md)
+// ============================================================================
+
+val CinefinBooth = Color(0xFF12151B) // Dark background
+val CinefinBoothRaised = Color(0xFF1B1F27) // Cards, sheets, nav bar
+val CinefinBoothHigh = Color(0xFF262B35) // Menus, dialogs, pressed surfaces
+val CinefinScreen = Color(0xFFE9ECF2) // Primary text on dark
+val CinefinDimmer = Color(0xFF98A0AE) // Secondary text, inactive icons
+val CinefinTungsten = Color(0xFFF2B45A) // Primary accent (play, progress, selection)
+val CinefinTungstenDeep = Color(0xFF3D2A0C) // Text/icons on tungsten; tonal containers
+val CinefinTungstenContainer = Color(0xFF5A3F14)
+val CinefinTungstenOnContainer = Color(0xFFFFDDB0)
+val CinefinSignalRed = Color(0xFFFF6B6B) // Errors, destructive actions
+val CinefinSignalRedDark = Color(0xFF3B0A0A)
+val CinefinOutline = Color(0xFF3A404C)
+val CinefinOutlineVariant = Color(0xFF2A2F39)
+val CinefinSurfaceContainerLow = Color(0xFF171A21)
+
+// ============================================================================
 // JELLYFIN BRAND COLORS
 // ============================================================================
 

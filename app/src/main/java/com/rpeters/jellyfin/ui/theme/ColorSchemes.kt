@@ -10,6 +10,7 @@ import com.rpeters.jellyfin.data.preferences.AccentColor
  */
 fun getLightColorScheme(accentColor: AccentColor): androidx.compose.material3.ColorScheme {
     return when (accentColor) {
+        AccentColor.CINEFIN_TUNGSTEN -> CinefinLightColorScheme
         AccentColor.JELLYFIN_CLASSIC -> JellyfinClassicLightColorScheme
         AccentColor.JELLYFIN_PURPLE -> JellyfinPurpleLightColorScheme
         AccentColor.JELLYFIN_BLUE -> JellyfinBlueLightColorScheme
@@ -21,7 +22,7 @@ fun getLightColorScheme(accentColor: AccentColor): androidx.compose.material3.Co
         AccentColor.MATERIAL_ORANGE -> MaterialOrangeLightColorScheme
         // CUSTOM is handled upstream in JellyfinAndroidTheme via rememberDynamicColorScheme;
         // this fallback only matters if this function is called directly with CUSTOM.
-        AccentColor.CUSTOM -> JellyfinPurpleLightColorScheme
+        AccentColor.CUSTOM -> CinefinLightColorScheme
     }
 }
 
@@ -31,6 +32,7 @@ fun getLightColorScheme(accentColor: AccentColor): androidx.compose.material3.Co
  */
 fun getDarkColorScheme(accentColor: AccentColor): androidx.compose.material3.ColorScheme {
     return when (accentColor) {
+        AccentColor.CINEFIN_TUNGSTEN -> CinefinDarkColorScheme
         AccentColor.JELLYFIN_CLASSIC -> JellyfinClassicDarkColorScheme
         AccentColor.JELLYFIN_PURPLE -> JellyfinPurpleDarkColorScheme
         AccentColor.JELLYFIN_BLUE -> JellyfinBlueDarkColorScheme
@@ -40,7 +42,7 @@ fun getDarkColorScheme(accentColor: AccentColor): androidx.compose.material3.Col
         AccentColor.MATERIAL_GREEN -> MaterialGreenDarkColorScheme
         AccentColor.MATERIAL_RED -> MaterialRedDarkColorScheme
         AccentColor.MATERIAL_ORANGE -> MaterialOrangeDarkColorScheme
-        AccentColor.CUSTOM -> JellyfinPurpleDarkColorScheme
+        AccentColor.CUSTOM -> CinefinDarkColorScheme
     }
 }
 
@@ -50,6 +52,7 @@ fun getDarkColorScheme(accentColor: AccentColor): androidx.compose.material3.Col
  */
 fun getAmoledBlackColorScheme(accentColor: AccentColor): androidx.compose.material3.ColorScheme {
     return when (accentColor) {
+        AccentColor.CINEFIN_TUNGSTEN -> CinefinAmoledColorScheme
         AccentColor.JELLYFIN_CLASSIC -> JellyfinClassicAmoledColorScheme
         AccentColor.JELLYFIN_PURPLE -> JellyfinPurpleAmoledColorScheme
         AccentColor.JELLYFIN_BLUE -> JellyfinBlueAmoledColorScheme
@@ -59,9 +62,75 @@ fun getAmoledBlackColorScheme(accentColor: AccentColor): androidx.compose.materi
         AccentColor.MATERIAL_GREEN -> MaterialGreenAmoledColorScheme
         AccentColor.MATERIAL_RED -> MaterialRedAmoledColorScheme
         AccentColor.MATERIAL_ORANGE -> MaterialOrangeAmoledColorScheme
-        AccentColor.CUSTOM -> JellyfinPurpleAmoledColorScheme
+        AccentColor.CUSTOM -> CinefinAmoledColorScheme
     }
 }
+
+// ============================================================================
+// CINEFIN "PROJECTION BOOTH" COLOR SCHEMES (DESIGN.md)
+// ============================================================================
+
+val CinefinDarkColorScheme = darkColorScheme(
+    primary = CinefinTungsten,
+    onPrimary = CinefinTungstenDeep,
+    primaryContainer = CinefinTungstenContainer,
+    onPrimaryContainer = CinefinTungstenOnContainer,
+    secondary = CinefinDimmer,
+    onSecondary = CinefinBoothRaised,
+    secondaryContainer = CinefinBoothHigh,
+    onSecondaryContainer = CinefinScreen,
+    tertiary = Color(0xFFD4A054),
+    onTertiary = CinefinTungstenDeep,
+    background = CinefinBooth,
+    onBackground = CinefinScreen,
+    surface = CinefinBooth,
+    onSurface = CinefinScreen,
+    surfaceContainerLowest = Color(0xFF0D0F14),
+    surfaceContainerLow = CinefinSurfaceContainerLow,
+    surfaceContainer = CinefinBoothRaised,
+    surfaceContainerHigh = CinefinBoothHigh,
+    surfaceContainerHighest = Color(0xFF313743),
+    onSurfaceVariant = CinefinDimmer,
+    outline = CinefinOutline,
+    outlineVariant = CinefinOutlineVariant,
+    error = CinefinSignalRed,
+    onError = CinefinSignalRedDark,
+)
+
+val CinefinAmoledColorScheme = CinefinDarkColorScheme.copy(
+    background = Color.Black,
+    surface = Color.Black,
+    surfaceContainerLowest = Color.Black,
+    surfaceContainerLow = Color(0xFF0D0D0D),
+    surfaceContainer = Color(0xFF1A1A1A),
+    surfaceContainerHigh = Color(0xFF262626),
+    surfaceContainerHighest = Color(0xFF333333),
+)
+
+val CinefinLightColorScheme = lightColorScheme(
+    primary = Color(0xFF7A5813),
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFFFFDDB0),
+    onPrimaryContainer = Color(0xFF281800),
+    secondary = Color(0xFF5E626B),
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFFE3E5EB),
+    onSecondaryContainer = CinefinBoothRaised,
+    tertiary = Color(0xFF6B5839),
+    onTertiary = Color.White,
+    background = Color(0xFFF9F9FC),
+    onBackground = CinefinBoothRaised,
+    surface = Color(0xFFF9F9FC),
+    onSurface = CinefinBoothRaised,
+    surfaceContainerLow = Color(0xFFF0F1F5),
+    surfaceContainer = Color(0xFFE9EAF0),
+    surfaceContainerHigh = Color(0xFFE2E4EB),
+    onSurfaceVariant = Color(0xFF4B4F58),
+    outline = Color(0xFF7B808B),
+    outlineVariant = Color(0xFFC7CBD4),
+    error = Color(0xFFBA1A1A),
+    onError = Color.White,
+)
 
 // ============================================================================
 // JELLYFIN CLASSIC COLOR SCHEMES

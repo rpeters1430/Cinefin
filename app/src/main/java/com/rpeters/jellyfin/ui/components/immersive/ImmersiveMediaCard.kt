@@ -132,21 +132,13 @@ fun ImmersiveMediaCard(
                 scaleX = scale
                 scaleY = scale
             }
-            .expressiveGlow(
-                color = MaterialTheme.colorScheme.primary,
-                alpha = glowAlpha,
-                borderRadius = ImmersiveDimens.CardCornerRadius,
-                blurRadius = 24.dp,
-                offsetY = 10.dp,
-            )
             .then(sharedElementModifier)
             // Allow call sites to override default immersive size when needed (e.g. episode rows).
             .then(modifier),
         colors = CardDefaults.cardColors(
-            containerColor = Color.Transparent,
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
         ),
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
-        shape = cardShape,
+        shape = MaterialTheme.shapes.small,
     ) {
         ImmersiveCardContent(
             title = title,

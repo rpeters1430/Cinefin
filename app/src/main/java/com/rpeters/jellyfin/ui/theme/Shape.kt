@@ -16,6 +16,7 @@ object ShapeTokens {
     val CornerSmall = 8.dp
     val CornerMedium = 12.dp
     val CornerLarge = 16.dp
+    val CornerSheetDialog = 24.dp
     val CornerExtraLarge = 28.dp
     val CornerFull = 50.dp
 
@@ -27,18 +28,18 @@ object ShapeTokens {
     val ExtraLarge: CornerBasedShape = RoundedCornerShape(CornerExtraLarge)
     val Full: CornerBasedShape = RoundedCornerShape(CornerFull)
 
-    // Component-specific shapes
-    val ButtonShape = Small
-    val CardShape = Medium
-    val DialogShape = ExtraLarge
+    // Component-specific shapes (DESIGN.md Section 4)
+    val ButtonShape = Full // Full pill buttons per DESIGN.md
+    val CardShape = Small // 8dp for poster and thumbnail cards per DESIGN.md
+    val DialogShape = RoundedCornerShape(CornerSheetDialog) // 24dp for dialogs per DESIGN.md
     val FabShape = Large
-    val ChipShape = Small
-    val BottomSheetShape = ExtraLarge
-    val ModalShape = ExtraLarge
+    val ChipShape = Small // 8dp for chips and badges per DESIGN.md
+    val BottomSheetShape = RoundedCornerShape(topStart = CornerSheetDialog, topEnd = CornerSheetDialog) // 24dp top per DESIGN.md
+    val ModalShape = RoundedCornerShape(CornerSheetDialog)
 
-    // Media content shapes
-    val PosterShape = Medium // For movie/TV posters
-    val ThumbnailShape = Small // For episode thumbnails
+    // Media content shapes (DESIGN.md Section 4)
+    val PosterShape = Small // 8dp for movie/TV posters
+    val ThumbnailShape = Small // 8dp for episode thumbnails
     val AvatarShape = Full // For user avatars
     val LibraryIconShape = Large // For library type icons
 }

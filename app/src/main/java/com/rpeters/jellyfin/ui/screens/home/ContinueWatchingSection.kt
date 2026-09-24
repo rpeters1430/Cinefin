@@ -66,23 +66,50 @@ fun ContinueWatchingCard(
     cardWidth: Dp = ImmersiveDimens.ContinueCardWidth,
     modifier: Modifier = Modifier,
 ) {
-    // Density-redesign spec: a 200x112 (16:9) thumb with an inset progress bar and the title
-    // below. Derive the thumb height from whatever width a caller passes so existing
-    // adaptive-layout call sites keep working unchanged.
     val thumbHeight = cardWidth * (ImmersiveDimens.ContinueThumbHeight / ImmersiveDimens.ContinueCardWidth)
     val watchProgress = item.userData?.playedPercentage?.let { (it / 100.0).toFloat() }
-    val seriesName = if (item.type == BaseItemKind.EPISODE) item.seriesName.orEmpty() else ""
+
+    // Per DESIGN.md Section 6: series name as title, Season X, episode Y on metadata line plus time remaining
+    val isEpisode = item.type == BaseItemKind.EPISODE
+    val cardTitle = if (isEpisode && !item.seriesName.isNullOrBlank()) {
+        item.seriesName.orEmpty()
+    } else {
+        item.name ?: stringResource(id = R.string.unknown)
+    }
+
+    val metadataLine = buildString {
+        if (isEpisode) {
+            val seasonNum = item.parentIndexNumber
+            val episodeNum = item.indexNumber
+            if (seasonNum != null && episodeNum != null) {
+                append("Season $seasonNum, episode $episodeNum")
+            } else if (!item.name.isNullOrBlank()) {
+                append(item.name)
+            }
+        }
+
+        // Time remaining ("24 min left")
+        val runTimeTicks = item.runTimeTicks
+        val playbackPositionTicks = item.userData?.playbackPositionTicks
+        if (runTimeTicks != null && playbackPositionTicks != null && runTimeTicks > playbackPositionTicks) {
+            val remainingMinutes = ((runTimeTicks - playbackPositionTicks) / 10_000_000 / 60).toInt()
+            if (remainingMinutes > 0) {
+                if (isNotEmpty()) append("   ")
+                append("$remainingMinutes min left")
+            }
+        }
+    }
 
     ImmersivePosterCard(
-        title = item.name ?: stringResource(id = R.string.unknown),
+        title = cardTitle,
         imageUrl = getImageUrl(item).orEmpty(),
         onCardClick = { onItemClick(item) },
         onCardLongClick = { onItemLongPress(item) },
         modifier = modifier,
-        subtitle = seriesName,
+        subtitle = metadataLine,
         watchProgress = watchProgress,
         posterWidth = cardWidth,
         posterHeight = thumbHeight,
-        posterShape = MaterialTheme.shapes.large,
+        posterShape = MaterialTheme.shapes.small,
     )
 }

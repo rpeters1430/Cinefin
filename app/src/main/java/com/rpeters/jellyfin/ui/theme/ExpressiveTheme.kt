@@ -71,6 +71,7 @@ internal fun ProvideJellyfinExpressiveTheme(
     CompositionLocalProvider(
         LocalJellyfinExpressiveColors provides colors,
         LocalJellyfinExpressiveShapes provides shapes,
+        LocalSpacing provides Spacing(),
         content = content,
     )
 }

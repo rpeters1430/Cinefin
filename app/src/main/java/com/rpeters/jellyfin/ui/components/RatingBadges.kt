@@ -1,13 +1,10 @@
 package com.rpeters.jellyfin.ui.components
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
@@ -17,8 +14,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.ui.theme.getCommunityRatingColor
@@ -27,8 +22,8 @@ import com.rpeters.jellyfin.ui.theme.getOfficialRatingColor
 import java.util.Locale
 
 /**
- * Community rating (e.g. TMDb/IMDb-style, 0-10 scale) as a colored gradient pill.
- * Gradient color reflects score tier via [getCommunityRatingColor].
+ * Community rating (e.g. TMDb/IMDb-style, 0-10 scale) as a clean tonal badge.
+ * Badge tint reflects score tier via [getCommunityRatingColor].
  */
 @Composable
 fun CommunityRatingBadge(
@@ -36,36 +31,35 @@ fun CommunityRatingBadge(
     modifier: Modifier = Modifier,
 ) {
     val tint = getCommunityRatingColor(rating)
-    Box(
-        modifier = modifier
-            .background(
-                brush = Brush.horizontalGradient(colors = listOf(tint.copy(alpha = 0.85f), tint)),
-                shape = RoundedCornerShape(8.dp),
-            )
-            .padding(horizontal = 10.dp, vertical = 5.dp),
+    Surface(
+        modifier = modifier,
+        shape = MaterialTheme.shapes.small,
+        color = tint.copy(alpha = 0.18f),
+        border = BorderStroke(1.dp, tint.copy(alpha = 0.35f)),
     ) {
         Row(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             Icon(
                 imageVector = Icons.Default.Star,
                 contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(16.dp),
+                tint = tint,
+                modifier = Modifier.size(14.dp),
             )
             Text(
                 text = String.format(Locale.US, "%.1f", rating),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.ExtraBold,
-                color = Color.White,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = tint,
             )
         }
     }
 }
 
 /**
- * Critic rating (e.g. Rotten Tomatoes-style, 0-100 scale) as a colored gradient pill.
+ * Critic rating (e.g. Rotten Tomatoes-style, 0-100 scale) as a clean tonal badge.
  * Only meaningful when the source data is non-null — callers should guard with `?.let`.
  */
 @Composable
@@ -74,24 +68,22 @@ fun CriticRatingBadge(
     modifier: Modifier = Modifier,
 ) {
     val tint = getCriticRatingColor(rating)
-    Box(
-        modifier = modifier
-            .background(
-                brush = Brush.horizontalGradient(colors = listOf(tint.copy(alpha = 0.85f), tint)),
-                shape = RoundedCornerShape(8.dp),
-            )
-            .padding(horizontal = 10.dp, vertical = 5.dp),
+    Surface(
+        modifier = modifier,
+        shape = MaterialTheme.shapes.small,
+        color = tint.copy(alpha = 0.18f),
+        border = BorderStroke(1.dp, tint.copy(alpha = 0.35f)),
     ) {
         Row(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            Text(text = "🍅")
             Text(
                 text = "${rating.toInt()}%",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.ExtraBold,
-                color = Color.White,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = tint,
             )
         }
     }
@@ -108,16 +100,16 @@ fun OfficialRatingBadge(
     val tintColor = getOfficialRatingColor(rating)
     Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(6.dp),
-        color = tintColor.copy(alpha = 0.2f),
-        border = BorderStroke(1.dp, tintColor.copy(alpha = 0.6f)),
+        shape = MaterialTheme.shapes.small,
+        color = tintColor.copy(alpha = 0.18f),
+        border = BorderStroke(1.dp, tintColor.copy(alpha = 0.5f)),
     ) {
         Text(
             text = rating,
-            style = MaterialTheme.typography.labelLarge,
+            style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Bold,
             color = tintColor,
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
         )
     }
 }

@@ -100,11 +100,6 @@ fun MediaCard(
         modifier = modifier
             .width(cardWidth)
             .aspectRatio(cardAspectRatio)
-            .expressiveGlow(
-                color = contentTypeColor,
-                alpha = 0.15f,
-                borderRadius = 16.dp
-            )
             .then(sharedElementModifier)
             .mediaCardSemantics(item) { onClick(item) }
             .combinedClickable(
@@ -112,14 +107,10 @@ fun MediaCard(
                 onLongClick = { onLongPress?.invoke(item) },
             )
             .focusable(),
-        shape = MaterialTheme.shapes.medium,
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 8.dp,
-            pressedElevation = 2.dp,
-            hoveredElevation = 12.dp,
-        ),
+        shape = MaterialTheme.shapes.small,
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
         ),
     ) {
         Box {
@@ -356,11 +347,6 @@ fun PosterMediaCard(
                     Modifier.fillMaxWidth() // Fill grid cell or available width
                 },
             )
-            .expressiveGlow(
-                color = contentTypeColor,
-                alpha = 0.15f,
-                borderRadius = 16.dp
-            )
             .then(sharedElementModifier)
             .mediaCardSemantics(item) { onClick(item) }
             .combinedClickable(
@@ -368,14 +354,10 @@ fun PosterMediaCard(
                 onLongClick = { onLongPress?.invoke(item) },
             )
             .focusable(),
-        shape = MaterialTheme.shapes.medium,
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 8.dp,
-            pressedElevation = 2.dp,
-            hoveredElevation = 12.dp,
-        ),
+        shape = MaterialTheme.shapes.small,
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
         ),
     ) {
         Column {
@@ -597,11 +579,6 @@ fun RecentlyAddedCard(
     Card(
         modifier = modifier
             .width(140.dp)
-            .expressiveGlow(
-                color = contentTypeColor,
-                alpha = 0.12f,
-                borderRadius = 12.dp
-            )
             .then(sharedElementModifier)
             .mediaCardSemantics(item) { onClick(item) }
             .combinedClickable(
@@ -609,14 +586,10 @@ fun RecentlyAddedCard(
                 onLongClick = { onLongPress?.invoke(item) },
             )
             .focusable(),
-        shape = MaterialTheme.shapes.medium,
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 8.dp,
-            pressedElevation = 2.dp,
-            hoveredElevation = 12.dp,
-        ),
+        shape = MaterialTheme.shapes.small,
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
         ),
     ) {
         Column {

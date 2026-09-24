@@ -35,6 +35,9 @@ enum class ContrastLevel {
  * Custom accent color options when dynamic color is disabled.
  */
 enum class AccentColor {
+    /** Cinefin Tungsten — warm tungsten projector accent with cool slate surfaces (DESIGN.md) */
+    CINEFIN_TUNGSTEN,
+
     /** Matches the actual jellyfin-web client palette (accent blue, near-black surfaces) */
     JELLYFIN_CLASSIC,
 
@@ -98,19 +101,20 @@ enum class AppFont {
 data class ThemePreferences(
     /**
      * Theme mode selection (System, Light, Dark, AMOLED Black).
+     * Defaults to Dark per Cinefin design principles (DESIGN.md: Lights down).
      */
-    val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    val themeMode: ThemeMode = ThemeMode.DARK,
 
     /**
      * Whether to use Material You dynamic colors on Android 12+.
-     * When enabled, colors are extracted from the system wallpaper.
+     * Disabled by default per DESIGN.md: "Offered as an opt-in setting, off by default, because it competes with artwork color."
      */
-    val useDynamicColors: Boolean = true,
+    val useDynamicColors: Boolean = false,
 
     /**
      * Custom accent color to use when dynamic colors are disabled.
      */
-    val accentColor: AccentColor = AccentColor.JELLYFIN_PURPLE,
+    val accentColor: AccentColor = AccentColor.CINEFIN_TUNGSTEN,
 
     /**
      * ARGB value of the user-picked seed color, used when [accentColor] is [AccentColor.CUSTOM].
