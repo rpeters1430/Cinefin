@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
@@ -23,7 +24,6 @@ import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -44,6 +45,7 @@ import com.rpeters.jellyfin.ui.components.ExpressiveContentCard
 import com.rpeters.jellyfin.ui.components.ExpressiveFilledButton
 import com.rpeters.jellyfin.ui.components.ExpressiveSwitchListItem
 import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBar
+import com.rpeters.jellyfin.ui.components.PersistedSettingTextField
 import com.rpeters.jellyfin.ui.theme.JellyfinExpressiveTheme
 import com.rpeters.jellyfin.ui.viewmodel.ConnectionTestState
 import com.rpeters.jellyfin.ui.viewmodel.SeerrSettingsViewModel
@@ -108,16 +110,17 @@ fun SeerrSettingsScreen(
                     icon = Icons.Default.Link,
                     description = "Configure your Seerr, Overseerr, or Jellyseerr instance"
                 ) {
-                    OutlinedTextField(
+                    PersistedSettingTextField(
                         value = seerrPreferences.baseUrl,
                         onValueChange = { viewModel.updateBaseUrl(it) },
                         label = { Text("Seerr URL") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                         placeholder = { Text("https://seerr.example.com") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
                     )
 
-                OutlinedTextField(
+                PersistedSettingTextField(
                     value = seerrPreferences.apiKey,
                     onValueChange = { viewModel.updateApiKey(it) },
                     label = { Text("API Key") },
