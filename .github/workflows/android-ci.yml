@@ -122,7 +122,7 @@ jobs:
           name: debug-apk
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: warn
-          retention-days: 14
+          retention-days: 3
 
       - name: Upload unit test reports
         if: always()
@@ -133,7 +133,7 @@ jobs:
             app/build/reports/tests/testDebugUnitTest/**
             app/build/test-results/testDebugUnitTest/**
           if-no-files-found: warn
-          retention-days: 14
+          retention-days: 3
 
       - name: Upload lint reports
         if: always()
@@ -147,4 +147,4 @@ jobs:
             app/build/reports/lint-results-*.sarif
             app/build/reports/warnings/warning-budget-summary.md
           if-no-files-found: warn
-          retention-days: 14
+          retention-days: 3
