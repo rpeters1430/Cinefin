@@ -78,7 +78,7 @@ fun MediaCard(
     onLongPress: ((BaseItemDto) -> Unit)? = null,
     modifier: Modifier = Modifier,
     enhancedPlaybackUtils: com.rpeters.jellyfin.ui.utils.EnhancedPlaybackUtils? = null,
-    cardWidth: Dp = 280.dp,
+    cardWidth: Dp? = null,
     cardAspectRatio: Float = 16f / 9f,
 ) {
     val sharedTransitionScope = com.rpeters.jellyfin.ui.navigation.LocalSharedTransitionScope.current
@@ -98,7 +98,13 @@ fun MediaCard(
 
     Card(
         modifier = modifier
-            .width(cardWidth)
+            .then(
+                if (cardWidth != null) {
+                    Modifier.width(cardWidth)
+                } else {
+                    Modifier
+                }
+            )
             .aspectRatio(cardAspectRatio)
             .then(sharedElementModifier)
             .mediaCardSemantics(item) { onClick(item) }

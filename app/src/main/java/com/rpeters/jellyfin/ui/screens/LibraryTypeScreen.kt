@@ -407,7 +407,10 @@ fun LibraryTypeScreen(
                     activeColor = libraryThemeColor,
                     modifier = Modifier
                         .align(Alignment.CenterEnd)
-                        .padding(top = paddingValues.calculateTopPadding() + 64.dp, bottom = 96.dp)
+                        .padding(
+                            top = paddingValues.calculateTopPadding() + 64.dp,
+                            bottom = paddingValues.calculateBottomPadding() + 16.dp,
+                        )
                 )
             }
         }
@@ -542,7 +545,7 @@ private fun GridContent(
             start = horizontalPadding,
             top = LibraryScreenDefaults.FilterChipSpacing,
             end = horizontalPadding,
-            bottom = 96.dp,
+            bottom = LibraryScreenDefaults.ContentPadding,
         ),
         verticalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.ContentPadding),
         horizontalArrangement = Arrangement.spacedBy(itemSpacing),
@@ -629,7 +632,7 @@ private fun ListContent(
             start = LibraryScreenDefaults.ContentPadding,
             top = LibraryScreenDefaults.FilterChipSpacing,
             end = LibraryScreenDefaults.ContentPadding,
-            bottom = 96.dp,
+            bottom = LibraryScreenDefaults.ContentPadding,
         ),
         verticalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.ItemSpacing),
         modifier = modifier.fillMaxSize(),
@@ -761,7 +764,7 @@ private fun CarouselContent(
             start = 0.dp,
             top = LibraryScreenDefaults.FilterChipSpacing,
             end = 0.dp,
-            bottom = 96.dp,
+            bottom = LibraryScreenDefaults.ContentPadding,
         ),
         verticalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.SectionSpacing),
         modifier = modifier.fillMaxSize(),

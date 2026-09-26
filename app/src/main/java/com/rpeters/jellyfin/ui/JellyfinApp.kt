@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
@@ -424,21 +425,24 @@ fun JellyfinApp(
                 bottomBar = {
                     // Still show mini player on detail screens if something is playing
                     // Positioned at the very bottom
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding())
-                    ) {
-                        MiniPlayer(
-                            onExpandClick = { navController.navigate(Screen.NowPlaying.route) },
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
-                        )
+                    if (isMiniPlayerVisible) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding())
+                        ) {
+                            MiniPlayer(
+                                onExpandClick = { navController.navigate(Screen.NowPlaying.route) },
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
+                            )
+                        }
                     }
                 }
             ) { innerPadding ->
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
+                        .consumeWindowInsets(innerPadding)
                         .padding(bottom = innerPadding.calculateBottomPadding())
                 ) {
                     // Show offline indicator when not connected

@@ -9,7 +9,6 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -618,7 +617,7 @@ private fun PlayerSecondaryControls(
 ) {
     var showOverflowSheet by remember { mutableStateOf(false) }
     Row(
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // Subtitles (CC) button
@@ -959,17 +958,12 @@ internal fun ExpressiveIconButton(
     )
 
     Surface(
+        onClick = onClick,
         modifier = modifier
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
-            }
-            .clip(CircleShape)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = onClick,
-            ),
+            },
         color = if (isActive) {
             lerp(containerColor, MaterialTheme.colorScheme.primary, 0.55f)
         } else {

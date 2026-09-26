@@ -7,6 +7,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -73,6 +74,7 @@ fun AutoHideBottomNavBar(
             color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
             tonalElevation = 2.dp,
             modifier = Modifier
+                .navigationBarsPadding()
                 .padding(bottom = 12.dp, start = 16.dp, end = 16.dp),
         ) {
             Box(
@@ -80,7 +82,7 @@ fun AutoHideBottomNavBar(
                     .padding(horizontal = 4.dp, vertical = 4.dp)
                     .animateContentSize(
                         animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioLowBouncy,
+                             dampingRatio = Spring.DampingRatioLowBouncy,
                             stiffness = Spring.StiffnessLow
                         )
                     ),
@@ -100,7 +102,7 @@ fun AutoHideBottomNavBar(
                             },
                             shape = MaterialTheme.shapes.extraLarge,
                             color = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f) else Color.Transparent,
-                            modifier = Modifier.size(height = 40.dp, width = if (isSelected) 110.dp else 40.dp)
+                            modifier = Modifier.size(height = 48.dp, width = if (isSelected) 116.dp else 48.dp)
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = 8.dp),
