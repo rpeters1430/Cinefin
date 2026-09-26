@@ -58,6 +58,7 @@ jobs:
         with:
           name: dependency-report
           path: build/reports/dependencies.txt
+          retention-days: 3
 
   dependency-review:
     if: github.event_name == 'pull_request'
