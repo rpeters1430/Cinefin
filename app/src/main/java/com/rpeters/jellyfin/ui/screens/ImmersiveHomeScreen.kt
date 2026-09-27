@@ -103,7 +103,7 @@ private fun rememberHomeTopBarVisible(
     gridState: LazyGridState,
     listState: LazyListState,
 ): Boolean {
-    val nearTopOffsetPx = with(LocalDensity.current) { ImmersiveDimens.HeroHeightPhone.toPx().toInt() }
+    val nearTopOffsetPx = with(LocalDensity.current) { ImmersiveDimens.HomeHeroHeightPhone.toPx().toInt() }
     return if (isTablet) {
         rememberAutoHideTopBarVisible(gridState = gridState, nearTopOffsetPx = nearTopOffsetPx)
     } else {
@@ -114,7 +114,7 @@ private fun rememberHomeTopBarVisible(
 /**
  * Immersive home screen with Netflix/Disney+ inspired design.
  * Features:
- * - Full-screen hero carousel (480dp height on phone)
+ * - Tall hero carousel (420dp height on phone, collapsing on scroll)
  * - Auto-hiding navigation bars
  * - Larger media cards (280dp vs 200dp)
  * - Tighter spacing (16dp vs 24dp)
@@ -211,14 +211,14 @@ fun ImmersiveHomeScreen(
         // from HeroHeightPhone to HeroHeightCollapsed as the user scrolls past it, and a
         // compact 56dp top bar fades in over the same range.
         val heroCollapseRangePx = with(LocalDensity.current) {
-            (ImmersiveDimens.HeroHeightPhone - ImmersiveDimens.HeroHeightCollapsed).toPx()
+            (ImmersiveDimens.HomeHeroHeightPhone - ImmersiveDimens.HeroHeightCollapsed).toPx()
         }
         val heroCollapseFraction by rememberScrollCollapseFraction(
             listState = listState,
             collapseRangePx = heroCollapseRangePx,
         )
-        val collapsedHeroHeight = ImmersiveDimens.HeroHeightPhone -
-            (ImmersiveDimens.HeroHeightPhone - ImmersiveDimens.HeroHeightCollapsed) * heroCollapseFraction
+        val collapsedHeroHeight = ImmersiveDimens.HomeHeroHeightPhone -
+            (ImmersiveDimens.HomeHeroHeightPhone - ImmersiveDimens.HeroHeightCollapsed) * heroCollapseFraction
 
         Box(modifier = modifier.fillMaxSize()) {
             ImmersiveScaffold(
@@ -497,7 +497,7 @@ private fun ImmersiveHomeContent(
     adaptiveConfig: com.rpeters.jellyfin.ui.adaptive.AdaptiveLayoutConfig,
     contentPadding: PaddingValues,
     animatedVisibilityScope: androidx.compose.animation.AnimatedVisibilityScope? = null,
-    heroHeight: androidx.compose.ui.unit.Dp = ImmersiveDimens.HeroHeightPhone,
+    heroHeight: androidx.compose.ui.unit.Dp = ImmersiveDimens.HomeHeroHeightPhone,
     modifier: Modifier = Modifier,
 ) {
     // Consolidate all derived state computations

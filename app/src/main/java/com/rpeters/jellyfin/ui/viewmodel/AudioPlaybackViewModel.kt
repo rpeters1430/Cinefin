@@ -104,6 +104,10 @@ class AudioPlaybackViewModel @Inject constructor(
         audioServiceConnection.clearQueue()
     }
 
+    fun stopPlayback() {
+        audioServiceConnection.stopPlayback()
+    }
+
     fun skipToQueueItem(index: Int) {
         audioServiceConnection.skipToQueueItem(index)
     }

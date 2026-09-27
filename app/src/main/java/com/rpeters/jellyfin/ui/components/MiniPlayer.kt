@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SkipNext
@@ -38,11 +39,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.media3.common.MediaItem
 import com.rpeters.jellyfin.OptInAppExperimentalApis
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
 import com.rpeters.jellyfin.ui.image.rememberCoilSize
 import com.rpeters.jellyfin.ui.player.audio.AudioPlaybackState
@@ -87,6 +90,7 @@ fun MiniPlayer(
             onExpandClick = onExpandClick,
             onPlayPauseClick = { viewModel.togglePlayPause() },
             onSkipNextClick = { viewModel.skipToNext() },
+            onCloseClick = { viewModel.stopPlayback() },
             modifier = modifier,
         )
     }
@@ -100,6 +104,7 @@ private fun MiniPlayerContent(
     onExpandClick: () -> Unit,
     onPlayPauseClick: () -> Unit,
     onSkipNextClick: () -> Unit,
+    onCloseClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     ExpressiveBlurSurface(
@@ -191,6 +196,20 @@ private fun MiniPlayerContent(
                             Icons.Filled.SkipNext,
                             contentDescription = "Skip Next",
                             modifier = Modifier.size(24.dp),
+                        )
+                    }
+
+                    // Stops playback and clears the queue, dismissing the mini player and
+                    // the media notification once the user is done listening.
+                    IconButton(
+                        onClick = onCloseClick,
+                        modifier = Modifier.size(36.dp),
+                    ) {
+                        Icon(
+                            Icons.Filled.Close,
+                            contentDescription = stringResource(R.string.music_stop_playback),
+                            modifier = Modifier.size(20.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }

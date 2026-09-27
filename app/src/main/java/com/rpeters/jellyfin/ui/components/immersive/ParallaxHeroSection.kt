@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -75,7 +76,10 @@ fun ParallaxHeroSection(
         modifier = modifier
             .fillMaxWidth()
             .height(height)
-            .then(sharedElementModifier),
+            .then(sharedElementModifier)
+            // The parallax translation moves the image down inside the hero; clip it so the
+            // artwork never draws over the list content scrolling up underneath it.
+            .clipToBounds(),
     ) {
         // Background image with parallax effect
         AsyncImage(

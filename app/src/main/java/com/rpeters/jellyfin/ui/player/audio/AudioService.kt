@@ -430,7 +430,8 @@ class AudioService : androidx.media3.session.MediaSessionService() {
     companion object {
         private const val ACTION_STOP_PLAYBACK = "com.rpeters.jellyfin.audio.STOP_PLAYBACK"
 
-        private val CMD_STOP_PLAYBACK = SessionCommand(ACTION_STOP_PLAYBACK, Bundle.EMPTY)
+        /** Stops playback, reports final progress, and clears the queue (dismisses the player). */
+        internal val CMD_STOP_PLAYBACK = SessionCommand(ACTION_STOP_PLAYBACK, Bundle.EMPTY)
 
         const val SESSION_ID = "JellyfinAudioSession"
 

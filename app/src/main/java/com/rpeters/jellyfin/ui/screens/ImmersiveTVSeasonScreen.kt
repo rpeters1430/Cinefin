@@ -47,6 +47,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalDensity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -80,6 +81,7 @@ import com.rpeters.jellyfin.ui.components.PerformanceOptimizedLazyRow
 import com.rpeters.jellyfin.ui.components.immersive.ImmersiveCardSize
 import com.rpeters.jellyfin.ui.components.immersive.ImmersiveMediaCard
 import com.rpeters.jellyfin.ui.components.immersive.ParallaxHeroSection
+import com.rpeters.jellyfin.ui.components.immersive.normalizedParallaxScrollOffset
 import com.rpeters.jellyfin.ui.components.immersive.rememberImmersivePerformanceConfig
 import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
 import com.rpeters.jellyfin.ui.components.OfficialRatingBadge
@@ -259,10 +261,17 @@ private fun ImmersiveTVSeasonContent(
 
     // Track scroll state for parallax effect
     val listState = rememberLazyListState()
-    val scrollOffset by remember {
+    // firstVisibleItemScrollOffset is in px, so normalize against the hero height in px
+    // (not its dp value) - otherwise the offset overshoots 1f and the parallax image slides
+    // far past the hero, dragging the artwork down over the content below.
+    val heroHeightPx = with(LocalDensity.current) { ImmersiveDimens.HeroHeightPhone.toPx() }
+    val scrollOffset by remember(listState, heroHeightPx) {
         derivedStateOf {
             if (listState.firstVisibleItemIndex == 0) {
-                listState.firstVisibleItemScrollOffset / ImmersiveDimens.HeroHeightPhone.value
+                normalizedParallaxScrollOffset(
+                    scrollOffsetPx = listState.firstVisibleItemScrollOffset,
+                    heroHeightPx = heroHeightPx,
+                )
             } else {
                 1f
             }

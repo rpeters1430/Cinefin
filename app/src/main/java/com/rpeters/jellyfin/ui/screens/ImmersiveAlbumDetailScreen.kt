@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -26,6 +27,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
 import com.rpeters.jellyfin.ui.components.immersive.ParallaxHeroSection
+import com.rpeters.jellyfin.ui.components.immersive.normalizedParallaxScrollOffset
 import com.rpeters.jellyfin.ui.components.immersive.rememberImmersivePerformanceConfig
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
 import com.rpeters.jellyfin.ui.theme.MusicGreen
@@ -72,10 +74,17 @@ fun ImmersiveAlbumDetailScreen(
 
     // Track scroll state for parallax effect
     val listState = rememberLazyListState()
-    val scrollOffset by remember {
+    // firstVisibleItemScrollOffset is in px, so normalize against the hero height in px
+    // (not its dp value) - otherwise the offset overshoots 1f and the parallax image slides
+    // far past the hero, dragging the artwork down over the content below.
+    val heroHeightPx = with(LocalDensity.current) { ImmersiveDimens.HeroHeightPhone.toPx() }
+    val scrollOffset by remember(listState, heroHeightPx) {
         derivedStateOf {
             if (listState.firstVisibleItemIndex == 0) {
-                listState.firstVisibleItemScrollOffset / ImmersiveDimens.HeroHeightPhone.value
+                normalizedParallaxScrollOffset(
+                    scrollOffsetPx = listState.firstVisibleItemScrollOffset,
+                    heroHeightPx = heroHeightPx,
+                )
             } else {
                 1f
             }
