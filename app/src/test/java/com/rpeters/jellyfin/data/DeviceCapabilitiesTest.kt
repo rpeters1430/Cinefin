@@ -73,6 +73,25 @@ class DeviceCapabilitiesTest {
         assertTrue(deviceCapabilities.canPlayContainer(".mkv"))
     }
 
+    @Test
+    fun `canPlayAudioContainer returns true for common music containers`() {
+        listOf("mp3", "flac", "m4a", "ogg", "opus", "wav", "FLAC").forEach { container ->
+            assertTrue("Expected $container to be playable", deviceCapabilities.canPlayAudioContainer(container))
+        }
+    }
+
+    @Test
+    fun `canPlayAudioContainer accepts comma-separated ffprobe containers`() {
+        assertTrue(deviceCapabilities.canPlayAudioContainer("mov,mp4,m4a,3gp,3g2,mj2"))
+    }
+
+    @Test
+    fun `canPlayAudioContainer returns false for unsupported or blank container`() {
+        assertFalse(deviceCapabilities.canPlayAudioContainer("xyz"))
+        assertFalse(deviceCapabilities.canPlayAudioContainer(null))
+        assertFalse(deviceCapabilities.canPlayAudioContainer(""))
+    }
+
     // Video Codec Tests
 
     @Test

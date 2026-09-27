@@ -7,6 +7,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.expandVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,6 +31,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.Album
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Pause
@@ -130,6 +132,12 @@ enum class MusicSortOrder(val displayNameResId: Int) {
     }
 }
 
+/** Filters that select a single item type out of the mixed Audio/Album/Artist library pages. */
+private val TYPE_FILTERS = setOf(MusicFilter.ALBUMS, MusicFilter.ARTISTS, MusicFilter.SONGS)
+
+/** Minimum results a type filter should show before we stop auto-paging the library. */
+private const val MIN_TYPE_FILTER_RESULTS = 24
+
 enum class MusicViewMode {
     GRID,
     LIST,
@@ -159,11 +167,6 @@ fun MusicScreen(
     val gridState = rememberLazyGridState()
     val headerVisible = rememberAutoHideTopBarVisible(gridState = gridState)
 
-    // Get music items via unified loader and enrich with recent audio
-    // Don't use remember() here - we want fresh data on every recomposition
-    val libraryMusic = viewModel.getLibraryTypeData(LibraryType.MUSIC)
-    val recentMusic = appState.recentlyAddedByTypes[BaseItemKind.AUDIO.name] ?: emptyList()
-    val musicItems = (libraryMusic + recentMusic).distinctBy { it.id }
     val musicLibraryId = remember(appState.libraries) { viewModel.getLibraryIdForType(LibraryType.MUSIC) }
     // Pagination is tracked per-library; the legacy appState.hasMoreItems/isLoadingMore
     // fields are shared across whichever library last paginated, so reading them here would
@@ -171,6 +174,22 @@ fun MusicScreen(
     val musicPagination = appState.libraryPaginationState[musicLibraryId]
     val musicHasMoreItems = musicPagination?.hasMore ?: false
     val musicIsLoadingMore = musicPagination?.isLoadingMore ?: false
+    // The first library page hasn't arrived yet (pagination state is written with it). Show a
+    // spinner instead of an empty/partial grid, which otherwise flashes "no music" or just the
+    // handful of recently-added tracks and then reshuffles once the real page lands.
+    val isMusicLibraryPending = musicLibraryId != null &&
+        musicPagination == null &&
+        appState.errorMessage == null
+
+    // Get music items via unified loader and enrich with recent audio
+    // Don't use remember() here - we want fresh data on every recomposition
+    val libraryMusic = viewModel.getLibraryTypeData(LibraryType.MUSIC)
+    val recentMusic = appState.recentlyAddedByTypes[BaseItemKind.AUDIO.name] ?: emptyList()
+    val musicItems = if (isMusicLibraryPending) {
+        emptyList()
+    } else {
+        (libraryMusic + recentMusic).distinctBy { it.id }
+    }
 
     // Apply filtering and sorting
     val filteredAndSortedMusic = remember(musicItems, selectedFilter, sortOrder) {
@@ -220,21 +239,44 @@ fun MusicScreen(
         }
     }
 
+    // Keep the grid anchored at the top while content is still arriving. LazyGrid keeps the
+    // first visible item's key in place, so when a later load sorts new items in front of it
+    // (or the filter/sort changes) the screen would otherwise open scrolled partway down.
+    var userHasScrolledMusic by remember { mutableStateOf(false) }
+    LaunchedEffect(gridState) {
+        gridState.interactionSource.interactions.collect { interaction ->
+            if (interaction is DragInteraction.Start) userHasScrolledMusic = true
+        }
+    }
+    LaunchedEffect(selectedFilter, sortOrder) {
+        userHasScrolledMusic = false
+        gridState.scrollToItem(0)
+    }
+    val firstMusicItemKey = filteredAndSortedMusic.firstOrNull()?.getItemKey()
+    LaunchedEffect(firstMusicItemKey) {
+        if (firstMusicItemKey != null && !userHasScrolledMusic) {
+            gridState.scrollToItem(0)
+        }
+    }
+
     // The music library page is fetched with Audio/MusicAlbum/MusicArtist mixed together
     // and sorted alphabetically, so a type filter (e.g. Albums/Artists) can easily come up
-    // empty on the currently-loaded page even though matching items exist further into the
-    // library. Keep paging automatically until the filter finds results or the library is
-    // exhausted, rather than leaving the user stuck on a false "no music found".
+    // empty - or with just one or two albums - on the currently-loaded page even though many
+    // more matching items exist further into the library. Keep paging automatically until the
+    // filter has a screenful of results or the library is exhausted, rather than leaving the
+    // user stuck on a false "no music found" or a lone album.
+    val minFilteredResults = if (selectedFilter in TYPE_FILTERS) MIN_TYPE_FILTER_RESULTS else 1
+    val needsMoreFilteredResults = filteredAndSortedMusic.size < minFilteredResults
     LaunchedEffect(
         selectedFilter,
-        filteredAndSortedMusic.isEmpty(),
+        needsMoreFilteredResults,
         musicLibraryId,
         musicHasMoreItems,
         musicIsLoadingMore,
         appState.isLoading,
         appState.errorMessage,
     ) {
-        if (filteredAndSortedMusic.isEmpty() &&
+        if (needsMoreFilteredResults &&
             musicItems.isNotEmpty() &&
             musicHasMoreItems &&
             !musicIsLoadingMore &&
@@ -377,6 +419,7 @@ fun MusicScreen(
                                     onShuffleClick = audioPlaybackViewModel::toggleShuffle,
                                     onPlayPauseClick = audioPlaybackViewModel::togglePlayPause,
                                     onSkipNextClick = audioPlaybackViewModel::skipToNext,
+                                    onStopClick = audioPlaybackViewModel::stopPlayback,
                                 )
                             }
 
@@ -435,7 +478,7 @@ fun MusicScreen(
                     }
 
                     when {
-                        appState.isLoading -> {
+                        appState.isLoading || isMusicLibraryPending -> {
                             Box(
                                 modifier = Modifier.fillMaxSize(),
                                 contentAlignment = Alignment.Center,
@@ -541,6 +584,7 @@ private fun ActivePlaybackPanel(
     onShuffleClick: () -> Unit,
     onPlayPauseClick: () -> Unit,
     onSkipNextClick: () -> Unit,
+    onStopClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val metadata = playbackState.currentMediaItem?.mediaMetadata
@@ -633,6 +677,12 @@ private fun ActivePlaybackPanel(
                     Icon(
                         imageVector = Icons.Filled.SkipNext,
                         contentDescription = stringResource(id = R.string.music_skip_next),
+                    )
+                }
+                IconButton(onClick = onStopClick) {
+                    Icon(
+                        imageVector = Icons.Filled.Close,
+                        contentDescription = stringResource(id = R.string.music_stop_playback),
                     )
                 }
             }

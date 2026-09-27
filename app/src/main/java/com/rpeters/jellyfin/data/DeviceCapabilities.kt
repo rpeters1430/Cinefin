@@ -25,6 +25,12 @@ class DeviceCapabilities @Inject constructor(
             "ts", "mpegts", "m2ts",
         )
 
+        // Audio-only container formats ExoPlayer can extract natively (music tracks)
+        val SUPPORTED_AUDIO_CONTAINERS = setOf(
+            "mp3", "flac", "m4a", "m4b", "aac", "adts", "ogg", "oga", "opus",
+            "wav", "wave", "mka", "weba", "amr", "mp4",
+        )
+
         // Supported video codecs
         val SUPPORTED_VIDEO_CODECS = setOf(
             "h264", "h265", "hevc", "mpeg4", "mpeg2", "h263",
@@ -82,6 +88,19 @@ class DeviceCapabilities @Inject constructor(
         if (container.isNullOrBlank()) return false
         val normalizedContainer = container.lowercase().removePrefix(".")
         return SUPPORTED_CONTAINERS.contains(normalizedContainer)
+    }
+
+    /**
+     * Check if an audio-only container (e.g. a music track) can be played directly.
+     * Jellyfin may report ffprobe-style comma-separated containers ("mov,mp4,m4a,..."),
+     * so any listed format we can extract is sufficient.
+     */
+    fun canPlayAudioContainer(container: String?): Boolean {
+        if (container.isNullOrBlank()) return false
+        return container.lowercase().split(',').any { part ->
+            val normalized = part.trim().removePrefix(".")
+            SUPPORTED_AUDIO_CONTAINERS.contains(normalized) || SUPPORTED_CONTAINERS.contains(normalized)
+        }
     }
 
     /**

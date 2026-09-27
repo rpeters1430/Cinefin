@@ -356,16 +356,23 @@ class EnhancedPlaybackManager @Inject constructor(
             }
         }
 
-        // Check container support
+        // Check container support. Audio-only sources (music tracks) use audio containers such
+        // as mp3/flac/m4a that aren't in the video container list, so check them separately -
+        // otherwise every music track is reported as needing a full transcode.
         val container = mediaSource.container
-        if (!deviceCapabilities.canPlayContainer(container)) {
+        val videoStream = mediaSource.mediaStreams.findDefaultVideoStream()
+        val containerSupported = if (videoStream == null) {
+            deviceCapabilities.canPlayAudioContainer(container)
+        } else {
+            deviceCapabilities.canPlayContainer(container)
+        }
+        if (!containerSupported) {
             SecureLogger.d(TAG, "❌ Container '$container' not supported for Direct Play")
             reasons?.add(ReasonCodes.CONTAINER_UNSUPPORTED)
             return false
         }
 
         // Check video codec support
-        val videoStream = mediaSource.mediaStreams.findDefaultVideoStream()
         if (videoStream != null) {
             val videoCodec = videoStream.codec
             val width = videoStream.width ?: 0

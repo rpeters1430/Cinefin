@@ -53,7 +53,7 @@ internal fun MobileExpressiveHomeContent(
     contentPadding: PaddingValues,
     bottomSpacing: Dp,
     animatedVisibilityScope: androidx.compose.animation.AnimatedVisibilityScope? = null,
-    heroHeight: Dp = ImmersiveDimens.HeroHeightPhone,
+    heroHeight: Dp = ImmersiveDimens.HomeHeroHeightPhone,
     modifier: Modifier = Modifier,
 ) {
     val unknownText = androidx.compose.ui.res.stringResource(id = R.string.unknown)

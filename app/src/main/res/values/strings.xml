@@ -212,6 +212,7 @@
     <string name="music_toggle_shuffle">Toggle shuffle</string>
     <string name="music_play_pause">Play or pause</string>
     <string name="music_skip_next">Skip to next</string>
+    <string name="music_stop_playback">Stop playback and close player</string>
     
     <!-- Music Filters -->
     <string name="filter_all_music">All Music</string>

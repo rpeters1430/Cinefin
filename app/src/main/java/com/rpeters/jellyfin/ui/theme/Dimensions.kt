@@ -25,6 +25,9 @@ object Dimens {
 object ImmersiveDimens {
     // Hero section heights (density pass: 480 -> 300, plus a collapsed state)
     val HeroHeightPhone = 300.dp
+
+    // Home screen hero carousel is the app's showcase, so it stays taller than detail heroes.
+    val HomeHeroHeightPhone = 420.dp
     val HeroHeightCollapsed = 104.dp
     val HeroHeightTablet = 600.dp
     val HeroHeightTV = 720.dp

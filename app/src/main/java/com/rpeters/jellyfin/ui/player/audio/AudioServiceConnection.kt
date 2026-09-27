@@ -2,6 +2,7 @@ package com.rpeters.jellyfin.ui.player.audio
 
 import android.content.ComponentName
 import android.content.Context
+import android.os.Bundle
 import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.media3.common.MediaItem
@@ -208,6 +209,22 @@ class AudioServiceConnection @Inject constructor(
             val controller = ensureController()
             controller.clearMediaItems()
             updateQueue(controller)
+        }
+    }
+
+    /**
+     * Stops playback and clears the queue so the mini player and media notification go away.
+     * Routed through the service's stop command so final progress is reported to the server.
+     */
+    fun stopPlayback() {
+        controllerScope.launch {
+            val controller = ensureController()
+            if (controller.isSessionCommandAvailable(AudioService.CMD_STOP_PLAYBACK)) {
+                controller.sendCustomCommand(AudioService.CMD_STOP_PLAYBACK, Bundle.EMPTY)
+            } else {
+                controller.stop()
+                controller.clearMediaItems()
+            }
         }
     }
 

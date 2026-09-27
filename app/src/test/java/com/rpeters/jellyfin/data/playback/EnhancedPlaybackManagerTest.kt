@@ -167,6 +167,30 @@ class EnhancedPlaybackManagerTest {
     }
 
     @Test
+    fun `getOptimalPlaybackUrl returns DirectPlay for audio-only music track in audio container`() = runTest {
+        val itemId = UUID.randomUUID()
+        val item = buildBaseItem(id = itemId, name = "Test Song", type = BaseItemKind.AUDIO)
+        val mediaSource = buildMediaSource(
+            container = "flac",
+            videoCodec = "",
+            audioCodec = "flac",
+            bitrate = 1_000_000,
+            includeVideo = false,
+        )
+        val playbackInfo = buildPlaybackInfo(listOf(mediaSource))
+
+        // "flac" is not a video container; audio-only sources must use the audio container check.
+        every { deviceCapabilities.canPlayContainer("flac") } returns false
+        every { deviceCapabilities.canPlayAudioContainer("flac") } returns true
+        coEvery { repository.getPlaybackInfo(itemId.toString(), any(), any()) } returns playbackInfo
+
+        val result = manager.getOptimalPlaybackUrl(item)
+
+        assertTrue("Expected DirectPlay result but was $result", result is PlaybackResult.DirectPlay)
+        assertEquals("flac", (result as PlaybackResult.DirectPlay).container)
+    }
+
+    @Test
     fun `getOptimalPlaybackUrl falls back to transcoding when video codec unsupported`() = runTest {
         val itemId = UUID.randomUUID()
         val item = buildBaseItem(id = itemId)
@@ -629,6 +653,7 @@ class EnhancedPlaybackManagerTest {
         supportsDirectPlay: Boolean = true,
         supportsTranscoding: Boolean = true,
         supportsDirectStream: Boolean = true,
+        includeVideo: Boolean = true,
     ): MediaSourceInfo = mockk<MediaSourceInfo>(relaxed = true).also { mediaSource ->
         every { mediaSource.id } returns "test-source-id"
         every { mediaSource.container } returns container
@@ -637,13 +662,17 @@ class EnhancedPlaybackManagerTest {
         every { mediaSource.supportsTranscoding } returns supportsTranscoding
         every { mediaSource.supportsDirectStream } returns supportsDirectStream
         every { mediaSource.transcodingUrl } returns transcodingUrl
-        every { mediaSource.mediaStreams } returns listOf(
-            mockk<MediaStream>(relaxed = true).also { stream ->
-                every { stream.type } returns MediaStreamType.VIDEO
-                every { stream.codec } returns videoCodec
-                every { stream.width } returns width
-                every { stream.height } returns height
-                every { stream.bitRate } returns bitrate
+        every { mediaSource.mediaStreams } returns listOfNotNull(
+            if (includeVideo) {
+                mockk<MediaStream>(relaxed = true).also { stream ->
+                    every { stream.type } returns MediaStreamType.VIDEO
+                    every { stream.codec } returns videoCodec
+                    every { stream.width } returns width
+                    every { stream.height } returns height
+                    every { stream.bitRate } returns bitrate
+                }
+            } else {
+                null
             },
             mockk<MediaStream>(relaxed = true).also { stream ->
                 every { stream.type } returns MediaStreamType.AUDIO
