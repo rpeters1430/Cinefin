@@ -624,7 +624,7 @@ private fun DownloadOnDeviceRow(
                 )
             }
 
-            if (isPartlyWatched && watchedFraction != null && runtimeMs != null && positionMs != null) {
+            if (isPartlyWatched && runtimeMs != null && positionMs != null) {
                 val remainingMinutes = ((runtimeMs - positionMs) / 60_000L).coerceAtLeast(0L)
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     ExpressiveWavyLinearProgress(

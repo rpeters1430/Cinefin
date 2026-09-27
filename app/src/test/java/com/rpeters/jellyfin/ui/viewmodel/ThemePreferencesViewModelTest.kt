@@ -388,7 +388,7 @@ class ThemePreferencesViewModelTest {
     fun `themePreferences StateFlow handles multiple rapid updates`() = runTest {
         // Given
         val updates = listOf(
-            ThemePreferences.DEFAULT.copy(themeMode = ThemeMode.DARK),
+            ThemePreferences.DEFAULT.copy(themeMode = ThemeMode.SYSTEM),
             ThemePreferences.DEFAULT.copy(themeMode = ThemeMode.LIGHT),
             ThemePreferences.DEFAULT.copy(themeMode = ThemeMode.AMOLED_BLACK),
         )

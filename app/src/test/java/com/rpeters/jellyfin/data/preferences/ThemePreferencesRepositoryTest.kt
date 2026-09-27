@@ -35,9 +35,9 @@ class ThemePreferencesRepositoryTest {
         val repository = createRepository()
         val preferences = repository.themePreferencesFlow.first()
 
-        assertEquals(ThemeMode.SYSTEM, preferences.themeMode)
-        assertTrue(preferences.useDynamicColors)
-        assertEquals(AccentColor.JELLYFIN_PURPLE, preferences.accentColor)
+        assertEquals(ThemeMode.DARK, preferences.themeMode)
+        assertFalse(preferences.useDynamicColors)
+        assertEquals(AccentColor.CINEFIN_TUNGSTEN, preferences.accentColor)
         assertEquals(ContrastLevel.STANDARD, preferences.contrastLevel)
         assertTrue(preferences.useThemedIcon)
         assertTrue(preferences.enableEdgeToEdge)
@@ -128,7 +128,7 @@ class ThemePreferencesRepositoryTest {
         val preferences = repository.themePreferencesFlow.first()
 
         assertEquals(argb, preferences.customAccentColorArgb)
-        assertEquals(AccentColor.JELLYFIN_PURPLE, preferences.accentColor)
+        assertEquals(AccentColor.CINEFIN_TUNGSTEN, preferences.accentColor)
     }
 
     @Test
@@ -203,9 +203,9 @@ class ThemePreferencesRepositoryTest {
         repository.resetToDefaults()
         val preferences = repository.themePreferencesFlow.first()
 
-        assertEquals(ThemeMode.SYSTEM, preferences.themeMode)
-        assertTrue(preferences.useDynamicColors)
-        assertEquals(AccentColor.JELLYFIN_PURPLE, preferences.accentColor)
+        assertEquals(ThemeMode.DARK, preferences.themeMode)
+        assertFalse(preferences.useDynamicColors)
+        assertEquals(AccentColor.CINEFIN_TUNGSTEN, preferences.accentColor)
         assertEquals(ContrastLevel.STANDARD, preferences.contrastLevel)
         assertTrue(preferences.useThemedIcon)
         assertTrue(preferences.enableEdgeToEdge)
@@ -224,7 +224,7 @@ class ThemePreferencesRepositoryTest {
         assertEquals(ThemeMode.DARK, preferences.themeMode)
         assertEquals(AccentColor.MATERIAL_GREEN, preferences.accentColor)
         assertEquals(ContrastLevel.MEDIUM, preferences.contrastLevel)
-        assertTrue(preferences.useDynamicColors)
+        assertFalse(preferences.useDynamicColors)
         assertTrue(preferences.useThemedIcon)
     }
 

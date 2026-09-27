@@ -54,6 +54,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -703,6 +704,26 @@ private fun CustomColorPickerDialog(
     var hue by remember(initialHsv) { mutableFloatStateOf(initialHsv[0].coerceIn(hueRange)) }
     var saturation by remember(initialHsv) { mutableFloatStateOf(initialHsv[1].coerceIn(saturationRange)) }
     var brightness by remember(initialHsv) { mutableFloatStateOf(initialHsv[2].coerceIn(brightnessRange)) }
+    val hueSliderState = remember(initialHsv) {
+        SliderState(value = hue, trackRange = hueRange)
+    }
+    val saturationSliderState = remember(initialHsv) {
+        SliderState(value = saturation, trackRange = saturationRange)
+    }
+    val brightnessSliderState = remember(initialHsv) {
+        SliderState(value = brightness, trackRange = brightnessRange)
+    }
+
+    LaunchedEffect(hue) {
+        hueSliderState.value = hue
+    }
+    LaunchedEffect(saturation) {
+        saturationSliderState.value = saturation
+    }
+    LaunchedEffect(brightness) {
+        brightnessSliderState.value = brightness
+    }
+
     val hsvArray = remember { FloatArray(3) }
     hsvArray[0] = hue
     hsvArray[1] = saturation
@@ -752,15 +773,33 @@ private fun CustomColorPickerDialog(
                 )
                 Column {
                     Text("Hue", style = MaterialTheme.typography.labelMedium)
-                    Slider(value = hue, onValueChange = { hue = it }, valueRange = hueRange)
+                    Slider(
+                        state = hueSliderState,
+                        onValueChange = {
+                            hueSliderState.value = it
+                            hue = it
+                        },
+                    )
                 }
                 Column {
                     Text("Saturation", style = MaterialTheme.typography.labelMedium)
-                    Slider(value = saturation, onValueChange = { saturation = it }, valueRange = saturationRange)
+                    Slider(
+                        state = saturationSliderState,
+                        onValueChange = {
+                            saturationSliderState.value = it
+                            saturation = it
+                        },
+                    )
                 }
                 Column {
                     Text("Brightness", style = MaterialTheme.typography.labelMedium)
-                    Slider(value = brightness, onValueChange = { brightness = it }, valueRange = brightnessRange)
+                    Slider(
+                        state = brightnessSliderState,
+                        onValueChange = {
+                            brightnessSliderState.value = it
+                            brightness = it
+                        },
+                    )
                 }
                 OutlinedTextField(
                     value = hexText,

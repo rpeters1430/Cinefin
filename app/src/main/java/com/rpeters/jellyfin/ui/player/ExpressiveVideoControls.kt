@@ -689,7 +689,13 @@ private fun PlayerOverflowSheet(
     onPictureInPictureClick: () -> Unit,
     supportsPip: Boolean,
 ) {
-    val sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = androidx.compose.material3.rememberBottomSheetState(
+        initialValue = androidx.compose.material3.SheetValue.Hidden,
+        enabledValues = setOf(
+            androidx.compose.material3.SheetValue.Hidden,
+            androidx.compose.material3.SheetValue.Expanded,
+        ),
+    )
     val coroutineScope = rememberCoroutineScope()
     var showAspectRatioMenu by remember { mutableStateOf(false) }
     var showSpeedMenu by remember { mutableStateOf(false) }
