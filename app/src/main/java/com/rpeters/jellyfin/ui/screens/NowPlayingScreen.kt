@@ -156,9 +156,8 @@ fun NowPlayingScreen(
 
                 TrackInfoSection(
                     currentMediaItem = playbackState.currentMediaItem,
-                    queuePosition = playbackState.currentMediaItem
-                        ?.let { current -> queue.indexOfFirst { it.mediaId == current.mediaId } }
-                        ?.takeIf { it >= 0 && queue.size > 1 }
+                    queuePosition = playbackState.currentMediaItemIndex
+                        .takeIf { playbackState.currentMediaItem != null && queue.size > 1 && it in queue.indices }
                         ?.let { index -> index + 1 to queue.size },
                 )
 

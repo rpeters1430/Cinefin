@@ -118,7 +118,7 @@ object MediaPlayerUtils {
      * @param startIndex Index of the track to start with; earlier tracks stay in the queue so
      * "previous" still works.
      * @param streamUrlFor Resolves a track's stream URL; tracks without one are skipped.
-     * @return false if no playable tracks were found.
+     * @return false if the requested start track has no stream URL (nothing is played).
      */
     fun playAudioQueue(
         context: Context,
@@ -136,7 +136,7 @@ object MediaPlayerUtils {
         val startTrack = tracks.getOrNull(startIndex)
 
         val mediaItems = mutableListOf<MediaItem>()
-        var queueStartIndex = 0
+        var queueStartIndex = -1
         tracks.forEach { track ->
             val streamUrl = streamUrlFor(track) ?: return@forEach
             if (track === startTrack) queueStartIndex = mediaItems.size
@@ -144,7 +144,9 @@ object MediaPlayerUtils {
             val artworkUrl = streamRepository.getImageUrl(artworkItemId, "Primary", null)
             mediaItems += buildAudioMediaItem(track, streamUrl, artworkUrl)
         }
-        if (mediaItems.isEmpty()) return false
+        // The requested track itself isn't playable: report failure rather than silently
+        // starting a different song.
+        if (queueStartIndex < 0) return false
 
         entryPoint.audioServiceConnection().playQueue(mediaItems, queueStartIndex)
         return true

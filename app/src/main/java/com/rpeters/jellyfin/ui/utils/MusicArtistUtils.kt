@@ -8,14 +8,16 @@ import org.jellyfin.sdk.model.api.BaseItemKind
  *
  * Jellyfin creates a separate MusicArtist entry for every distinct artist string on a track,
  * so an album by "Madonna" with a couple of guest spots also yields entries such as
- * "Madonna feat. Britney Spears" or "Madonna & Justin Timberlake". Those show up as duplicate
+ * "Madonna feat. Britney Spears" or "Madonna ft. Justin Timberlake". Those show up as duplicate
  * artists in the library even though the user only has one Madonna album.
  */
 object MusicArtistUtils {
 
-    // Order matters: the earliest separator found in the name wins.
-    private val COLLABORATION_SEPARATOR = Regex(
-        """\s*(?:[(\[]\s*)?(?:\bfeat\b\.?|\bft\b\.?|\bfeaturing\b|\bwith\b|\bvs\b\.?|&|\bx\b|,|;|/)\s*""",
+    // Only unambiguous feature markers: generic punctuation such as "&", "," or "/" is part of
+    // many real artist names ("Simon & Garfunkel", "Earth, Wind & Fire", "AC/DC"), so splitting
+    // on it could hide a legitimate artist whenever its first word is also an artist.
+    private val FEATURE_MARKER = Regex(
+        """\s*(?:[(\[]\s*)?(?:\bfeat\b\.?|\bft\b\.?|\bfeaturing\b)\s*""",
         RegexOption.IGNORE_CASE,
     )
 
@@ -25,7 +27,7 @@ object MusicArtistUtils {
      */
     fun primaryArtistName(name: String): String {
         val trimmed = name.trim()
-        val match = COLLABORATION_SEPARATOR.find(trimmed) ?: return trimmed
+        val match = FEATURE_MARKER.find(trimmed) ?: return trimmed
         val lead = trimmed.substring(0, match.range.first).trim()
         return lead.ifEmpty { trimmed }
     }

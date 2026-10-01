@@ -320,7 +320,7 @@ private fun AlbumHeroInfo(
         )
 
         Text(
-            text = album.albumArtist ?: album.artists?.firstOrNull() ?: "",
+            text = (album.albumArtist ?: album.artists?.firstOrNull()).orEmpty(),
             style = MaterialTheme.typography.titleLarge,
             color = Color.White.copy(alpha = 0.9f),
             maxLines = 1,

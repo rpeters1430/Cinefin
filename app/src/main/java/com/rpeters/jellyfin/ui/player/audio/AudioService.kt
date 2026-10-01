@@ -406,6 +406,8 @@ class AudioService : androidx.media3.session.MediaSessionService() {
      * Buttons for the system media card (Android 13+ media controls on Pixel and One UI) and
      * the legacy notification. The system always shows previous / play-pause / next and has
      * room for two extra actions: music gets shuffle + repeat, audiobooks get 10s seeks.
+     * The extras use the secondary slots (visible next to previous/next), falling back to
+     * overflow on surfaces without them.
      */
     private fun buildMediaButtonPreferences(player: Player): List<CommandButton> {
         val previousButton = CommandButton.Builder(CommandButton.ICON_PREVIOUS)
@@ -433,12 +435,12 @@ class AudioService : androidx.media3.session.MediaSessionService() {
                 CommandButton.Builder(CommandButton.ICON_SKIP_BACK_10)
                     .setDisplayName("Back 10s")
                     .setPlayerCommand(Player.COMMAND_SEEK_BACK)
-                    .setSlots(CommandButton.SLOT_OVERFLOW)
+                    .setSlots(CommandButton.SLOT_BACK_SECONDARY, CommandButton.SLOT_OVERFLOW)
                     .build(),
                 CommandButton.Builder(CommandButton.ICON_SKIP_FORWARD_10)
                     .setDisplayName("Forward 10s")
                     .setPlayerCommand(Player.COMMAND_SEEK_FORWARD)
-                    .setSlots(CommandButton.SLOT_OVERFLOW)
+                    .setSlots(CommandButton.SLOT_FORWARD_SECONDARY, CommandButton.SLOT_OVERFLOW)
                     .build(),
             )
         } else {
@@ -448,7 +450,7 @@ class AudioService : androidx.media3.session.MediaSessionService() {
                 )
                     .setDisplayName(if (player.shuffleModeEnabled) "Shuffle on" else "Shuffle off")
                     .setSessionCommand(CMD_TOGGLE_SHUFFLE)
-                    .setSlots(CommandButton.SLOT_OVERFLOW)
+                    .setSlots(CommandButton.SLOT_BACK_SECONDARY, CommandButton.SLOT_OVERFLOW)
                     .build(),
                 CommandButton.Builder(
                     when (player.repeatMode) {
@@ -465,7 +467,7 @@ class AudioService : androidx.media3.session.MediaSessionService() {
                         },
                     )
                     .setSessionCommand(CMD_CYCLE_REPEAT)
-                    .setSlots(CommandButton.SLOT_OVERFLOW)
+                    .setSlots(CommandButton.SLOT_FORWARD_SECONDARY, CommandButton.SLOT_OVERFLOW)
                     .build(),
             )
         }
