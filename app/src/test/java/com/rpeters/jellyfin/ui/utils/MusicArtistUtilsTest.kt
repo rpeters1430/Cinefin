@@ -13,30 +13,30 @@ class MusicArtistUtilsTest {
 
     @Test
     fun primaryArtistName_featuredVariants_returnLeadArtist() {
-        assertEquals("Madonna", MusicArtistUtils.primaryArtistName("Madonna feat. Britney Spears"))
-        assertEquals("Madonna", MusicArtistUtils.primaryArtistName("Madonna ft. Justin Timberlake"))
-        assertEquals("Madonna", MusicArtistUtils.primaryArtistName("Madonna Featuring Kanye West"))
-        assertEquals("Madonna", MusicArtistUtils.primaryArtistName("Madonna & Justin Timberlake"))
-        assertEquals("Madonna", MusicArtistUtils.primaryArtistName("Madonna (feat. Nicki Minaj)"))
-        assertEquals("Madonna", MusicArtistUtils.primaryArtistName("Madonna, Maluma"))
+        assertEquals(LEAD_ARTIST, MusicArtistUtils.primaryArtistName("$LEAD_ARTIST feat. Britney Spears"))
+        assertEquals(LEAD_ARTIST, MusicArtistUtils.primaryArtistName("$LEAD_ARTIST ft. Justin Timberlake"))
+        assertEquals(LEAD_ARTIST, MusicArtistUtils.primaryArtistName("$LEAD_ARTIST Featuring Kanye West"))
+        assertEquals(LEAD_ARTIST, MusicArtistUtils.primaryArtistName("$LEAD_ARTIST & Justin Timberlake"))
+        assertEquals(LEAD_ARTIST, MusicArtistUtils.primaryArtistName("$LEAD_ARTIST (feat. Nicki Minaj)"))
+        assertEquals(LEAD_ARTIST, MusicArtistUtils.primaryArtistName("$LEAD_ARTIST, Maluma"))
     }
 
     @Test
     fun primaryArtistName_plainName_returnsNameUnchanged() {
-        assertEquals("Madonna", MusicArtistUtils.primaryArtistName("  Madonna "))
+        assertEquals(LEAD_ARTIST, MusicArtistUtils.primaryArtistName("  $LEAD_ARTIST "))
         assertEquals("Feather", MusicArtistUtils.primaryArtistName("Feather"))
         assertEquals("Within Temptation", MusicArtistUtils.primaryArtistName("Within Temptation"))
     }
 
     @Test
     fun collapseFeaturedArtists_leadArtistPresent_dropsVariants() {
-        val madonna = item("Madonna")
+        val madonna = item(LEAD_ARTIST)
         val album = item("Hard Candy", BaseItemKind.MUSIC_ALBUM)
         val items = listOf(
             madonna,
-            item("Madonna feat. Justin Timberlake"),
+            item("$LEAD_ARTIST feat. Justin Timberlake"),
             album,
-            item("madonna & Kanye West"),
+            item("${LEAD_ARTIST.lowercase()} & Kanye West"),
         )
 
         val result = MusicArtistUtils.collapseFeaturedArtists(items)
@@ -49,7 +49,7 @@ class MusicArtistUtilsTest {
         val items = listOf(
             item("Simon & Garfunkel"),
             item("Earth, Wind & Fire"),
-            item("Madonna"),
+            item(LEAD_ARTIST),
         )
 
         val result = MusicArtistUtils.collapseFeaturedArtists(items)
@@ -60,12 +60,16 @@ class MusicArtistUtilsTest {
     @Test
     fun collapseFeaturedArtists_nonArtistItems_areNeverDropped() {
         val items = listOf(
-            item("Madonna"),
-            item("Madonna feat. Britney Spears", BaseItemKind.AUDIO),
+            item(LEAD_ARTIST),
+            item("$LEAD_ARTIST feat. Britney Spears", BaseItemKind.AUDIO),
         )
 
         val result = MusicArtistUtils.collapseFeaturedArtists(items)
 
         assertEquals(items, result)
+    }
+
+    private companion object {
+        const val LEAD_ARTIST = "Madonna"
     }
 }

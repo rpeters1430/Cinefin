@@ -260,7 +260,7 @@ class JellyfinMediaRepositoryTest {
         // Given
         val movieId = "movie-123"
         val mockMovie = mockk<BaseItemDto> {
-            coEvery { id } returns java.util.UUID.fromString("550e8400-e29b-41d4-a716-446655440000")
+            coEvery { id } returns java.util.UUID.fromString(TEST_ARTIST_ID)
             coEvery { name } returns "Test Movie"
             coEvery { type } returns BaseItemKind.MOVIE
             coEvery { overview } returns "A great test movie"
@@ -442,9 +442,9 @@ class JellyfinMediaRepositoryTest {
     @Test
     fun `getAlbumsForArtist queries by albumArtistIds and recursive, not parentId`() = runTest {
         // Given
-        val artistId = "550e8400-e29b-41d4-a716-446655440000"
+        val artistId = TEST_ARTIST_ID
         val artistUuid = UUID.fromString(artistId)
-        val userId = "11111111-1111-1111-1111-111111111111"
+        val userId = TEST_USER_ID
         val userUuid = UUID.fromString(userId)
         wireRealAlbumQueries(userId)
         stubAlbumQuery(albumArtistIds = listOf(artistUuid), artistIds = null, result = albumQueryResult("Test Album"))
@@ -497,9 +497,9 @@ class JellyfinMediaRepositoryTest {
     @Test
     fun `getAlbumsForArtist falls back to artistIds when artist has no albums of their own`() = runTest {
         // Given
-        val artistId = "550e8400-e29b-41d4-a716-446655440000"
+        val artistId = TEST_ARTIST_ID
         val artistUuid = UUID.fromString(artistId)
-        wireRealAlbumQueries("11111111-1111-1111-1111-111111111111")
+        wireRealAlbumQueries(TEST_USER_ID)
         stubAlbumQuery(albumArtistIds = listOf(artistUuid), artistIds = null, result = albumQueryResult())
         stubAlbumQuery(albumArtistIds = null, artistIds = listOf(artistUuid), result = albumQueryResult("Guest Spot"))
 
@@ -717,5 +717,10 @@ class JellyfinMediaRepositoryTest {
             listOf(BaseItemKind.PLAYLIST),
             recentlyAddedItemTypesForCollection(CollectionType.PLAYLISTS),
         )
+    }
+
+    private companion object {
+        const val TEST_ARTIST_ID = "550e8400-e29b-41d4-a716-446655440000"
+        const val TEST_USER_ID = "11111111-1111-1111-1111-111111111111"
     }
 }
