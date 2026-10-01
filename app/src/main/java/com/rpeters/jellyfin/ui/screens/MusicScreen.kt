@@ -6,7 +6,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.expandVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,7 +14,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
@@ -26,35 +24,26 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.Album
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Shuffle
-import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -70,13 +59,11 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
-import com.rpeters.jellyfin.ui.components.ExpressiveBlurSurface
 import com.rpeters.jellyfin.ui.components.ExpressiveCardType
 import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
 import com.rpeters.jellyfin.ui.components.ExpressiveContentCard
@@ -84,12 +71,11 @@ import com.rpeters.jellyfin.ui.components.ExpressiveMediaCard
 import com.rpeters.jellyfin.ui.components.ExpressivePullToRefreshBox
 import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBar
 import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBarAction
-import com.rpeters.jellyfin.ui.components.ExpressiveWavyLinearProgress
 import com.rpeters.jellyfin.ui.components.immersive.rememberAutoHideTopBarVisible
 import com.rpeters.jellyfin.ui.theme.MusicGreen
 import com.rpeters.jellyfin.ui.utils.EnhancedPlaybackUtils
+import com.rpeters.jellyfin.ui.utils.MusicArtistUtils
 import com.rpeters.jellyfin.ui.utils.ShareUtils
-import com.rpeters.jellyfin.ui.viewmodel.AudioPlaybackViewModel
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import com.rpeters.jellyfin.utils.getItemKey
 import kotlinx.coroutines.launch
@@ -148,13 +134,10 @@ enum class MusicViewMode {
 fun MusicScreen(
     onBackClick: () -> Unit = {},
     viewModel: MainAppViewModel = hiltViewModel(),
-    audioPlaybackViewModel: AudioPlaybackViewModel = hiltViewModel(),
     onItemClick: (BaseItemDto) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val appState by viewModel.appState.collectAsStateWithLifecycle()
-    val playbackState by audioPlaybackViewModel.playbackState.collectAsStateWithLifecycle()
-    val playbackQueue by audioPlaybackViewModel.queue.collectAsStateWithLifecycle()
 
     var selectedFilter by remember { mutableStateOf(MusicFilter.ALL) }
     var sortOrder by remember { mutableStateOf(MusicSortOrder.TITLE_ASC) }
@@ -188,7 +171,8 @@ fun MusicScreen(
     val musicItems = if (isMusicLibraryPending) {
         emptyList()
     } else {
-        (libraryMusic + recentMusic).distinctBy { it.id }
+        // Hide "Artist feat. Guest" style entries when the lead artist is already listed.
+        MusicArtistUtils.collapseFeaturedArtists((libraryMusic + recentMusic).distinctBy { it.id })
     }
 
     // Apply filtering and sorting
@@ -409,20 +393,6 @@ fun MusicScreen(
                         exit = shrinkVertically() + fadeOut(),
                     ) {
                         Column {
-                            if (playbackState.isConnected && (playbackState.currentMediaItem != null || playbackQueue.isNotEmpty())) {
-                                ActivePlaybackPanel(
-                                    modifier = Modifier
-                                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                                        .fillMaxWidth(),
-                                    playbackState = playbackState,
-                                    playbackQueue = playbackQueue,
-                                    onShuffleClick = audioPlaybackViewModel::toggleShuffle,
-                                    onPlayPauseClick = audioPlaybackViewModel::togglePlayPause,
-                                    onSkipNextClick = audioPlaybackViewModel::skipToNext,
-                                    onStopClick = audioPlaybackViewModel::stopPlayback,
-                                )
-                            }
-
                             LazyRow(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
@@ -574,136 +544,6 @@ fun MusicScreen(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun ActivePlaybackPanel(
-    playbackState: com.rpeters.jellyfin.ui.player.audio.AudioPlaybackState,
-    playbackQueue: List<androidx.media3.common.MediaItem>,
-    onShuffleClick: () -> Unit,
-    onPlayPauseClick: () -> Unit,
-    onSkipNextClick: () -> Unit,
-    onStopClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val metadata = playbackState.currentMediaItem?.mediaMetadata
-    val artistName = metadata?.artist?.toString().orEmpty()
-    ExpressiveBlurSurface(
-        modifier = modifier.border(
-            1.dp,
-            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
-            RoundedCornerShape(28.dp),
-        ),
-        shape = RoundedCornerShape(28.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.78f),
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                MusicStatChip("Now Playing")
-                MusicStatChip(
-                    if (playbackQueue.isEmpty()) {
-                        stringResource(id = R.string.music_queue_empty)
-                    } else {
-                        stringResource(id = R.string.music_queue_size, playbackQueue.size)
-                    },
-                    accent = MaterialTheme.colorScheme.primary,
-                )
-            }
-
-            Text(
-                text = metadata?.title?.toString() ?: stringResource(id = R.string.music_queue_empty),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 2,
-            )
-            if (artistName.isNotBlank()) {
-                Text(
-                    text = artistName,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                )
-            }
-
-            ExpressiveWavyLinearProgress(
-                progress = if (playbackState.duration > 0L) {
-                    (playbackState.currentPosition.toFloat() / playbackState.duration.toFloat())
-                        .coerceIn(0f, 1f)
-                } else {
-                    0f
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(6.dp),
-                color = MusicGreen,
-                trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(onClick = onShuffleClick) {
-                    Icon(
-                        imageVector = Icons.Filled.Shuffle,
-                        contentDescription = stringResource(id = R.string.music_toggle_shuffle),
-                        tint = if (playbackState.shuffleEnabled) MusicGreen else MaterialTheme.colorScheme.onSurface,
-                    )
-                }
-                FilledIconButton(
-                    onClick = onPlayPauseClick,
-                    colors = IconButtonDefaults.filledIconButtonColors(
-                        containerColor = MusicGreen,
-                        contentColor = MaterialTheme.colorScheme.onPrimary,
-                    ),
-                ) {
-                    Icon(
-                        imageVector = if (playbackState.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                        contentDescription = stringResource(id = R.string.music_play_pause),
-                    )
-                }
-                IconButton(onClick = onSkipNextClick) {
-                    Icon(
-                        imageVector = Icons.Filled.SkipNext,
-                        contentDescription = stringResource(id = R.string.music_skip_next),
-                    )
-                }
-                IconButton(onClick = onStopClick) {
-                    Icon(
-                        imageVector = Icons.Filled.Close,
-                        contentDescription = stringResource(id = R.string.music_stop_playback),
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun MusicStatChip(
-    label: String,
-    accent: Color = MusicGreen,
-) {
-    Surface(
-        shape = RoundedCornerShape(999.dp),
-        color = accent.copy(alpha = 0.14f),
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelLarge,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
-        )
     }
 }
 

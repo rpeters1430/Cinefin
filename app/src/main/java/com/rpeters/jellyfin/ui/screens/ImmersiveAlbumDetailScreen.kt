@@ -91,22 +91,27 @@ fun ImmersiveAlbumDetailScreen(
         }
     }
 
-    val handlePlay: (BaseItemDto) -> Unit = { track ->
-        val streamUrl = mainViewModel.getStreamUrl(track)
-        if (streamUrl != null) {
-            MediaPlayerUtils.playMedia(context, streamUrl, track)
-        } else {
+    // Queue the whole album starting at the chosen track so playback continues through the
+    // rest of the album instead of stopping after a single song.
+    val playAlbumFrom: (Int) -> Unit = { startIndex ->
+        val started = MediaPlayerUtils.playAudioQueue(
+            context = context,
+            tracks = state.tracks,
+            startIndex = startIndex,
+            streamUrlFor = mainViewModel::getStreamUrl,
+        )
+        if (!started) {
             coroutineScope.launch {
                 snackbarHostState.showSnackbar("Unable to start playback")
             }
         }
     }
 
-    val handlePlayAlbum: () -> Unit = {
-        state.tracks.firstOrNull()?.let { firstTrack ->
-            handlePlay(firstTrack)
-        }
+    val handlePlay: (BaseItemDto) -> Unit = { track ->
+        playAlbumFrom(state.tracks.indexOf(track).coerceAtLeast(0))
     }
+
+    val handlePlayAlbum: () -> Unit = { playAlbumFrom(0) }
 
     LaunchedEffect(albumId) {
         viewModel.load(albumId)

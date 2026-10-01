@@ -393,7 +393,8 @@ class JellyfinMediaRepository @Inject constructor(
                 userId = userUuid,
                 parentId = albumUuid,
                 includeItemTypes = listOf(BaseItemKind.AUDIO),
-                sortBy = listOf(ItemSortBy.INDEX_NUMBER),
+                // Disc number first so multi-disc albums play disc 1 before disc 2.
+                sortBy = listOf(ItemSortBy.PARENT_INDEX_NUMBER, ItemSortBy.INDEX_NUMBER, ItemSortBy.SORT_NAME),
                 sortOrder = listOf(SortOrder.ASCENDING),
                 fields = listOf(
                     org.jellyfin.sdk.model.api.ItemFields.MEDIA_SOURCES,
@@ -469,9 +470,10 @@ class JellyfinMediaRepository @Inject constructor(
             // nothing. Use artistIds (matches the server's /Items?ArtistIds= query param)
             // together with recursive = true, which is how the official web client and
             // other Jellyfin clients (e.g. Finamp) look up an artist's albums.
-            val response = client.libraryApi.getItems(
+            suspend fun queryAlbums(byAlbumArtist: Boolean) = client.libraryApi.getItems(
                 userId = userUuid,
-                artistIds = listOf(artistUuid),
+                albumArtistIds = if (byAlbumArtist) listOf(artistUuid) else null,
+                artistIds = if (byAlbumArtist) null else listOf(artistUuid),
                 recursive = true,
                 includeItemTypes = listOf(BaseItemKind.MUSIC_ALBUM),
                 sortBy = listOf(ItemSortBy.SORT_NAME),
@@ -481,8 +483,11 @@ class JellyfinMediaRepository @Inject constructor(
                     org.jellyfin.sdk.model.api.ItemFields.DATE_CREATED,
                     org.jellyfin.sdk.model.api.ItemFields.OVERVIEW,
                 ),
-            )
-            response.content.items
+            ).content.items
+            // Prefer albums where this is the album artist, so an album with a few featured
+            // guests isn't attributed to every guest. Fall back to any album the artist
+            // appears on (e.g. an artist that only has featured tracks).
+            queryAlbums(byAlbumArtist = true).ifEmpty { queryAlbums(byAlbumArtist = false) }
         }
 
     suspend fun getSeasonsForSeries(seriesId: String): ApiResult<List<BaseItemDto>> =

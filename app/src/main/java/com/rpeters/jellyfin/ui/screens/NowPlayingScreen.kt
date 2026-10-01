@@ -1,11 +1,9 @@
 package com.rpeters.jellyfin.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -14,8 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
@@ -29,14 +25,15 @@ import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.SliderState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -52,33 +49,29 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.media3.common.Player
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
-import com.rpeters.jellyfin.ui.components.ExpressiveBlurSurface
 import com.rpeters.jellyfin.ui.components.ExpressiveContentCard
 import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBar
 import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBarAction
-import com.rpeters.jellyfin.ui.components.ExpressiveWavyLinearProgress
 import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
 import com.rpeters.jellyfin.ui.image.rememberScreenWidthHeight
-import com.rpeters.jellyfin.ui.theme.JellyfinExpressiveTheme
 import com.rpeters.jellyfin.ui.theme.MusicGreen
-import com.rpeters.jellyfin.ui.utils.MediaColorPalette
 import com.rpeters.jellyfin.ui.utils.rememberMediaColorPalette
 import com.rpeters.jellyfin.ui.viewmodel.AudioPlaybackViewModel
+import java.util.Locale
 
 /**
  * Full-screen Now Playing screen for music playback.
- * Features:
- * - Album art display
- * - Track information
- * - Playback controls (play/pause, skip, shuffle, repeat)
- * - Progress bar with seek
- * - Queue management
+ *
+ * Deliberately minimal: artwork, title/artist/album, a single seek bar and one row of
+ * transport controls. Queue and playback speed live in the top bar so the main area stays
+ * focused on what's playing.
  */
 @OptInAppExperimentalApis
 @Composable
@@ -118,6 +111,10 @@ fun NowPlayingScreen(
                     )
                 },
                 actions = {
+                    PlaybackSpeedButton(
+                        playbackSpeed = playbackState.playbackSpeed,
+                        onSpeedChange = { viewModel.setPlaybackSpeed(it) },
+                    )
                     ExpressiveTopAppBarAction(
                         icon = Icons.AutoMirrored.Filled.QueueMusic,
                         contentDescription = "Queue",
@@ -131,56 +128,41 @@ fun NowPlayingScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(
+                            palette.darkMuted.copy(alpha = 0.35f),
                             MaterialTheme.colorScheme.surface,
-                            palette.darkMuted.copy(alpha = 0.45f),
-                            MaterialTheme.colorScheme.surfaceVariant,
                         ),
                     ),
-                ),
+                )
+                .padding(paddingValues),
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.radialGradient(
-                            colors = listOf(
-                                palette.vibrant.copy(alpha = 0.24f),
-                                palette.lightVibrant.copy(alpha = 0.16f),
-                                Color.Transparent,
-                            ),
-                            radius = 1100f,
-                        ),
-                    ),
-            )
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 24.dp, vertical = 20.dp),
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                // Equal flexible spacers above and below the content block center it as a
-                // whole in the available space, instead of a single flexible region above
-                // the artwork (which left the art sitting too close to the top bar).
+                // Equal flexible spacers above and below center the content block as a whole.
                 Spacer(modifier = Modifier.weight(1f))
 
                 AlbumArtSection(
                     currentMediaItem = playbackState.currentMediaItem,
-                    palette = palette,
                     modifier = Modifier.fillMaxWidth(),
                 )
 
-                Spacer(modifier = Modifier.height(28.dp))
+                Spacer(modifier = Modifier.height(32.dp))
 
                 TrackInfoSection(
                     currentMediaItem = playbackState.currentMediaItem,
-                    queueSize = queue.size,
+                    queuePosition = playbackState.currentMediaItem
+                        ?.let { current -> queue.indexOfFirst { it.mediaId == current.mediaId } }
+                        ?.takeIf { it >= 0 && queue.size > 1 }
+                        ?.let { index -> index + 1 to queue.size },
                 )
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
                 ProgressSection(
                     isSeeking = isSeeking,
@@ -194,19 +176,17 @@ fun NowPlayingScreen(
                     },
                 )
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
                 PlaybackControlsSection(
                     isPlaying = playbackState.isPlaying,
                     shuffleEnabled = playbackState.shuffleEnabled,
                     repeatMode = playbackState.repeatMode,
-                    playbackSpeed = playbackState.playbackSpeed,
                     onPlayPauseClick = { viewModel.togglePlayPause() },
                     onSkipPreviousClick = { viewModel.skipToPrevious() },
                     onSkipNextClick = { viewModel.skipToNext() },
                     onShuffleClick = { viewModel.toggleShuffle() },
                     onRepeatClick = { viewModel.toggleRepeat() },
-                    onSpeedChange = { viewModel.setPlaybackSpeed(it) },
                 )
 
                 Spacer(modifier = Modifier.weight(1f))
@@ -218,42 +198,18 @@ fun NowPlayingScreen(
 @Composable
 private fun AlbumArtSection(
     currentMediaItem: androidx.media3.common.MediaItem?,
-    palette: MediaColorPalette,
     modifier: Modifier = Modifier,
 ) {
     Box(
         modifier = modifier.fillMaxWidth(),
-        // Anchor the artwork to the bottom of its weighted region (just above the track
-        // info) instead of centering it in the full leftover space above the fixed-height
-        // sections below — centering here made the art sit too close to the top bar.
-        contentAlignment = Alignment.BottomCenter,
+        contentAlignment = Alignment.Center,
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth(0.92f)
-                .aspectRatio(1f)
-                .background(
-                    Brush.radialGradient(
-                        colors = listOf(
-                            palette.vibrant.copy(alpha = 0.3f),
-                            palette.lightVibrant.copy(alpha = 0.15f),
-                            Color.Transparent,
-                        ),
-                    ),
-                    shape = CircleShape,
-                ),
-        )
         ExpressiveContentCard(
             modifier = Modifier
-                .fillMaxWidth(0.84f)
-                .aspectRatio(1f)
-                .border(
-                    width = 1.dp,
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
-                    shape = RoundedCornerShape(36.dp),
-                ),
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.88f),
-            shape = RoundedCornerShape(36.dp),
+                .fillMaxWidth(0.88f)
+                .aspectRatio(1f),
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            shape = RoundedCornerShape(28.dp),
         ) {
             if (currentMediaItem != null) {
                 JellyfinAsyncImage(
@@ -286,59 +242,52 @@ private fun AlbumArtSection(
 @Composable
 private fun TrackInfoSection(
     currentMediaItem: androidx.media3.common.MediaItem?,
-    queueSize: Int,
+    queuePosition: Pair<Int, Int>?,
     modifier: Modifier = Modifier,
 ) {
+    val metadata = currentMediaItem?.mediaMetadata
+    val artist = metadata?.artist?.toString()?.takeIf { it.isNotBlank() }
+    val album = metadata?.albumTitle?.toString()?.takeIf { it.isNotBlank() }
+
     Column(
         modifier = modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            text = currentMediaItem?.mediaMetadata?.title?.toString() ?: "No track playing",
-            style = MaterialTheme.typography.headlineMedium,
+            text = metadata?.title?.toString() ?: "No track playing",
+            style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = currentMediaItem?.mediaMetadata?.artist?.toString() ?: "",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-
-        Spacer(modifier = Modifier.height(4.dp))
-
-        Text(
-            text = currentMediaItem?.mediaMetadata?.albumTitle?.toString() ?: "",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        FlowRow(
-            horizontalArrangement = Arrangement.Center,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            PlaybackMetaChip(
-                label = currentMediaItem?.mediaMetadata?.artist?.toString()?.takeIf { it.isNotBlank() }
-                    ?: "Unknown artist",
+        if (artist != null) {
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = artist,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
-            currentMediaItem?.mediaMetadata?.albumTitle?.toString()
-                ?.takeIf { it.isNotBlank() }
-                ?.let { album ->
-                    PlaybackMetaChip(label = album)
-                }
-            PlaybackMetaChip(
-                label = if (queueSize > 0) "$queueSize in queue" else "Single track",
-                accent = MaterialTheme.colorScheme.primary,
+        }
+
+        // Album and queue position share one muted line instead of separate chips.
+        val secondaryLine = listOfNotNull(
+            album,
+            queuePosition?.let { (position, total) -> "$position of $total" },
+        ).joinToString(" \u2022 ")
+        if (secondaryLine.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = secondaryLine,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
@@ -371,61 +320,37 @@ private fun ProgressSection(
         }
     }
 
-    ExpressiveBlurSurface(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(28.dp),
-        color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.74f),
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 18.dp, vertical = 16.dp),
+    Column(modifier = modifier.fillMaxWidth()) {
+        Slider(
+            state = sliderState,
+            onValueChange = {
+                onSeekStart()
+                pendingSeekPosition = it
+                sliderState.value = it
+                onSeekChange(it.toLong())
+            },
+            onValueChangeFinished = { onSeekEnd(pendingSeekPosition.toLong()) },
+            colors = SliderDefaults.colors(
+                thumbColor = MusicGreen,
+                activeTrackColor = MusicGreen,
+                inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant,
+            ),
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            val progress = if (duration > 0) {
-                currentPosition.toFloat() / duration.toFloat()
-            } else {
-                0f
-            }
-            ExpressiveWavyLinearProgress(
-                progress = progress.coerceIn(0f, 1f),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp),
-                color = MusicGreen,
-                trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+            Text(
+                text = formatTime(currentPosition),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-
-            Slider(
-                state = sliderState,
-                onValueChange = {
-                    onSeekStart()
-                    pendingSeekPosition = it
-                    sliderState.value = it
-                    onSeekChange(it.toLong())
-                },
-                onValueChangeFinished = { onSeekEnd(pendingSeekPosition.toLong()) },
-                colors = SliderDefaults.colors(
-                    thumbColor = MaterialTheme.colorScheme.primary,
-                    activeTrackColor = Color.Transparent,
-                    inactiveTrackColor = Color.Transparent,
-                ),
+            Text(
+                text = formatTime(duration),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text(
-                    text = formatTime(currentPosition),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Text(
-                    text = formatTime(duration),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
         }
     }
 }
@@ -435,160 +360,106 @@ private fun PlaybackControlsSection(
     isPlaying: Boolean,
     shuffleEnabled: Boolean,
     repeatMode: Int,
-    playbackSpeed: Float,
     onPlayPauseClick: () -> Unit,
     onSkipPreviousClick: () -> Unit,
     onSkipNextClick: () -> Unit,
     onShuffleClick: () -> Unit,
     onRepeatClick: () -> Unit,
-    onSpeedChange: (Float) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val speeds = remember { listOf(0.75f, 1.0f, 1.25f, 1.5f, 1.75f, 2.0f) }
-
-    ExpressiveBlurSurface(
+    Row(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(32.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.82f),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                SecondaryPlaybackButton(
-                    onClick = onShuffleClick,
-                    selected = shuffleEnabled,
-                    icon = Icons.Filled.Shuffle,
-                    contentDescription = "Shuffle",
-                )
-                SecondaryPlaybackButton(
-                    onClick = onSkipPreviousClick,
-                    selected = false,
-                    icon = Icons.Filled.SkipPrevious,
-                    contentDescription = "Previous",
-                    iconSize = 34.dp,
-                )
-                FilledIconButton(
-                    onClick = onPlayPauseClick,
-                    modifier = Modifier.size(88.dp),
-                    colors = IconButtonDefaults.filledIconButtonColors(
-                        containerColor = MusicGreen,
-                        contentColor = MaterialTheme.colorScheme.onPrimary,
-                    ),
-                ) {
-                    Icon(
-                        if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                        contentDescription = if (isPlaying) "Pause" else "Play",
-                        modifier = Modifier.size(48.dp),
-                    )
-                }
-                SecondaryPlaybackButton(
-                    onClick = onSkipNextClick,
-                    selected = false,
-                    icon = Icons.Filled.SkipNext,
-                    contentDescription = "Next",
-                    iconSize = 34.dp,
-                )
-                SecondaryPlaybackButton(
-                    onClick = onRepeatClick,
-                    selected = repeatMode != Player.REPEAT_MODE_OFF,
-                    icon = when (repeatMode) {
-                        Player.REPEAT_MODE_ONE -> Icons.Filled.RepeatOne
-                        else -> Icons.Filled.Repeat
-                    },
-                    contentDescription = "Repeat",
-                )
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Playback speed selector chip
-            val currentSpeedLabel = if (playbackSpeed == 1.0f) "1.0x" else "${String.format("%.2f", playbackSpeed).trimEnd('0').trimEnd('.')}x"
-            FilledIconButton(
-                onClick = {
-                    val nextIndex = (speeds.indexOfFirst { kotlin.math.abs(it - playbackSpeed) < 0.05f } + 1) % speeds.size
-                    onSpeedChange(speeds[nextIndex])
-                },
-                modifier = Modifier.height(36.dp),
-                colors = IconButtonDefaults.filledIconButtonColors(
-                    containerColor = if (playbackSpeed != 1.0f) {
-                        MaterialTheme.colorScheme.primaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.9f)
-                    },
-                    contentColor = if (playbackSpeed != 1.0f) {
-                        MaterialTheme.colorScheme.onPrimaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
-                ),
-            ) {
-                Text(
-                    text = currentSpeedLabel,
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 12.dp),
-                )
-            }
+        ToggleControlButton(
+            onClick = onShuffleClick,
+            active = shuffleEnabled,
+            icon = Icons.Filled.Shuffle,
+            contentDescription = if (shuffleEnabled) "Shuffle on" else "Shuffle off",
+        )
+        IconButton(onClick = onSkipPreviousClick, modifier = Modifier.size(56.dp)) {
+            Icon(
+                Icons.Filled.SkipPrevious,
+                contentDescription = "Previous",
+                modifier = Modifier.size(36.dp),
+            )
         }
-    }
-}
-
-@Composable
-private fun PlaybackMetaChip(
-    label: String,
-    accent: Color = MusicGreen,
-) {
-    Surface(
-        shape = JellyfinExpressiveTheme.shapes.pill,
-        color = accent.copy(alpha = 0.14f),
-        contentColor = MaterialTheme.colorScheme.onSurface,
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelLarge,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+        FilledIconButton(
+            onClick = onPlayPauseClick,
+            modifier = Modifier.size(76.dp),
+            colors = IconButtonDefaults.filledIconButtonColors(
+                containerColor = MusicGreen,
+                contentColor = Color.White,
+            ),
+        ) {
+            Icon(
+                if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                contentDescription = if (isPlaying) "Pause" else "Play",
+                modifier = Modifier.size(40.dp),
+            )
+        }
+        IconButton(onClick = onSkipNextClick, modifier = Modifier.size(56.dp)) {
+            Icon(
+                Icons.Filled.SkipNext,
+                contentDescription = "Next",
+                modifier = Modifier.size(36.dp),
+            )
+        }
+        ToggleControlButton(
+            onClick = onRepeatClick,
+            active = repeatMode != Player.REPEAT_MODE_OFF,
+            icon = if (repeatMode == Player.REPEAT_MODE_ONE) Icons.Filled.RepeatOne else Icons.Filled.Repeat,
+            contentDescription = when (repeatMode) {
+                Player.REPEAT_MODE_ONE -> "Repeat one"
+                Player.REPEAT_MODE_ALL -> "Repeat all"
+                else -> "Repeat off"
+            },
         )
     }
 }
 
+/** Shuffle/repeat toggle: plain icon, tinted with the accent color when active. */
 @Composable
-private fun SecondaryPlaybackButton(
+private fun ToggleControlButton(
     onClick: () -> Unit,
-    selected: Boolean,
+    active: Boolean,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     contentDescription: String,
-    iconSize: androidx.compose.ui.unit.Dp = 28.dp,
 ) {
-    FilledIconButton(
-        onClick = onClick,
-        modifier = Modifier.size(56.dp),
-        colors = IconButtonDefaults.filledIconButtonColors(
-            containerColor = if (selected) {
-                MaterialTheme.colorScheme.primaryContainer
-            } else {
-                MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.9f)
-            },
-            contentColor = if (selected) {
-                MaterialTheme.colorScheme.onPrimaryContainer
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            },
-        ),
-    ) {
+    IconButton(onClick = onClick, modifier = Modifier.size(48.dp)) {
         Icon(
             imageVector = icon,
             contentDescription = contentDescription,
-            modifier = Modifier.size(iconSize),
+            tint = if (active) MusicGreen else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+            modifier = Modifier.size(26.dp),
+        )
+    }
+}
+
+/** Compact speed toggle for the top bar; cycles through common speeds on tap. */
+@Composable
+private fun PlaybackSpeedButton(
+    playbackSpeed: Float,
+    onSpeedChange: (Float) -> Unit,
+) {
+    val speeds = remember { listOf(0.75f, 1.0f, 1.25f, 1.5f, 1.75f, 2.0f) }
+    val label = if (playbackSpeed == 1.0f) {
+        "1x"
+    } else {
+        "${String.format(Locale.US, "%.2f", playbackSpeed).trimEnd('0').trimEnd('.')}x"
+    }
+    TextButton(
+        onClick = {
+            val nextIndex = (speeds.indexOfFirst { kotlin.math.abs(it - playbackSpeed) < 0.05f } + 1) % speeds.size
+            onSpeedChange(speeds[nextIndex])
+        },
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Bold,
+            color = if (playbackSpeed != 1.0f) MusicGreen else MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }

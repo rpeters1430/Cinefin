@@ -424,8 +424,9 @@ fun JellyfinApp(
                 contentWindowInsets = WindowInsets(0, 0, 0, 0),
                 bottomBar = {
                     // Still show mini player on detail screens if something is playing
-                    // Positioned at the very bottom
-                    if (isMiniPlayerVisible) {
+                    // Positioned at the very bottom. Hidden on Now Playing itself, which
+                    // already shows the full player controls.
+                    if (isMiniPlayerVisible && currentDestination?.route != Screen.NowPlaying.route) {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()

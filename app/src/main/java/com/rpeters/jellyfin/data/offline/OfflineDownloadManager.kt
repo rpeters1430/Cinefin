@@ -180,7 +180,7 @@ class OfflineDownloadManager @Inject constructor(
         )
 
         val notification = NotificationCompat.Builder(context, "offline_downloads_progress")
-            .setSmallIcon(R.drawable.ic_launcher_monochrome)
+            .setSmallIcon(R.drawable.ic_stat_cinefin)
             .setContentTitle("Download Paused")
             .setContentText(download.itemName)
             .setOngoing(false)

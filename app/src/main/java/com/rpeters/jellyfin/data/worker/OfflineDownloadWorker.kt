@@ -168,7 +168,7 @@ class OfflineDownloadWorker @AssistedInject constructor(
         )
 
         val builder = NotificationCompat.Builder(applicationContext, CHANNEL_DOWNLOADS)
-            .setSmallIcon(R.drawable.ic_launcher_monochrome)
+            .setSmallIcon(R.drawable.ic_stat_cinefin)
             .setContentTitle("Downloading")
             .setContentText(itemName)
             .setOnlyAlertOnce(true)
@@ -248,7 +248,7 @@ class OfflineDownloadWorker @AssistedInject constructor(
         val notificationId = NOTIFICATION_ID_COMPLETION_BASE + downloadId.hashCode()
 
         val notification = NotificationCompat.Builder(applicationContext, CHANNEL_COMPLETED)
-            .setSmallIcon(R.drawable.ic_launcher_monochrome)
+            .setSmallIcon(R.drawable.ic_stat_cinefin)
             .setContentTitle(title)
             .setContentText(message)
             .setAutoCancel(true)
