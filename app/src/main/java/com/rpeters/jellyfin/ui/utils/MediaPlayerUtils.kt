@@ -110,6 +110,48 @@ object MediaPlayerUtils {
         connection.playNow(mediaItem, resumePositionMs)
     }
 
+    /**
+     * Plays a list of audio tracks (e.g. an album) as a single queue so playback continues
+     * through the remaining tracks instead of stopping after the first one.
+     *
+     * @param tracks Tracks in playback order.
+     * @param startIndex Index of the track to start with; earlier tracks stay in the queue so
+     * "previous" still works.
+     * @param streamUrlFor Resolves a track's stream URL; tracks without one are skipped.
+     * @return false if the requested start track has no stream URL (nothing is played).
+     */
+    fun playAudioQueue(
+        context: Context,
+        tracks: List<BaseItemDto>,
+        startIndex: Int = 0,
+        streamUrlFor: (BaseItemDto) -> String?,
+    ): Boolean {
+        if (tracks.isEmpty()) return false
+
+        val entryPoint = EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            AudioServiceConnectionEntryPoint::class.java,
+        )
+        val streamRepository = entryPoint.jellyfinStreamRepository()
+        val startTrack = tracks.getOrNull(startIndex)
+
+        val mediaItems = mutableListOf<MediaItem>()
+        var queueStartIndex = -1
+        tracks.forEach { track ->
+            val streamUrl = streamUrlFor(track) ?: return@forEach
+            if (track === startTrack) queueStartIndex = mediaItems.size
+            val artworkItemId = track.albumId?.toString() ?: track.id.toString()
+            val artworkUrl = streamRepository.getImageUrl(artworkItemId, "Primary", null)
+            mediaItems += buildAudioMediaItem(track, streamUrl, artworkUrl)
+        }
+        // The requested track itself isn't playable: report failure rather than silently
+        // starting a different song.
+        if (queueStartIndex < 0) return false
+
+        entryPoint.audioServiceConnection().playQueue(mediaItems, queueStartIndex)
+        return true
+    }
+
     private fun buildAudioMediaItem(
         item: BaseItemDto,
         streamUrl: String,

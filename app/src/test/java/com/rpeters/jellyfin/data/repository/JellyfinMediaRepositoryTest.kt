@@ -260,7 +260,7 @@ class JellyfinMediaRepositoryTest {
         // Given
         val movieId = "movie-123"
         val mockMovie = mockk<BaseItemDto> {
-            coEvery { id } returns java.util.UUID.fromString("550e8400-e29b-41d4-a716-446655440000")
+            coEvery { id } returns java.util.UUID.fromString(TEST_ARTIST_ID)
             coEvery { name } returns "Test Movie"
             coEvery { type } returns BaseItemKind.MOVIE
             coEvery { overview } returns "A great test movie"
@@ -372,19 +372,12 @@ class JellyfinMediaRepositoryTest {
     //
     // MusicArtist entities in Jellyfin are virtual/aggregated - they are NOT the literal
     // folder parent of MusicAlbum items, so querying with `parentId` always returned zero
-    // albums. The fix queries with `artistIds` + `recursive = true` instead. Unlike the
+    // albums. The fix queries with `albumArtistIds`/`artistIds` + `recursive = true` instead. Unlike the
     // tests above (which stub the repository method itself via `spyk`, never exercising the
     // real method body), this test drives the REAL `getAlbumsForArtist()` implementation so
     // the actual `ItemsApi.getItems(...)` call arguments can be verified with `coVerify`.
 
-    @Test
-    fun `getAlbumsForArtist queries libraryApi with artistIds and recursive, not parentId`() = runTest {
-        // Given
-        val artistId = "550e8400-e29b-41d4-a716-446655440000"
-        val artistUuid = UUID.fromString(artistId)
-        val userId = "11111111-1111-1111-1111-111111111111"
-        val userUuid = UUID.fromString(userId)
-
+    private fun wireRealAlbumQueries(userId: String) {
         val testServer = JellyfinServer(
             id = "server-1",
             name = "Test Server",
@@ -410,25 +403,32 @@ class JellyfinMediaRepositoryTest {
             val block = invocation.args[1] as suspend (JellyfinServer, ApiClient) -> List<BaseItemDto>?
             block(testServer, apiClient)
         }
+    }
 
-        val mockAlbums = listOf(
+    private fun albumQueryResult(vararg names: String): BaseItemDtoQueryResult {
+        val albums = names.map { albumName ->
             mockk<BaseItemDto> {
                 coEvery { id } returns UUID.randomUUID()
-                coEvery { name } returns "Test Album"
+                coEvery { name } returns albumName
                 coEvery { type } returns BaseItemKind.MUSIC_ALBUM
-            },
-        )
-        val queryResult = mockk<BaseItemDtoQueryResult> {
-            coEvery { items } returns mockAlbums
-            coEvery { totalRecordCount } returns mockAlbums.size
+            }
         }
+        return mockk {
+            coEvery { items } returns albums
+            coEvery { totalRecordCount } returns albums.size
+        }
+    }
 
-        // Permissive stub: matches any argument shape so the "when" step always succeeds.
-        // Correctness of the actual query is asserted purely via coVerify below.
+    private fun stubAlbumQuery(
+        albumArtistIds: List<UUID>?,
+        artistIds: List<UUID>?,
+        result: BaseItemDtoQueryResult,
+    ) {
         coEvery {
             libraryApi.getItems(
                 userId = any(),
-                artistIds = any(),
+                albumArtistIds = albumArtistIds,
+                artistIds = artistIds,
                 recursive = any(),
                 parentId = any(),
                 includeItemTypes = any(),
@@ -436,7 +436,18 @@ class JellyfinMediaRepositoryTest {
                 sortOrder = any(),
                 fields = any(),
             )
-        } returns Response(queryResult, 200, emptyMap())
+        } returns Response(result, 200, emptyMap())
+    }
+
+    @Test
+    fun `getAlbumsForArtist queries by albumArtistIds and recursive, not parentId`() = runTest {
+        // Given
+        val artistId = TEST_ARTIST_ID
+        val artistUuid = UUID.fromString(artistId)
+        val userId = TEST_USER_ID
+        val userUuid = UUID.fromString(userId)
+        wireRealAlbumQueries(userId)
+        stubAlbumQuery(albumArtistIds = listOf(artistUuid), artistIds = null, result = albumQueryResult("Test Album"))
 
         // Use a real (non-spyk) repository instance so getAlbumsForArtist()'s actual method
         // body executes instead of being stubbed away.
@@ -451,13 +462,15 @@ class JellyfinMediaRepositoryTest {
         assertEquals(1, successResult.data.size)
         assertEquals("Test Album", successResult.data[0].name)
 
-        // Regression guard: must query by artistIds + recursive = true, and must NOT scope
-        // the query by parentId (that was the bug behind issue #1194 - MusicArtist is not the
-        // literal folder parent of its MusicAlbum items).
+        // Regression guard: must query recursively and must NOT scope the query by parentId
+        // (that was the bug behind issue #1194 - MusicArtist is not the literal folder parent
+        // of its MusicAlbum items). Album-artist matches are preferred so albums with featured
+        // guests aren't listed under every guest (issue #1329).
         coVerify(exactly = 1) {
             libraryApi.getItems(
                 userId = userUuid,
-                artistIds = listOf(artistUuid),
+                albumArtistIds = listOf(artistUuid),
+                artistIds = null,
                 recursive = true,
                 parentId = null,
                 includeItemTypes = listOf(BaseItemKind.MUSIC_ALBUM),
@@ -466,6 +479,39 @@ class JellyfinMediaRepositoryTest {
                 fields = any(),
             )
         }
+        coVerify(exactly = 0) {
+            libraryApi.getItems(
+                userId = any(),
+                albumArtistIds = null,
+                artistIds = listOf(artistUuid),
+                recursive = any(),
+                parentId = any(),
+                includeItemTypes = any(),
+                sortBy = any(),
+                sortOrder = any(),
+                fields = any(),
+            )
+        }
+    }
+
+    @Test
+    fun `getAlbumsForArtist falls back to artistIds when artist has no albums of their own`() = runTest {
+        // Given
+        val artistId = TEST_ARTIST_ID
+        val artistUuid = UUID.fromString(artistId)
+        wireRealAlbumQueries(TEST_USER_ID)
+        stubAlbumQuery(albumArtistIds = listOf(artistUuid), artistIds = null, result = albumQueryResult())
+        stubAlbumQuery(albumArtistIds = null, artistIds = listOf(artistUuid), result = albumQueryResult("Guest Spot"))
+
+        val realRepository = JellyfinMediaRepository(authRepository, sessionManager, cache, healthChecker)
+
+        // When
+        val result = realRepository.getAlbumsForArtist(artistId)
+
+        // Then
+        assertTrue(result is ApiResult.Success<List<BaseItemDto>>)
+        val successResult = result as ApiResult.Success<List<BaseItemDto>>
+        assertEquals(listOf("Guest Spot"), successResult.data.map { it.name })
     }
 
     @Test
@@ -671,5 +717,10 @@ class JellyfinMediaRepositoryTest {
             listOf(BaseItemKind.PLAYLIST),
             recentlyAddedItemTypesForCollection(CollectionType.PLAYLISTS),
         )
+    }
+
+    private companion object {
+        const val TEST_ARTIST_ID = "550e8400-e29b-41d4-a716-446655440000"
+        const val TEST_USER_ID = "11111111-1111-1111-1111-111111111111"
     }
 }

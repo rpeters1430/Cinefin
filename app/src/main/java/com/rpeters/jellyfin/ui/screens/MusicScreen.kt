@@ -6,7 +6,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.expandVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,7 +14,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
@@ -26,35 +24,26 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.Album
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Shuffle
-import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -68,15 +57,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
-import com.rpeters.jellyfin.ui.components.ExpressiveBlurSurface
 import com.rpeters.jellyfin.ui.components.ExpressiveCardType
 import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
 import com.rpeters.jellyfin.ui.components.ExpressiveContentCard
@@ -84,12 +72,12 @@ import com.rpeters.jellyfin.ui.components.ExpressiveMediaCard
 import com.rpeters.jellyfin.ui.components.ExpressivePullToRefreshBox
 import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBar
 import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBarAction
-import com.rpeters.jellyfin.ui.components.ExpressiveWavyLinearProgress
 import com.rpeters.jellyfin.ui.components.immersive.rememberAutoHideTopBarVisible
 import com.rpeters.jellyfin.ui.theme.MusicGreen
 import com.rpeters.jellyfin.ui.utils.EnhancedPlaybackUtils
+import com.rpeters.jellyfin.ui.utils.MusicArtistUtils
 import com.rpeters.jellyfin.ui.utils.ShareUtils
-import com.rpeters.jellyfin.ui.viewmodel.AudioPlaybackViewModel
+import com.rpeters.jellyfin.ui.viewmodel.MainAppState
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import com.rpeters.jellyfin.utils.getItemKey
 import kotlinx.coroutines.launch
@@ -148,221 +136,60 @@ enum class MusicViewMode {
 fun MusicScreen(
     onBackClick: () -> Unit = {},
     viewModel: MainAppViewModel = hiltViewModel(),
-    audioPlaybackViewModel: AudioPlaybackViewModel = hiltViewModel(),
     onItemClick: (BaseItemDto) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val appState by viewModel.appState.collectAsStateWithLifecycle()
-    val playbackState by audioPlaybackViewModel.playbackState.collectAsStateWithLifecycle()
-    val playbackQueue by audioPlaybackViewModel.queue.collectAsStateWithLifecycle()
 
     var selectedFilter by remember { mutableStateOf(MusicFilter.ALL) }
     var sortOrder by remember { mutableStateOf(MusicSortOrder.TITLE_ASC) }
     var viewMode by remember { mutableStateOf(MusicViewMode.GRID) }
-    var showSortMenu by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
-    // Track scroll position so the filter/playback header can auto-hide, mirroring the
+    // Track scroll position so the filter header can auto-hide, mirroring the
     // immersive screens' auto-hide top bar behavior.
     val gridState = rememberLazyGridState()
     val headerVisible = rememberAutoHideTopBarVisible(gridState = gridState)
 
     val musicLibraryId = remember(appState.libraries) { viewModel.getLibraryIdForType(LibraryType.MUSIC) }
-    // Pagination is tracked per-library; the legacy appState.hasMoreItems/isLoadingMore
-    // fields are shared across whichever library last paginated, so reading them here would
-    // make this screen react to unrelated libraries' load-more activity.
-    val musicPagination = appState.libraryPaginationState[musicLibraryId]
-    val musicHasMoreItems = musicPagination?.hasMore ?: false
-    val musicIsLoadingMore = musicPagination?.isLoadingMore ?: false
-    // The first library page hasn't arrived yet (pagination state is written with it). Show a
-    // spinner instead of an empty/partial grid, which otherwise flashes "no music" or just the
-    // handful of recently-added tracks and then reshuffles once the real page lands.
-    val isMusicLibraryPending = musicLibraryId != null &&
-        musicPagination == null &&
-        appState.errorMessage == null
+    val library = musicLibraryStatus(appState, musicLibraryId)
 
     // Get music items via unified loader and enrich with recent audio
     // Don't use remember() here - we want fresh data on every recomposition
-    val libraryMusic = viewModel.getLibraryTypeData(LibraryType.MUSIC)
-    val recentMusic = appState.recentlyAddedByTypes[BaseItemKind.AUDIO.name] ?: emptyList()
-    val musicItems = if (isMusicLibraryPending) {
+    val musicItems = if (library.isPending) {
         emptyList()
     } else {
-        (libraryMusic + recentMusic).distinctBy { it.id }
+        collectMusicItems(viewModel.getLibraryTypeData(LibraryType.MUSIC), appState)
     }
 
-    // Apply filtering and sorting
     val filteredAndSortedMusic = remember(musicItems, selectedFilter, sortOrder) {
-        val filtered = when (selectedFilter) {
-            MusicFilter.ALL -> musicItems
-            MusicFilter.ALBUMS -> musicItems.filter { it.type == BaseItemKind.MUSIC_ALBUM }
-            MusicFilter.ARTISTS -> musicItems.filter { it.type == BaseItemKind.MUSIC_ARTIST }
-            MusicFilter.SONGS -> musicItems.filter { it.type == BaseItemKind.AUDIO }
-            MusicFilter.FAVORITES -> musicItems.filter { it.userData?.isFavorite == true }
-            MusicFilter.RECENT -> musicItems.filter {
-                ((it.productionYear as? Number)?.toInt() ?: 0) >= 2020
-            }
-            MusicFilter.UNPLAYED -> musicItems.filter {
-                it.userData?.played != true
-            }
-        }
-
-        when (sortOrder) {
-            MusicSortOrder.TITLE_ASC -> filtered.sortedBy { it.sortName ?: it.name }
-            MusicSortOrder.TITLE_DESC -> filtered.sortedByDescending { it.sortName ?: it.name }
-            MusicSortOrder.ARTIST_ASC -> filtered.sortedBy {
-                it.albumArtist ?: it.artists?.firstOrNull() ?: it.name
-            }
-            MusicSortOrder.ARTIST_DESC -> filtered.sortedByDescending {
-                it.albumArtist ?: it.artists?.firstOrNull() ?: it.name
-            }
-            MusicSortOrder.YEAR_DESC -> filtered.sortedByDescending {
-                (it.productionYear as? Number)?.toInt() ?: 0
-            }
-            MusicSortOrder.YEAR_ASC -> filtered.sortedBy {
-                (it.productionYear as? Number)?.toInt() ?: 0
-            }
-            MusicSortOrder.DATE_ADDED_DESC -> filtered.sortedByDescending { it.dateCreated }
-            MusicSortOrder.DATE_ADDED_ASC -> filtered.sortedBy { it.dateCreated }
-            MusicSortOrder.PLAY_COUNT_DESC -> filtered.sortedByDescending {
-                it.userData?.playCount ?: 0
-            }
-            MusicSortOrder.PLAY_COUNT_ASC -> filtered.sortedBy {
-                it.userData?.playCount ?: 0
-            }
-            MusicSortOrder.RUNTIME_DESC -> filtered.sortedByDescending {
-                it.runTimeTicks ?: 0L
-            }
-            MusicSortOrder.RUNTIME_ASC -> filtered.sortedBy {
-                it.runTimeTicks ?: 0L
-            }
-        }
+        sortMusic(filterMusic(musicItems, selectedFilter), sortOrder)
     }
 
-    // Keep the grid anchored at the top while content is still arriving. LazyGrid keeps the
-    // first visible item's key in place, so when a later load sorts new items in front of it
-    // (or the filter/sort changes) the screen would otherwise open scrolled partway down.
-    var userHasScrolledMusic by remember { mutableStateOf(false) }
-    LaunchedEffect(gridState) {
-        gridState.interactionSource.interactions.collect { interaction ->
-            if (interaction is DragInteraction.Start) userHasScrolledMusic = true
-        }
-    }
-    LaunchedEffect(selectedFilter, sortOrder) {
-        userHasScrolledMusic = false
-        gridState.scrollToItem(0)
-    }
-    val firstMusicItemKey = filteredAndSortedMusic.firstOrNull()?.getItemKey()
-    LaunchedEffect(firstMusicItemKey) {
-        if (firstMusicItemKey != null && !userHasScrolledMusic) {
-            gridState.scrollToItem(0)
-        }
-    }
-
-    // The music library page is fetched with Audio/MusicAlbum/MusicArtist mixed together
-    // and sorted alphabetically, so a type filter (e.g. Albums/Artists) can easily come up
-    // empty - or with just one or two albums - on the currently-loaded page even though many
-    // more matching items exist further into the library. Keep paging automatically until the
-    // filter has a screenful of results or the library is exhausted, rather than leaving the
-    // user stuck on a false "no music found" or a lone album.
-    val minFilteredResults = if (selectedFilter in TYPE_FILTERS) MIN_TYPE_FILTER_RESULTS else 1
-    val needsMoreFilteredResults = filteredAndSortedMusic.size < minFilteredResults
-    LaunchedEffect(
-        selectedFilter,
-        needsMoreFilteredResults,
-        musicLibraryId,
-        musicHasMoreItems,
-        musicIsLoadingMore,
-        appState.isLoading,
-        appState.errorMessage,
-    ) {
-        if (needsMoreFilteredResults &&
-            musicItems.isNotEmpty() &&
-            musicHasMoreItems &&
-            !musicIsLoadingMore &&
-            !appState.isLoading &&
-            appState.errorMessage == null
-        ) {
-            musicLibraryId?.let { viewModel.loadMoreLibraryItems(it) }
-        }
-    }
+    KeepMusicGridAnchored(
+        gridState = gridState,
+        selectedFilter = selectedFilter,
+        sortOrder = sortOrder,
+        firstItemKey = filteredAndSortedMusic.firstOrNull()?.getItemKey(),
+    )
+    AutoPageMusicLibrary(
+        selectedFilter = selectedFilter,
+        resultCount = filteredAndSortedMusic.size,
+        hasSourceItems = musicItems.isNotEmpty(),
+        libraryId = musicLibraryId,
+        library = library,
+        isLoading = appState.isLoading,
+        errorMessage = appState.errorMessage,
+        onLoadMore = viewModel::loadMoreLibraryItems,
+    )
 
     Scaffold(
         topBar = {
-            ExpressiveTopAppBar(
-                title = stringResource(id = R.string.music),
-                navigationIcon = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.MusicNote,
-                            contentDescription = null,
-                        )
-                        Text(
-                            text = stringResource(id = R.string.music),
-                        )
-                    }
-                },
-                actions = {
-                    // View mode toggle
-                    SingleChoiceSegmentedButtonRow {
-                        MusicViewMode.entries.forEachIndexed { index, mode ->
-                            SegmentedButton(
-                                shape = SegmentedButtonDefaults.itemShape(
-                                    index = index,
-                                    count = MusicViewMode.entries.size,
-                                ),
-                                onClick = { viewMode = mode },
-                                selected = viewMode == mode,
-                                colors = SegmentedButtonDefaults.colors(
-                                    activeContainerColor = MusicGreen.copy(alpha = 0.2f),
-                                    activeContentColor = MusicGreen,
-                                ),
-                            ) {
-                                Icon(
-                                    imageVector = when (mode) {
-                                        MusicViewMode.GRID -> Icons.Default.GridView
-                                        MusicViewMode.LIST -> Icons.AutoMirrored.Filled.ViewList
-                                    },
-                                    contentDescription = mode.name,
-                                    modifier = Modifier.padding(2.dp),
-                                )
-                            }
-                        }
-                    }
-
-                    // Sort menu
-                    Box {
-                        IconButton(onClick = { showSortMenu = true }) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.Sort,
-                                contentDescription = stringResource(id = R.string.sort),
-                            )
-                        }
-                        DropdownMenu(
-                            expanded = showSortMenu,
-                            onDismissRequest = { showSortMenu = false },
-                        ) {
-                            MusicSortOrder.getAllSortOrders().forEach { order ->
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(id = order.displayNameResId)) },
-                                    onClick = {
-                                        sortOrder = order
-                                        showSortMenu = false
-                                    },
-                                )
-                            }
-                        }
-                    }
-
-                    ExpressiveTopAppBarAction(
-                        icon = Icons.Default.Refresh,
-                        contentDescription = stringResource(id = R.string.refresh),
-                        onClick = { viewModel.refreshLibraryItems() },
-                    )
-                },
+            MusicTopBar(
+                viewMode = viewMode,
+                onViewModeChange = { viewMode = it },
+                onSortOrderChange = { sortOrder = it },
+                onRefresh = { viewModel.refreshLibraryItems() },
             )
         },
         modifier = modifier,
@@ -408,168 +235,30 @@ fun MusicScreen(
                         enter = expandVertically() + fadeIn(),
                         exit = shrinkVertically() + fadeOut(),
                     ) {
-                        Column {
-                            if (playbackState.isConnected && (playbackState.currentMediaItem != null || playbackQueue.isNotEmpty())) {
-                                ActivePlaybackPanel(
-                                    modifier = Modifier
-                                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                                        .fillMaxWidth(),
-                                    playbackState = playbackState,
-                                    playbackQueue = playbackQueue,
-                                    onShuffleClick = audioPlaybackViewModel::toggleShuffle,
-                                    onPlayPauseClick = audioPlaybackViewModel::togglePlayPause,
-                                    onSkipNextClick = audioPlaybackViewModel::skipToNext,
-                                    onStopClick = audioPlaybackViewModel::stopPlayback,
-                                )
-                            }
-
-                            LazyRow(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                            ) {
-                                items(
-                                    items = MusicFilter.getAllFilters(),
-                                    key = { it },
-                                    contentType = { "music_filter" },
-                                ) { filter ->
-                                    FilterChip(
-                                        onClick = { selectedFilter = filter },
-                                        label = { Text(stringResource(id = filter.displayNameResId)) },
-                                        selected = selectedFilter == filter,
-                                        leadingIcon = when (filter) {
-                                            MusicFilter.FAVORITES -> {
-                                                {
-                                                    Icon(
-                                                        imageVector = Icons.Default.Star,
-                                                        contentDescription = null,
-                                                        modifier = Modifier.padding(2.dp),
-                                                    )
-                                                }
-                                            }
-                                            MusicFilter.ALBUMS -> {
-                                                {
-                                                    Icon(
-                                                        imageVector = Icons.Default.Album,
-                                                        contentDescription = null,
-                                                        modifier = Modifier.padding(2.dp),
-                                                    )
-                                                }
-                                            }
-                                            MusicFilter.ARTISTS -> {
-                                                {
-                                                    Icon(
-                                                        imageVector = Icons.Default.Person,
-                                                        contentDescription = null,
-                                                        modifier = Modifier.padding(2.dp),
-                                                    )
-                                                }
-                                            }
-                                            else -> null
-                                        },
-                                        colors = FilterChipDefaults.filterChipColors(
-                                            selectedContainerColor = MusicGreen.copy(alpha = 0.18f),
-                                            selectedLabelColor = MusicGreen,
-                                            selectedLeadingIconColor = MusicGreen,
-                                        ),
-                                    )
-                                }
-                            }
-                        }
+                        MusicFilterChips(
+                            selectedFilter = selectedFilter,
+                            onFilterSelected = { selectedFilter = it },
+                        )
                     }
 
-                    when {
-                        appState.isLoading || isMusicLibraryPending -> {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                ExpressiveCircularLoading(
-                                    size = 48.dp,
-                                    showPulse = true,
-                                )
-                            }
-                        }
-
-                        appState.errorMessage != null -> {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                ExpressiveContentCard(
-                                    containerColor = MaterialTheme.colorScheme.errorContainer,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(16.dp),
-                                ) {
-                                    Text(
-                                        text = appState.errorMessage ?: stringResource(R.string.unknown_error),
-                                        color = MaterialTheme.colorScheme.onErrorContainer,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        modifier = Modifier.padding(16.dp),
-                                        textAlign = TextAlign.Center,
-                                    )
-                                }
-                            }
-                        }
-
-                        filteredAndSortedMusic.isEmpty() && musicIsLoadingMore -> {
-                            // Still paging through the library looking for a match for the
-                            // current filter (see the auto-continue LaunchedEffect above) -
-                            // show a spinner instead of a premature "no music found".
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                ExpressiveCircularLoading(
-                                    size = 48.dp,
-                                    showPulse = true,
-                                )
-                            }
-                        }
-
-                        filteredAndSortedMusic.isEmpty() -> {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.MusicNote,
-                                        contentDescription = null,
-                                        modifier = Modifier.padding(32.dp),
-                                        tint = MusicGreen.copy(alpha = 0.6f),
-                                    )
-                                    Text(
-                                        text = stringResource(id = R.string.no_music_found),
-                                        style = MaterialTheme.typography.headlineSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                    Text(
-                                        text = stringResource(id = R.string.adjust_music_filters_hint),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-                            }
-                        }
-
-                        else -> {
-                            MusicContent(
-                                musicItems = filteredAndSortedMusic,
-                                viewMode = viewMode,
-                                getImageUrl = { item -> viewModel.getImageUrl(item) },
-                                onItemClick = onItemClick,
-                                onFavoriteClick = { item -> viewModel.toggleFavorite(item) },
-                                onMoreClick = { item -> ShareUtils.shareMedia(context, item) },
-                                isLoadingMore = musicIsLoadingMore,
-                                hasMoreItems = musicHasMoreItems,
-                                onLoadMore = { musicLibraryId?.let { viewModel.loadMoreLibraryItems(it) } },
-                                gridState = gridState,
-                            )
-                        }
+                    MusicBody(
+                        isLoading = appState.isLoading || library.isPending,
+                        errorMessage = appState.errorMessage,
+                        isEmpty = filteredAndSortedMusic.isEmpty(),
+                        isLoadingMore = library.isLoadingMore,
+                    ) {
+                        MusicContent(
+                            musicItems = filteredAndSortedMusic,
+                            viewMode = viewMode,
+                            getImageUrl = { item -> viewModel.getImageUrl(item) },
+                            onItemClick = onItemClick,
+                            onFavoriteClick = { item -> viewModel.toggleFavorite(item) },
+                            onMoreClick = { item -> ShareUtils.shareMedia(context, item) },
+                            isLoadingMore = library.isLoadingMore,
+                            hasMoreItems = library.hasMore,
+                            onLoadMore = { musicLibraryId?.let { viewModel.loadMoreLibraryItems(it) } },
+                            gridState = gridState,
+                        )
                     }
                 }
             }
@@ -577,133 +266,350 @@ fun MusicScreen(
     }
 }
 
+/** Pagination state of the music library, as far as this screen cares about it. */
+private data class MusicLibraryStatus(
+    val hasMore: Boolean,
+    val isLoadingMore: Boolean,
+    /** The first library page hasn't arrived yet (pagination state is written with it). */
+    val isPending: Boolean,
+)
+
+private fun musicLibraryStatus(appState: MainAppState, musicLibraryId: String?): MusicLibraryStatus {
+    // Pagination is tracked per-library; the legacy appState.hasMoreItems/isLoadingMore
+    // fields are shared across whichever library last paginated, so reading them here would
+    // make this screen react to unrelated libraries' load-more activity.
+    val pagination = appState.libraryPaginationState[musicLibraryId]
+    return MusicLibraryStatus(
+        hasMore = pagination?.hasMore ?: false,
+        isLoadingMore = pagination?.isLoadingMore ?: false,
+        // Show a spinner instead of an empty/partial grid, which otherwise flashes "no music"
+        // or just the handful of recently-added tracks and then reshuffles once the real page
+        // lands.
+        isPending = musicLibraryId != null && pagination == null && appState.errorMessage == null,
+    )
+}
+
+private fun collectMusicItems(libraryMusic: List<BaseItemDto>, appState: MainAppState): List<BaseItemDto> {
+    val recentMusic = appState.recentlyAddedByTypes[BaseItemKind.AUDIO.name].orEmpty()
+    // Hide "Artist feat. Guest" style entries when the lead artist is already listed.
+    return MusicArtistUtils.collapseFeaturedArtists((libraryMusic + recentMusic).distinctBy { it.id })
+}
+
+private fun BaseItemDto.musicYear(): Int = (productionYear as? Number)?.toInt() ?: 0
+
+private fun filterMusic(items: List<BaseItemDto>, filter: MusicFilter): List<BaseItemDto> = when (filter) {
+    MusicFilter.ALL -> items
+    MusicFilter.ALBUMS -> items.filter { it.type == BaseItemKind.MUSIC_ALBUM }
+    MusicFilter.ARTISTS -> items.filter { it.type == BaseItemKind.MUSIC_ARTIST }
+    MusicFilter.SONGS -> items.filter { it.type == BaseItemKind.AUDIO }
+    MusicFilter.FAVORITES -> items.filter { it.userData?.isFavorite == true }
+    MusicFilter.RECENT -> items.filter { it.musicYear() >= 2020 }
+    MusicFilter.UNPLAYED -> items.filter { it.userData?.played != true }
+}
+
+private val DESCENDING_MUSIC_SORTS = setOf(
+    MusicSortOrder.TITLE_DESC,
+    MusicSortOrder.ARTIST_DESC,
+    MusicSortOrder.YEAR_DESC,
+    MusicSortOrder.DATE_ADDED_DESC,
+    MusicSortOrder.PLAY_COUNT_DESC,
+    MusicSortOrder.RUNTIME_DESC,
+)
+
+private fun BaseItemDto.musicArtistSortKey(): String? = albumArtist ?: artists?.firstOrNull() ?: name
+
+private fun sortMusic(items: List<BaseItemDto>, order: MusicSortOrder): List<BaseItemDto> {
+    val comparator: Comparator<BaseItemDto> = when (order) {
+        MusicSortOrder.TITLE_ASC, MusicSortOrder.TITLE_DESC -> compareBy { it.sortName ?: it.name }
+        MusicSortOrder.ARTIST_ASC, MusicSortOrder.ARTIST_DESC -> compareBy { it.musicArtistSortKey() }
+        MusicSortOrder.YEAR_ASC, MusicSortOrder.YEAR_DESC -> compareBy { it.musicYear() }
+        MusicSortOrder.DATE_ADDED_ASC, MusicSortOrder.DATE_ADDED_DESC -> compareBy { it.dateCreated }
+        MusicSortOrder.PLAY_COUNT_ASC, MusicSortOrder.PLAY_COUNT_DESC -> compareBy { it.userData?.playCount ?: 0 }
+        MusicSortOrder.RUNTIME_ASC, MusicSortOrder.RUNTIME_DESC -> compareBy { it.runTimeTicks ?: 0L }
+    }
+    return items.sortedWith(if (order in DESCENDING_MUSIC_SORTS) comparator.reversed() else comparator)
+}
+
+/**
+ * Keeps the grid anchored at the top while content is still arriving. LazyGrid keeps the
+ * first visible item's key in place, so when a later load sorts new items in front of it
+ * (or the filter/sort changes) the screen would otherwise open scrolled partway down.
+ */
 @Composable
-private fun ActivePlaybackPanel(
-    playbackState: com.rpeters.jellyfin.ui.player.audio.AudioPlaybackState,
-    playbackQueue: List<androidx.media3.common.MediaItem>,
-    onShuffleClick: () -> Unit,
-    onPlayPauseClick: () -> Unit,
-    onSkipNextClick: () -> Unit,
-    onStopClick: () -> Unit,
-    modifier: Modifier = Modifier,
+private fun KeepMusicGridAnchored(
+    gridState: LazyGridState,
+    selectedFilter: MusicFilter,
+    sortOrder: MusicSortOrder,
+    firstItemKey: String?,
 ) {
-    val metadata = playbackState.currentMediaItem?.mediaMetadata
-    val artistName = metadata?.artist?.toString().orEmpty()
-    ExpressiveBlurSurface(
-        modifier = modifier.border(
-            1.dp,
-            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
-            RoundedCornerShape(28.dp),
-        ),
-        shape = RoundedCornerShape(28.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.78f),
+    var userHasScrolledMusic by remember { mutableStateOf(false) }
+    LaunchedEffect(gridState) {
+        gridState.interactionSource.interactions.collect { interaction ->
+            if (interaction is DragInteraction.Start) userHasScrolledMusic = true
+        }
+    }
+    LaunchedEffect(selectedFilter, sortOrder) {
+        userHasScrolledMusic = false
+        gridState.scrollToItem(0)
+    }
+    LaunchedEffect(firstItemKey) {
+        if (firstItemKey != null && !userHasScrolledMusic) {
+            gridState.scrollToItem(0)
+        }
+    }
+}
+
+/**
+ * The music library page is fetched with Audio/MusicAlbum/MusicArtist mixed together and
+ * sorted alphabetically, so a type filter (e.g. Albums/Artists) can easily come up empty - or
+ * with just one or two albums - on the currently-loaded page even though many more matching
+ * items exist further into the library. Keep paging automatically until the filter has a
+ * screenful of results or the library is exhausted, rather than leaving the user stuck on a
+ * false "no music found" or a lone album.
+ */
+@Composable
+private fun AutoPageMusicLibrary(
+    selectedFilter: MusicFilter,
+    resultCount: Int,
+    hasSourceItems: Boolean,
+    libraryId: String?,
+    library: MusicLibraryStatus,
+    isLoading: Boolean,
+    errorMessage: String?,
+    onLoadMore: (String) -> Unit,
+) {
+    val minFilteredResults = if (selectedFilter in TYPE_FILTERS) MIN_TYPE_FILTER_RESULTS else 1
+    val needsMoreFilteredResults = resultCount < minFilteredResults
+    val canLoadMore = hasSourceItems && library.hasMore && !library.isLoadingMore
+    LaunchedEffect(
+        selectedFilter,
+        needsMoreFilteredResults,
+        libraryId,
+        library.hasMore,
+        library.isLoadingMore,
+        isLoading,
+        errorMessage,
     ) {
-        Column(
+        if (needsMoreFilteredResults && canLoadMore && !isLoading && errorMessage == null) {
+            libraryId?.let(onLoadMore)
+        }
+    }
+}
+
+@OptInAppExperimentalApis
+@Composable
+private fun MusicTopBar(
+    viewMode: MusicViewMode,
+    onViewModeChange: (MusicViewMode) -> Unit,
+    onSortOrderChange: (MusicSortOrder) -> Unit,
+    onRefresh: () -> Unit,
+) {
+    var showSortMenu by remember { mutableStateOf(false) }
+    ExpressiveTopAppBar(
+        title = stringResource(id = R.string.music),
+        navigationIcon = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.MusicNote,
+                    contentDescription = null,
+                )
+                Text(
+                    text = stringResource(id = R.string.music),
+                )
+            }
+        },
+        actions = {
+            // View mode toggle
+            SingleChoiceSegmentedButtonRow {
+                MusicViewMode.entries.forEachIndexed { index, mode ->
+                    SegmentedButton(
+                        shape = SegmentedButtonDefaults.itemShape(
+                            index = index,
+                            count = MusicViewMode.entries.size,
+                        ),
+                        onClick = { onViewModeChange(mode) },
+                        selected = viewMode == mode,
+                        colors = SegmentedButtonDefaults.colors(
+                            activeContainerColor = MusicGreen.copy(alpha = 0.2f),
+                            activeContentColor = MusicGreen,
+                        ),
+                    ) {
+                        Icon(
+                            imageVector = when (mode) {
+                                MusicViewMode.GRID -> Icons.Default.GridView
+                                MusicViewMode.LIST -> Icons.AutoMirrored.Filled.ViewList
+                            },
+                            contentDescription = mode.name,
+                            modifier = Modifier.padding(2.dp),
+                        )
+                    }
+                }
+            }
+
+            // Sort menu
+            Box {
+                IconButton(onClick = { showSortMenu = true }) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.Sort,
+                        contentDescription = stringResource(id = R.string.sort),
+                    )
+                }
+                DropdownMenu(
+                    expanded = showSortMenu,
+                    onDismissRequest = { showSortMenu = false },
+                ) {
+                    MusicSortOrder.getAllSortOrders().forEach { order ->
+                        DropdownMenuItem(
+                            text = { Text(stringResource(id = order.displayNameResId)) },
+                            onClick = {
+                                onSortOrderChange(order)
+                                showSortMenu = false
+                            },
+                        )
+                    }
+                }
+            }
+
+            ExpressiveTopAppBarAction(
+                icon = Icons.Default.Refresh,
+                contentDescription = stringResource(id = R.string.refresh),
+                onClick = onRefresh,
+            )
+        },
+    )
+}
+
+private fun musicFilterIcon(filter: MusicFilter): ImageVector? = when (filter) {
+    MusicFilter.FAVORITES -> Icons.Default.Star
+    MusicFilter.ALBUMS -> Icons.Default.Album
+    MusicFilter.ARTISTS -> Icons.Default.Person
+    else -> null
+}
+
+@Composable
+private fun MusicFilterChips(
+    selectedFilter: MusicFilter,
+    onFilterSelected: (MusicFilter) -> Unit,
+) {
+    LazyRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+    ) {
+        items(
+            items = MusicFilter.getAllFilters(),
+            key = { it },
+            contentType = { "music_filter" },
+        ) { filter ->
+            val icon = musicFilterIcon(filter)
+            FilterChip(
+                onClick = { onFilterSelected(filter) },
+                label = { Text(stringResource(id = filter.displayNameResId)) },
+                selected = selectedFilter == filter,
+                leadingIcon = icon?.let {
+                    {
+                        Icon(
+                            imageVector = it,
+                            contentDescription = null,
+                            modifier = Modifier.padding(2.dp),
+                        )
+                    }
+                },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = MusicGreen.copy(alpha = 0.18f),
+                    selectedLabelColor = MusicGreen,
+                    selectedLeadingIconColor = MusicGreen,
+                ),
+            )
+        }
+    }
+}
+
+/** Loading / error / empty states around the music list, which is passed in as [content]. */
+@Composable
+private fun MusicBody(
+    isLoading: Boolean,
+    errorMessage: String?,
+    isEmpty: Boolean,
+    isLoadingMore: Boolean,
+    content: @Composable () -> Unit,
+) {
+    when {
+        isLoading -> MusicLoadingIndicator()
+        errorMessage != null -> MusicErrorMessage(errorMessage)
+        // Still paging through the library looking for a match for the current filter (see
+        // AutoPageMusicLibrary) - show a spinner instead of a premature "no music found".
+        isEmpty && isLoadingMore -> MusicLoadingIndicator()
+        isEmpty -> MusicEmptyState()
+        else -> content()
+    }
+}
+
+@Composable
+private fun MusicLoadingIndicator() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
+    ) {
+        ExpressiveCircularLoading(
+            size = 48.dp,
+            showPulse = true,
+        )
+    }
+}
+
+@Composable
+private fun MusicErrorMessage(errorMessage: String) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
+    ) {
+        ExpressiveContentCard(
+            containerColor = MaterialTheme.colorScheme.errorContainer,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                MusicStatChip("Now Playing")
-                MusicStatChip(
-                    if (playbackQueue.isEmpty()) {
-                        stringResource(id = R.string.music_queue_empty)
-                    } else {
-                        stringResource(id = R.string.music_queue_size, playbackQueue.size)
-                    },
-                    accent = MaterialTheme.colorScheme.primary,
-                )
-            }
-
             Text(
-                text = metadata?.title?.toString() ?: stringResource(id = R.string.music_queue_empty),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 2,
+                text = errorMessage,
+                color = MaterialTheme.colorScheme.onErrorContainer,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(16.dp),
+                textAlign = TextAlign.Center,
             )
-            if (artistName.isNotBlank()) {
-                Text(
-                    text = artistName,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                )
-            }
-
-            ExpressiveWavyLinearProgress(
-                progress = if (playbackState.duration > 0L) {
-                    (playbackState.currentPosition.toFloat() / playbackState.duration.toFloat())
-                        .coerceIn(0f, 1f)
-                } else {
-                    0f
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(6.dp),
-                color = MusicGreen,
-                trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(onClick = onShuffleClick) {
-                    Icon(
-                        imageVector = Icons.Filled.Shuffle,
-                        contentDescription = stringResource(id = R.string.music_toggle_shuffle),
-                        tint = if (playbackState.shuffleEnabled) MusicGreen else MaterialTheme.colorScheme.onSurface,
-                    )
-                }
-                FilledIconButton(
-                    onClick = onPlayPauseClick,
-                    colors = IconButtonDefaults.filledIconButtonColors(
-                        containerColor = MusicGreen,
-                        contentColor = MaterialTheme.colorScheme.onPrimary,
-                    ),
-                ) {
-                    Icon(
-                        imageVector = if (playbackState.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                        contentDescription = stringResource(id = R.string.music_play_pause),
-                    )
-                }
-                IconButton(onClick = onSkipNextClick) {
-                    Icon(
-                        imageVector = Icons.Filled.SkipNext,
-                        contentDescription = stringResource(id = R.string.music_skip_next),
-                    )
-                }
-                IconButton(onClick = onStopClick) {
-                    Icon(
-                        imageVector = Icons.Filled.Close,
-                        contentDescription = stringResource(id = R.string.music_stop_playback),
-                    )
-                }
-            }
         }
     }
 }
 
 @Composable
-private fun MusicStatChip(
-    label: String,
-    accent: Color = MusicGreen,
-) {
-    Surface(
-        shape = RoundedCornerShape(999.dp),
-        color = accent.copy(alpha = 0.14f),
+private fun MusicEmptyState() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
     ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelLarge,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
-        )
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Default.MusicNote,
+                contentDescription = null,
+                modifier = Modifier.padding(32.dp),
+                tint = MusicGreen.copy(alpha = 0.6f),
+            )
+            Text(
+                text = stringResource(id = R.string.no_music_found),
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = stringResource(id = R.string.adjust_music_filters_hint),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 

@@ -311,6 +311,7 @@ class AudioServiceConnection @Inject constructor(
             isConnected = true,
             isPlaying = isPlaying,
             currentMediaItem = controller.currentMediaItem,
+            currentMediaItemIndex = controller.currentMediaItemIndex,
             shuffleEnabled = controller.shuffleModeEnabled,
             repeatMode = controller.repeatMode,
             currentPosition = controller.currentPosition,
@@ -353,6 +354,8 @@ data class AudioPlaybackState(
     val isConnected: Boolean = false,
     val isPlaying: Boolean = false,
     val currentMediaItem: MediaItem? = null,
+    /** Position of the current item in the queue (distinguishes repeated copies of a track). */
+    val currentMediaItemIndex: Int = 0,
     val shuffleEnabled: Boolean = false,
     val repeatMode: Int = androidx.media3.common.Player.REPEAT_MODE_OFF,
     val currentPosition: Long = 0L,

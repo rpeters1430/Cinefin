@@ -22,6 +22,7 @@ import androidx.media3.session.SessionResult
 import com.google.common.util.concurrent.Futures
 import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
 import com.rpeters.jellyfin.ui.player.PlaybackProgressManager
+import com.rpeters.jellyfin.ui.utils.AudioMediaKind
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -72,6 +73,9 @@ class AudioService : androidx.media3.session.MediaSessionService() {
             .enablePerStreamMediaProgression(true)
             .setAudioAttributes(audioAttributes, true)
             .setHandleAudioBecomingNoisy(true)
+            // Match the "10s" labels on the seek buttons (ExoPlayer defaults to 5s/15s).
+            .setSeekBackIncrementMs(SEEK_INTERVAL_MS)
+            .setSeekForwardIncrementMs(SEEK_INTERVAL_MS)
             .build().apply {
                 playWhenReady = true
             }
@@ -87,6 +91,8 @@ class AudioService : androidx.media3.session.MediaSessionService() {
                     .setAvailableSessionCommands(
                         MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS.buildUpon()
                             .add(CMD_STOP_PLAYBACK)
+                            .add(CMD_TOGGLE_SHUFFLE)
+                            .add(CMD_CYCLE_REPEAT)
                             .build(),
                     )
                     .setMediaButtonPreferences(buildMediaButtonPreferences(player))
@@ -200,8 +206,9 @@ class AudioService : androidx.media3.session.MediaSessionService() {
         }
 
         notificationProvider = AudioNotificationProvider(this).apply {
-            // Use a valid monochrome small icon resource
-            setSmallIcon(com.rpeters.jellyfin.R.drawable.ic_launcher_monochrome)
+            // Status bar / media card icon: white silhouette of the app logo, matching the
+            // themed (monochrome) launcher icon so the card is recognisable on Pixel and One UI.
+            setSmallIcon(com.rpeters.jellyfin.R.drawable.ic_stat_cinefin)
         }
 
         notificationProvider?.let { provider ->
@@ -264,6 +271,14 @@ class AudioService : androidx.media3.session.MediaSessionService() {
         when (customCommand.customAction) {
             ACTION_STOP_PLAYBACK -> {
                 handleTransportCommand(TransportCommand.Stop)
+            }
+            ACTION_TOGGLE_SHUFFLE -> {
+                player.shuffleModeEnabled = !player.shuffleModeEnabled
+                syncSessionUiState()
+            }
+            ACTION_CYCLE_REPEAT -> {
+                player.repeatMode = nextRepeatMode(player.repeatMode)
+                syncSessionUiState()
             }
         }
         return SessionResult(SessionResult.RESULT_SUCCESS)
@@ -387,10 +402,18 @@ class AudioService : androidx.media3.session.MediaSessionService() {
         playbackProgressManager.stopTrackingAsync()
     }
 
+    /**
+     * Buttons for the system media card (Android 13+ media controls on Pixel and One UI) and
+     * the legacy notification. The system always shows previous / play-pause / next and has
+     * room for two extra actions: music gets shuffle + repeat, audiobooks get 10s seeks.
+     * The extras use the secondary slots (visible next to previous/next), falling back to
+     * overflow on surfaces without them.
+     */
     private fun buildMediaButtonPreferences(player: Player): List<CommandButton> {
         val previousButton = CommandButton.Builder(CommandButton.ICON_PREVIOUS)
             .setDisplayName("Previous")
-            .setPlayerCommand(Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM)
+            .setPlayerCommand(Player.COMMAND_SEEK_TO_PREVIOUS)
+            .setSlots(CommandButton.SLOT_BACK)
             .build()
 
         val playPauseButton = CommandButton.Builder(
@@ -398,30 +421,62 @@ class AudioService : androidx.media3.session.MediaSessionService() {
         )
             .setDisplayName(if (player.isPlaying) "Pause" else "Play")
             .setPlayerCommand(Player.COMMAND_PLAY_PAUSE)
+            .setSlots(CommandButton.SLOT_CENTRAL)
             .build()
 
         val nextButton = CommandButton.Builder(CommandButton.ICON_NEXT)
             .setDisplayName("Next")
-            .setPlayerCommand(Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM)
+            .setPlayerCommand(Player.COMMAND_SEEK_TO_NEXT)
+            .setSlots(CommandButton.SLOT_FORWARD)
             .build()
 
-        val rewindButton = CommandButton.Builder(CommandButton.ICON_REWIND)
-            .setDisplayName("Back 10s")
-            .setPlayerCommand(Player.COMMAND_SEEK_BACK)
-            .build()
+        val extraButtons = if (isAudiobook(player.currentMediaItem)) {
+            listOf(
+                CommandButton.Builder(CommandButton.ICON_SKIP_BACK_10)
+                    .setDisplayName("Back 10s")
+                    .setPlayerCommand(Player.COMMAND_SEEK_BACK)
+                    .setSlots(CommandButton.SLOT_BACK_SECONDARY, CommandButton.SLOT_OVERFLOW)
+                    .build(),
+                CommandButton.Builder(CommandButton.ICON_SKIP_FORWARD_10)
+                    .setDisplayName("Forward 10s")
+                    .setPlayerCommand(Player.COMMAND_SEEK_FORWARD)
+                    .setSlots(CommandButton.SLOT_FORWARD_SECONDARY, CommandButton.SLOT_OVERFLOW)
+                    .build(),
+            )
+        } else {
+            listOf(
+                CommandButton.Builder(
+                    if (player.shuffleModeEnabled) CommandButton.ICON_SHUFFLE_ON else CommandButton.ICON_SHUFFLE_OFF,
+                )
+                    .setDisplayName(if (player.shuffleModeEnabled) "Shuffle on" else "Shuffle off")
+                    .setSessionCommand(CMD_TOGGLE_SHUFFLE)
+                    .setSlots(CommandButton.SLOT_BACK_SECONDARY, CommandButton.SLOT_OVERFLOW)
+                    .build(),
+                CommandButton.Builder(
+                    when (player.repeatMode) {
+                        Player.REPEAT_MODE_ONE -> CommandButton.ICON_REPEAT_ONE
+                        Player.REPEAT_MODE_ALL -> CommandButton.ICON_REPEAT_ALL
+                        else -> CommandButton.ICON_REPEAT_OFF
+                    },
+                )
+                    .setDisplayName(
+                        when (player.repeatMode) {
+                            Player.REPEAT_MODE_ONE -> "Repeat one"
+                            Player.REPEAT_MODE_ALL -> "Repeat all"
+                            else -> "Repeat off"
+                        },
+                    )
+                    .setSessionCommand(CMD_CYCLE_REPEAT)
+                    .setSlots(CommandButton.SLOT_FORWARD_SECONDARY, CommandButton.SLOT_OVERFLOW)
+                    .build(),
+            )
+        }
 
-        val forwardButton = CommandButton.Builder(CommandButton.ICON_FAST_FORWARD)
-            .setDisplayName("Forward 10s")
-            .setPlayerCommand(Player.COMMAND_SEEK_FORWARD)
-            .build()
-
-        val stopButton = CommandButton.Builder(CommandButton.ICON_STOP)
-            .setDisplayName("Stop")
-            .setSessionCommand(CMD_STOP_PLAYBACK)
-            .build()
-
-        return listOf(previousButton, rewindButton, playPauseButton, forwardButton, nextButton, stopButton)
+        return listOf(previousButton, playPauseButton, nextButton) + extraButtons
     }
+
+    private fun isAudiobook(item: MediaItem?): Boolean =
+        item?.mediaMetadata?.extras?.getString(EXTRA_MEDIA_KIND) == AudioMediaKind.AUDIOBOOK.name
 
     internal fun currentSession(): MediaSession? = mediaSession
 
@@ -432,6 +487,18 @@ class AudioService : androidx.media3.session.MediaSessionService() {
 
         /** Stops playback, reports final progress, and clears the queue (dismisses the player). */
         internal val CMD_STOP_PLAYBACK = SessionCommand(ACTION_STOP_PLAYBACK, Bundle.EMPTY)
+
+        private const val ACTION_TOGGLE_SHUFFLE = "com.rpeters.jellyfin.audio.TOGGLE_SHUFFLE"
+        private const val ACTION_CYCLE_REPEAT = "com.rpeters.jellyfin.audio.CYCLE_REPEAT"
+        internal val CMD_TOGGLE_SHUFFLE = SessionCommand(ACTION_TOGGLE_SHUFFLE, Bundle.EMPTY)
+        internal val CMD_CYCLE_REPEAT = SessionCommand(ACTION_CYCLE_REPEAT, Bundle.EMPTY)
+
+        /** Off -> all -> one -> off, matching the in-app repeat button. */
+        internal fun nextRepeatMode(current: Int): Int = when (current) {
+            Player.REPEAT_MODE_OFF -> Player.REPEAT_MODE_ALL
+            Player.REPEAT_MODE_ALL -> Player.REPEAT_MODE_ONE
+            else -> Player.REPEAT_MODE_OFF
+        }
 
         const val SESSION_ID = "JellyfinAudioSession"
 

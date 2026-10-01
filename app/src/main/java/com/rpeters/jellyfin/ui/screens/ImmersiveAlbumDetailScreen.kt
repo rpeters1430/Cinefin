@@ -91,22 +91,27 @@ fun ImmersiveAlbumDetailScreen(
         }
     }
 
-    val handlePlay: (BaseItemDto) -> Unit = { track ->
-        val streamUrl = mainViewModel.getStreamUrl(track)
-        if (streamUrl != null) {
-            MediaPlayerUtils.playMedia(context, streamUrl, track)
-        } else {
+    // Queue the whole album starting at the chosen track so playback continues through the
+    // rest of the album instead of stopping after a single song.
+    val playAlbumFrom: (Int) -> Unit = { startIndex ->
+        val started = MediaPlayerUtils.playAudioQueue(
+            context = context,
+            tracks = state.tracks,
+            startIndex = startIndex,
+            streamUrlFor = mainViewModel::getStreamUrl,
+        )
+        if (!started) {
             coroutineScope.launch {
                 snackbarHostState.showSnackbar("Unable to start playback")
             }
         }
     }
 
-    val handlePlayAlbum: () -> Unit = {
-        state.tracks.firstOrNull()?.let { firstTrack ->
-            handlePlay(firstTrack)
-        }
+    val handlePlay: (BaseItemDto) -> Unit = { track ->
+        playAlbumFrom(state.tracks.indexOf(track).coerceAtLeast(0))
     }
+
+    val handlePlayAlbum: () -> Unit = { playAlbumFrom(0) }
 
     LaunchedEffect(albumId) {
         viewModel.load(albumId)
@@ -137,64 +142,15 @@ fun ImmersiveAlbumDetailScreen(
                             parallaxFactor = 0.5f,
                             contentScale = ContentScale.Crop,
                         ) {
-                            // Album title and artist overlaid on gradient at bottom
-                            Column(
+                            AlbumHeroInfo(
+                                album = album,
+                                trackCount = state.tracks.size,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .align(Alignment.BottomCenter)
                                     .padding(horizontal = ImmersiveDimens.SpacingContentPadding)
                                     .padding(bottom = 32.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                                horizontalAlignment = Alignment.Start,
-                            ) {
-                                Text(
-                                    text = album.name ?: "Album",
-                                    style = MaterialTheme.typography.displaySmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White,
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-
-                                Text(
-                                    text = album.albumArtist ?: album.artists?.firstOrNull() ?: "",
-                                    style = MaterialTheme.typography.titleLarge,
-                                    color = Color.White.copy(alpha = 0.9f),
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-
-                                // Album metadata row
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    album.productionYear?.let { year ->
-                                        Text(
-                                            text = year.toString(),
-                                            style = MaterialTheme.typography.bodyLarge,
-                                            color = Color.White.copy(alpha = 0.8f),
-                                        )
-                                    }
-
-                                    Text(
-                                        text = "${state.tracks.size} tracks",
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        color = Color.White.copy(alpha = 0.8f),
-                                    )
-
-                                    album.runTimeTicks?.let { ticks ->
-                                        val duration = album.getFormattedDuration()
-                                        duration?.let {
-                                            Text(
-                                                text = it,
-                                                style = MaterialTheme.typography.bodyLarge,
-                                                color = Color.White.copy(alpha = 0.8f),
-                                            )
-                                        }
-                                    }
-                                }
-                            }
+                            )
                         }
                     }
                 }
@@ -339,6 +295,68 @@ fun ImmersiveAlbumDetailScreen(
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 16.dp),
         )
+    }
+}
+
+/** Album title, artist and year/track-count/duration overlaid at the bottom of the hero. */
+@Composable
+private fun AlbumHeroInfo(
+    album: BaseItemDto,
+    trackCount: Int,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalAlignment = Alignment.Start,
+    ) {
+        Text(
+            text = album.name ?: "Album",
+            style = MaterialTheme.typography.displaySmall,
+            fontWeight = FontWeight.Bold,
+            color = Color.White,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+
+        Text(
+            text = (album.albumArtist ?: album.artists?.firstOrNull()).orEmpty(),
+            style = MaterialTheme.typography.titleLarge,
+            color = Color.White.copy(alpha = 0.9f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+
+        // Album metadata row
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            album.productionYear?.let { year ->
+                Text(
+                    text = year.toString(),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Color.White.copy(alpha = 0.8f),
+                )
+            }
+
+            Text(
+                text = "$trackCount tracks",
+                style = MaterialTheme.typography.bodyLarge,
+                color = Color.White.copy(alpha = 0.8f),
+            )
+
+            album.runTimeTicks?.let { ticks ->
+                val duration = album.getFormattedDuration()
+                duration?.let {
+                    Text(
+                        text = it,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = Color.White.copy(alpha = 0.8f),
+                    )
+                }
+            }
+        }
     }
 }
 
