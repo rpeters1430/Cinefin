@@ -3,6 +3,7 @@ package com.rpeters.jellyfin.data.repository
 import android.util.Log
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.cache.JellyfinCache
+import com.rpeters.jellyfin.data.music.MusicAlbumGrouping
 import com.rpeters.jellyfin.data.repository.common.ApiParameterValidator
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.data.repository.common.BaseJellyfinRepository
@@ -201,6 +202,8 @@ class JellyfinMediaRepository @Inject constructor(
                 val sortOrder = listOf(SortOrder.ASCENDING)
                 val fields = listOf(
                     org.jellyfin.sdk.model.api.ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
+                    org.jellyfin.sdk.model.api.ItemFields.PARENT_ID,
+                    org.jellyfin.sdk.model.api.ItemFields.PROVIDER_IDS,
                     org.jellyfin.sdk.model.api.ItemFields.OVERVIEW,
                     org.jellyfin.sdk.model.api.ItemFields.GENRES,
                     org.jellyfin.sdk.model.api.ItemFields.DATE_CREATED,
@@ -330,6 +333,8 @@ class JellyfinMediaRepository @Inject constructor(
                 sortOrder = listOf(SortOrder.DESCENDING),
                 fields = listOf(
                     org.jellyfin.sdk.model.api.ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
+                    org.jellyfin.sdk.model.api.ItemFields.PARENT_ID,
+                    org.jellyfin.sdk.model.api.ItemFields.PROVIDER_IDS,
                     org.jellyfin.sdk.model.api.ItemFields.MEDIA_SOURCES,
                     org.jellyfin.sdk.model.api.ItemFields.MEDIA_STREAMS,
                     org.jellyfin.sdk.model.api.ItemFields.OVERVIEW,
@@ -388,21 +393,52 @@ class JellyfinMediaRepository @Inject constructor(
     suspend fun getAlbumTracks(albumId: String): ApiResult<List<BaseItemDto>> =
         withServerClient("getAlbumTracks") { server, client ->
             val userUuid = parseUuid(server.userId ?: "", "user")
-            val albumUuid = parseUuid(albumId, "album")
-            val response = client.libraryApi.getItems(
-                userId = userUuid,
-                parentId = albumUuid,
-                includeItemTypes = listOf(BaseItemKind.AUDIO),
-                // Disc number first so multi-disc albums play disc 1 before disc 2.
-                sortBy = listOf(ItemSortBy.PARENT_INDEX_NUMBER, ItemSortBy.INDEX_NUMBER, ItemSortBy.SORT_NAME),
-                sortOrder = listOf(SortOrder.ASCENDING),
-                fields = listOf(
-                    org.jellyfin.sdk.model.api.ItemFields.MEDIA_SOURCES,
-                    org.jellyfin.sdk.model.api.ItemFields.MEDIA_STREAMS,
-                    org.jellyfin.sdk.model.api.ItemFields.DATE_CREATED,
-                ),
-            )
-            response.content.items
+            val album = getItemDetailsById(albumId, "album", server, client)
+            val albumName = album.name?.trim()
+            val siblings = if (!albumName.isNullOrBlank()) {
+                try {
+                    client.libraryApi.getItems(
+                        userId = userUuid,
+                        recursive = true,
+                        searchTerm = albumName,
+                        includeItemTypes = listOf(BaseItemKind.MUSIC_ALBUM),
+                        fields = listOf(
+                            org.jellyfin.sdk.model.api.ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
+                            org.jellyfin.sdk.model.api.ItemFields.PARENT_ID,
+                            org.jellyfin.sdk.model.api.ItemFields.PROVIDER_IDS,
+                            org.jellyfin.sdk.model.api.ItemFields.DATE_CREATED,
+                            org.jellyfin.sdk.model.api.ItemFields.OVERVIEW,
+                        ),
+                    ).content.items.filter { MusicAlbumGrouping.sameAlbum(album, it) }
+                } catch (e: Exception) {
+                    SecureLogger.w("JellyfinMediaRepository", "Failed to query sibling albums for $albumName: ${e.message}")
+                    emptyList()
+                }
+            } else {
+                emptyList()
+            }
+            val albums = (listOf(album) + siblings).distinctBy { it.id }
+            val tracks = albums.flatMap { member ->
+                try {
+                    client.libraryApi.getItems(
+                        userId = userUuid,
+                        parentId = member.id,
+                        recursive = true,
+                        includeItemTypes = listOf(BaseItemKind.AUDIO),
+                        sortBy = listOf(ItemSortBy.PARENT_INDEX_NUMBER, ItemSortBy.INDEX_NUMBER, ItemSortBy.SORT_NAME),
+                        sortOrder = listOf(SortOrder.ASCENDING),
+                        fields = listOf(
+                            org.jellyfin.sdk.model.api.ItemFields.MEDIA_SOURCES,
+                            org.jellyfin.sdk.model.api.ItemFields.MEDIA_STREAMS,
+                            org.jellyfin.sdk.model.api.ItemFields.DATE_CREATED,
+                        ),
+                    ).content.items
+                } catch (e: Exception) {
+                    SecureLogger.w("JellyfinMediaRepository", "Failed to load tracks for album variant ${member.id}: ${e.message}")
+                    emptyList()
+                }
+            }
+            MusicAlbumGrouping.orderedTracks(tracks)
         }
 
     suspend fun getItemDetails(itemId: String): ApiResult<BaseItemDto> =
@@ -480,6 +516,8 @@ class JellyfinMediaRepository @Inject constructor(
                 sortOrder = listOf(SortOrder.ASCENDING),
                 fields = listOf(
                     org.jellyfin.sdk.model.api.ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
+                    org.jellyfin.sdk.model.api.ItemFields.PARENT_ID,
+                    org.jellyfin.sdk.model.api.ItemFields.PROVIDER_IDS,
                     org.jellyfin.sdk.model.api.ItemFields.DATE_CREATED,
                     org.jellyfin.sdk.model.api.ItemFields.OVERVIEW,
                 ),
@@ -599,6 +637,8 @@ class JellyfinMediaRepository @Inject constructor(
                 org.jellyfin.sdk.model.api.ItemFields.STUDIOS,
                 org.jellyfin.sdk.model.api.ItemFields.TAGS,
                 org.jellyfin.sdk.model.api.ItemFields.CHAPTERS,
+                org.jellyfin.sdk.model.api.ItemFields.PARENT_ID,
+                org.jellyfin.sdk.model.api.ItemFields.PROVIDER_IDS,
             ),
         )
 

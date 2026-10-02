@@ -405,6 +405,43 @@ class JellyfinMediaRepositoryTest {
         }
     }
 
+    @Test
+    fun `getAlbumTracks combines featured variants recursively without artist filtering`() = runTest {
+        wireRealAlbumQueries(TEST_USER_ID)
+        val parent = UUID.randomUUID()
+        val main = BaseItemDto(id = UUID.randomUUID(), type = BaseItemKind.MUSIC_ALBUM,
+            name = "Test Album", albumArtist = "Metallica", parentId = parent)
+        val featured = main.copy(id = UUID.randomUUID(), albumArtist = "Metallica feat. Guest", parentId = UUID.randomUUID())
+        val unrelated = main.copy(id = UUID.randomUUID(), albumArtist = "Megadeth")
+        val first = BaseItemDto(id = UUID.randomUUID(), type = BaseItemKind.AUDIO,
+            parentIndexNumber = 1, indexNumber = 1, artists = listOf("Metallica"))
+        val guest = first.copy(id = UUID.randomUUID(), indexNumber = 2, artists = listOf("Metallica", "Guest"))
+        val disc2 = first.copy(id = UUID.randomUUID(), parentIndexNumber = 2)
+        coEvery {
+            libraryApi.getItems(userId = any(), ids = listOf(main.id), limit = 1, fields = any())
+        } returns Response(BaseItemDtoQueryResult(items = listOf(main), totalRecordCount = 1, startIndex = 0), 200, emptyMap())
+        coEvery {
+            libraryApi.getItems(userId = any(), parentId = null, recursive = true,
+                searchTerm = main.name, includeItemTypes = listOf(BaseItemKind.MUSIC_ALBUM), fields = any())
+        } returns Response(BaseItemDtoQueryResult(items = listOf(main, featured, unrelated), totalRecordCount = 3, startIndex = 0), 200, emptyMap())
+        coEvery {
+            libraryApi.getItems(userId = any(), parentId = main.id, recursive = true,
+                includeItemTypes = listOf(BaseItemKind.AUDIO), sortBy = any(), sortOrder = any(), fields = any())
+        } returns Response(BaseItemDtoQueryResult(items = listOf(disc2, first), totalRecordCount = 2, startIndex = 0), 200, emptyMap())
+        coEvery {
+            libraryApi.getItems(userId = any(), parentId = featured.id, recursive = true,
+                includeItemTypes = listOf(BaseItemKind.AUDIO), sortBy = any(), sortOrder = any(), fields = any())
+        } returns Response(BaseItemDtoQueryResult(items = listOf(guest), totalRecordCount = 1, startIndex = 0), 200, emptyMap())
+        val realRepository = JellyfinMediaRepository(authRepository, sessionManager, cache, healthChecker)
+        val result = realRepository.getAlbumTracks(main.id.toString())
+        assertTrue(result is ApiResult.Success)
+        assertEquals(listOf(first, guest, disc2), (result as ApiResult.Success<List<BaseItemDto>>).data)
+        coVerify(exactly = 0) {
+            libraryApi.getItems(userId = any(), parentId = unrelated.id, recursive = any(),
+                includeItemTypes = any(), sortBy = any(), sortOrder = any(), fields = any())
+        }
+    }
+
     private fun albumQueryResult(vararg names: String): BaseItemDtoQueryResult {
         val albums = names.map { albumName ->
             mockk<BaseItemDto> {

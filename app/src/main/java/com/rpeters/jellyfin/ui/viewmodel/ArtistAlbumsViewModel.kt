@@ -2,6 +2,7 @@ package com.rpeters.jellyfin.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rpeters.jellyfin.data.music.MusicAlbumGrouping
 import com.rpeters.jellyfin.data.repository.JellyfinMediaRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -29,7 +30,7 @@ class ArtistAlbumsViewModel @Inject constructor(
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true, errorMessage = null)
             when (val result = mediaRepository.getAlbumsForArtist(artistId)) {
-                is ApiResult.Success -> _state.value = _state.value.copy(albums = result.data, isLoading = false)
+                is ApiResult.Success -> _state.value = _state.value.copy(albums = MusicAlbumGrouping.collapseAlbums(result.data), isLoading = false)
                 is ApiResult.Error -> _state.value = _state.value.copy(isLoading = false, errorMessage = result.message)
                 is ApiResult.Loading -> Unit
             }
