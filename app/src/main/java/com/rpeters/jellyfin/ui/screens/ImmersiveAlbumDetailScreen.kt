@@ -31,6 +31,7 @@ import com.rpeters.jellyfin.ui.components.immersive.normalizedParallaxScrollOffs
 import com.rpeters.jellyfin.ui.components.immersive.rememberImmersivePerformanceConfig
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
 import com.rpeters.jellyfin.ui.theme.MusicGreen
+import com.rpeters.jellyfin.ui.components.ExpressiveContentCard
 import com.rpeters.jellyfin.ui.utils.MediaPlayerUtils
 import com.rpeters.jellyfin.ui.utils.ShareUtils
 import com.rpeters.jellyfin.ui.viewmodel.AlbumDetailViewModel
@@ -119,6 +120,12 @@ fun ImmersiveAlbumDetailScreen(
 
     LaunchedEffect(state.album) {
         isFavorite = state.album?.userData?.isFavorite == true
+    }
+
+    LaunchedEffect(state.errorMessage) {
+        state.errorMessage?.let { error ->
+            snackbarHostState.showSnackbar(error)
+        }
     }
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -251,6 +258,40 @@ fun ImmersiveAlbumDetailScreen(
                                 style = MaterialTheme.typography.labelLarge,
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
                             )
+                        }
+                    }
+                }
+
+                if (state.tracks.isEmpty() && state.errorMessage != null) {
+                    item(key = "track_error", contentType = "error") {
+                        ExpressiveContentCard(
+                            containerColor = MaterialTheme.colorScheme.errorContainer,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = ImmersiveDimens.SpacingContentPadding)
+                                .padding(top = 16.dp),
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                            ) {
+                                Text(
+                                    text = state.errorMessage ?: "",
+                                    color = MaterialTheme.colorScheme.onErrorContainer,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Button(
+                                    onClick = { viewModel.load(albumId) },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.error,
+                                    ),
+                                ) {
+                                    Text("Retry")
+                                }
+                            }
                         }
                     }
                 }

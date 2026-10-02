@@ -394,38 +394,49 @@ class JellyfinMediaRepository @Inject constructor(
         withServerClient("getAlbumTracks") { server, client ->
             val userUuid = parseUuid(server.userId ?: "", "user")
             val album = getItemDetailsById(albumId, "album", server, client)
-            // Search within the physical parent, then use the same strict identity as the grid.
-            // Never filter tracks by artist: guest credits must remain in the album.
-            val siblings = if (album.parentId != null && !album.name.isNullOrBlank()) {
-                client.libraryApi.getItems(
-                    userId = userUuid,
-                    parentId = album.parentId,
-                    recursive = true,
-                    searchTerm = album.name,
-                    includeItemTypes = listOf(BaseItemKind.MUSIC_ALBUM),
-                    fields = listOf(
-                        org.jellyfin.sdk.model.api.ItemFields.PARENT_ID,
-                        org.jellyfin.sdk.model.api.ItemFields.PROVIDER_IDS,
-                    ),
-                ).content.items.filter { MusicAlbumGrouping.sameAlbum(album, it) }
+            val albumName = album.name?.trim()
+            val siblings = if (!albumName.isNullOrBlank()) {
+                try {
+                    client.libraryApi.getItems(
+                        userId = userUuid,
+                        recursive = true,
+                        searchTerm = albumName,
+                        includeItemTypes = listOf(BaseItemKind.MUSIC_ALBUM),
+                        fields = listOf(
+                            org.jellyfin.sdk.model.api.ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
+                            org.jellyfin.sdk.model.api.ItemFields.PARENT_ID,
+                            org.jellyfin.sdk.model.api.ItemFields.PROVIDER_IDS,
+                            org.jellyfin.sdk.model.api.ItemFields.DATE_CREATED,
+                            org.jellyfin.sdk.model.api.ItemFields.OVERVIEW,
+                        ),
+                    ).content.items.filter { MusicAlbumGrouping.sameAlbum(album, it) }
+                } catch (e: Exception) {
+                    SecureLogger.w("JellyfinMediaRepository", "Failed to query sibling albums for $albumName: ${e.message}")
+                    emptyList()
+                }
             } else {
                 emptyList()
             }
             val albums = (listOf(album) + siblings).distinctBy { it.id }
             val tracks = albums.flatMap { member ->
-                client.libraryApi.getItems(
-                    userId = userUuid,
-                    parentId = member.id,
-                    recursive = true,
-                    includeItemTypes = listOf(BaseItemKind.AUDIO),
-                    sortBy = listOf(ItemSortBy.PARENT_INDEX_NUMBER, ItemSortBy.INDEX_NUMBER, ItemSortBy.SORT_NAME),
-                    sortOrder = listOf(SortOrder.ASCENDING),
-                    fields = listOf(
-                        org.jellyfin.sdk.model.api.ItemFields.MEDIA_SOURCES,
-                        org.jellyfin.sdk.model.api.ItemFields.MEDIA_STREAMS,
-                        org.jellyfin.sdk.model.api.ItemFields.DATE_CREATED,
-                    ),
-                ).content.items
+                try {
+                    client.libraryApi.getItems(
+                        userId = userUuid,
+                        parentId = member.id,
+                        recursive = true,
+                        includeItemTypes = listOf(BaseItemKind.AUDIO),
+                        sortBy = listOf(ItemSortBy.PARENT_INDEX_NUMBER, ItemSortBy.INDEX_NUMBER, ItemSortBy.SORT_NAME),
+                        sortOrder = listOf(SortOrder.ASCENDING),
+                        fields = listOf(
+                            org.jellyfin.sdk.model.api.ItemFields.MEDIA_SOURCES,
+                            org.jellyfin.sdk.model.api.ItemFields.MEDIA_STREAMS,
+                            org.jellyfin.sdk.model.api.ItemFields.DATE_CREATED,
+                        ),
+                    ).content.items
+                } catch (e: Exception) {
+                    SecureLogger.w("JellyfinMediaRepository", "Failed to load tracks for album variant ${member.id}: ${e.message}")
+                    emptyList()
+                }
             }
             MusicAlbumGrouping.orderedTracks(tracks)
         }

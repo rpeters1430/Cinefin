@@ -411,7 +411,7 @@ class JellyfinMediaRepositoryTest {
         val parent = UUID.randomUUID()
         val main = BaseItemDto(id = UUID.randomUUID(), type = BaseItemKind.MUSIC_ALBUM,
             name = "Test Album", albumArtist = "Metallica", parentId = parent)
-        val featured = main.copy(id = UUID.randomUUID(), albumArtist = "Metallica feat. Guest")
+        val featured = main.copy(id = UUID.randomUUID(), albumArtist = "Metallica feat. Guest", parentId = UUID.randomUUID())
         val unrelated = main.copy(id = UUID.randomUUID(), albumArtist = "Megadeth")
         val first = BaseItemDto(id = UUID.randomUUID(), type = BaseItemKind.AUDIO,
             parentIndexNumber = 1, indexNumber = 1, artists = listOf("Metallica"))
@@ -419,19 +419,19 @@ class JellyfinMediaRepositoryTest {
         val disc2 = first.copy(id = UUID.randomUUID(), parentIndexNumber = 2)
         coEvery {
             libraryApi.getItems(userId = any(), ids = listOf(main.id), limit = 1, fields = any())
-        } returns Response(BaseItemDtoQueryResult(items = listOf(main)), 200, emptyMap())
+        } returns Response(BaseItemDtoQueryResult(items = listOf(main), totalRecordCount = 1, startIndex = 0), 200, emptyMap())
         coEvery {
-            libraryApi.getItems(userId = any(), parentId = parent, recursive = true,
+            libraryApi.getItems(userId = any(), parentId = null, recursive = true,
                 searchTerm = main.name, includeItemTypes = listOf(BaseItemKind.MUSIC_ALBUM), fields = any())
-        } returns Response(BaseItemDtoQueryResult(items = listOf(main, featured, unrelated)), 200, emptyMap())
+        } returns Response(BaseItemDtoQueryResult(items = listOf(main, featured, unrelated), totalRecordCount = 3, startIndex = 0), 200, emptyMap())
         coEvery {
             libraryApi.getItems(userId = any(), parentId = main.id, recursive = true,
                 includeItemTypes = listOf(BaseItemKind.AUDIO), sortBy = any(), sortOrder = any(), fields = any())
-        } returns Response(BaseItemDtoQueryResult(items = listOf(disc2, first)), 200, emptyMap())
+        } returns Response(BaseItemDtoQueryResult(items = listOf(disc2, first), totalRecordCount = 2, startIndex = 0), 200, emptyMap())
         coEvery {
             libraryApi.getItems(userId = any(), parentId = featured.id, recursive = true,
                 includeItemTypes = listOf(BaseItemKind.AUDIO), sortBy = any(), sortOrder = any(), fields = any())
-        } returns Response(BaseItemDtoQueryResult(items = listOf(guest)), 200, emptyMap())
+        } returns Response(BaseItemDtoQueryResult(items = listOf(guest), totalRecordCount = 1, startIndex = 0), 200, emptyMap())
         val realRepository = JellyfinMediaRepository(authRepository, sessionManager, cache, healthChecker)
         val result = realRepository.getAlbumTracks(main.id.toString())
         assertTrue(result is ApiResult.Success)
