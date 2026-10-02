@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.ui.utils
 
+import com.rpeters.jellyfin.data.music.MusicAlbumGrouping
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 
@@ -13,24 +14,11 @@ import org.jellyfin.sdk.model.api.BaseItemKind
  */
 object MusicArtistUtils {
 
-    // Only unambiguous feature markers: generic punctuation such as "&", "," or "/" is part of
-    // many real artist names ("Simon & Garfunkel", "Earth, Wind & Fire", "AC/DC"), so splitting
-    // on it could hide a legitimate artist whenever its first word is also an artist.
-    private val FEATURE_MARKER = Regex(
-        """\s*(?:[(\[]\s*)?(?:\bfeat\b\.?|\bft\b\.?|\bfeaturing\b)\s*""",
-        RegexOption.IGNORE_CASE,
-    )
-
     /**
      * Returns the lead artist of a collaboration string, e.g. "Madonna feat. Britney Spears"
      * -> "Madonna". Returns the trimmed name unchanged when there is no collaboration marker.
      */
-    fun primaryArtistName(name: String): String {
-        val trimmed = name.trim()
-        val match = FEATURE_MARKER.find(trimmed) ?: return trimmed
-        val lead = trimmed.substring(0, match.range.first).trim()
-        return lead.ifEmpty { trimmed }
-    }
+    fun primaryArtistName(name: String): String = MusicAlbumGrouping.primaryArtistName(name)
 
     /**
      * Drops MusicArtist entries that are only a collaboration variant of another artist already

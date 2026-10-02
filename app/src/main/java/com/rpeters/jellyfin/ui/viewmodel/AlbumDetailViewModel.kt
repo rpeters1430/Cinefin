@@ -46,7 +46,13 @@ class AlbumDetailViewModel @Inject constructor(
             val tracksResult = mediaRepository.getAlbumTracks(albumId)
             val tracks = when (tracksResult) {
                 is ApiResult.Success -> tracksResult.data
-                is ApiResult.Error -> emptyList()
+                is ApiResult.Error -> {
+                    _state.value = _state.value.copy(
+                        isLoading = false, album = album, tracks = emptyList(),
+                        errorMessage = tracksResult.message,
+                    )
+                    return@launch
+                }
                 else -> emptyList()
             }
 

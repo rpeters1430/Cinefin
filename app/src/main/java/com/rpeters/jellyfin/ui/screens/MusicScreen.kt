@@ -75,6 +75,7 @@ import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBarAction
 import com.rpeters.jellyfin.ui.components.immersive.rememberAutoHideTopBarVisible
 import com.rpeters.jellyfin.ui.theme.MusicGreen
 import com.rpeters.jellyfin.ui.utils.EnhancedPlaybackUtils
+import com.rpeters.jellyfin.data.music.MusicAlbumGrouping
 import com.rpeters.jellyfin.ui.utils.MusicArtistUtils
 import com.rpeters.jellyfin.ui.utils.ShareUtils
 import com.rpeters.jellyfin.ui.viewmodel.MainAppState
@@ -292,7 +293,9 @@ private fun musicLibraryStatus(appState: MainAppState, musicLibraryId: String?):
 private fun collectMusicItems(libraryMusic: List<BaseItemDto>, appState: MainAppState): List<BaseItemDto> {
     val recentMusic = appState.recentlyAddedByTypes[BaseItemKind.AUDIO.name].orEmpty()
     // Hide "Artist feat. Guest" style entries when the lead artist is already listed.
-    return MusicArtistUtils.collapseFeaturedArtists((libraryMusic + recentMusic).distinctBy { it.id })
+    return MusicAlbumGrouping.collapseAlbums(
+        MusicArtistUtils.collapseFeaturedArtists((libraryMusic + recentMusic).distinctBy { it.id }),
+    )
 }
 
 private fun BaseItemDto.musicYear(): Int = (productionYear as? Number)?.toInt() ?: 0
