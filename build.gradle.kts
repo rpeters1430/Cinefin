@@ -37,7 +37,7 @@ tasks.register("verifyWarningBudget") {
 
         // Current clean lint baseline. Fail only when a change increases the total;
         // keep the per-rule breakdown in the generated report for targeted cleanup.
-        val warningBaseline = 403
+        val warningBaseline = 383
         val warningCountsByIssueId = linkedMapOf<String, Int>()
 
         val documentBuilderFactory = DocumentBuilderFactory.newInstance().apply {

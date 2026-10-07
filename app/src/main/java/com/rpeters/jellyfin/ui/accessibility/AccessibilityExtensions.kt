@@ -12,6 +12,7 @@ import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.utils.AppResources
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
+import java.util.Locale
 
 /**
  * Accessibility extensions and helpers for the Jellyfin Android app.
@@ -70,7 +71,7 @@ fun BaseItemDto.getAccessibilityDescription(): String {
 
     // Add community rating if available
     this.communityRating?.let { rating ->
-        description.append(", rated ${String.format("%.1f", rating)} stars")
+        description.append(", rated ${String.format(Locale.getDefault(), "%.1f", rating)} stars")
     }
 
     // Add played/unplayed status

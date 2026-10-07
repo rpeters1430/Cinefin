@@ -317,7 +317,6 @@ class UserPreferencesViewModel @Inject constructor(
      * Clean up resources when ViewModel is cleared.
      */
     override fun onCleared() {
-        super.onCleared()
         if (BuildConfig.DEBUG) {
             Log.d(TAG, "UserPreferencesViewModel cleared")
         }

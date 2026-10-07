@@ -319,7 +319,6 @@ class SearchViewModel @Inject constructor(
      * Clean up resources when ViewModel is cleared.
      */
     override fun onCleared() {
-        super.onCleared()
         searchJob?.cancel()
 
         if (BuildConfig.DEBUG) {

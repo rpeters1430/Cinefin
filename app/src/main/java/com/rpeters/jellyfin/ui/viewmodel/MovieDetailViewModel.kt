@@ -346,7 +346,6 @@ class MovieDetailViewModel @Inject constructor(
     }
 
     override fun onCleared() {
-        super.onCleared()
         // Clear any loaded movie data to prevent memory leaks
         _state.value = MovieDetailState()
     }

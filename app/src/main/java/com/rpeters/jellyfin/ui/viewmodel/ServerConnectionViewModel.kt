@@ -1247,7 +1247,6 @@ class ServerConnectionViewModel @Inject constructor(
     }
 
     override fun onCleared() {
-        super.onCleared()
         // Cancel any ongoing quick connect polling when ViewModel is destroyed
         quickConnectPollingJob?.cancel()
         discoveryJob?.cancel()

@@ -21,6 +21,7 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withTimeoutOrNull
+import java.util.Locale
 
 @HiltWorker
 class OfflineDownloadWorker @AssistedInject constructor(
@@ -319,7 +320,7 @@ class OfflineDownloadWorker @AssistedInject constructor(
         return if (unitIndex == 0) {
             "${value.toLong()} ${units[unitIndex]}"
         } else {
-            String.format("%.1f %s", value, units[unitIndex])
+            String.format(Locale.getDefault(), "%.1f %s", value, units[unitIndex])
         }
     }
 
