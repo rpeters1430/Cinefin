@@ -276,6 +276,33 @@ class VideoPlayerViewModelTest {
     }
 
     @Test
+    fun initialize_sameItemRebuild_keepsSubtitleDelayButNewItemResetsIt() = runTest {
+        coEvery { playbackProgressManager.getResumePosition(any()) } returns 0L
+        coEvery { metadataManager.loadSkipMarkers(any()) } returns null
+        coEvery { metadataManager.extractSubtitleSpecs(any(), any()) } returns emptyList()
+        every { metadataManager.extractSubtitleTracks(any(), any()) } returns emptyList()
+        every { playbackManager.isMuted() } returns false
+        every { playbackManager.currentPlaySessionId } returns null
+        every { playbackManager.currentMediaSourceId } returns null
+
+        viewModel.onIntent(VideoPlayerIntent.Initialize(itemId = TEST_ITEM_ID, itemName = TEST_ITEM_NAME))
+        advanceUntilIdle()
+        verify(exactly = 1) { playbackManager.setSubtitleDelay(0L) }
+
+        viewModel.onIntent(VideoPlayerIntent.SetSubtitleDelay(400L))
+        // A track or quality change rebuilds the player for the same item.
+        viewModel.onIntent(VideoPlayerIntent.Initialize(itemId = TEST_ITEM_ID, itemName = TEST_ITEM_NAME))
+        advanceUntilIdle()
+        verify(exactly = 1) { playbackManager.setSubtitleDelay(0L) }
+        assertEquals(400L, playerStateFlow.value.subtitleDelayMs)
+
+        viewModel.onIntent(VideoPlayerIntent.Initialize(itemId = "other-item", itemName = "Other"))
+        advanceUntilIdle()
+        verify(exactly = 2) { playbackManager.setSubtitleDelay(0L) }
+        assertEquals(0L, playerStateFlow.value.subtitleDelayMs)
+    }
+
+    @Test
     fun `auto-skip intro does nothing when the preference is disabled`() = runTest {
         // Class-level viewModel was built with PlaybackPreferences.DEFAULT (autoSkipIntroAndCredits = false).
         playerStateFlow.value = VideoPlayerState(

@@ -197,6 +197,30 @@ class VideoPlayerViewModel @Inject constructor(
             is VideoPlayerIntent.SetControlsVisible -> {
                 stateManager.updateState { it.copy(isControlsVisible = intent.visible) }
             }
+            VideoPlayerIntent.AcceptQualityRecommendation -> acceptQualityRecommendation()
+            VideoPlayerIntent.DismissQualityRecommendation -> dismissQualityRecommendation()
+            VideoPlayerIntent.ClearError -> clearError()
+            VideoPlayerIntent.ClosePlayer -> {
+                intent { postSideEffect(VideoPlayerSideEffect.ClosePlayer) }
+            }
+            VideoPlayerIntent.ToggleOrientation -> {
+                // This is typically handled by the UI/Activity, but we can emit a side effect if needed
+                // For now, it's a no-op as the UI handles it directly in this pilot
+            }
+            VideoPlayerIntent.EnterPip -> {
+                // Similarly, Activity handles PIP, but we could emit a side effect
+            }
+            VideoPlayerIntent.PausePlayback -> pausePlayback()
+            VideoPlayerIntent.ReleasePlayer -> releasePlayerImmediate()
+            VideoPlayerIntent.ConfirmResumePlayback -> confirmResumePlayback()
+            VideoPlayerIntent.DismissResumeDialog -> dismissResumeDialog()
+            else -> if (!handleCastIntent(intent)) handleTrackIntent(intent)
+        }
+    }
+
+    /** Handles cast intents; returns false if [intent] is not cast-related. */
+    private fun handleCastIntent(intent: VideoPlayerIntent): Boolean {
+        when (intent) {
             VideoPlayerIntent.HandleCastButtonClick -> handleCastButtonClick()
             VideoPlayerIntent.ShowCastDialog -> showCastDialog()
             VideoPlayerIntent.HideCastDialog -> hideCastDialog()
@@ -207,6 +231,14 @@ class VideoPlayerViewModel @Inject constructor(
             VideoPlayerIntent.DisconnectCast -> castManager.disconnectCastSession()
             is VideoPlayerIntent.SeekCast -> castManager.seekTo(intent.positionMs)
             is VideoPlayerIntent.SetCastVolume -> castManager.setVolume(intent.volume)
+            else -> return false
+        }
+        return true
+    }
+
+    /** Handles track-selection and track dialog intents. */
+    private fun handleTrackIntent(intent: VideoPlayerIntent) {
+        when (intent) {
             VideoPlayerIntent.ShowSubtitleDialog -> {
                 stateManager.updateState { it.copy(showSubtitleDialog = true) }
             }
@@ -228,23 +260,7 @@ class VideoPlayerViewModel @Inject constructor(
             is VideoPlayerIntent.SelectAudioTrack -> selectAudioTrack(intent.track)
             is VideoPlayerIntent.SelectSubtitleTrack -> selectSubtitleTrack(intent.track)
             is VideoPlayerIntent.SetSubtitleDelay -> setSubtitleDelay(intent.delayMs)
-            VideoPlayerIntent.AcceptQualityRecommendation -> acceptQualityRecommendation()
-            VideoPlayerIntent.DismissQualityRecommendation -> dismissQualityRecommendation()
-            VideoPlayerIntent.ClearError -> clearError()
-            VideoPlayerIntent.ClosePlayer -> {
-                intent { postSideEffect(VideoPlayerSideEffect.ClosePlayer) }
-            }
-            VideoPlayerIntent.ToggleOrientation -> {
-                // This is typically handled by the UI/Activity, but we can emit a side effect if needed
-                // For now, it's a no-op as the UI handles it directly in this pilot
-            }
-            VideoPlayerIntent.EnterPip -> {
-                // Similarly, Activity handles PIP, but we could emit a side effect
-            }
-            VideoPlayerIntent.PausePlayback -> pausePlayback()
-            VideoPlayerIntent.ReleasePlayer -> releasePlayerImmediate()
-            VideoPlayerIntent.ConfirmResumePlayback -> confirmResumePlayback()
-            VideoPlayerIntent.DismissResumeDialog -> dismissResumeDialog()
+            else -> SecureLogger.w("VideoPlayer", "Unhandled intent: ${intent::class.simpleName}")
         }
     }
 
@@ -301,6 +317,8 @@ class VideoPlayerViewModel @Inject constructor(
             seekTo(outroEnd)
         }
     }
+
+    private var subtitleDelayItemId: String? = null
 
     private suspend fun initializePlayerInternal(
         itemId: String,
@@ -431,8 +449,12 @@ class VideoPlayerViewModel @Inject constructor(
                 playbackManager.initializeExoPlayer(playerListener)
             }
             stateManager.updateState { it.copy(isMuted = playbackManager.isMuted()) }
-            // Subtitle offsets are specific to a file, so start each item in sync.
-            setSubtitleDelay(0L)
+            // Subtitle offsets are specific to a file, so start each new item in sync. Same-item
+            // rebuilds (track or quality changes) keep the user's correction.
+            if (itemId != subtitleDelayItemId) {
+                subtitleDelayItemId = itemId
+                setSubtitleDelay(0L)
+            }
 
             // Start playback logic
             playbackManager.startPlayback(
