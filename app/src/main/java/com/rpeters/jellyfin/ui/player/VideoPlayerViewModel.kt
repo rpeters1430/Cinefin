@@ -330,7 +330,7 @@ class VideoPlayerViewModel @Inject constructor(
         forceOffline: Boolean = false,
         playlistId: String? = null,
     ) {
-        SecureLogger.d(LOG_TAG, "Initializing playback for $itemName (playlistId: $playlistId)")
+        SecureLogger.d(LOG_TAG, "Initializing playback for $itemName (playlistId: ${playlistId ?: "none"})")
 
         hasAutoSkippedIntro = false
         hasAutoSkippedOutro = false
