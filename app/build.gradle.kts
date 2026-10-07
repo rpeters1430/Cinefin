@@ -153,6 +153,9 @@ android {
         abortOnError = true
         warningsAsErrors = false
         disable += "UnsafeOptInUsageError"
+        // "Newer version available" checks change whenever upstream publishes, so they made the
+        // warning budget fail with no code change. Renovate already tracks dependency updates.
+        disable += listOf("GradleDependency", "NewerVersionAvailable", "AndroidGradlePluginVersion")
     }
 
     packaging {
@@ -207,7 +210,6 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
 
     // Security
-    implementation(libs.androidx.security.crypto)
     implementation(libs.androidx.biometric)
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services.auth)

@@ -20,6 +20,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.coroutineContext
 import kotlin.system.measureTimeMillis
+import java.util.Locale
 
 /**
  * Phase 4: Performance Monitoring System
@@ -91,7 +92,7 @@ class PerformanceMonitor @Inject constructor() {
             if (BuildConfig.DEBUG) {
                 SecureLogger.v(
                     TAG,
-                    "$message - Used: ${memoryInfo.usedMemoryMB}MB (${String.format("%.1f", memoryInfo.usagePercentage)}%), " +
+                    "$message - Used: ${memoryInfo.usedMemoryMB}MB (${String.format(Locale.ROOT, "%.1f", memoryInfo.usagePercentage)}%), " +
                         "Free: ${memoryInfo.freeMemoryMB}MB, Max: ${memoryInfo.maxMemoryMB}MB",
                 )
             }
@@ -106,7 +107,7 @@ class PerformanceMonitor @Inject constructor() {
             val isHighUsage = memoryInfo.usagePercentage > 80f
 
             if (isHighUsage && BuildConfig.DEBUG) {
-                SecureLogger.w(TAG, "High memory usage detected: ${String.format("%.1f", memoryInfo.usagePercentage)}%")
+                SecureLogger.w(TAG, "High memory usage detected: ${String.format(Locale.ROOT, "%.1f", memoryInfo.usagePercentage)}%")
             }
 
             return isHighUsage
@@ -520,7 +521,7 @@ fun PerformanceMetricsTracker(
             if (BuildConfig.DEBUG) {
                 SecureLogger.v(
                     "PerformanceMetricsTracker",
-                    "Memory: ${metrics.memory.usedMemoryMB}MB (${String.format("%.1f", metrics.memory.usagePercentage)}%), " +
+                    "Memory: ${metrics.memory.usedMemoryMB}MB (${String.format(Locale.ROOT, "%.1f", metrics.memory.usagePercentage)}%), " +
                         "Render: ${metrics.renderTimeMs}ms",
                 )
             }

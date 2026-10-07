@@ -470,5 +470,5 @@ private fun formatTime(millis: Long): String {
     val seconds = (millis / 1000).toInt()
     val minutes = seconds / 60
     val remainingSeconds = seconds % 60
-    return String.format("%d:%02d", minutes, remainingSeconds)
+    return String.format(Locale.getDefault(), "%d:%02d", minutes, remainingSeconds)
 }

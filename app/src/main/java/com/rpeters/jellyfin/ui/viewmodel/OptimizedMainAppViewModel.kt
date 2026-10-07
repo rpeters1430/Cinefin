@@ -418,7 +418,6 @@ class OptimizedMainAppViewModel @Inject constructor(
     }
 
     override fun onCleared() {
-        super.onCleared()
         viewModelScope.launch {
             libraryLoadingManager.cancelAllOperations()
         }

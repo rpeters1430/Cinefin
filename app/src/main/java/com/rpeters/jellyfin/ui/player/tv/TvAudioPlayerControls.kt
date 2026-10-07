@@ -56,6 +56,7 @@ import androidx.tv.material3.MaterialTheme as TvMaterialTheme
 import androidx.tv.material3.Text
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.ui.tv.requestInitialFocus
+import java.util.Locale
 
 /**
  * TV-optimized audio player controls with D-pad navigation
@@ -366,9 +367,9 @@ private fun formatTime(milliseconds: Long): String {
     val hours = milliseconds / (1000 * 60 * 60)
 
     return if (hours > 0) {
-        String.format("%d:%02d:%02d", hours, minutes, seconds)
+        String.format(Locale.getDefault(), "%d:%02d:%02d", hours, minutes, seconds)
     } else {
-        String.format("%d:%02d", minutes, seconds)
+        String.format(Locale.getDefault(), "%d:%02d", minutes, seconds)
     }
 }
 

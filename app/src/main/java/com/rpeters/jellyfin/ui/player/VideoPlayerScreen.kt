@@ -301,6 +301,8 @@ fun VideoPlayerScreen(
             SubtitleTrackSelectionDialog(
                 availableTracks = state.availableSubtitleTracks,
                 selectedTrack = state.selectedSubtitleTrack,
+                subtitleDelayMs = state.subtitleDelayMs,
+                onSubtitleDelayChange = { viewModel.onIntent(VideoPlayerIntent.SetSubtitleDelay(it)) },
                 onTrackSelect = { viewModel.onIntent(VideoPlayerIntent.SelectSubtitleTrack(it)) },
                 onDismiss = { viewModel.onIntent(VideoPlayerIntent.HideSubtitleDialog) },
             )

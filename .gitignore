@@ -124,3 +124,10 @@ app/google-services.json
 gemini-artifacts/
 gemini-result/
 .gemini_security/
+
+# Local build/debug dumps that should never be committed
+/*.jar
+/deps.txt
+/dependencies.txt
+*logcat*.txt
+*.kate-swp

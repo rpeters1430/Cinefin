@@ -70,7 +70,7 @@ fun HomeCarousel(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(260.dp),
-            maxItemWidth = 320.dp,
+            preferredItemWidth = 320.dp,
             itemSpacing = Dimens.Spacing16,
             contentPadding = PaddingValues(horizontal = Dimens.Spacing16),
         ) { index ->

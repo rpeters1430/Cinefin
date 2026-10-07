@@ -93,6 +93,7 @@ class VideoPlayerViewModelTest {
 
         mockExoPlayer = mockk(relaxed = true)
         every { playbackManager.exoPlayer } returns mockExoPlayer
+        every { playbackManager.setSubtitleDelay(any()) } answers { firstArg() }
 
         // VideoPlayerStateManager is mocked, so by default updateState() is a no-op that never
         // touches playerStateFlow. Make it behave like the real thing (apply the reducer lambda
@@ -148,6 +149,16 @@ class VideoPlayerViewModelTest {
 
         // Assert
         verify { mockExoPlayer.play() }
+    }
+
+    @Test
+    fun setSubtitleDelay_intent_appliesClampedDelayToPlayerAndState() = runTest {
+        every { playbackManager.setSubtitleDelay(30_000L) } returns SubtitleDelay.MAX_MS
+
+        viewModel.onIntent(VideoPlayerIntent.SetSubtitleDelay(30_000L))
+
+        verify { playbackManager.setSubtitleDelay(30_000L) }
+        assertEquals(SubtitleDelay.MAX_MS, viewModel.playerState.value.subtitleDelayMs)
     }
 
     @Test
@@ -262,6 +273,33 @@ class VideoPlayerViewModelTest {
                 subtitleIndex = any(), mediaSourceIdHint = any(), scope = any(),
             )
         }
+    }
+
+    @Test
+    fun initialize_sameItemRebuild_keepsSubtitleDelayButNewItemResetsIt() = runTest {
+        coEvery { playbackProgressManager.getResumePosition(any()) } returns 0L
+        coEvery { metadataManager.loadSkipMarkers(any()) } returns null
+        coEvery { metadataManager.extractSubtitleSpecs(any(), any()) } returns emptyList()
+        every { metadataManager.extractSubtitleTracks(any(), any()) } returns emptyList()
+        every { playbackManager.isMuted() } returns false
+        every { playbackManager.currentPlaySessionId } returns null
+        every { playbackManager.currentMediaSourceId } returns null
+
+        viewModel.onIntent(VideoPlayerIntent.Initialize(itemId = TEST_ITEM_ID, itemName = TEST_ITEM_NAME))
+        advanceUntilIdle()
+        verify(exactly = 1) { playbackManager.setSubtitleDelay(0L) }
+
+        viewModel.onIntent(VideoPlayerIntent.SetSubtitleDelay(400L))
+        // A track or quality change rebuilds the player for the same item.
+        viewModel.onIntent(VideoPlayerIntent.Initialize(itemId = TEST_ITEM_ID, itemName = TEST_ITEM_NAME))
+        advanceUntilIdle()
+        verify(exactly = 1) { playbackManager.setSubtitleDelay(0L) }
+        assertEquals(400L, playerStateFlow.value.subtitleDelayMs)
+
+        viewModel.onIntent(VideoPlayerIntent.Initialize(itemId = "other-item", itemName = "Other"))
+        advanceUntilIdle()
+        verify(exactly = 2) { playbackManager.setSubtitleDelay(0L) }
+        assertEquals(0L, playerStateFlow.value.subtitleDelayMs)
     }
 
     @Test
