@@ -55,7 +55,12 @@ lightweight changelog without a separate summary doc.
 ## 🐛 Bugs
 
 - [x] **Resume "Ask" mode is a no-op** — see Do Next above; fixed 2026-09-01.
-- [ ] **CI is red on `main`, unrelated to any specific PR** — verified
+- [x] **CI is red on `main`, unrelated to any specific PR** — 2026-10-07:
+      the lint `MissingPermission` error was fixed earlier; the remaining red
+      step was `verifyWarningBudget`, which drifted over budget because lint's
+      "newer version available" rules grow on every upstream release. Those
+      rules are now disabled (Renovate covers updates) and the baseline was
+      ratcheted to 383. Original note: — verified
       2026-09-01 while driving PR #1262 to green: `build-test-lint`'s `Run
       lint` step fails on `main` itself (checked at commit `1299abe`, this
       branch's base, and multiple prior unrelated PRs/merges going back
@@ -72,7 +77,9 @@ lightweight changelog without a separate summary doc.
       code issue. Both make every PR in this repo show red regardless of
       its own quality — worth a maintainer's attention independent of any
       single PR's diff.
-- [ ] **Subtitle sync delay missing** — no `subtitleDelayMs` field anywhere in
+- [x] **Subtitle sync delay missing** — 2026-10-07: the subtitle dialog now
+      has a ±0.1 s timing control (up to ±10 s), applied by wrapping the text
+      renderer (`ui/player/SubtitleDelay.kt`); resets per item. Original note: — no `subtitleDelayMs` field anywhere in
       `SubtitleAppearancePreferences` or the player. Users with slightly
       out-of-sync subtitles have no in-app fix. **Files**:
       `ui/player/VideoPlayerViewModel.kt`,
