@@ -64,17 +64,17 @@ scripts/gen-local-properties.ps1  # Windows (PowerShell)
 - **Project Name**: Cinefin Android (formerly Jellyfin Android Client)
 - **Application ID**: `com.rpeters.jellyfin`
 - **Namespace**: `com.rpeters.jellyfin`
-- **Version**: Defined in `app/build.gradle.kts` (versionCode: 123, versionName: "14.91")
+- **Version**: `versionCode` / `versionName` in `app/build.gradle.kts` (not copied here so it cannot drift)
 
 ### High-Level Architecture
 This is a modern Android client for Jellyfin media servers built with:
-- **UI**: Jetpack Compose (BOM 2026.03.01) with Material 3 design system
+- **UI**: Jetpack Compose with Material 3 design system
 - **Architecture**: MVVM pattern with Repository pattern for data access
-- **DI**: Hilt 2.59.1 for dependency injection throughout the app
+- **DI**: Hilt for dependency injection throughout the app
 - **Async**: Kotlin Coroutines 1.10.2 with StateFlow for reactive UI updates
-- **Media Playback**: ExoPlayer (Media3 1.10.0-rc03) with Jellyfin FFmpeg decoder
-- **Networking**: Retrofit 3.0.0 + OkHttp 5.5.0 + Jellyfin SDK 1.9.0 (Jellyfin Server 12.0+)
-- **Image Loading**: Coil 3.3.0 with custom performance optimizations
+- **Media Playback**: ExoPlayer (Media3) with Jellyfin FFmpeg decoder
+- **Networking**: Retrofit + OkHttp + Jellyfin SDK (Jellyfin Server 12.0+)
+- **Image Loading**: Coil 3 with custom performance optimizations
 - **Security**: Android Keystore encryption, dynamic certificate pinning with TOFU model
 
 ### Multi-Platform Support
@@ -240,10 +240,9 @@ OkHttp interceptor stack in `network/` directory:
 
 ### Key Constants & Configuration
 - Centralized constants in `core/constants/Constants.kt`
-- **SDK versions**: compileSdk 36, targetSdk 35, minSdk 26 (Android 8.0+)
-- **Current version**: versionCode 79, versionName "14.47"
+- **SDK versions**: `compileSdk` in `gradle/libs.versions.toml`; `minSdk` / `targetSdk` in `app/build.gradle.kts`
 - **Java version**: 21 with core library desugaring enabled
-- **Kotlin version**: 2.3.20 with KSP 2.3.6
+- **Kotlin / KSP versions**: see `gradle/libs.versions.toml`
 - **Dependency versions**: Centralized in `gradle/libs.versions.toml`
 - **Release builds**: ProGuard/R8 enabled with shrinking and minification (`proguard-rules.pro`)
 - **Native debug symbols**: FULL debug symbols enabled for Play Console crash reporting
@@ -362,14 +361,13 @@ See `.github/GEMINI_CLI_USAGE.md` for setup, capabilities and limitations.
 ## Material 3 Design System
 
 ### Current Implementation
-- Using Material 3 forced to 1.5.0-alpha13 (via `resolutionStrategy` in build.gradle.kts)
-- Version catalog declares: material3: 1.5.0-alpha14, expressive: 1.5.0-alpha02, adaptive: 1.3.0-alpha08
+- Material 3 1.5 (pre-release track, needed for Expressive components); exact versions live in `gradle/libs.versions.toml`
 - **Material 3 Expressive Components** enabled with official carousel implementation
 - **Official Material 3 Carousel** (androidx.compose.material3:material3-carousel) for hero content
   - `HorizontalUncontainedCarousel` for hero carousel with auto-scrolling (15 second intervals)
   - Maintains consistent item sizes ideal for large media content
   - Uses `CarouselState` and `CarouselDefaults` for state management
-- **Adaptive layouts** using Material 3 adaptive components (1.3.0-alpha08) for different screen sizes
+- **Adaptive layouts** using Material 3 adaptive components for different screen sizes
 - Theme defined in `ui/theme/` with Cinefin brand colors:
   - Primary: Jellyfin Purple (#6200EE)
   - Secondary: Jellyfin Blue (#2962FF)
