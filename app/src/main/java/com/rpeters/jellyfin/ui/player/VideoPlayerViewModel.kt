@@ -22,6 +22,7 @@ import javax.inject.Inject
 
 /** Minimum saved position before the "Ask" resume mode prompts the user; below this, just start over silently. */
 private const val RESUME_PROMPT_THRESHOLD_MS = 5_000L
+private const val LOG_TAG = "VideoPlayer"
 
 /**
  * Refactored VideoPlayerViewModel that delegates to specialized managers and uses MVI.
@@ -260,7 +261,7 @@ class VideoPlayerViewModel @Inject constructor(
             is VideoPlayerIntent.SelectAudioTrack -> selectAudioTrack(intent.track)
             is VideoPlayerIntent.SelectSubtitleTrack -> selectSubtitleTrack(intent.track)
             is VideoPlayerIntent.SetSubtitleDelay -> setSubtitleDelay(intent.delayMs)
-            else -> SecureLogger.w("VideoPlayer", "Unhandled intent: ${intent::class.simpleName}")
+            else -> SecureLogger.w(LOG_TAG, "Unhandled intent: ${intent.javaClass.simpleName}")
         }
     }
 
@@ -329,7 +330,7 @@ class VideoPlayerViewModel @Inject constructor(
         forceOffline: Boolean = false,
         playlistId: String? = null,
     ) {
-        SecureLogger.d("VideoPlayer", "Initializing playback for $itemName (playlistId: $playlistId)")
+        SecureLogger.d(LOG_TAG, "Initializing playback for $itemName (playlistId: $playlistId)")
 
         hasAutoSkippedIntro = false
         hasAutoSkippedOutro = false
@@ -484,7 +485,7 @@ class VideoPlayerViewModel @Inject constructor(
                 playMethod = playMethod,
             )
         } catch (e: Exception) {
-            SecureLogger.e("VideoPlayer", "Initialization failed: ${e.message}", e)
+            SecureLogger.e(LOG_TAG, "Initialization failed: ${e.message}", e)
             stateManager.updateState {
                 it.copy(
                     error = "Failed to initialize: ${e.message}",
@@ -671,7 +672,7 @@ class VideoPlayerViewModel @Inject constructor(
 
     internal fun acceptQualityRecommendation() {
         val recommendation = stateManager.playerState.value.qualityRecommendation ?: return
-        SecureLogger.d("VideoPlayer", "Accepting quality recommendation: ${recommendation.recommendedQuality}")
+        SecureLogger.d(LOG_TAG, "Accepting quality recommendation: ${recommendation.recommendedQuality}")
         val currentPosition = exoPlayer?.currentPosition ?: 0L
         val itemId = stateManager.playerState.value.itemId
         val itemName = stateManager.playerState.value.itemName
