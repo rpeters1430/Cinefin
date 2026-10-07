@@ -162,7 +162,6 @@ class VideoPlayerViewModel @Inject constructor(
     }
 
     override fun onCleared() {
-        super.onCleared()
         viewModelScope.launch {
             playbackManager.releasePlayer()
         }
@@ -228,6 +227,7 @@ class VideoPlayerViewModel @Inject constructor(
             }
             is VideoPlayerIntent.SelectAudioTrack -> selectAudioTrack(intent.track)
             is VideoPlayerIntent.SelectSubtitleTrack -> selectSubtitleTrack(intent.track)
+            is VideoPlayerIntent.SetSubtitleDelay -> setSubtitleDelay(intent.delayMs)
             VideoPlayerIntent.AcceptQualityRecommendation -> acceptQualityRecommendation()
             VideoPlayerIntent.DismissQualityRecommendation -> dismissQualityRecommendation()
             VideoPlayerIntent.ClearError -> clearError()
@@ -431,6 +431,8 @@ class VideoPlayerViewModel @Inject constructor(
                 playbackManager.initializeExoPlayer(playerListener)
             }
             stateManager.updateState { it.copy(isMuted = playbackManager.isMuted()) }
+            // Subtitle offsets are specific to a file, so start each item in sync.
+            setSubtitleDelay(0L)
 
             // Start playback logic
             playbackManager.startPlayback(
@@ -492,6 +494,11 @@ class VideoPlayerViewModel @Inject constructor(
     internal fun setPlaybackSpeed(speed: Float) {
         exoPlayer?.setPlaybackSpeed(speed)
         stateManager.updateState { it.copy(playbackSpeed = speed) }
+    }
+
+    internal fun setSubtitleDelay(delayMs: Long) {
+        val applied = playbackManager.setSubtitleDelay(delayMs)
+        stateManager.updateState { it.copy(subtitleDelayMs = applied) }
     }
 
     internal fun toggleMute() {

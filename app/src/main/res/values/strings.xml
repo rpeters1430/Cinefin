@@ -503,6 +503,10 @@
     <string name="auto_skip_intro_credits_subtitle">Silently skip intros and credits without tapping a button</string>
     <string name="quality_auto">Auto</string>
     <string name="subtitles">Subtitles</string>
+    <string name="subtitle_sync">Subtitle timing</string>
+    <string name="subtitle_sync_earlier">−0.1 s</string>
+    <string name="subtitle_sync_later">+0.1 s</string>
+    <string name="subtitle_sync_reset">Reset timing</string>
     <string name="cast_to_device">Cast to Device</string>
     <string name="no_cast_devices_found_detailed">No Cast devices found. Make sure your Chromecast or other Cast-enabled device is on the same network.</string>
     <string name="no_devices_found">No devices found.</string>

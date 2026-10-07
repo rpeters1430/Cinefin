@@ -34,6 +34,7 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
@@ -151,6 +152,8 @@ fun SubtitleTrackSelectionDialog(
     onTrackSelect: (TrackInfo?) -> Unit,
     onDismiss: () -> Unit,
     maxHeight: Dp = LocalConfiguration.current.screenHeightDp.dp * 0.6f,
+    subtitleDelayMs: Long = 0L,
+    onSubtitleDelayChange: ((Long) -> Unit)? = null,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -194,12 +197,60 @@ fun SubtitleTrackSelectionDialog(
                         )
                     }
                 }
+
+                if (onSubtitleDelayChange != null && selectedTrack != null) {
+                    SubtitleDelayControl(
+                        delayMs = subtitleDelayMs,
+                        onDelayChange = onSubtitleDelayChange,
+                    )
+                }
             }
         },
         confirmButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(id = R.string.close), color = MaterialTheme.colorScheme.primary) }
         },
     )
+}
+
+/** Nudges subtitle timing in [SubtitleDelay.STEP_MS] steps without closing the dialog. */
+@Composable
+private fun SubtitleDelayControl(
+    delayMs: Long,
+    onDelayChange: (Long) -> Unit,
+) {
+    Column(modifier = Modifier.fillMaxWidth().padding(top = 12.dp)) {
+        Text(
+            text = stringResource(id = R.string.subtitle_sync),
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            TextButton(
+                onClick = { onDelayChange(delayMs - SubtitleDelay.STEP_MS) },
+                enabled = delayMs > -SubtitleDelay.MAX_MS,
+            ) { Text(stringResource(id = R.string.subtitle_sync_earlier)) }
+            Text(
+                text = SubtitleDelay.format(delayMs),
+                modifier = Modifier.weight(1f),
+                textAlign = TextAlign.Center,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            TextButton(
+                onClick = { onDelayChange(delayMs + SubtitleDelay.STEP_MS) },
+                enabled = delayMs < SubtitleDelay.MAX_MS,
+            ) { Text(stringResource(id = R.string.subtitle_sync_later)) }
+        }
+        if (delayMs != 0L) {
+            TextButton(
+                onClick = { onDelayChange(0L) },
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+            ) { Text(stringResource(id = R.string.subtitle_sync_reset)) }
+        }
+    }
 }
 
 @UnstableApi

@@ -111,6 +111,8 @@ data class VideoPlayerState(
     val availableSubtitleTracks: List<TrackInfo> = emptyList(),
     val selectedSubtitleTrack: TrackInfo? = null,
     val playbackSpeed: Float = 1.0f,
+    /** Positive values show subtitles later, negative values earlier. Resets per item. */
+    val subtitleDelayMs: Long = 0L,
     val isMuted: Boolean = false,
     // Skip segment markers (ms)
     val introStartMs: Long? = null,
@@ -170,6 +172,7 @@ sealed class VideoPlayerIntent {
     object HideQualityDialog : VideoPlayerIntent()
     data class SelectAudioTrack(val track: TrackInfo) : VideoPlayerIntent()
     data class SelectSubtitleTrack(val track: TrackInfo?) : VideoPlayerIntent()
+    data class SetSubtitleDelay(val delayMs: Long) : VideoPlayerIntent()
     object AcceptQualityRecommendation : VideoPlayerIntent()
     object DismissQualityRecommendation : VideoPlayerIntent()
     object ClearError : VideoPlayerIntent()

@@ -93,6 +93,7 @@ class VideoPlayerViewModelTest {
 
         mockExoPlayer = mockk(relaxed = true)
         every { playbackManager.exoPlayer } returns mockExoPlayer
+        every { playbackManager.setSubtitleDelay(any()) } answers { firstArg() }
 
         // VideoPlayerStateManager is mocked, so by default updateState() is a no-op that never
         // touches playerStateFlow. Make it behave like the real thing (apply the reducer lambda
@@ -148,6 +149,16 @@ class VideoPlayerViewModelTest {
 
         // Assert
         verify { mockExoPlayer.play() }
+    }
+
+    @Test
+    fun setSubtitleDelay_intent_appliesClampedDelayToPlayerAndState() = runTest {
+        every { playbackManager.setSubtitleDelay(30_000L) } returns SubtitleDelay.MAX_MS
+
+        viewModel.onIntent(VideoPlayerIntent.SetSubtitleDelay(30_000L))
+
+        verify { playbackManager.setSubtitleDelay(30_000L) }
+        assertEquals(SubtitleDelay.MAX_MS, viewModel.playerState.value.subtitleDelayMs)
     }
 
     @Test

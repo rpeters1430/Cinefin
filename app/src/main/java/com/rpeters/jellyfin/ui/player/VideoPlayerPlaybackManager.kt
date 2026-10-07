@@ -85,6 +85,7 @@ class VideoPlayerPlaybackManager @Inject constructor(
     private var currentPreparedSubtitleSpecs: List<SubtitleSpec> = emptyList()
     private var currentPreparedMediaSourceId: String? = null
     private var currentPlaybackSessionId: String? = null
+    private val subtitleDelayController = SubtitleDelayController()
 
     companion object {
         @JvmStatic
@@ -100,7 +101,7 @@ class VideoPlayerPlaybackManager @Inject constructor(
 
     fun initializeExoPlayer(listener: Player.Listener) {
         playerListener = listener
-        val renderersFactory = DefaultRenderersFactory(applicationContext)
+        val renderersFactory = SubtitleDelayRenderersFactory(applicationContext, subtitleDelayController)
             .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
             .setEnableDecoderFallback(true)
             .forceEnableMediaCodecAsynchronousQueueing()
@@ -492,6 +493,12 @@ class VideoPlayerPlaybackManager @Inject constructor(
             player.mute()
         }
         return player.volume <= 0f
+    }
+
+    /** Applies a subtitle offset and returns the clamped value actually in effect. */
+    fun setSubtitleDelay(delayMs: Long): Long {
+        subtitleDelayController.setDelay(delayMs)
+        return subtitleDelayController.delayMs
     }
 
     fun isMuted(): Boolean {
