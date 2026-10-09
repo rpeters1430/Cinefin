@@ -7,16 +7,24 @@ import io.mockk.mockkObject
 import io.mockk.unmockkAll
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.long
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.HttpClientOptions
 import org.jellyfin.sdk.api.client.HttpMethod
 import org.jellyfin.sdk.api.client.RawResponse
+import org.jellyfin.sdk.api.client.util.ApiSerializer
 import org.jellyfin.sdk.api.sockets.SocketApi
 import org.jellyfin.sdk.model.ClientInfo
 import org.jellyfin.sdk.model.DeviceInfo
 import org.jellyfin.sdk.model.api.BaseItemDtoQueryResult
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemFields
+import org.jellyfin.sdk.model.api.PlayMethod
+import org.jellyfin.sdk.model.api.PlaybackOrder
+import org.jellyfin.sdk.model.api.PlaybackStartInfo
+import org.jellyfin.sdk.model.api.RepeatMode
 import org.jellyfin.sdk.model.api.MediaSegmentDtoQueryResult
 import org.jellyfin.sdk.model.api.UserDto
 import org.jellyfin.sdk.model.api.UserItemDataDto
@@ -196,6 +204,49 @@ class EmbyApiClientTest {
         assertEquals("/Sessions/Playing", delegate.path)
         assertSame(body, delegate.body)
         assertEquals(0, response.body.size)
+    }
+
+    @Test
+    fun playbackReport_sendsEmbyItemIdInTheBody() = runTest {
+        delegate.respondWith("")
+        val report = PlaybackStartInfo(
+            itemId = movieId,
+            mediaSourceId = "mediasource_1035",
+            positionTicks = 1_200L,
+            canSeek = true,
+            isPaused = false,
+            isMuted = false,
+            playMethod = PlayMethod.DIRECT_PLAY,
+            repeatMode = RepeatMode.REPEAT_NONE,
+            playbackOrder = PlaybackOrder.DEFAULT,
+        )
+
+        client.request(HttpMethod.POST, "/Sessions/Playing", emptyMap(), emptyMap(), report)
+
+        val sent = delegate.body as JsonObject
+        assertEquals("1035", sent["ItemId"]?.jsonPrimitive?.content)
+        assertEquals("mediasource_1035", sent["MediaSourceId"]?.jsonPrimitive?.content)
+        assertEquals(1_200L, sent["PositionTicks"]?.jsonPrimitive?.long)
+        // What the SDK client will actually put on the wire for this body.
+        assertTrue(ApiSerializer.encodeRequestBody(sent)!!.contains("\"ItemId\":\"1035\""))
+    }
+
+    @Test
+    fun requestBodyWithoutEncodedIds_isSentAsTheOriginalObject() = runTest {
+        delegate.respondWith("")
+        val report = PlaybackStartInfo(
+            itemId = userUuid,
+            canSeek = true,
+            isPaused = false,
+            isMuted = false,
+            playMethod = PlayMethod.DIRECT_PLAY,
+            repeatMode = RepeatMode.REPEAT_NONE,
+            playbackOrder = PlaybackOrder.DEFAULT,
+        )
+
+        client.request(HttpMethod.POST, "/Sessions/Playing", emptyMap(), emptyMap(), report)
+
+        assertSame(report, delegate.body)
     }
 
     @Test

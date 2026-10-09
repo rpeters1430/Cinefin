@@ -367,8 +367,8 @@ Still open after the spike:
 
 ## Next Step
 
-Phase 1: verify the profile switcher on a device (see the Phase 1 status), then the TV entry
-point.
+Phase 4: exercise transcoding, track switching, episodes and resume on a real device; then
+Cast URL decoding. Phases 1 to 3 are committed; see each phase's status for what is left.
 Phase 0 is done except for the items listed under "Still open after the spike".
 
 ## Phase 0: Spike and fixtures
@@ -599,7 +599,43 @@ an error state.
 
 ## Phase 4: Play video from Emby
 
-**Status**: pending
+**Status**: in progress on branch `emby` (2026-10-08). A movie plays from Emby on an emulator
+and its progress reaches the server.
+
+What it took: one change. `EmbyApiClient` now also translates item IDs inside request bodies
+(serialize the way the SDK would, swap encoded IDs, hand the SDK a JSON tree). Everything else
+already worked through Phase 3's pieces: the player fetches through the app's shared OkHttp
+client, so the stream URLs the app builds get real IDs and auth from the interceptor.
+
+Verified on the emulator against Emby 4.11.0.6, cross-checked on the server through its API:
+
+- The app chose Direct Stream for an HEVC + DTS movie (video copied, audio to AAC over HLS);
+  segments loaded and video rendered.
+- While playing, the server's `/Sessions` showed the movie as now playing from Cinefin, with
+  Emby's own numeric item ID and play method DirectStream.
+- Seeking forward with the skip button worked.
+- After leaving the player at about 2:18, the server held a resume position of 158 s and listed
+  the movie under Resume; the app's Home then showed it under Continue Watching.
+- Year, rating and other list fields: `EmbyApiClient` adds them to every item query, since Emby
+  only returns them when asked.
+
+Differs from the plan: the app still builds its own stream URLs instead of using Emby's
+`DirectStreamUrl`/`TranscodingUrl`. They work, so that change was not needed for playback from
+the phone.
+
+Not done or not checked:
+
+- Picture quality. The one frame captured looked banded and green-tinted. That may be the
+  emulator's software HEVC decoder; it was not compared with Jellyfin on the same emulator or
+  checked on a real device.
+- Playback took about 20 seconds to start. Not compared with Jellyfin.
+- A full video transcode (forced lower quality), pure direct play, and audio or subtitle track
+  switching.
+- Episodes, resuming from the saved position, and playing to the end (marked played).
+- Favourite and mark-played buttons.
+- Chromecast and DLNA: their URLs do not pass through the interceptor, so encoded IDs must be
+  decoded where those URLs are built (`CastMediaLoadBuilder`, `JellyfinStreamRepository`).
+- Downloads and music playback.
 **Posture**: characterization-first (capture current Jellyfin playback decisions before touching
 `getPlaybackInfo`)
 **Files**: `EmbyPlaybackDataSource.kt`, `EmbyUserDataSource.kt`, `JellyfinRepository.kt`,

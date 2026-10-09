@@ -2,6 +2,7 @@ package com.rpeters.jellyfin.data.emby
 
 import com.rpeters.jellyfin.utils.SecureLogger
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
@@ -12,6 +13,7 @@ import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.HttpClientOptions
 import org.jellyfin.sdk.api.client.HttpMethod
 import org.jellyfin.sdk.api.client.RawResponse
+import org.jellyfin.sdk.api.client.util.ApiSerializer
 import org.jellyfin.sdk.api.sockets.SocketApi
 import org.jellyfin.sdk.model.ClientInfo
 import org.jellyfin.sdk.model.DeviceInfo
@@ -76,7 +78,7 @@ class EmbyApiClient(
                 ?: throw IllegalStateException("No signed-in user for Emby request $pathTemplate")
         }
 
-        val response = delegate.request(method, embyPath, embyPathParameters, embyQueryParameters, requestBody)
+        val response = delegate.request(method, embyPath, embyPathParameters, embyQueryParameters, toEmbyBody(requestBody))
         val serializer = route?.response
         if (serializer == null || response.body.isEmpty()) {
             if (route == null) SecureLogger.w(TAG, "No Emby route for $pathTemplate; response passed through unchanged")
@@ -88,6 +90,22 @@ class EmbyApiClient(
         val shaped = route.reshape(parsed, itemId)
         val normalized = EmbyJsonNormalizer.normalize(serializer.descriptor, shaped)
         return RawResponse(normalized.toString().toByteArray(), response.status, response.headers)
+    }
+
+    /**
+     * Request bodies (playback reports, mostly) name items by ID too. The body is serialized the
+     * way the SDK would, its encoded IDs are swapped for Emby's, and it is handed on as a JSON
+     * tree, which the SDK client sends unchanged. Bodies without encoded IDs are not touched.
+     */
+    private fun toEmbyBody(requestBody: Any?): Any? {
+        if (requestBody == null || requestBody is JsonElement) return requestBody
+        val encoded = try {
+            ApiSerializer.encodeRequestBody(requestBody)
+        } catch (e: SerializationException) {
+            return requestBody
+        } ?: return requestBody
+        val rewritten = ServerIdCodec.decodeAllIn(encoded)
+        return if (rewritten == encoded) requestBody else json.parseToJsonElement(rewritten)
     }
 
     /** IDs go out as Emby knows them; everything else is left for the SDK to format. */
