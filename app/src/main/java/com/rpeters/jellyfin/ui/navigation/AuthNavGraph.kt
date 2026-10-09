@@ -112,7 +112,18 @@ fun androidx.navigation.NavGraphBuilder.authNavGraph(
 
         val biometricErrorMsg = stringResource(R.string.biometric_activity_error)
 
+        val embyConnectState by viewModel.embyConnectState.collectAsStateWithLifecycle()
         ServerConnectionScreen(
+            onServerUrlEdited = viewModel::probeServerType,
+            embyConnectSection = {
+                if (viewModel.isEmbyConnectSupported) com.rpeters.jellyfin.ui.components.EmbyConnectCard(
+                    state = embyConnectState,
+                    onSignIn = viewModel::signInEmbyConnect,
+                    onServerSelected = viewModel::selectEmbyConnectServer,
+                    onSkip = viewModel::cancelEmbyConnect,
+                    enabled = !connectionState.isConnecting,
+                )
+            },
             onConnect = { serverUrl, username, password ->
                 viewModel.connectToServer(serverUrl, username, password, activity = activity)
             },

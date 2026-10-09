@@ -14,6 +14,8 @@ data class ServerProfile(
     val serverUrl: String,
     val serverName: String,
     val serverType: ServerType = ServerType.JELLYFIN,
+    val embyConnectUserId: String? = null,
+    val embyConnectAccessKey: String? = null,
     val userId: String? = null,
     val username: String,
     val accessToken: String? = null,
@@ -34,6 +36,8 @@ data class ServerProfile(
             normalizedUrl = normalizedUrl,
             isAdministrator = isAdministrator,
             serverType = serverType,
+            embyConnectUserId = embyConnectUserId,
+            embyConnectAccessKey = embyConnectAccessKey,
         )
     }
 
@@ -60,6 +64,8 @@ data class ServerProfile(
                 serverUrl = normalizedUrl,
                 serverName = server.name,
                 serverType = server.serverType,
+                embyConnectUserId = server.embyConnectUserId,
+                embyConnectAccessKey = server.embyConnectAccessKey,
                 userId = server.userId,
                 username = username,
                 accessToken = server.accessToken,

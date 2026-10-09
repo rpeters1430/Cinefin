@@ -9,8 +9,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.withContext
-import org.json.JSONObject
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
@@ -30,7 +31,6 @@ class JellyfinDiscoveryRepository @Inject constructor(
     companion object {
         private const val TAG = "JellyfinDiscovery"
         private const val DISCOVERY_PORT = 7359
-        private const val DISCOVERY_MESSAGE = "Who is JellyfinServer?"
         private const val TIMEOUT_MS = 2000
         private const val MAX_RETRIES = 2
     }
@@ -41,46 +41,42 @@ class JellyfinDiscoveryRepository @Inject constructor(
         // Initial empty list
         emit(emptyList())
 
-        withContext(Dispatchers.IO) {
-            repeat(MAX_RETRIES) {
+        repeat(MAX_RETRIES) {
+            for ((type, probe) in ServerDiscoveryProtocol.probes) {
+                currentCoroutineContext().ensureActive()
                 try {
-                    val socket = DatagramSocket()
-                    socket.broadcast = true
-                    socket.soTimeout = TIMEOUT_MS
-
-                    val sendData = DISCOVERY_MESSAGE.toByteArray()
-                    val sendPacket = DatagramPacket(
-                        sendData,
-                        sendData.size,
-                        getBroadcastAddress(),
-                        DISCOVERY_PORT
-                    )
-
-                    socket.send(sendPacket)
-
-                    val buffer = ByteArray(4096)
-                    while (true) {
-                        try {
-                            val receivePacket = DatagramPacket(buffer, buffer.size)
-                            socket.receive(receivePacket)
-                            
-                            val message = String(receivePacket.data, 0, receivePacket.length)
-                            val server = parseDiscoveryMessage(message)
-                            if (server != null && !discoveredServers.containsKey(server.id)) {
-                                discoveredServers[server.id] = server
-                                // Emit current list
-                                emit(discoveredServers.values.toList())
+                    DatagramSocket().use { socket ->
+                        socket.broadcast = true
+                        socket.soTimeout = TIMEOUT_MS
+                        val sendData = probe.toByteArray(Charsets.UTF_8)
+                        socket.send(DatagramPacket(sendData, sendData.size, getBroadcastAddress(), DISCOVERY_PORT))
+                        val buffer = ByteArray(4096)
+                        // A busy LAN cannot extend discovery indefinitely.
+                        val deadline = System.nanoTime() + TIMEOUT_MS * 1_000_000L
+                        while (System.nanoTime() < deadline) {
+                            currentCoroutineContext().ensureActive()
+                            socket.soTimeout = ((deadline - System.nanoTime()) / 1_000_000L).toInt().coerceAtLeast(1)
+                            try {
+                                val packet = DatagramPacket(buffer, buffer.size)
+                                socket.receive(packet)
+                                val message = String(packet.data, packet.offset, packet.length, Charsets.UTF_8)
+                                val server = ServerDiscoveryProtocol.parse(message, type) ?: continue
+                                val key = "${server.serverType}:${server.id}"
+                                if (discoveredServers.putIfAbsent(key, server) == null) {
+                                    emit(discoveredServers.values.toList())
+                                }
+                            } catch (_: SocketTimeoutException) {
+                                break
                             }
-                        } catch (e: SocketTimeoutException) {
-                            break // Done receiving for this attempt
                         }
                     }
-                    socket.close()
-                } catch (e: Exception) {
-                    SecureLogger.e(TAG, "Discovery error: ${e.message}")
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: java.io.IOException) {
+                    SecureLogger.w(TAG, "Local server discovery unavailable", e)
                 }
-                delay(500) // Small delay between retries
             }
+            delay(500)
         }
     }.flowOn(Dispatchers.IO)
 
@@ -106,17 +102,4 @@ class JellyfinDiscoveryRepository @Inject constructor(
         }
     }
 
-    private fun parseDiscoveryMessage(message: String): DiscoveredServer? {
-        return try {
-            val json = JSONObject(message)
-            DiscoveredServer(
-                name = json.getString("Name"),
-                address = json.getString("Address"),
-                id = json.getString("Id"),
-                version = json.optString("Version")
-            )
-        } catch (e: Exception) {
-            null
-        }
-    }
 }

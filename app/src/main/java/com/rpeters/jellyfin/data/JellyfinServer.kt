@@ -20,6 +20,8 @@ data class JellyfinServer(
     val normalizedUrl: String? = null,
     val isAdministrator: Boolean = false,
     val serverType: ServerType = ServerType.JELLYFIN,
+    val embyConnectUserId: String? = null,
+    val embyConnectAccessKey: String? = null,
 )
 
 @Serializable

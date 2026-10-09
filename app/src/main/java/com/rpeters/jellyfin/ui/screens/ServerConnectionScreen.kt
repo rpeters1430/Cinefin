@@ -116,8 +116,16 @@ fun ServerConnectionScreen(
     onContinueOffline: () -> Unit = {},
     modifier: Modifier = Modifier,
     savedProfilesSection: @Composable () -> Unit = {},
+    embyConnectSection: @Composable () -> Unit = {},
+    onServerUrlEdited: (String) -> Unit = {},
 ) {
     var serverUrl by rememberSaveable(savedServerUrl) { mutableStateOf(savedServerUrl) }
+    LaunchedEffect(serverUrl) { onServerUrlEdited(serverUrl) }
+    val selectedType = connectionState.discoveredServers.firstOrNull {
+        com.rpeters.jellyfin.utils.normalizeServerUrl(it.address) == com.rpeters.jellyfin.utils.normalizeServerUrl(serverUrl)
+    }?.serverType ?: connectionState.detectedServerType.takeIf {
+        connectionState.detectedServerUrl == com.rpeters.jellyfin.utils.normalizeServerUrl(serverUrl)
+    }
     var username by rememberSaveable(savedUsername) { mutableStateOf(savedUsername) }
     var password by rememberSaveable { mutableStateOf("") }
 
@@ -258,6 +266,7 @@ fun ServerConnectionScreen(
             LoginHeaderCard(modifier = Modifier.fillMaxWidth())
 
             savedProfilesSection()
+            embyConnectSection()
 
             if (uiFlags.showDiscoveredServers) {
                 DiscoveredServersCard(
@@ -350,6 +359,7 @@ fun ServerConnectionScreen(
                 canSubmit = canSubmit,
                 onConnect = submitIfValid,
                 onQuickConnect = onQuickConnect,
+                showQuickConnect = selectedType != com.rpeters.jellyfin.data.model.ServerType.EMBY,
             )
 
             Spacer(modifier = Modifier.height(48.dp))
@@ -462,7 +472,7 @@ private fun DiscoveredServersCard(
                             shape = ShapeTokens.Large,
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(text = server.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+                                Text(text = "${if (server.serverType == com.rpeters.jellyfin.data.model.ServerType.EMBY) "Emby" else "Jellyfin"} · ${server.name}", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
                                 Text(text = server.address, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f))
                             }
                         }
@@ -505,6 +515,7 @@ private fun LoginActionButtons(
     canSubmit: Boolean,
     onConnect: () -> Unit,
     onQuickConnect: () -> Unit,
+    showQuickConnect: Boolean = true,
 ) {
     ExpressiveFilledButton(
         onClick = onConnect,
@@ -536,7 +547,7 @@ private fun LoginActionButtons(
         }
     }
 
-    ExpressiveOutlinedButton(
+    if (showQuickConnect) ExpressiveOutlinedButton(
         onClick = onQuickConnect,
         enabled = !isConnecting,
         modifier = Modifier

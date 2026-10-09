@@ -219,6 +219,7 @@ object NetworkModule {
         connectionOptimizer: Provider<com.rpeters.jellyfin.data.repository.ConnectionOptimizer>,
         timeProvider: () -> Long,
         embyAuthDataSource: Provider<com.rpeters.jellyfin.data.emby.EmbyAuthDataSource>,
+        embyConnectClient: Provider<com.rpeters.jellyfin.data.emby.EmbyConnectClient>,
         remoteConfigRepository: com.rpeters.jellyfin.data.repository.RemoteConfigRepository,
     ): JellyfinAuthRepository =
         JellyfinAuthRepository(
@@ -227,6 +228,7 @@ object NetworkModule {
             connectionOptimizer,
             timeProvider,
             embyAuthDataSource,
+            embyConnectClient = embyConnectClient,
             isEmbySupportEnabled = {
                 remoteConfigRepository.getBoolean(com.rpeters.jellyfin.core.FeatureFlags.Experimental.ENABLE_EMBY_SUPPORT)
             },

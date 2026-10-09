@@ -51,6 +51,10 @@ class ActiveSessionStore(
             preferences[PreferencesKeys.SESSION_LOGIN_TIMESTAMP] = server.loginTimestamp ?: System.currentTimeMillis()
             preferences[PreferencesKeys.SESSION_IS_ADMIN] = server.isAdministrator
             preferences[PreferencesKeys.SESSION_SERVER_TYPE] = server.serverType.name
+            server.embyConnectUserId?.let { preferences[PreferencesKeys.EMBY_CONNECT_USER_ID] = it }
+                ?: preferences.remove(PreferencesKeys.EMBY_CONNECT_USER_ID)
+            server.embyConnectAccessKey?.let { preferences[PreferencesKeys.EMBY_CONNECT_ACCESS_KEY] = it }
+                ?: preferences.remove(PreferencesKeys.EMBY_CONNECT_ACCESS_KEY)
         }
     }
 
@@ -66,6 +70,8 @@ class ActiveSessionStore(
             preferences.remove(PreferencesKeys.SESSION_LOGIN_TIMESTAMP)
             preferences.remove(PreferencesKeys.SESSION_IS_ADMIN)
             preferences.remove(PreferencesKeys.SESSION_SERVER_TYPE)
+            preferences.remove(PreferencesKeys.EMBY_CONNECT_USER_ID)
+            preferences.remove(PreferencesKeys.EMBY_CONNECT_ACCESS_KEY)
         }
     }
 }

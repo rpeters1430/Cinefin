@@ -70,6 +70,21 @@ class ProfileSwitcher @Inject constructor(
             return ProfileSwitchResult.SignInRequired(target)
         }
 
+        val connectUserId = target.embyConnectUserId
+        val connectKey = target.embyConnectAccessKey
+        if (connectUserId != null && connectKey != null) {
+            val result = authRepository.authenticateWithEmbyConnect(target.serverUrl, connectUserId, connectKey, target.serverId)
+            if (result !is com.rpeters.jellyfin.data.repository.common.ApiResult.Success) {
+                return ProfileSwitchResult.SignInRequired(target)
+            }
+            val refreshed = authRepository.getCurrentServerSync() ?: return ProfileSwitchResult.SignInRequired(target)
+            val updatedProfile = ServerProfile.fromServer(refreshed) ?: return ProfileSwitchResult.SignInRequired(target)
+            resetServerScopedState()
+            profileRepository.saveAndActivate(updatedProfile)
+            activeSessionStore.save(refreshed)
+            _profileChanged.tryEmit(updatedProfile)
+            return ProfileSwitchResult.Switched(updatedProfile)
+        }
         resetServerScopedState()
         profileRepository.setActive(profileId)
         val server = target.toJellyfinServer()

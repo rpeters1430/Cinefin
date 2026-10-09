@@ -45,6 +45,7 @@ class JellyfinAuthRepository @Inject constructor(
     private val timeProvider: () -> Long = System::currentTimeMillis,
     private val embyAuthDataSource: Provider<EmbyAuthDataSource>? = null,
     private val isEmbySupportEnabled: () -> Boolean = { false },
+    private val embyConnectClient: Provider<com.rpeters.jellyfin.data.emby.EmbyConnectClient>? = null,
 ) : IJellyfinAuthRepository, TokenProvider {
     private val authMutex = Mutex()
 
@@ -261,8 +262,54 @@ class JellyfinAuthRepository @Inject constructor(
         }
     }
 
+    override fun isEmbyConnectSupported(): Boolean = isEmbySupportEnabled() && embyConnectClient != null
+
+    override suspend fun authenticateWithEmbyConnect(
+        serverUrl: String,
+        connectUserId: String,
+        accessKey: String,
+        expectedServerId: String,
+    ): ApiResult<AuthenticationResult> = authMutex.withLock {
+        authenticateWithEmbyConnectInternal(serverUrl, connectUserId, accessKey, expectedServerId)
+    }
+
+    private suspend fun authenticateWithEmbyConnectInternal(
+        serverUrl: String,
+        connectUserId: String,
+        accessKey: String,
+        expectedServerId: String,
+    ): ApiResult<AuthenticationResult> {
+        return try {
+            val probe = testServerConnection(serverUrl)
+            if (probe is ApiResult.Error) return ApiResult.Error(probe.message, probe.cause, probe.errorType)
+            val info = (probe as? ApiResult.Success)?.data ?: return ApiResult.Error("Unable to identify the server")
+            if (ServerType.detect(info.productName, info.version) != ServerType.EMBY || info.id != expectedServerId) {
+                return ApiResult.Error("This address does not match the linked Emby server")
+            }
+            val client = embyConnectClient?.get() ?: return ApiResult.Error("Emby Connect is unavailable")
+            val result = client.exchange(serverUrl, connectUserId, accessKey).copy(serverId = info.id)
+            persistAuthenticationState(
+                serverUrl = serverUrl,
+                authResult = result,
+                serverType = ServerType.EMBY,
+                embyConnectUserId = connectUserId,
+                embyConnectAccessKey = accessKey,
+            )
+            ApiResult.Success(result)
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            ApiResult.Error("Could not sign in to the linked Emby server", e, RepositoryUtils.getErrorType(e))
+        }
+    }
+
     private suspend fun reAuthenticateInternal(): Boolean {
         val server = _currentServer.value ?: return false
+        if (server.embyConnectUserId != null && server.embyConnectAccessKey != null) {
+            return authenticateWithEmbyConnectInternal(
+                server.url, server.embyConnectUserId, server.embyConnectAccessKey, server.id,
+            ) is ApiResult.Success
+        }
         val username = server.username ?: return false
         val serverUrl = server.url
 
@@ -367,6 +414,8 @@ class JellyfinAuthRepository @Inject constructor(
         authResult: AuthenticationResult,
         usernameHint: String? = null,
         serverType: ServerType = ServerType.JELLYFIN,
+        embyConnectUserId: String? = null,
+        embyConnectAccessKey: String? = null,
     ) {
         val resolvedUsername = usernameHint ?: authResult.user?.name
         val server = JellyfinServer(
@@ -381,6 +430,8 @@ class JellyfinAuthRepository @Inject constructor(
             normalizedUrl = normalizedServerUrl,
             isAdministrator = authResult.user?.policy?.isAdministrator == true,
             serverType = serverType,
+            embyConnectUserId = embyConnectUserId,
+            embyConnectAccessKey = embyConnectAccessKey,
         )
 
         _currentServer.update { server }
