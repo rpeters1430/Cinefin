@@ -468,7 +468,44 @@ content from one appearing under the other.
 
 ## Phase 2: Connect and sign in to an Emby server
 
-**Status**: pending
+**Status**: in progress on branch `emby` (2026-10-08). Sign-in works on an emulator against
+Emby 4.11.0.6: the server is detected as Emby, the test user signs in, the profile is saved as
+Emby next to a Jellyfin profile, switching both ways works, and the Emby profile survives a cold
+restart. Home is blank under Emby, as expected until Phase 3.
+
+Built:
+
+- `ServerType.detect(productName, version)`: Jellyfin names itself; no product name plus a
+  version below 10 means Emby; anything unidentifiable is treated as Jellyfin.
+- `ServerIdCodec` and the descriptor-driven `EmbyJsonNormalizer` (pulled forward from Phase 3,
+  because sign-in already needs the normalizer to produce an SDK `AuthenticationResult`).
+- `EmbyHttpClient` and `EmbyAuthDataSource`. **Plain OkHttp instead of Retrofit** (changes KD5):
+  the base URL differs per profile, which Retrofit handles awkwardly, and the responses are
+  decoded by the normalizer anyway. It uses the app's shared client, so pinning and the existing
+  auth headers apply.
+- `JellyfinAuthRepository`: per-type version gate (Emby minimum 4.8, provisional), Emby sign-in,
+  re-authentication by the session's server type, `serverType` on the session.
+- `enable_emby_support` flag, on in debug builds only. With it off, an Emby server gets "This is
+  an Emby server. Emby support is not available in this version of the app yet."
+- `EmbyHttpException` mapped in `RepositoryUtils` like the other HTTP errors.
+
+Changed from the task list below:
+
+- `ConnectionOptimizer` still returns the SDK `PublicSystemInfo`. The SDK's probe decodes
+  Emby's public info without help, so the type-neutral `ServerProbeResult` was not needed.
+- `authenticateUser` still returns the SDK `AuthenticationResult`, for the same reason.
+
+Not done yet:
+
+- The Jellyfin/Emby choice on the add-server screen (KD6). The type is detected automatically
+  today; there is no visible selector.
+- Hiding Quick Connect for Emby. The existing check already reports it as unavailable on a 404,
+  but this was not looked at on a device.
+- TV connection screens.
+- `POST /Sessions/Logout` when an Emby profile is signed out or removed.
+- Age-based token expiry still applies to Emby sessions.
+- Under Emby the Settings account card shows "User" instead of the user's name, because loading
+  the current user still goes through the Jellyfin SDK (Phase 3).
 **Posture**: test-first
 **Files**: `ServerType.kt`, `JellyfinServer.kt`, `Constants.kt`, `FeatureFlags.kt`,
 `ConnectionOptimizer.kt`, `JellyfinAuthRepository.kt`, `IJellyfinAuthRepository.kt`,

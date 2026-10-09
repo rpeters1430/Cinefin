@@ -2,6 +2,7 @@ package com.rpeters.jellyfin.data.utils
 
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.JellyfinServer
+import com.rpeters.jellyfin.data.emby.EmbyHttpException
 import com.rpeters.jellyfin.data.repository.common.ErrorType
 import com.rpeters.jellyfin.data.security.PinningValidationException
 import com.rpeters.jellyfin.utils.SecureLogger
@@ -93,6 +94,15 @@ object RepositoryUtils {
             }
 
             is HttpException -> when (e.code()) {
+                400 -> ErrorType.BAD_REQUEST
+                401 -> ErrorType.UNAUTHORIZED
+                403 -> ErrorType.FORBIDDEN
+                404 -> ErrorType.NOT_FOUND
+                in 500..599 -> ErrorType.SERVER_ERROR
+                else -> ErrorType.UNKNOWN
+            }
+
+            is EmbyHttpException -> when (e.code) {
                 400 -> ErrorType.BAD_REQUEST
                 401 -> ErrorType.UNAUTHORIZED
                 403 -> ErrorType.FORBIDDEN
@@ -214,6 +224,7 @@ object RepositoryUtils {
      */
     fun is401Error(e: Exception): Boolean {
         return (e is HttpException && e.code() == 401) ||
+            (e is EmbyHttpException && e.code == 401) ||
             (e is InvalidStatusException && e.message?.contains("401") == true)
     }
 }

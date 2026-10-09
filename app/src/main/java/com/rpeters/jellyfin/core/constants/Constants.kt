@@ -105,5 +105,10 @@ object Constants {
         // Jellyfin SDK Kotlin 1.9.0 dropped support for servers older than Jellyfin 12.0.
         // See https://github.com/jellyfin/jellyfin-sdk-kotlin/releases/tag/v1.9.0
         const val MIN_SUPPORTED_SERVER_MAJOR_VERSION = 12
+
+        // Provisional: Emby support has only been exercised against 4.11. 4.8 is the first
+        // release with intro markers on chapters, which later phases rely on.
+        const val MIN_SUPPORTED_EMBY_MAJOR_VERSION = 4
+        const val MIN_SUPPORTED_EMBY_MINOR_VERSION = 8
     }
 }

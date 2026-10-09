@@ -218,8 +218,19 @@ object NetworkModule {
         secureCredentialManager: com.rpeters.jellyfin.data.SecureCredentialManager,
         connectionOptimizer: Provider<com.rpeters.jellyfin.data.repository.ConnectionOptimizer>,
         timeProvider: () -> Long,
+        embyAuthDataSource: Provider<com.rpeters.jellyfin.data.emby.EmbyAuthDataSource>,
+        remoteConfigRepository: com.rpeters.jellyfin.data.repository.RemoteConfigRepository,
     ): JellyfinAuthRepository =
-        JellyfinAuthRepository(jellyfin, secureCredentialManager, connectionOptimizer, timeProvider)
+        JellyfinAuthRepository(
+            jellyfin,
+            secureCredentialManager,
+            connectionOptimizer,
+            timeProvider,
+            embyAuthDataSource,
+            isEmbySupportEnabled = {
+                remoteConfigRepository.getBoolean(com.rpeters.jellyfin.core.FeatureFlags.Experimental.ENABLE_EMBY_SUPPORT)
+            },
+        )
 
     @Provides
     @Singleton
