@@ -16,6 +16,7 @@ import org.jellyfin.sdk.model.ClientInfo
 import org.jellyfin.sdk.model.DeviceInfo
 import org.jellyfin.sdk.model.api.BaseItemDtoQueryResult
 import org.jellyfin.sdk.model.api.BaseItemKind
+import org.jellyfin.sdk.model.api.ItemFields
 import org.jellyfin.sdk.model.api.MediaSegmentDtoQueryResult
 import org.jellyfin.sdk.model.api.UserDto
 import org.jellyfin.sdk.model.api.UserItemDataDto
@@ -74,6 +75,43 @@ class EmbyApiClientTest {
         assertEquals(BaseItemKind.MOVIE, item.type)
         assertEquals(movieId, item.userData?.itemId)
         assertTrue(item.userData?.played == true)
+    }
+
+    @Test
+    fun itemQueries_askEmbyForTheListFieldsJellyfinSendsByDefault() = runTest {
+        delegate.respondWith("""{"Items":[],"TotalRecordCount":0}""")
+
+        client.request(HttpMethod.GET, "/Items", emptyMap(), mapOf("userId" to userUuid), null)
+
+        val fields = (delegate.query["fields"] as List<*>).map { it.toString() }
+        assertTrue(fields.containsAll(listOf("ProductionYear", "CommunityRating", "OfficialRating", "PremiereDate")))
+    }
+
+    @Test
+    fun itemQueries_keepRequestedFieldsAndDoNotDuplicateThem() = runTest {
+        delegate.respondWith("""{"Items":[],"TotalRecordCount":0}""")
+
+        client.request(
+            HttpMethod.GET,
+            "/Shows/NextUp",
+            emptyMap(),
+            mapOf("fields" to listOf(ItemFields.OVERVIEW, "ProductionYear")),
+            null,
+        )
+
+        val fields = delegate.query["fields"] as List<*>
+        assertTrue(ItemFields.OVERVIEW in fields)
+        assertEquals(1, fields.count { it.toString() == "ProductionYear" })
+        assertTrue("CommunityRating" in fields)
+    }
+
+    @Test
+    fun nonItemRoutes_doNotGetListFields() = runTest {
+        delegate.respondWith("""{"Items":[],"TotalRecordCount":0}""")
+
+        client.request(HttpMethod.GET, "/UserViews", emptyMap(), mapOf("userId" to userUuid), null)
+
+        assertNull(delegate.query["fields"])
     }
 
     @Test

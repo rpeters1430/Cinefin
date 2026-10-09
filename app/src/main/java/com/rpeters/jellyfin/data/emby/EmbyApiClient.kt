@@ -66,7 +66,10 @@ class EmbyApiClient(
         route?.cannedResponse?.let { return RawResponse(it.toByteArray(), HTTP_OK, emptyMap()) }
 
         val embyPathParameters = pathParameters.mapValues { toEmbyParameter(it.value) }.toMutableMap()
-        val embyQueryParameters = queryParameters.mapValues { toEmbyParameter(it.value) }
+        val embyQueryParameters = queryParameters.mapValues { toEmbyParameter(it.value) }.toMutableMap()
+        if (route?.listsItems == true) {
+            embyQueryParameters[FIELDS_PARAMETER] = withListFields(embyQueryParameters[FIELDS_PARAMETER])
+        }
         val embyPath = route?.embyPath ?: pathTemplate
         if (USER_ID_PLACEHOLDER in embyPath) {
             embyPathParameters[USER_ID_PARAMETER] = embyQueryParameters[USER_ID_PARAMETER]?.toString() ?: userId
@@ -95,8 +98,31 @@ class EmbyApiClient(
         else -> value
     }
 
+    /**
+     * Jellyfin puts the year, ratings and dates on every item in a list. Emby only returns them
+     * when they are named in `fields`, so ask for them on every item query.
+     */
+    private fun withListFields(requested: Any?): List<Any> {
+        val current = (requested as? Iterable<*>)?.filterNotNull().orEmpty()
+        val alreadyRequested = current.mapTo(HashSet()) { it.toString() }
+        return current + LIST_FIELDS.filterNot { it in alreadyRequested }
+    }
+
     private companion object {
         const val TAG = "EmbyApiClient"
+        const val FIELDS_PARAMETER = "fields"
+        val LIST_FIELDS = listOf(
+            "ProductionYear",
+            "PremiereDate",
+            "EndDate",
+            "CommunityRating",
+            "CriticRating",
+            "OfficialRating",
+            "Status",
+            "ChildCount",
+            "RecursiveItemCount",
+            "Container",
+        )
         const val HTTP_OK = 200
         const val USER_ID_PARAMETER = "userId"
         const val USER_ID_PLACEHOLDER = "{userId}"
@@ -113,15 +139,17 @@ class EmbyApiClient(
  *   Null for routes with no response body.
  * @param cannedResponse returned without contacting the server, for features Emby does not have.
  * @param reshape adjusts the parsed response before normalizing; receives the request's item ID.
+ * @param listsItems true for item queries, which need the list fields Emby omits by default.
  */
 internal class EmbyRoute(
     val embyPath: String? = null,
     val response: KSerializer<*>? = null,
     val cannedResponse: String? = null,
+    val listsItems: Boolean = false,
     val reshape: (JsonElement, String?) -> JsonElement = { element, _ -> element },
 ) {
     companion object {
-        private val items = EmbyRoute(response = BaseItemDtoQueryResult.serializer())
+        private val items = EmbyRoute(response = BaseItemDtoQueryResult.serializer(), listsItems = true)
 
         /** Emby leaves `ItemId` out of user data; the SDK requires it. */
         private val userData = { element: JsonElement, itemId: String? ->
