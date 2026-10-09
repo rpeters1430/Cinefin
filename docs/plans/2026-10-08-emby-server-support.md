@@ -639,6 +639,20 @@ Follow-up on 2026-10-08 (after the Phase 4 commit):
   stall is in how the player handles it. Not yet compared with resuming on Jellyfin.
 - **Picture quality is still unsettled.** The emulator could not give a fair comparison; this
   needs a real device.
+- **The resume stall is not shown to be an Emby problem.** Direct play from Emby (a file the
+  device plays as is) survived a jump of about 40 minutes along the timeline and kept playing.
+  The stall only appears on the HLS direct-stream path (video copied, audio converted), and the
+  same movie on Jellyfin, on the same emulator, also stalled on that path: it stopped at 14 s
+  after loading six segments, with no seek involved. So the HLS direct-stream path is unreliable
+  on this emulator for both servers. Whether it is the emulator or a real app bug needs a phone.
+- **Fixed (not Emby-specific): the favourite button on detail screens did not reach the server.**
+  `JellyfinUserRepository.toggleFavorite` takes the item's current state, but `MainAppViewModel`
+  and `UserActionsViewModel` passed the new state, so the request was always the no-op one. The
+  detail screen's own copy of the item is also never reloaded, so `MainAppViewModel` now
+  remembers the last state the server confirmed. Checked on Emby against the server: four taps,
+  button and server agreed each time. `JellyfinRepository.toggleFavorite` (used by playlists)
+  returns the opposite of what it did and was left alone.
+- **Mark played and unplayed work on Emby**, confirmed on the server.
 
 Not done or not checked:
 
