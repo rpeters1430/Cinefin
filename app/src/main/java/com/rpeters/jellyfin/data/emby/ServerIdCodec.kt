@@ -48,6 +48,6 @@ object ServerIdCodec {
     /** As [decode], for IDs the app carries around as strings. Non-UUID input is returned as is. */
     fun decode(id: String): String {
         val uuid = runCatching { UUID.fromString(id) }.getOrNull() ?: return id
-        return decode(uuid)
+        return if (isEncoded(uuid)) decode(uuid) else id
     }
 }

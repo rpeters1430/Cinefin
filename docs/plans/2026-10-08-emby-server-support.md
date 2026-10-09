@@ -623,6 +623,23 @@ Differs from the plan: the app still builds its own stream URLs instead of using
 `DirectStreamUrl`/`TranscodingUrl`. They work, so that change was not needed for playback from
 the phone.
 
+Follow-up on 2026-10-08 (after the Phase 4 commit):
+
+- **Fixed:** encoded item IDs are now decoded where stream, image, subtitle and Cast URLs are
+  built (`JellyfinStreamRepository`, `CastMediaLoadBuilder`, `EnhancedPlaybackManager`,
+  `VideoPlayerMetadataManager`), so URLs handed to Chromecast or DLNA carry Emby's own IDs.
+  Covered by unit tests; not tried against a Cast device.
+- **Start-up time is not an Emby problem.** The same movie took 17 s to start from Emby and 16 s
+  from Jellyfin on the emulator, with the same Direct Stream decision.
+- **Open bug: resuming a partly watched movie stalls.** The player opens at the saved position
+  (3:55), the server returns the playlist and the two segments at that position, and then the
+  player sits buffering without requesting more; it was still stalled minutes later. Starting
+  from the beginning and skipping forward in small steps works. Fetching the same mid-file
+  segment directly from the server works (10 s for the first request, then instant), so the
+  stall is in how the player handles it. Not yet compared with resuming on Jellyfin.
+- **Picture quality is still unsettled.** The emulator could not give a fair comparison; this
+  needs a real device.
+
 Not done or not checked:
 
 - Picture quality. The one frame captured looked banded and green-tinted. That may be the

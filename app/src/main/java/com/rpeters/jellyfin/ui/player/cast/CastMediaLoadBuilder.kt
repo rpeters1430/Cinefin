@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.ui.player.cast
 
+import com.rpeters.jellyfin.data.emby.ServerIdCodec
 import android.net.Uri
 import androidx.core.net.toUri
 import androidx.media3.common.util.UnstableApi
@@ -68,7 +69,7 @@ class CastMediaLoadBuilder @Inject constructor(
 
             val streamPath = when {
                 !mediaSource.transcodingUrl.isNullOrBlank() -> mediaSource.transcodingUrl!!
-                else -> "Videos/$itemId/stream?static=true"
+                else -> "Videos/${ServerIdCodec.decode(itemId)}/stream?static=true"
             }
 
             val fullUrl = "$serverUrl/${streamPath.trimStart('/')}"

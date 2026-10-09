@@ -8,6 +8,8 @@ import io.mockk.impl.annotations.MockK
 import io.mockk.mockk
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
+import org.jellyfin.sdk.model.api.ImageType
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -405,5 +407,56 @@ class JellyfinStreamRepositoryTest {
         }
         assertNull("Series image URL should be null", streamRepository.getSeriesImageUrl(mockItem))
         assertNull("Backdrop URL should be null", streamRepository.getBackdropUrl(mockItem))
+    }
+
+    // Emby item IDs are carried as ServerIdCodec UUIDs; URLs must name the item by Emby's number,
+    // because not every consumer (Chromecast, DLNA) sends them through the app's HTTP client.
+
+    private val embyItemId = com.rpeters.jellyfin.data.emby.ServerIdCodec.encode("1035")!!
+
+    @Test
+    fun streamUrls_forEmbyItem_useEmbyNumericId() {
+        every { authRepository.getCurrentServerSync() } returns testServer
+        val id = embyItemId.toString()
+
+        val urls = listOf(
+            streamRepository.getStreamUrl(id),
+            streamRepository.getTranscodedStreamUrl(id, useHls = true),
+            streamRepository.getHlsStreamUrl(id),
+            streamRepository.getDirectStreamUrl(id, "mkv"),
+        )
+
+        urls.forEach { url ->
+            assertNotNull(url)
+            assertTrue("Expected Emby ID in $url", url!!.contains("/Videos/1035/"))
+            assertFalse("Encoded ID leaked into $url", url.contains(id))
+        }
+        assertEquals("${testServer.url}/Items/1035/Download", streamRepository.getDownloadUrl(id))
+    }
+
+    @Test
+    fun imageUrls_forEmbyItem_useEmbyNumericId() {
+        every { authRepository.getCurrentServerSync() } returns testServer
+        val id = embyItemId.toString()
+        val item = BaseItemDto(
+            id = embyItemId,
+            type = BaseItemKind.MOVIE,
+            backdropImageTags = listOf("bd"),
+            imageTags = mapOf(ImageType.LOGO to "lg"),
+        )
+
+        val urls = listOf(
+            streamRepository.getImageUrl(id, "Primary", "tag"),
+            streamRepository.getChapterImageUrl(id, 2, "tag"),
+            streamRepository.getSeriesImageUrl(item),
+            streamRepository.getBackdropUrl(item),
+            streamRepository.getLogoUrl(item),
+        )
+
+        urls.forEach { url ->
+            assertNotNull(url)
+            assertTrue("Expected Emby ID in $url", url!!.contains("/Items/1035/Images/"))
+            assertFalse("Encoded ID leaked into $url", url.contains(id))
+        }
     }
 }
