@@ -9,7 +9,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import java.net.DatagramPacket
@@ -70,8 +69,6 @@ class JellyfinDiscoveryRepository @Inject constructor(
                             }
                         }
                     }
-                } catch (e: CancellationException) {
-                    throw e
                 } catch (e: java.io.IOException) {
                     SecureLogger.w(TAG, "Local server discovery unavailable", e)
                 }

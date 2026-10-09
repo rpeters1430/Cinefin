@@ -34,6 +34,10 @@ import javax.inject.Provider
 @Config(sdk = [33])
 class JellyfinAuthRepositoryEmbyTest {
 
+    private val CONNECT_USER = "connect-user"
+    private val LINKED_KEY = "linked-key"
+    private val EXPECTED_SERVER = "expected-server"
+
     private val jellyfin: Jellyfin = mockk(relaxed = true)
     private val credentialManager: SecureCredentialManager = mockk(relaxed = true)
     private val connectionOptimizer: ConnectionOptimizer = mockk(relaxed = true)
@@ -90,7 +94,7 @@ class JellyfinAuthRepositoryEmbyTest {
         every { info.productName } returns "Emby Server"
         every { info.id } returns "different-server"
         coEvery { connectionOptimizer.testServerConnection(EMBY_URL) } returns ApiResult.Success(info)
-        val result = auth.authenticateWithEmbyConnect(EMBY_URL, "connect-user", "linked-key", "expected-server")
+        val result = auth.authenticateWithEmbyConnect(EMBY_URL, CONNECT_USER, LINKED_KEY, EXPECTED_SERVER)
         assertTrue(result is ApiResult.Error)
         coVerify(exactly = 0) { connect.exchange(any(), any(), any()) }
         assertNull(auth.getCurrentServerSync())
@@ -107,17 +111,17 @@ class JellyfinAuthRepositoryEmbyTest {
         val info = mockk<PublicSystemInfo>(relaxed = true)
         every { info.version } returns "4.11.0.6"
         every { info.productName } returns "Emby Server"
-        every { info.id } returns "expected-server"
+        every { info.id } returns EXPECTED_SERVER
         coEvery { connectionOptimizer.testServerConnection(EMBY_URL) } returns ApiResult.Success(info)
-        coEvery { connect.exchange(EMBY_URL, "connect-user", "linked-key") } returns embyAuthResult
-        assertTrue(auth.authenticateWithEmbyConnect(EMBY_URL, "connect-user", "linked-key", "expected-server") is ApiResult.Success)
-        val saved = auth.getCurrentServerSync()!!
+        coEvery { connect.exchange(EMBY_URL, CONNECT_USER, LINKED_KEY) } returns embyAuthResult
+        assertTrue(auth.authenticateWithEmbyConnect(EMBY_URL, CONNECT_USER, LINKED_KEY, EXPECTED_SERVER) is ApiResult.Success)
+        val saved = requireNotNull(auth.getCurrentServerSync())
         assertEquals(ServerType.EMBY, saved.serverType)
-        assertEquals("connect-user", saved.embyConnectUserId)
-        assertEquals("linked-key", saved.embyConnectAccessKey)
-        assertEquals("expected-server", saved.id)
-        val profile = com.rpeters.jellyfin.data.model.ServerProfile.fromServer(saved)!!
-        assertEquals("linked-key", profile.toJellyfinServer().embyConnectAccessKey)
+        assertEquals(CONNECT_USER, saved.embyConnectUserId)
+        assertEquals(LINKED_KEY, saved.embyConnectAccessKey)
+        assertEquals(EXPECTED_SERVER, saved.id)
+        val profile = requireNotNull(com.rpeters.jellyfin.data.model.ServerProfile.fromServer(saved))
+        assertEquals(LINKED_KEY, profile.toJellyfinServer().embyConnectAccessKey)
     }
 
     @Test

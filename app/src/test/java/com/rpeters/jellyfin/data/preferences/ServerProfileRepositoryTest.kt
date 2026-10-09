@@ -67,6 +67,19 @@ class ServerProfileRepositoryTest {
     }
 
     @Test
+    fun clearAuthentication_forgetsOnlySelectedProfilesTokensAndConnectLink() = runTest {
+        repository.saveAndActivate(jellyfinProfile)
+        repository.saveAndActivate(embyProfile.copy(embyConnectUserId = "connect-user", embyConnectAccessKey = "linked-key"))
+        repository.clearAuthentication(embyProfile.id)
+        val saved = repository.current()
+        assertEquals(jellyfinProfile, saved.profiles.first { it.id == jellyfinProfile.id })
+        val forgotten = saved.profiles.first { it.id == embyProfile.id }
+        assertNull(forgotten.accessToken)
+        assertNull(forgotten.embyConnectAccessKey)
+        assertNull(forgotten.embyConnectUserId)
+    }
+
+    @Test
     fun current_noSavedProfiles_returnsEmptyWithNoActiveProfile() = runTest {
         val profiles = repository.current()
 

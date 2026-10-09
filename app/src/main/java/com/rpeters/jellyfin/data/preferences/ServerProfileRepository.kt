@@ -139,6 +139,18 @@ class ServerProfileRepository(
         }
     }
 
+    suspend fun clearAuthentication(profileId: String) {
+        dataStore.edit { preferences ->
+            val profiles = preferences.toServerProfiles().profiles
+            preferences[Keys.PROFILES] = encode(profiles.map {
+                if (it.id == profileId) it.copy(
+                    accessToken = null, loginTimestamp = null,
+                    embyConnectUserId = null, embyConnectAccessKey = null,
+                ) else it
+            })
+        }
+    }
+
     private fun Preferences.toServerProfiles(): ServerProfiles {
         val profiles = this[Keys.PROFILES]?.let(::decode).orEmpty()
         val activeId = this[Keys.ACTIVE_PROFILE_ID]?.takeIf { id -> profiles.any { it.id == id } }

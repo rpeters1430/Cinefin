@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
@@ -172,11 +173,13 @@ class RequestsViewModel @Inject constructor(
                 preferencesRepository.seerrPreferencesFlow,
                 arrPreferencesRepository.sonarrPreferencesFlow,
                 arrPreferencesRepository.radarrPreferencesFlow,
-            ) { seerr, sonarr, radarr ->
+                cinefinPluginRepository.currentServer,
+                _uiState.map { it.isPluginConfigured }.distinctUntilChanged(),
+            ) { seerr, sonarr, radarr, server, pluginConfigured ->
                 val configured = (seerr.isValid && seerr.isEnabled) ||
                     (sonarr.isValid && sonarr.isEnabled) ||
                     (radarr.isValid && radarr.isEnabled) ||
-                    _uiState.value.isPluginConfigured
+                    (pluginConfigured && server?.serverType?.supportsCinefinPlugin == true)
                 val sonarrConfigured = sonarr.isValid && sonarr.isEnabled
                 val radarrConfigured = radarr.isValid && radarr.isEnabled
                 Triple(configured, sonarrConfigured, radarrConfigured)
@@ -193,22 +196,23 @@ class RequestsViewModel @Inject constructor(
     }
 
     init {
-        // Check plugin availability (optional — the plugin is only used to import
-        // Seerr/Sonarr/Radarr credentials; all request calls are made directly by the app).
+        // Recheck server-specific plugin support after profile switching.
         viewModelScope.launch {
-            when (val infoResult = cinefinPluginRepository.getPluginInfo()) {
-                is ApiResult.Success -> {
-                    _uiState.update {
-                        it.copy(
-                            isPluginConfigured = infoResult.data.isConfigured,
-                            pluginCapabilities = infoResult.data.capabilities,
-                        )
+            cinefinPluginRepository.currentServer.collectLatest { server ->
+                _uiState.update { it.copy(isPluginConfigured = false, pluginCapabilities = emptyList()) }
+                if (server?.serverType?.supportsCinefinPlugin != true) return@collectLatest
+                when (val infoResult = cinefinPluginRepository.getPluginInfo()) {
+                    is ApiResult.Success -> {
+                        _uiState.update {
+                            it.copy(
+                                isPluginConfigured = infoResult.data.isConfigured,
+                                pluginCapabilities = infoResult.data.capabilities,
+                            )
+                        }
+                        if (infoResult.data.isConfigured) syncCredentialsFromPluginIfNeeded()
                     }
-                    if (infoResult.data.isConfigured) {
-                        syncCredentialsFromPluginIfNeeded()
-                    }
+                    else -> Unit
                 }
-                else -> _uiState.update { it.copy(isPluginConfigured = false) }
             }
         }
         viewModelScope.launch {

@@ -66,20 +66,24 @@ class ProfileSwitcher @Inject constructor(
         if (saved.activeProfileId == profileId && authRepository.getCurrentServerSync()?.accessToken == target.accessToken) {
             return ProfileSwitchResult.Switched(target)
         }
-        if (!target.hasUsableToken()) {
+        if (!target.hasUsableToken() && (target.embyConnectUserId == null || target.embyConnectAccessKey == null)) {
             return ProfileSwitchResult.SignInRequired(target)
         }
 
         val connectUserId = target.embyConnectUserId
         val connectKey = target.embyConnectAccessKey
         if (connectUserId != null && connectKey != null) {
+            resetServerScopedState()
             val result = authRepository.authenticateWithEmbyConnect(target.serverUrl, connectUserId, connectKey, target.serverId)
             if (result !is com.rpeters.jellyfin.data.repository.common.ApiResult.Success) {
+                if (result is com.rpeters.jellyfin.data.repository.common.ApiResult.Error &&
+                    result.errorType == com.rpeters.jellyfin.data.repository.common.ErrorType.AUTHENTICATION) {
+                    profileRepository.clearAuthentication(target.id)
+                }
                 return ProfileSwitchResult.SignInRequired(target)
             }
             val refreshed = authRepository.getCurrentServerSync() ?: return ProfileSwitchResult.SignInRequired(target)
             val updatedProfile = ServerProfile.fromServer(refreshed) ?: return ProfileSwitchResult.SignInRequired(target)
-            resetServerScopedState()
             profileRepository.saveAndActivate(updatedProfile)
             activeSessionStore.save(refreshed)
             _profileChanged.tryEmit(updatedProfile)

@@ -11,6 +11,9 @@ enum class ServerType {
     EMBY,
     ;
 
+    val supportsSyncPlay: Boolean get() = this == JELLYFIN
+    val supportsCinefinPlugin: Boolean get() = this == JELLYFIN
+
     companion object {
         // Jellyfin has reported 10.x and later since it forked; Emby is on 4.x.
         private const val FIRST_JELLYFIN_MAJOR_VERSION = 10

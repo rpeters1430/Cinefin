@@ -68,6 +68,7 @@ fun MediaRequestSettingsScreen(
     val credentialImportState by viewModel.credentialImportState.collectAsStateWithLifecycle()
     val isCurrentUserAdmin by viewModel.isCurrentUserAdmin.collectAsStateWithLifecycle()
     val allowNonAdminImports by viewModel.allowNonAdminImports.collectAsStateWithLifecycle()
+    val supportsCinefinPlugin by viewModel.supportsCinefinPlugin.collectAsStateWithLifecycle()
     val isPluginConfigured by viewModel.isPluginConfigured.collectAsStateWithLifecycle()
     val isPluginConfigurationSupported by viewModel.isPluginConfigurationSupported.collectAsStateWithLifecycle()
 
@@ -89,7 +90,7 @@ fun MediaRequestSettingsScreen(
         ) {
 
             // ── Server Sync ──────────────────────────────────────────────────
-            ExpressiveSettingsCard(
+            if (supportsCinefinPlugin) ExpressiveSettingsCard(
                 title = "Cinefin Server Plugin",
                 icon = Icons.Default.CloudDownload,
                 description = "Import Sonarr, Radarr, and Overseerr credentials from Jellyfin"

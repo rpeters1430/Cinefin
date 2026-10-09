@@ -281,7 +281,10 @@ class JellyfinAuthRepository @Inject constructor(
     ): ApiResult<AuthenticationResult> {
         return try {
             val probe = testServerConnection(serverUrl)
-            if (probe is ApiResult.Error) return ApiResult.Error(probe.message, probe.cause, probe.errorType)
+            if (probe is ApiResult.Error) return ApiResult.Error(
+                probe.cause?.let { com.rpeters.jellyfin.data.emby.EmbyConnectFailure.message(it) } ?: probe.message,
+                probe.cause, probe.errorType,
+            )
             val info = (probe as? ApiResult.Success)?.data ?: return ApiResult.Error("Unable to identify the server")
             if (ServerType.detect(info.productName, info.version) != ServerType.EMBY || info.id != expectedServerId) {
                 return ApiResult.Error("This address does not match the linked Emby server")
@@ -296,12 +299,19 @@ class JellyfinAuthRepository @Inject constructor(
                 embyConnectAccessKey = accessKey,
             )
             ApiResult.Success(result)
-        } catch (e: kotlinx.coroutines.CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            ApiResult.Error("Could not sign in to the linked Emby server", e, RepositoryUtils.getErrorType(e))
+        } catch (e: IOException) {
+            connectAuthenticationError(e)
+        } catch (e: kotlinx.serialization.SerializationException) {
+            connectAuthenticationError(e)
+        } catch (e: IllegalArgumentException) {
+            connectAuthenticationError(e)
         }
     }
+
+    private fun connectAuthenticationError(error: Throwable): ApiResult<AuthenticationResult> = ApiResult.Error(
+        com.rpeters.jellyfin.data.emby.EmbyConnectFailure.message(error), error,
+        com.rpeters.jellyfin.data.emby.EmbyConnectFailure.type(error),
+    )
 
     private suspend fun reAuthenticateInternal(): Boolean {
         val server = _currentServer.value ?: return false

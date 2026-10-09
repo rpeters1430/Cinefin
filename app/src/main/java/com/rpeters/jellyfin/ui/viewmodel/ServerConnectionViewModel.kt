@@ -145,12 +145,21 @@ class ServerConnectionViewModel @Inject constructor(
                     servers = servers,
                     error = if (servers.isEmpty()) "No linked Emby servers found. Link your account on the server or enter its address manually." else null,
                 )
-            } catch (e: kotlinx.coroutines.CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                _embyConnectState.value = EmbyConnectState(error = "Emby Connect sign-in failed. Check your account details and connection.")
+            } catch (e: java.io.IOException) {
+                reportEmbyAccountError(e)
+            } catch (e: kotlinx.serialization.SerializationException) {
+                reportEmbyAccountError(e)
+            } catch (e: IllegalArgumentException) {
+                reportEmbyAccountError(e)
             }
         }
+    }
+
+    private fun reportEmbyAccountError(error: Throwable) {
+        SecureLogger.w("ServerConnectionVM", "Emby account sign-in failed (${error.javaClass.simpleName})")
+        _embyConnectState.value = EmbyConnectState(
+            error = com.rpeters.jellyfin.data.emby.EmbyConnectFailure.message(error, accountSignIn = true),
+        )
     }
 
     fun selectEmbyConnectServer(server: com.rpeters.jellyfin.data.emby.EmbyConnectServer) {
@@ -174,16 +183,21 @@ class ServerConnectionViewModel @Inject constructor(
                             connected = true
                             break
                         }
-                        is ApiResult.Error -> error = result.message
+                        is ApiResult.Error -> {
+                            error = result.message
+                            if (result.errorType == ErrorType.AUTHENTICATION || result.errorType == ErrorType.PINNING) break
+                        }
                         else -> Unit
                     }
                 }
-            } catch (e: kotlinx.coroutines.CancellationException) {
-                throw e
-            } catch (_: Exception) {
-                // Keep the picker usable when storage or the network fails.
+            } catch (e: java.io.IOException) {
+                error = "Could not save the Emby session. Retry sign-in."
+                SecureLogger.w("ServerConnectionVM", "Emby session storage failed (${e.javaClass.simpleName})")
+            } finally {
+                isSelectingEmbyServer = false
+                _connectionState.value = _connectionState.value.copy(isConnecting = false)
+                if (!connected) _embyConnectState.value = _embyConnectState.value.copy(isBusy = false, error = error)
             }
-            isSelectingEmbyServer = false
             _connectionState.value = _connectionState.value.copy(
                 isConnecting = false,
                 isConnected = connected,
@@ -279,7 +293,9 @@ class ServerConnectionViewModel @Inject constructor(
                 val sessionAgeMs = System.currentTimeMillis() - restoredLoginTimestamp
                 val isSessionStale = sessionAgeMs > Constants.SESSION_TOKEN_MAX_AGE_MS
 
-                if (isSessionStale) {
+                val hasConnectLink = !preferences[PreferencesKeys.EMBY_CONNECT_USER_ID].isNullOrBlank() &&
+                    !preferences[PreferencesKeys.EMBY_CONNECT_ACCESS_KEY].isNullOrBlank()
+                if (isSessionStale && !hasConnectLink) {
                     // Session is very old; clear it and fall through to auto-login or login screen.
                     SecureLogger.w(
                         "ServerConnectionVM",
@@ -318,12 +334,23 @@ class ServerConnectionViewModel @Inject constructor(
                     val connectUserId = restoredServer.embyConnectUserId
                     val connectKey = restoredServer.embyConnectAccessKey
                     if (connectUserId != null && connectKey != null && connectivityChecker.isOnline()) {
+                        _connectionState.value = _connectionState.value.copy(isConnecting = true)
                         val result = authRepository.authenticateWithEmbyConnect(
                             restoredServer.url, connectUserId, connectKey, restoredServer.id,
                         )
                         if (result !is ApiResult.Success) {
+                            if (result is ApiResult.Error && result.errorType == ErrorType.AUTHENTICATION) {
+                                clearPersistedSessionToken()
+                                profileStoreCall("forget revoked Emby credentials") {
+                                    serverProfileRepository.clearAuthentication(
+                                        ServerProfile.profileId(restoredServer.id, restoredServer.userId, restoredServer.url, savedUsername),
+                                    )
+                                }
+                            }
                             _connectionState.value = _connectionState.value.copy(
-                                errorMessage = "Could not reconnect to Emby. Sign in with Emby Connect or enter the server manually.",
+                                isConnecting = false,
+                                errorMessage = (result as? ApiResult.Error)?.message
+                                    ?: "Could not reconnect to Emby. Retry or sign in again.",
                             )
                             return@launch
                         }
@@ -437,7 +464,7 @@ class ServerConnectionViewModel @Inject constructor(
             repository.isConnectedFlow.collect { isConnected ->
                 // Demo Mode is not backed by a real server connection; don't let this flow
                 // (which reflects the real repository/server state) stomp on it.
-                if (_connectionState.value.isDemoMode) return@collect
+                if (_connectionState.value.isDemoMode || _connectionState.value.isConnecting) return@collect
                 _connectionState.value = _connectionState.value.copy(
                     isConnected = isConnected,
                     isConnecting = false,
@@ -790,6 +817,13 @@ class ServerConnectionViewModel @Inject constructor(
     private suspend fun clearSavedCredentials() {
         val currentState = _connectionState.value
         val currentServer = authRepository.getCurrentServerSync()
+        if (currentServer != null && !currentServer.username.isNullOrBlank()) {
+            profileStoreCall("forget the unremembered sign-in") {
+                serverProfileRepository.clearAuthentication(ServerProfile.profileId(
+                    currentServer.id, currentServer.userId, currentServer.url, currentServer.username,
+                ))
+            }
+        }
         withContext(dispatchers.io) {
             context.dataStore.edit { preferences ->
                 preferences.remove(PreferencesKeys.SERVER_URL)
@@ -815,7 +849,10 @@ class ServerConnectionViewModel @Inject constructor(
                 }
             }
         }
-        _connectionState.value = ConnectionState()
+        _connectionState.value = ConnectionState(
+            rememberLogin = currentState.rememberLogin,
+            isLocalCredentialCheckComplete = currentState.isLocalCredentialCheckComplete,
+        )
     }
 
     private suspend fun clearPersistedSessionToken() {
@@ -835,7 +872,7 @@ class ServerConnectionViewModel @Inject constructor(
     }
 
     private suspend fun saveCurrentSessionToken() {
-        val server = repository.currentServerFlow.first { it != null } ?: return
+        val server = authRepository.getCurrentServerSync() ?: repository.currentServerFlow.first { it != null } ?: return
         if (server.url.isBlank() || server.username.isNullOrBlank() || server.accessToken.isNullOrBlank()) {
             return
         }

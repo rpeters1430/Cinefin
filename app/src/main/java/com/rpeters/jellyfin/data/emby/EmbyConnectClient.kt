@@ -3,8 +3,7 @@ package com.rpeters.jellyfin.data.emby
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.network.JellyfinAuthInterceptor
 import com.rpeters.jellyfin.utils.ServerUrlValidator
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.serialization.json.*
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -19,13 +18,15 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /** These credentials remain in memory until a server is selected. Never log their contents. */
-class EmbyConnectServer(
+data class EmbyConnectServer(
     val name: String,
     val systemId: String,
     val addresses: List<String>,
     val userId: String,
     val accessKey: String,
-)
+) {
+    override fun toString(): String = "EmbyConnectServer(credentials=redacted)"
+}
 
 @Singleton
 class EmbyConnectClient @Inject constructor(
@@ -56,8 +57,8 @@ class EmbyConnectClient @Inject constructor(
         val body = buildJsonObject { put("nameOrEmail", name); put("rawpw", password) }
         val account = execute(cloudClient, cloudRequest("user/authenticate")
             .post(body.toString().toRequestBody("application/json".toMediaType())).build()).jsonObject
-        val userId = account.getValue("ConnectUserId").jsonPrimitive.content
-        val token = account.getValue("ConnectAccessToken").jsonPrimitive.content
+        val userId = account.requiredString("ConnectUserId")
+        val token = account.requiredString("ConnectAccessToken")
         val url = "$CONNECT_URL/servers".toHttpUrl().newBuilder().addQueryParameter("userId", userId).build()
         val servers = execute(cloudClient, Request.Builder().url(url)
             .header("X-Application", "Cinefin/${BuildConfig.VERSION_NAME}")
@@ -70,8 +71,8 @@ class EmbyConnectClient @Inject constructor(
             .addQueryParameter("format", "json").addQueryParameter("ConnectUserId", userId).build()
         val exchange = execute(serverClient, Request.Builder().url(url)
             .header("X-Emby-Token", accessKey).build()).jsonObject
-        val localId = exchange.getValue("LocalUserId").jsonPrimitive.content
-        val token = exchange.getValue("AccessToken").jsonPrimitive.content
+        val localId = exchange.requiredString("LocalUserId")
+        val token = exchange.requiredString("AccessToken")
         require(token.isNotBlank()) { "Emby returned an empty access token" }
         val userUrl = serverUrl.trimEnd('/') + "/Users/" + localId
         val user = execute(serverClient, Request.Builder().url(userUrl).header("X-Emby-Token", token).build())
@@ -84,11 +85,28 @@ class EmbyConnectClient @Inject constructor(
     private fun cloudRequest(path: String) = Request.Builder().url("$CONNECT_URL/$path")
         .header("X-Application", "Cinefin/${BuildConfig.VERSION_NAME}")
 
-    private suspend fun execute(client: OkHttpClient, request: Request): JsonElement = withContext(Dispatchers.IO) {
-        client.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) throw EmbyHttpException(response.code, "Emby sign-in failed")
-            Json.parseToJsonElement(response.body.string())
-        }
+    private fun JsonObject.requiredString(key: String): String =
+        (get(key) as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotBlank() }
+            ?: throw kotlinx.serialization.SerializationException("Missing Emby credential field")
+
+    private suspend fun execute(client: OkHttpClient, request: Request): JsonElement = suspendCancellableCoroutine { continuation ->
+        val call = client.newCall(request)
+        continuation.invokeOnCancellation { call.cancel() }
+        call.enqueue(object : okhttp3.Callback {
+            override fun onFailure(call: okhttp3.Call, e: IOException) {
+                continuation.resumeWith(Result.failure(e))
+            }
+
+            override fun onResponse(call: okhttp3.Call, response: okhttp3.Response) {
+                val result = response.use {
+                    runCatching {
+                        if (!it.isSuccessful) throw EmbyHttpException(it.code, "Emby sign-in failed")
+                        Json.parseToJsonElement(it.body.string())
+                    }
+                }
+                continuation.resumeWith(result)
+            }
+        })
     }
 
     companion object {

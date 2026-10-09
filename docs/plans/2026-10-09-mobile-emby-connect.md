@@ -36,3 +36,19 @@ live-server pass is claimed.
 Before release: run the tests and try both servers on a phone, including LAN discovery,
 Connect account sign-in, remote fallback, manual entry after Skip, restart, profile switching,
 Remember Login off, invalid credentials, unavailable servers and Jellyfin Quick Connect.
+
+## Pre-test cleanup
+
+- Mobile player hides SyncPlay on Emby and its repository rejects unsupported calls before SDK requests.
+- Plugin requests are blocked on Emby; mobile media-request/Seerr settings hide plugin import controls.
+  Request-screen plugin state is cleared/rechecked after profile switching. Direct Seerr/Arr settings remain usable.
+- Account authentication, revoked account links, DNS, timeouts, certificate failures and malformed responses
+  have distinct messages. HTTP cancellation now cancels the underlying call when the user skips.
+- Expired Connect sessions recover through their saved linked key, including profile switching. Revoked
+  links require sign-in again; transient connection failures retain saved credentials for retry.
+- Remember Login off clears token/linkage from the selected saved profile and active preferences.
+- Connection navigation waits for authentication persistence/cleanup, and token saving reads the authoritative
+  auth session so it cannot persist the previous server during a switch.
+- Android CI now includes `emby` targets; previously this PR only ran benchmarks and static analysis.
+- Added regression tests for unsupported network calls, failure messages, expired linked-profile recovery,
+  failed exchanges, Remember Login off and stale-token launch recovery. Local Gradle remains network-blocked.

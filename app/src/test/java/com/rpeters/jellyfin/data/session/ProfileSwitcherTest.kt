@@ -103,6 +103,34 @@ class ProfileSwitcherTest {
     }
 
     @Test
+    fun switchTo_expiredLinkedProfile_exchangesKeyAndSavesFreshSession() = runTest {
+        val expired = embyProfile.copy(
+            accessToken = null, loginTimestamp = 1L,
+            embyConnectUserId = "connect-user", embyConnectAccessKey = "linked-key",
+        )
+        val refreshed = expired.copy(accessToken = "fresh-token", loginTimestamp = now)
+        coEvery { profileRepository.current() } returns ServerProfiles(listOf(jellyfinProfile, expired), jellyfinProfile.id)
+        coEvery { authRepository.authenticateWithEmbyConnect(any(), any(), any(), any()) } returns
+            com.rpeters.jellyfin.data.repository.common.ApiResult.Success(mockk<org.jellyfin.sdk.model.api.AuthenticationResult>())
+        every { authRepository.getCurrentServerSync() } returns refreshed.toJellyfinServer()
+        val result = switcher.switchTo(expired.id)
+        assertTrue(result is ProfileSwitchResult.Switched)
+        coVerify { profileRepository.saveAndActivate(refreshed) }
+        coVerify { activeSessionStore.save(refreshed.toJellyfinServer()) }
+    }
+
+    @Test
+    fun switchTo_linkExchangeFails_doesNotReplaceSavedActiveProfile() = runTest {
+        val linked = embyProfile.copy(embyConnectUserId = "connect-user", embyConnectAccessKey = "linked-key")
+        coEvery { profileRepository.current() } returns ServerProfiles(listOf(jellyfinProfile, linked), jellyfinProfile.id)
+        coEvery { authRepository.authenticateWithEmbyConnect(any(), any(), any(), any()) } returns
+            com.rpeters.jellyfin.data.repository.common.ApiResult.Error("Server unavailable")
+        assertTrue(switcher.switchTo(linked.id) is ProfileSwitchResult.SignInRequired)
+        coVerify(exactly = 0) { activeSessionStore.save(any()) }
+        coVerify(exactly = 0) { profileRepository.saveAndActivate(any()) }
+    }
+
+    @Test
     fun switchTo_otherSavedProfile_restoresItsSessionAndPersistsIt() = runTest {
         val restored = slot<JellyfinServer>()
 

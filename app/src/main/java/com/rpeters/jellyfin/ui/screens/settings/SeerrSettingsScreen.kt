@@ -57,6 +57,7 @@ fun SeerrSettingsScreen(
 ) {
     val seerrPreferences by viewModel.seerrPreferences.collectAsStateWithLifecycle()
     val connectionTestState by viewModel.connectionTestState.collectAsStateWithLifecycle()
+    val supportsCinefinPlugin by viewModel.supportsCinefinPlugin.collectAsStateWithLifecycle()
     val isPluginConfigured by viewModel.isPluginConfigured.collectAsStateWithLifecycle()
 
     Scaffold(
@@ -90,7 +91,7 @@ fun SeerrSettingsScreen(
                 )
             }
 
-            if (isPluginConfigured) {
+            if (supportsCinefinPlugin && isPluginConfigured) {
                 ExpressiveSettingsCard(
                     title = "Cinefin Server Plugin",
                     icon = Icons.Default.Check,

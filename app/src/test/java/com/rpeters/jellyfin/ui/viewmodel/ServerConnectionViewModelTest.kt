@@ -687,6 +687,56 @@ class ServerConnectionViewModelTest {
 
     // endregion
 
+    @Test
+    fun embyConnect_rememberLoginOff_forgetsSavedProfileAndSessionKeys() = runTest(mainDispatcherRule.dispatcher) {
+        val server = JellyfinServer(
+            id = "emby-server", name = "NAS", url = "https://example.com", userId = "emby-user", username = "user",
+            accessToken = "local-token", serverType = com.rpeters.jellyfin.data.model.ServerType.EMBY,
+            embyConnectUserId = "connect-user", embyConnectAccessKey = "linked-key",
+        )
+        context.dataStore.edit { it[REMEMBER_LOGIN] = false }
+        every { authRepository.getCurrentServerSync() } returns server
+        coEvery { authRepository.authenticateWithEmbyConnect(any(), any(), any(), any()) } returns
+            ApiResult.Success(mockk<AuthenticationResult>())
+        viewModel = createViewModelWithProfiles(defaultProfileRepository)
+        awaitCondition { viewModel.connectionState.value.isLocalCredentialCheckComplete }
+        viewModel.selectEmbyConnectServer(com.rpeters.jellyfin.data.emby.EmbyConnectServer(
+            "NAS", "emby-server", listOf("https://example.com"), "connect-user", "linked-key",
+        ))
+        awaitCondition { viewModel.connectionState.value.isConnected }
+        assertFalse(viewModel.connectionState.value.rememberLogin)
+        assertNull(context.dataStore.data.first()[SESSION_TOKEN])
+        assertNull(context.dataStore.data.first()[PreferencesKeys.EMBY_CONNECT_ACCESS_KEY])
+        coVerify { defaultProfileRepository.clearAuthentication("emby-server:emby-user") }
+    }
+
+    @Test
+    fun embyConnect_staleTokenOnLaunch_usesLinkedKeyInsteadOfDiscardingSession() = runTest(mainDispatcherRule.dispatcher) {
+        context.dataStore.edit {
+            it[SESSION_TOKEN] = "stale-token"
+            it[SESSION_USER_ID] = "emby-user"
+            it[SESSION_SERVER_ID] = "emby-server"
+            it[SESSION_LOGIN_TIMESTAMP] = 1L
+            it[PreferencesKeys.SESSION_SERVER_TYPE] = "EMBY"
+            it[PreferencesKeys.EMBY_CONNECT_USER_ID] = "connect-user"
+            it[PreferencesKeys.EMBY_CONNECT_ACCESS_KEY] = "linked-key"
+        }
+        val refreshed = JellyfinServer(
+            "emby-server", "NAS", "https://example.com", userId = "emby-user", username = "user",
+            accessToken = "fresh-token", loginTimestamp = System.currentTimeMillis(),
+            serverType = com.rpeters.jellyfin.data.model.ServerType.EMBY,
+            embyConnectUserId = "connect-user", embyConnectAccessKey = "linked-key",
+        )
+        every { authRepository.getCurrentServerSync() } returns refreshed
+        coEvery { authRepository.authenticateWithEmbyConnect(any(), any(), any(), any()) } returns
+            ApiResult.Success(mockk<AuthenticationResult>())
+        viewModel = createViewModelWithProfiles(defaultProfileRepository)
+        awaitCondition { viewModel.connectionState.value.isConnected }
+        assertEquals("fresh-token", context.dataStore.data.first()[SESSION_TOKEN])
+        coVerify { authRepository.authenticateWithEmbyConnect("https://example.com", "connect-user", "linked-key", "emby-server") }
+        coVerify(exactly = 0) { defaultProfileRepository.clearAuthentication(any()) }
+    }
+
     // region Saved server profiles
 
     private fun createViewModelWithProfiles(

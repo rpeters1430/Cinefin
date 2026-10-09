@@ -19,8 +19,8 @@ class ServerDiscoveryProtocolTest {
     @Test
     fun sameReply_differentProbe_preservesServerType() {
         val reply = """{"Id":"server-id","Name":"NAS","Address":"http://192.168.1.10:8096/emby"}"""
-        val emby = ServerDiscoveryProtocol.parse(reply, ServerType.EMBY)!!
-        val jellyfin = ServerDiscoveryProtocol.parse(reply, ServerType.JELLYFIN)!!
+        val emby = requireNotNull(ServerDiscoveryProtocol.parse(reply, ServerType.EMBY))
+        val jellyfin = requireNotNull(ServerDiscoveryProtocol.parse(reply, ServerType.JELLYFIN))
         assertEquals(ServerType.EMBY, emby.serverType)
         assertEquals(ServerType.JELLYFIN, jellyfin.serverType)
         assertEquals("http://192.168.1.10:8096/emby", emby.address)

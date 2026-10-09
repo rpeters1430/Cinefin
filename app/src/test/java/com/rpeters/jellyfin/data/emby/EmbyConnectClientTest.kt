@@ -53,7 +53,7 @@ class EmbyConnectClientTest {
             val exchange = server.takeRequest()
             assertEquals("/emby/Connect/Exchange?format=json&ConnectUserId=connect-user", exchange.path)
             assertEquals("linked-key", exchange.getHeader("X-Emby-Token"))
-            assertTrue(exchange.getHeader("X-Emby-Authorization")!!.contains("DeviceId=\"device\""))
+            assertTrue(requireNotNull(exchange.getHeader("X-Emby-Authorization")).contains("DeviceId=\"device\""))
             val user = server.takeRequest()
             assertEquals("local-token", user.getHeader("X-Emby-Token"))
             assertEquals("/emby/Users/e96573aacb144a45b3c4585e3e5071c7", user.path)
