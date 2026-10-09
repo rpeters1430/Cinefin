@@ -17,8 +17,11 @@ import com.rpeters.jellyfin.core.constants.Constants
 import com.rpeters.jellyfin.data.JellyfinServer
 import com.rpeters.jellyfin.data.SecureCredentialManager
 import com.rpeters.jellyfin.data.credentials.PasswordCredentialSyncManager
+import com.rpeters.jellyfin.data.model.ServerProfile
+import com.rpeters.jellyfin.data.model.ServerType
 import com.rpeters.jellyfin.data.offline.DownloadStatus
 import com.rpeters.jellyfin.data.offline.OfflineDownloadManager
+import com.rpeters.jellyfin.data.preferences.ServerProfileRepository
 import com.rpeters.jellyfin.data.repository.DemoModeRepository
 import com.rpeters.jellyfin.data.repository.IJellyfinAuthRepository
 import com.rpeters.jellyfin.data.repository.IJellyfinRepository
@@ -70,6 +73,7 @@ object PreferencesKeys {
     val BIOMETRIC_AUTH_ENABLED = booleanPreferencesKey("biometric_auth_enabled") // New preference
     val BIOMETRIC_REQUIRE_STRONG = booleanPreferencesKey("biometric_require_strong")
     val SESSION_IS_ADMIN = booleanPreferencesKey("session_is_admin")
+    val SESSION_SERVER_TYPE = stringPreferencesKey("session_server_type")
 }
 
 @HiltViewModel
@@ -85,6 +89,7 @@ class ServerConnectionViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val dispatchers: DispatcherProvider = DefaultDispatcherProvider(),
     private val demoModeRepository: DemoModeRepository = DemoModeRepository(),
+    private val serverProfileRepository: ServerProfileRepository = ServerProfileRepository(context),
 ) : ViewModel() {
 
     private val _connectionState = MutableStateFlow(ConnectionState())
@@ -185,6 +190,11 @@ class ServerConnectionViewModel @Inject constructor(
                         "Persisted session is stale (age ${sessionAgeMs / 86_400_000}d), clearing.",
                     )
                     clearPersistedSessionToken()
+                    profileStoreCall("clear the stale profile token") {
+                        serverProfileRepository.clearToken(
+                            ServerProfile.profileId(savedSessionServerId, savedSessionUserId, savedServerUrl, savedUsername),
+                        )
+                    }
                 } else {
                     // Normalise the stored URL before restoring to handle legacy values that may
                     // have been saved with trailing slashes or other format variations. Without
@@ -203,8 +213,14 @@ class ServerConnectionViewModel @Inject constructor(
                         loginTimestamp = restoredLoginTimestamp,
                         normalizedUrl = normalizedSavedUrl,
                         isAdministrator = savedIsAdmin,
+                        serverType = preferences[PreferencesKeys.SESSION_SERVER_TYPE]
+                            ?.let { saved -> ServerType.entries.firstOrNull { it.name == saved } }
+                            ?: ServerType.JELLYFIN,
                     )
                     authRepository.restorePersistedSession(restoredServer)
+                    // Also covers the upgrade from the single saved session: it becomes the
+                    // first saved profile the first time it is restored.
+                    saveProfile(restoredServer)
                     _connectionState.value = _connectionState.value.copy(
                         isConnected = true,
                         isConnecting = false,
@@ -671,6 +687,7 @@ class ServerConnectionViewModel @Inject constructor(
                 preferences.remove(PreferencesKeys.SESSION_SERVER_NAME)
                 preferences.remove(PreferencesKeys.SESSION_LOGIN_TIMESTAMP)
                 preferences.remove(PreferencesKeys.SESSION_IS_ADMIN)
+                preferences.remove(PreferencesKeys.SESSION_SERVER_TYPE)
             }
             if (currentServer != null && !currentServer.username.isNullOrBlank()) {
                 runCatching {
@@ -695,6 +712,7 @@ class ServerConnectionViewModel @Inject constructor(
                 preferences.remove(PreferencesKeys.SESSION_SERVER_NAME)
                 preferences.remove(PreferencesKeys.SESSION_LOGIN_TIMESTAMP)
                 preferences.remove(PreferencesKeys.SESSION_IS_ADMIN)
+                preferences.remove(PreferencesKeys.SESSION_SERVER_TYPE)
             }
         }
     }
@@ -705,7 +723,10 @@ class ServerConnectionViewModel @Inject constructor(
             return
         }
 
-        withContext(dispatchers.io) {
+        // NonCancellable for the same reason as saveCredentials(): a successful sign-in flips
+        // repository.isConnected, which navigates away and cancels viewModelScope. Without it the
+        // token and the saved profile are lost whenever navigation wins that race.
+        withContext(dispatchers.io + NonCancellable) {
             context.dataStore.edit { preferences ->
                 preferences[PreferencesKeys.SERVER_URL] = normalizeServerUrl(server.url)
                 preferences[PreferencesKeys.USERNAME] = server.username
@@ -715,6 +736,37 @@ class ServerConnectionViewModel @Inject constructor(
                 preferences[PreferencesKeys.SESSION_SERVER_NAME] = server.name
                 preferences[PreferencesKeys.SESSION_LOGIN_TIMESTAMP] = server.loginTimestamp ?: System.currentTimeMillis()
                 preferences[PreferencesKeys.SESSION_IS_ADMIN] = server.isAdministrator
+                preferences[PreferencesKeys.SESSION_SERVER_TYPE] = server.serverType.name
+            }
+            saveProfile(server)
+        }
+    }
+
+    private suspend fun saveProfile(server: JellyfinServer) {
+        val profile = ServerProfile.fromServer(server) ?: return
+        profileStoreCall("save the server profile") { serverProfileRepository.saveAndActivate(profile) }
+    }
+
+    /** Sign-in, session restore, and sign-out must still complete when the profile list fails. */
+    private suspend fun profileStoreCall(action: String, block: suspend () -> Unit) {
+        try {
+            block()
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            SecureLogger.w("ServerConnectionVM", "Could not $action", e)
+        }
+    }
+
+    /** Removes the saved profile behind the current session, leaving other profiles untouched. */
+    private suspend fun removeActiveProfile() {
+        val currentServer = authRepository.getCurrentServerSync()
+        profileStoreCall("remove the server profile") {
+            val profileId = currentServer?.let { ServerProfile.fromServer(it)?.id }
+                ?: serverProfileRepository.current().activeProfileId
+                ?: return@profileStoreCall
+            withContext(dispatchers.io) {
+                serverProfileRepository.remove(profileId)
             }
         }
     }
@@ -723,6 +775,7 @@ class ServerConnectionViewModel @Inject constructor(
         viewModelScope.launch {
             updateRememberLoginPreference(remember)
             if (!remember) {
+                removeActiveProfile()
                 clearSavedCredentials()
             }
         }
@@ -1217,6 +1270,7 @@ class ServerConnectionViewModel @Inject constructor(
         )
         viewModelScope.launch {
             // Clear saved credentials and auth session when user explicitly logs out
+            removeActiveProfile()
             clearSavedCredentials()
             authRepository.logout()
         }

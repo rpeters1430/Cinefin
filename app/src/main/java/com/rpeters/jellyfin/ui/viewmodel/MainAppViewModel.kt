@@ -34,7 +34,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
@@ -163,6 +165,24 @@ constructor(
                     com.rpeters.jellyfin.data.worker.OfflineProgressSyncWorker.schedule(context)
                 }
             }
+        }
+
+        // Switching server profiles replaces the session while this ViewModel stays alive.
+        // Drop everything loaded for the previous session so the app-level initial load runs
+        // again for the new one.
+        viewModelScope.launch {
+            var previousSession: String? = null
+            repository.currentServerFlow
+                .map { server -> server?.let { "${it.id}|${it.userId}|${it.url}" } }
+                .distinctUntilChanged()
+                .collect { session ->
+                    if (session != null) {
+                        if (previousSession != null && previousSession != session) {
+                            clearState()
+                        }
+                        previousSession = session
+                    }
+                }
         }
     }
 
@@ -874,8 +894,9 @@ constructor(
     fun logout() {
         viewModelScope.launch {
             analytics.logUiEvent("Account", "logout")
+            // The repository logout clears the saved password for this server only, so other
+            // saved profiles keep theirs.
             userRepository.logout()
-            credentialManager.clearCredentials()
             clearState()
         }
     }

@@ -55,6 +55,8 @@ class ServerConnectionViewModelOfflineTest {
     private lateinit var discoveryRepository: com.rpeters.jellyfin.data.repository.IJellyfinDiscoveryRepository
     private lateinit var context: Context
     private lateinit var viewModel: ServerConnectionViewModel
+    private val defaultProfileRepository =
+        mockk<com.rpeters.jellyfin.data.preferences.ServerProfileRepository>(relaxed = true)
 
     private val testDispatcher = StandardTestDispatcher()
 
@@ -139,6 +141,7 @@ class ServerConnectionViewModelOfflineTest {
             offlineDownloadManagerProvider,
             context,
             TestDispatcherProvider(testDispatcher),
+            serverProfileRepository = defaultProfileRepository,
         )
         awaitCondition {
             viewModel.connectionState.value.savedServerUrl == "https://server.com"
@@ -188,6 +191,7 @@ class ServerConnectionViewModelOfflineTest {
             offlineDownloadManagerProvider,
             context,
             TestDispatcherProvider(testDispatcher),
+            serverProfileRepository = defaultProfileRepository,
         )
         awaitCondition {
             viewModel.connectionState.value.savedServerUrl == "https://server.com"
@@ -241,6 +245,7 @@ class ServerConnectionViewModelOfflineTest {
             offlineDownloadManagerProvider,
             context,
             TestDispatcherProvider(testDispatcher),
+            serverProfileRepository = defaultProfileRepository,
         )
         awaitCondition {
             viewModel.connectionState.value.savedServerUrl == "https://server.com"
@@ -274,6 +279,7 @@ class ServerConnectionViewModelOfflineTest {
             offlineDownloadManagerProvider,
             context,
             TestDispatcherProvider(testDispatcher),
+            serverProfileRepository = defaultProfileRepository,
         )
         awaitCondition {
             viewModel.connectionState.value.savedServerUrl == "https://server.com"

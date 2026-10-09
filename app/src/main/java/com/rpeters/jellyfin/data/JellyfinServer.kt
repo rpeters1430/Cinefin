@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.data
 
+import com.rpeters.jellyfin.data.model.ServerType
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -18,6 +19,7 @@ data class JellyfinServer(
     @SerialName("originalServerUrl")
     val normalizedUrl: String? = null,
     val isAdministrator: Boolean = false,
+    val serverType: ServerType = ServerType.JELLYFIN,
 )
 
 @Serializable

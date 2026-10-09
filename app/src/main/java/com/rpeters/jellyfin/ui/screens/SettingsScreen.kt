@@ -107,6 +107,7 @@ fun SettingsScreen(
     onSeerrSettingsClick: () -> Unit = {},
     onTranscodingDiagnosticsClick: () -> Unit = {},
     onAiDiagnosticsClick: () -> Unit = {},
+    profilesSection: @Composable () -> Unit = {},
     libraryActionsPreferencesViewModel: LibraryActionsPreferencesViewModel = hiltViewModel(),
     remoteConfigViewModel: RemoteConfigViewModel = hiltViewModel(),
     serverManagementViewModel: SettingsServerManagementViewModel = hiltViewModel(),
@@ -151,6 +152,7 @@ fun SettingsScreen(
         onTranscodingDiagnosticsClick = onTranscodingDiagnosticsClick,
         onAiDiagnosticsClick = onAiDiagnosticsClick,
         showTranscodingDiagnostics = showTranscodingDiagnostics,
+        profilesSection = profilesSection,
     )
 }
 
@@ -189,6 +191,7 @@ private fun SettingsScreenContent(
     onTranscodingDiagnosticsClick: () -> Unit = {},
     onAiDiagnosticsClick: () -> Unit = {},
     showTranscodingDiagnostics: Boolean = true,
+    profilesSection: @Composable () -> Unit = {},
 ) {
     val context = LocalContext.current
     val activity = context as? Activity
@@ -277,6 +280,7 @@ private fun SettingsScreenContent(
                                     onLogout = onLogout,
                                 )
                             }
+                            profilesSection()
                             LibraryManagementCard(
                                 enabled = enableManagementActions,
                                 onToggle = onToggleManagementActions,
@@ -335,6 +339,8 @@ private fun SettingsScreenContent(
                         )
                     }
                 }
+
+                item { profilesSection() }
 
                 item {
                     LibraryManagementCard(

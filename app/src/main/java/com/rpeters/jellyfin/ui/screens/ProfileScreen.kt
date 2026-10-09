@@ -80,6 +80,7 @@ fun ProfileScreen(
     onNowPlayingClick: () -> Unit = {},
     showBackButton: Boolean = true,
     modifier: Modifier = Modifier,
+    profilesSection: @Composable () -> Unit = {},
 ) {
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
@@ -182,6 +183,7 @@ fun ProfileScreen(
                             },
                         )
                         ProfileActionsCard(onSettingsClick = onSettingsClick)
+                        profilesSection()
                         LogoutButton(onLogout = onLogout)
                     }
                 }
@@ -210,6 +212,8 @@ fun ProfileScreen(
                 )
 
                 ProfileActionsCard(onSettingsClick = onSettingsClick)
+
+                profilesSection()
 
                 Spacer(modifier = Modifier.height(8.dp))
 

@@ -115,6 +115,7 @@ fun ServerConnectionScreen(
     onRequireStrongBiometricChange: (Boolean) -> Unit = {},
     onContinueOffline: () -> Unit = {},
     modifier: Modifier = Modifier,
+    savedProfilesSection: @Composable () -> Unit = {},
 ) {
     var serverUrl by rememberSaveable(savedServerUrl) { mutableStateOf(savedServerUrl) }
     var username by rememberSaveable(savedUsername) { mutableStateOf(savedUsername) }
@@ -255,6 +256,8 @@ fun ServerConnectionScreen(
             verticalArrangement = Arrangement.spacedBy(32.dp),
         ) {
             LoginHeaderCard(modifier = Modifier.fillMaxWidth())
+
+            savedProfilesSection()
 
             if (uiFlags.showDiscoveredServers) {
                 DiscoveredServersCard(
