@@ -688,6 +688,29 @@ class ServerConnectionViewModelTest {
     // endregion
 
     @Test
+    fun embyConnect_cancelledSelection_doesNotClearNewSelectionsLoadingState() = runTest(mainDispatcherRule.dispatcher) {
+        context.dataStore.edit { it[REMEMBER_LOGIN] = false }
+        val pending = kotlinx.coroutines.CompletableDeferred<ApiResult<AuthenticationResult>>()
+        coEvery { authRepository.authenticateWithEmbyConnect(any(), any(), any(), any()) } coAnswers { pending.await() }
+        viewModel = createViewModelWithProfiles(defaultProfileRepository)
+        awaitCondition { viewModel.connectionState.value.isLocalCredentialCheckComplete }
+        val linked = com.rpeters.jellyfin.data.emby.EmbyConnectServer(
+            "NAS", "server", listOf("https://example.com"), "connect-user", "linked-key",
+        )
+        viewModel.selectEmbyConnectServer(linked)
+        runCurrent()
+        viewModel.cancelEmbyConnect()
+        viewModel.selectEmbyConnectServer(linked)
+        runCurrent()
+        assertTrue(viewModel.connectionState.value.isConnecting)
+        assertTrue(viewModel.embyConnectState.value.isBusy)
+        viewModel.cancelEmbyConnect()
+        runCurrent()
+        assertFalse(viewModel.connectionState.value.isConnecting)
+        assertFalse(viewModel.embyConnectState.value.isBusy)
+    }
+
+    @Test
     fun embyConnect_rememberLoginOff_forgetsSavedProfileAndSessionKeys() = runTest(mainDispatcherRule.dispatcher) {
         val server = JellyfinServer(
             id = "emby-server", name = "NAS", url = "https://example.com", userId = "emby-user", username = "user",

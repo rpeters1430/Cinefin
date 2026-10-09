@@ -103,6 +103,7 @@ class ServerConnectionViewModel @Inject constructor(
     private var discoveryJob: Job? = null
     private var embyConnectJob: Job? = null
     private var isSelectingEmbyServer = false
+    private var embyAttemptGeneration = 0L
     private var serverTypeProbeJob: Job? = null
 
     fun probeServerType(url: String) {
@@ -126,6 +127,7 @@ class ServerConnectionViewModel @Inject constructor(
     val isEmbyConnectSupported: Boolean get() = authRepository.isEmbyConnectSupported()
 
     fun cancelEmbyConnect() {
+        embyAttemptGeneration++
         embyConnectJob?.cancel()
         if (isSelectingEmbyServer) {
             isSelectingEmbyServer = false
@@ -165,6 +167,7 @@ class ServerConnectionViewModel @Inject constructor(
     fun selectEmbyConnectServer(server: com.rpeters.jellyfin.data.emby.EmbyConnectServer) {
         if (_embyConnectState.value.isBusy || _connectionState.value.isConnecting) return
         _embyConnectState.value = _embyConnectState.value.copy(isBusy = true, error = null)
+        val attemptGeneration = ++embyAttemptGeneration
         isSelectingEmbyServer = true
         _connectionState.value = _connectionState.value.copy(isConnecting = true, errorMessage = null)
         embyConnectJob = viewModelScope.launch {
@@ -194,10 +197,14 @@ class ServerConnectionViewModel @Inject constructor(
                 error = "Could not save the Emby session. Retry sign-in."
                 SecureLogger.w("ServerConnectionVM", "Emby session storage failed (${e.javaClass.simpleName})")
             } finally {
-                isSelectingEmbyServer = false
-                _connectionState.value = _connectionState.value.copy(isConnecting = false)
-                if (!connected) _embyConnectState.value = _embyConnectState.value.copy(isBusy = false, error = error)
+                // A cancelled picker must not clear loading/error state for a newer attempt.
+                if (attemptGeneration == embyAttemptGeneration) {
+                    isSelectingEmbyServer = false
+                    _connectionState.value = _connectionState.value.copy(isConnecting = false)
+                    if (!connected) _embyConnectState.value = _embyConnectState.value.copy(isBusy = false, error = error)
+                }
             }
+            if (attemptGeneration != embyAttemptGeneration) return@launch
             _connectionState.value = _connectionState.value.copy(
                 isConnecting = false,
                 isConnected = connected,
