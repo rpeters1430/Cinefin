@@ -32,6 +32,19 @@ object ServerIdCodec {
     fun decode(id: UUID): String =
         if (isEncoded(id)) (id.leastSignificantBits and NUMBER_MASK).toString() else id.toString()
 
+    /**
+     * Replaces every encoded ID inside [text] (a URL, typically) with its Emby number. Text
+     * without encoded IDs is returned as is.
+     */
+    fun decodeAllIn(text: String): String {
+        if (!text.contains(MARKER_PREFIX, ignoreCase = true)) return text
+        return ENCODED_ID.replace(text) { match -> decode(match.value) }
+    }
+
+    // The fixed first three groups of every encoded UUID, for a cheap containment check.
+    private const val MARKER_PREFIX = "454d4259-0000-4000-"
+    private val ENCODED_ID = Regex("454d4259-0000-4000-[89ab][0-9a-f]{3}-[0-9a-f]{12}", RegexOption.IGNORE_CASE)
+
     /** As [decode], for IDs the app carries around as strings. Non-UUID input is returned as is. */
     fun decode(id: String): String {
         val uuid = runCatching { UUID.fromString(id) }.getOrNull() ?: return id

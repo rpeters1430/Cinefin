@@ -1,0 +1,213 @@
+package com.rpeters.jellyfin.data.emby
+
+import com.rpeters.jellyfin.utils.SecureLogger
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.unmockkAll
+import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
+import org.jellyfin.sdk.api.client.ApiClient
+import org.jellyfin.sdk.api.client.HttpClientOptions
+import org.jellyfin.sdk.api.client.HttpMethod
+import org.jellyfin.sdk.api.client.RawResponse
+import org.jellyfin.sdk.api.sockets.SocketApi
+import org.jellyfin.sdk.model.ClientInfo
+import org.jellyfin.sdk.model.DeviceInfo
+import org.jellyfin.sdk.model.api.BaseItemDtoQueryResult
+import org.jellyfin.sdk.model.api.BaseItemKind
+import org.jellyfin.sdk.model.api.MediaSegmentDtoQueryResult
+import org.jellyfin.sdk.model.api.UserDto
+import org.jellyfin.sdk.model.api.UserItemDataDto
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
+import java.util.UUID
+
+class EmbyApiClientTest {
+
+    private val delegate = RecordingApiClient()
+    private val client = EmbyApiClient(delegate, userId = USER_ID)
+    private val sdkJson = Json { ignoreUnknownKeys = true }
+
+    private val userUuid: UUID = UUID.fromString(USER_ID)
+    private val movieId: UUID = ServerIdCodec.encode("1035")!!
+
+    @Before
+    fun setUp() {
+        mockkObject(SecureLogger)
+        every { SecureLogger.w(any(), any(), any()) } returns Unit
+    }
+
+    @After
+    fun tearDown() {
+        unmockkAll()
+    }
+
+    @Test
+    fun getItems_keepsPathDecodesIdsAndNormalizesResponse() = runTest {
+        delegate.respondWith(
+            """{"Items":[{"Name":"Sample","Id":"1035","Type":"Movie","UserData":{"Played":true}}],"TotalRecordCount":182}""",
+        )
+
+        val response = client.request(
+            HttpMethod.GET,
+            "/Items",
+            emptyMap(),
+            mapOf("userId" to userUuid, "parentId" to ServerIdCodec.encode("5"), "ids" to listOf(movieId), "limit" to 20),
+            null,
+        )
+
+        assertEquals("/Items", delegate.path)
+        assertEquals(USER_ID, delegate.query["userId"])
+        assertEquals("5", delegate.query["parentId"])
+        assertEquals(listOf("1035"), delegate.query["ids"])
+        assertEquals(20, delegate.query["limit"])
+        val result = sdkJson.decodeFromString(BaseItemDtoQueryResult.serializer(), response.body.decodeToString())
+        assertEquals(182, result.totalRecordCount)
+        val item = result.items.single()
+        assertEquals(movieId, item.id)
+        assertEquals(BaseItemKind.MOVIE, item.type)
+        assertEquals(movieId, item.userData?.itemId)
+        assertTrue(item.userData?.played == true)
+    }
+
+    @Test
+    fun getUserViews_usesEmbyUserScopedPath() = runTest {
+        delegate.respondWith("""{"Items":[{"Name":"Movies","Id":"5","Type":"CollectionFolder","CollectionType":"movies"}],"TotalRecordCount":1}""")
+
+        val response = client.request(HttpMethod.GET, "/UserViews", emptyMap(), mapOf("userId" to userUuid), null)
+
+        assertEquals("/Users/{userId}/Views", delegate.path)
+        assertEquals(USER_ID, delegate.pathParameters["userId"])
+        val views = sdkJson.decodeFromString(BaseItemDtoQueryResult.serializer(), response.body.decodeToString())
+        assertEquals("5", ServerIdCodec.decode(views.items.single().id))
+    }
+
+    @Test
+    fun getCurrentUser_usesSignedInUserWhenRequestCarriesNone() = runTest {
+        delegate.respondWith("""{"Name":"tester","Id":"e96573aacb144a45b3c4585e3e5071c7","HasPassword":true}""")
+
+        val response = client.request(HttpMethod.GET, "/Users/Me", emptyMap(), emptyMap(), null)
+
+        assertEquals("/Users/{userId}", delegate.path)
+        assertEquals(USER_ID, delegate.pathParameters["userId"])
+        val user = sdkJson.decodeFromString(UserDto.serializer(), response.body.decodeToString())
+        assertEquals("tester", user.name)
+        assertEquals(userUuid, user.id)
+    }
+
+    @Test
+    fun markFavorite_usesEmbyPathWithNumericItemIdAndFillsItemId() = runTest {
+        delegate.respondWith("""{"IsFavorite":true,"PlaybackPositionTicks":0,"PlayCount":0,"Played":false}""")
+
+        val response = client.request(
+            HttpMethod.POST,
+            "/UserFavoriteItems/{itemId}",
+            mapOf("itemId" to movieId),
+            mapOf("userId" to userUuid),
+            null,
+        )
+
+        assertEquals(HttpMethod.POST, delegate.method)
+        assertEquals("/Users/{userId}/FavoriteItems/{itemId}", delegate.path)
+        assertEquals("1035", delegate.pathParameters["itemId"])
+        val userData = sdkJson.decodeFromString(UserItemDataDto.serializer(), response.body.decodeToString())
+        assertTrue(userData.isFavorite)
+        assertEquals(movieId, userData.itemId)
+    }
+
+    @Test
+    fun getItemUserData_readsItFromTheItemBecauseEmbyHasNoUserDataRoute() = runTest {
+        delegate.respondWith("""{"Name":"Sample","Id":"1035","Type":"Movie","UserData":{"PlaybackPositionTicks":900,"Played":false}}""")
+
+        val response = client.request(
+            HttpMethod.GET,
+            "/UserItems/{itemId}/UserData",
+            mapOf("itemId" to movieId),
+            mapOf("userId" to userUuid),
+            null,
+        )
+
+        assertEquals("/Users/{userId}/Items/{itemId}", delegate.path)
+        val userData = sdkJson.decodeFromString(UserItemDataDto.serializer(), response.body.decodeToString())
+        assertEquals(900L, userData.playbackPositionTicks)
+        assertEquals(movieId, userData.itemId)
+    }
+
+    @Test
+    fun getMediaSegments_answersEmptyWithoutCallingTheServer() = runTest {
+        val response = client.request(HttpMethod.GET, "/MediaSegments/{itemId}", mapOf("itemId" to movieId), emptyMap(), null)
+
+        assertNull(delegate.path)
+        val segments = sdkJson.decodeFromString(MediaSegmentDtoQueryResult.serializer(), response.body.decodeToString())
+        assertTrue(segments.items.isEmpty())
+    }
+
+    @Test
+    fun playbackReport_passesBodyThroughAndReturnsEmptyResponseUntouched() = runTest {
+        val body = Any()
+        delegate.respondWith("")
+
+        val response = client.request(HttpMethod.POST, "/Sessions/Playing", emptyMap(), emptyMap(), body)
+
+        assertEquals("/Sessions/Playing", delegate.path)
+        assertSame(body, delegate.body)
+        assertEquals(0, response.body.size)
+    }
+
+    @Test
+    fun unknownRoute_isForwardedUnchanged() = runTest {
+        delegate.respondWith("""{"anything":true}""")
+
+        val response = client.request(HttpMethod.GET, "/Some/Future/Route", emptyMap(), emptyMap(), null)
+
+        assertEquals("/Some/Future/Route", delegate.path)
+        assertEquals("""{"anything":true}""", response.body.decodeToString())
+    }
+
+    private class RecordingApiClient : ApiClient() {
+        var method: HttpMethod? = null
+        var path: String? = null
+        var pathParameters: Map<String, Any?> = emptyMap()
+        var query: Map<String, Any?> = emptyMap()
+        var body: Any? = null
+        private var responseBody = ""
+
+        fun respondWith(json: String) {
+            responseBody = json
+        }
+
+        override val baseUrl: String? = "https://emby.example.com"
+        override val accessToken: String? = "token"
+        override val clientInfo: ClientInfo = ClientInfo("Cinefin", "1.0")
+        override val deviceInfo: DeviceInfo = DeviceInfo("device-id", "device")
+        override val httpClientOptions: HttpClientOptions = HttpClientOptions()
+        override val webSocket: SocketApi = mockk(relaxed = true)
+
+        override fun update(baseUrl: String?, accessToken: String?, clientInfo: ClientInfo, deviceInfo: DeviceInfo) = Unit
+
+        override suspend fun request(
+            method: HttpMethod,
+            pathTemplate: String,
+            pathParameters: Map<String, Any?>,
+            queryParameters: Map<String, Any?>,
+            requestBody: Any?,
+        ): RawResponse {
+            this.method = method
+            this.path = pathTemplate
+            this.pathParameters = pathParameters
+            this.query = queryParameters
+            this.body = requestBody
+            return RawResponse(responseBody.toByteArray(), 200, emptyMap())
+        }
+    }
+
+    private companion object {
+        const val USER_ID = "e96573aa-cb14-4a45-b3c4-585e3e5071c7"
+    }
+}

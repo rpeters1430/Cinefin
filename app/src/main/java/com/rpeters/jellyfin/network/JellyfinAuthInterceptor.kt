@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.network
 
+import com.rpeters.jellyfin.data.emby.ServerIdCodec
 import com.rpeters.jellyfin.data.repository.IJellyfinAuthRefreshManager
 import com.rpeters.jellyfin.utils.SecureLogger
 import okhttp3.Authenticator
@@ -63,6 +64,13 @@ class JellyfinAuthInterceptor @Inject constructor(
     ): Request {
         val userAgent = "${deviceIdentityProvider.clientName()}/${deviceIdentityProvider.clientVersion()}"
         val builder = request.newBuilder()
+
+        // Emby item IDs live in the app as ServerIdCodec UUIDs. Any URL built from one (images,
+        // streams, downloads) is put back into Emby's numbering here, in one place.
+        val originalUrl = request.url.toString()
+        val embyUrl = ServerIdCodec.decodeAllIn(originalUrl)
+        if (embyUrl != originalUrl) builder.url(embyUrl)
+
             .header(HEADER_CONNECTION, "keep-alive")
             .header(HEADER_USER_AGENT, userAgent)
 

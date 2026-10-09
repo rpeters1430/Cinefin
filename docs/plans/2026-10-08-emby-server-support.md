@@ -241,6 +241,13 @@ Still open after the spike:
 
 ### KD4. Route inside the existing repositories
 
+> **Superseded on 2026-10-08 (Phase 3).** The repositories are not branched at all. The Jellyfin
+> SDK's `ApiClient` is an abstract class whose typed APIs all funnel through one `request()`
+> method, so `EmbyApiClient` subclasses it and translates there: IDs out, a short route table,
+> normalized JSON back. `OptimizedClientFactory` hands that client out for an Emby session.
+> About 80 planned branches became one class. The text below is the original decision, kept for
+> the record.
+
 - **Choice**: `JellyfinRepository`, `JellyfinMediaRepository`, `JellyfinUserRepository`,
   `JellyfinSearchRepository`, `JellyfinAuthRepository`, `JellyfinSystemRepository` keep their
   public signatures. Each gets an injected Emby data source and branches on
@@ -538,7 +545,39 @@ unchanged.
 
 ## Phase 3: Browse an Emby library
 
-**Status**: pending
+**Status**: in progress on branch `emby` (2026-10-08). Browsing works on an emulator against
+Emby 4.11.0.6, with no repository changes.
+
+How it works:
+
+- `EmbyApiClient` wraps a plain SDK client. For each SDK request it decodes `ServerIdCodec` IDs
+  in the path and query, applies `EmbyRoute`, forwards through the SDK client (Emby accepts the
+  SDK's `Authorization: MediaBrowser … Token=…` header), and normalizes the JSON response.
+- Checked against the server: Emby answers Jellyfin-shaped `/Items?userId=…` with camelCase
+  query names, and `/Shows/NextUp`, `/Items/{id}/Similar`, `/Items/{id}/PlaybackInfo`,
+  `/System/Info` under the same paths. Only these needed remapping: `/UserViews`, `/Users/Me`,
+  `/UserFavoriteItems/{id}`, `/UserPlayedItems/{id}`, `/UserItems/{id}/UserData`. The Jellyfin-only
+  `/MediaSegments/{id}` gets an empty answer without a request.
+- `JellyfinAuthInterceptor` rewrites encoded IDs in any outgoing URL, so image URLs built
+  anywhere in the app reach Emby with real IDs. This covers everything sent through OkHttp;
+  URLs handed to Cast or other players do not pass through it (Phase 4 and 6).
+
+Verified on the emulator under the Emby profile: Home (hero, libraries, recently added, images),
+the Library tab with item counts, the Movies grid, a movie detail including its playback-info
+summary, TV shows, a series with seasons and episodes, an episode detail, search, and the user's
+name in Settings. Switching back to Jellyfin and browsing there still works.
+
+Not done yet:
+
+- **Emby list items lack some fields.** Movie cards show no year or rating under Emby; Emby only
+  returns those when they are named in `Fields`. `EmbyApiClient` should add them to item queries.
+- Continue Watching and Next Up were empty for the test user, so those rows are unverified with
+  data. Favorites and mark-played were not exercised (they write to the server).
+- Paging past the first page of a large library, music, playlists, collections, people.
+- The debug-only check that no encoded ID leaves in a request was dropped in favour of the
+  interceptor rewrite.
+- No committed JSON fixtures; the normalizer and client tests use hand-written Emby-shaped JSON.
+- Item types Emby has and the SDK lacks get the SDK's first enum value as a placeholder.
 **Posture**: test-first
 **Files**: `ServerIdCodec.kt`, `EmbyJsonNormalizer.kt`, `EmbyMediaDataSource.kt`,
 `BaseJellyfinRepository.kt`, `JellyfinMediaRepository.kt`, `JellyfinRepository.kt`,
