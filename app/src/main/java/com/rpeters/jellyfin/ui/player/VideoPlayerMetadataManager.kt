@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.ui.player
 
+import com.rpeters.jellyfin.data.emby.ServerIdCodec
 import androidx.media3.common.util.UnstableApi
 import com.rpeters.jellyfin.data.repository.IJellyfinRepository
 import com.rpeters.jellyfin.utils.SecureLogger
@@ -171,7 +172,7 @@ class VideoPlayerMetadataManager @Inject constructor(
                         val subtitleUrl = if (stream.isExternal && !stream.deliveryUrl.isNullOrBlank()) {
                             buildServerUrl(serverUrl, stream.deliveryUrl!!)
                         } else {
-                            "$serverUrl/Videos/$itemId/${mediaSource.id}/Subtitles/${stream.index}/Stream.$extension"
+                            "$serverUrl/Videos/${ServerIdCodec.decode(itemId)}/${mediaSource.id}/Subtitles/${stream.index}/Stream.$extension"
                         }
 
                         subtitleSpecs.add(

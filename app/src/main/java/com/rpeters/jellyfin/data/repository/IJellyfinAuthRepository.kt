@@ -14,6 +14,7 @@ interface IJellyfinAuthRepository : TokenProvider {
     val isConnected: StateFlow<Boolean>
     val isAuthenticating: StateFlow<Boolean>
 
+    fun isEmbyConnectSupported(): Boolean = false
     fun getCurrentServerSync(): JellyfinServer?
     fun isUserAuthenticated(): Boolean
     fun isTokenExpired(): Boolean
@@ -26,6 +27,13 @@ interface IJellyfinAuthRepository : TokenProvider {
         username: String,
         password: String,
     ): ApiResult<AuthenticationResult>
+
+    suspend fun authenticateWithEmbyConnect(
+        serverUrl: String,
+        connectUserId: String,
+        accessKey: String,
+        expectedServerId: String,
+    ): ApiResult<AuthenticationResult> = ApiResult.Error("Emby Connect is unavailable")
 
     suspend fun reAuthenticate(): Boolean
     suspend fun forceReAuthenticate(): Boolean

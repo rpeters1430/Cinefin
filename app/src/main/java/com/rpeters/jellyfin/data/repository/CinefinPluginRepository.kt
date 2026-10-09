@@ -29,12 +29,15 @@ class CinefinPluginRepository(
     private val authRepository: IJellyfinAuthRepository,
     private val json: Json,
 ) {
+    val currentServer = authRepository.currentServer
+
     private var cachedApiService: CinefinPluginApiService? = null
     private var cachedBaseUrl: String? = null
     private val cacheMutex = Mutex()
 
     private suspend fun getApiService(): CinefinPluginApiService? = cacheMutex.withLock {
         val server = authRepository.currentServer.value ?: return@withLock null
+        if (!server.serverType.supportsCinefinPlugin) return@withLock null
         var baseUrl = server.url
         if (!baseUrl.endsWith("/")) {
             baseUrl += "/"
@@ -66,6 +69,7 @@ class CinefinPluginRepository(
             try {
                 handleResponse(service.getPluginInfo())
             } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
                 SecureLogger.e(TAG, "Failed to get plugin info", e)
                 ApiResult.Error("Network error checking plugin info", e, ErrorType.NETWORK)
             }
@@ -176,7 +180,11 @@ class CinefinPluginRepository(
     }
 
     private fun <T> notConfiguredError(): ApiResult<T> =
-        ApiResult.Error("Jellyfin server is not configured or unavailable", errorType = ErrorType.UNAUTHORIZED)
+        if (authRepository.currentServer.value?.serverType?.supportsCinefinPlugin == false) {
+            ApiResult.Error("The Cinefin server plugin is only available on Jellyfin", errorType = ErrorType.VALIDATION)
+        } else {
+            ApiResult.Error("Jellyfin server is not configured or unavailable", errorType = ErrorType.UNAUTHORIZED)
+        }
 
     private fun <T> handleResponse(response: Response<T>): ApiResult<T> {
         return if (response.isSuccessful) {

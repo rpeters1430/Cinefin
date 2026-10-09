@@ -93,6 +93,18 @@
     
     <!-- Buttons -->
     <string name="sign_out">Sign Out</string>
+    <string name="server_profiles_title">Server profiles</string>
+    <string name="server_profiles_add">Add server</string>
+    <string name="server_profiles_active">Active profile</string>
+    <string name="server_profiles_subtitle">%1$s · %2$s</string>
+    <string name="server_profiles_switch_to">Switch to %1$s on %2$s</string>
+    <string name="server_profiles_remove_description">Remove %1$s on %2$s</string>
+    <string name="server_profiles_remove_title">Remove profile?</string>
+    <string name="server_profiles_remove_message">%1$s on %2$s will be signed out on this device and its saved password removed.</string>
+    <string name="server_profiles_remove_confirm">Remove</string>
+    <string name="server_profiles_sign_in_required">Sign in to %1$s again to use this profile.</string>
+    <string name="server_type_jellyfin">Jellyfin</string>
+    <string name="server_type_emby">Emby</string>
     <string name="sign_in">Sign In</string>
     <string name="settings">Settings</string>
 

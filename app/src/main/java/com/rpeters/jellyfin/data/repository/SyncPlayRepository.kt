@@ -15,25 +15,34 @@ import javax.inject.Singleton
 @Singleton
 class SyncPlayRepository @Inject constructor(
     private val sessionManager: JellyfinSessionManager,
+    private val authRepository: IJellyfinAuthRepository,
 ) {
     private val TAG = "SyncPlayRepository"
+    val currentServer = authRepository.currentServer
+
+    private fun requireSupported(server: com.rpeters.jellyfin.data.JellyfinServer) {
+        check(server.serverType.supportsSyncPlay) { "SyncPlay is only available on Jellyfin servers" }
+    }
 
     suspend fun getGroups(): List<GroupInfoDto> {
-        return sessionManager.executeWithAuth("syncPlayGetGroups") { _, client ->
+        return sessionManager.executeWithAuth("syncPlayGetGroups") { server, client ->
+            requireSupported(server)
             client.syncPlayApi.syncPlayGetGroups().content
         }
     }
 
     suspend fun getGroup(groupId: String): GroupInfoDto {
         val parsedGroupId = parseGroupId(groupId)
-        return sessionManager.executeWithAuth("syncPlayGetGroup") { _, client ->
+        return sessionManager.executeWithAuth("syncPlayGetGroup") { server, client ->
+            requireSupported(server)
             client.syncPlayApi.syncPlayGetGroup(parsedGroupId).content
         }
     }
 
     suspend fun joinGroup(groupId: String): GroupInfoDto {
         val parsedGroupId = parseGroupId(groupId)
-        sessionManager.executeWithAuth("syncPlayJoinGroup") { _, client ->
+        sessionManager.executeWithAuth("syncPlayJoinGroup") { server, client ->
+            requireSupported(server)
             client.syncPlayApi.syncPlayJoinGroup(JoinGroupRequestDto(groupId = parsedGroupId))
         }
 
@@ -43,7 +52,8 @@ class SyncPlayRepository @Inject constructor(
     }
 
     suspend fun leaveGroup() {
-        sessionManager.executeWithAuth("syncPlayLeaveGroup") { _, client ->
+        sessionManager.executeWithAuth("syncPlayLeaveGroup") { server, client ->
+            requireSupported(server)
             client.syncPlayApi.syncPlayLeaveGroup()
         }
         SecureLogger.i(TAG, "Left SyncPlay group")
@@ -51,7 +61,8 @@ class SyncPlayRepository @Inject constructor(
 
     suspend fun createGroup(name: String): GroupInfoDto {
         val groupName = name.trim().ifBlank { "Cinefin SyncPlay" }
-        val group = sessionManager.executeWithAuth("syncPlayCreateGroup") { _, client ->
+        val group = sessionManager.executeWithAuth("syncPlayCreateGroup") { server, client ->
+            requireSupported(server)
             client.syncPlayApi.syncPlayCreateGroup(NewGroupRequestDto(groupName = groupName)).content
         }
         SecureLogger.i(TAG, "Created SyncPlay group: ${group.groupName} (${group.groupId})")
@@ -60,7 +71,8 @@ class SyncPlayRepository @Inject constructor(
 
     suspend fun sendCommand(command: String, positionTicks: Long? = null) {
         val normalized = command.trim().lowercase()
-        sessionManager.executeWithAuth("syncPlayCommand:$normalized") { _, client ->
+        sessionManager.executeWithAuth("syncPlayCommand:$normalized") { server, client ->
+            requireSupported(server)
             when (normalized) {
                 "play", "unpause" -> client.syncPlayApi.syncPlayUnpause()
                 "pause" -> client.syncPlayApi.syncPlayPause()

@@ -209,6 +209,8 @@ data class ConnectionState(
     val isConnected: Boolean = false,
     val errorMessage: String? = null,
     val serverName: String? = null,
+    val detectedServerUrl: String? = null,
+    val detectedServerType: com.rpeters.jellyfin.data.model.ServerType? = null,
     val savedServerUrl: String = "",
     val savedUsername: String = "",
     val rememberLogin: Boolean = true,

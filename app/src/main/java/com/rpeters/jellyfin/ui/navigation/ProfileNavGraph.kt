@@ -13,6 +13,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.ui.components.ServerProfilesCard
 import com.rpeters.jellyfin.ui.downloads.DownloadsScreen
 import com.rpeters.jellyfin.ui.screens.AiDiagnosticsScreen
 import com.rpeters.jellyfin.ui.screens.ImmersiveFavoritesScreen
@@ -30,6 +31,7 @@ import com.rpeters.jellyfin.ui.screens.settings.SeerrSettingsScreen
 import com.rpeters.jellyfin.ui.screens.settings.SettingsSectionScreen
 import com.rpeters.jellyfin.ui.screens.settings.SubtitleSettingsScreen
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
+import com.rpeters.jellyfin.ui.viewmodel.ProfilesViewModel
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 
@@ -233,9 +235,17 @@ private fun ProfileRoute(navController: NavHostController, onLogout: () -> Unit)
         minActiveState = Lifecycle.State.STARTED,
     )
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(currentServer?.id, currentServer?.userId) {
         viewModel.loadCurrentUser()
         viewModel.loadServerInfo()
+    }
+
+    val signOut: () -> Unit = {
+        viewModel.logout()
+        onLogout()
+        navController.navigate(Screen.ServerConnection.route) {
+            popUpTo(0) { inclusive = true }
+        }
     }
 
     ProfileScreen(
@@ -246,17 +256,61 @@ private fun ProfileRoute(navController: NavHostController, onLogout: () -> Unit)
             currentServer?.userId,
             appState.currentUser?.primaryImageTag,
         ),
-        onLogout = {
-            viewModel.logout()
-            onLogout()
-            navController.navigate(Screen.ServerConnection.route) {
-                popUpTo(0) { inclusive = true }
-            }
-        },
+        onLogout = signOut,
         onSettingsClick = { navController.navigate(Screen.Settings.route) },
         onBackClick = { navController.popBackStack() },
         onNowPlayingClick = { navController.navigate(Screen.NowPlaying.route) },
+        profilesSection = {
+            ServerProfilesSection(navController = navController, onSignOut = signOut)
+        },
     )
+}
+
+/**
+ * The saved-profile switcher for a signed-in screen. [onSignOut] is the screen's own sign-out
+ * action, used when the profile in use is removed.
+ */
+@OptIn(UnstableApi::class)
+@Composable
+private fun ServerProfilesSection(navController: NavHostController, onSignOut: () -> Unit) {
+    val profilesViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<ProfilesViewModel>()
+    val savedProfiles by profilesViewModel.profiles.collectAsStateWithLifecycle()
+    val profilesUiState by profilesViewModel.uiState.collectAsStateWithLifecycle()
+
+    ServerProfilesCard(
+        profiles = savedProfiles.profiles,
+        activeProfileId = savedProfiles.activeProfileId,
+        onSwitch = { profile ->
+            profilesViewModel.switchTo(profile.id) {
+                // Drop every screen that was showing the previous profile's content.
+                navController.navigate(Screen.Home.route) {
+                    popUpTo(0) { inclusive = true }
+                }
+            }
+        },
+        onRemove = { profile ->
+            if (profile.id == savedProfiles.activeProfileId) {
+                // Removing the profile in use is signing out.
+                onSignOut()
+            } else {
+                profilesViewModel.remove(profile.id)
+            }
+        },
+        // Ending the session sends the app to the connection screen (see
+        // RedirectToLoginWhenDisconnected); the current profile stays saved.
+        onAddServer = { profilesViewModel.beginAddServer() },
+        enabled = !profilesUiState.isSwitching,
+    )
+
+    val signInRequiredProfile = profilesUiState.signInRequiredFor
+    if (signInRequiredProfile != null) {
+        // The saved token is gone or too old: go to the connection screen, where the profile
+        // is listed and the sign-in form is available.
+        LaunchedEffect(signInRequiredProfile.id) {
+            profilesViewModel.consumeSignInRequired()
+            profilesViewModel.beginAddServer()
+        }
+    }
 }
 
 @Composable
@@ -276,7 +330,18 @@ private fun SettingsRoute(navController: NavHostController, onLogout: () -> Unit
         viewModel.loadCurrentUser()
     }
 
+    val signOut: () -> Unit = {
+        viewModel.logout()
+        onLogout()
+        navController.navigate(Screen.ServerConnection.route) {
+            popUpTo(0) { inclusive = true }
+        }
+    }
+
     SettingsScreen(
+        profilesSection = {
+            ServerProfilesSection(navController = navController, onSignOut = signOut)
+        },
         onBackClick = { navController.popBackStack() },
         currentServer = currentServer,
         currentUser = appState.currentUser,
@@ -284,13 +349,7 @@ private fun SettingsRoute(navController: NavHostController, onLogout: () -> Unit
             currentServer?.userId,
             appState.currentUser?.primaryImageTag,
         ),
-        onLogout = {
-            viewModel.logout()
-            onLogout()
-            navController.navigate(Screen.ServerConnection.route) {
-                popUpTo(0) { inclusive = true }
-            }
-        },
+        onLogout = signOut,
         onNowPlayingClick = { navController.navigate(Screen.NowPlaying.route) },
         onManagePinsClick = { navController.navigate(Screen.PinSettings.route) },
         onSubtitleSettingsClick = { navController.navigate(Screen.SubtitleSettings.route) },

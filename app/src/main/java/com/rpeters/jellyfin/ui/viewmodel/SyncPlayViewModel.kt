@@ -8,6 +8,8 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -31,6 +33,10 @@ data class SyncPlayGroupSummary(
 class SyncPlayViewModel @Inject constructor(
     private val repository: SyncPlayRepository
 ) : ViewModel() {
+
+    val isSupported: StateFlow<Boolean> = repository.currentServer
+        .map { it?.serverType?.supportsSyncPlay == true }
+        .stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5000), false)
 
     private val _state = MutableStateFlow(SyncPlayState())
     val state: StateFlow<SyncPlayState> = _state.asStateFlow()

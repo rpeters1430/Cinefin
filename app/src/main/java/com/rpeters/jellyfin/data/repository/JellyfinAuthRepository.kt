@@ -6,6 +6,9 @@ import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.core.constants.Constants
 import com.rpeters.jellyfin.data.JellyfinServer
 import com.rpeters.jellyfin.data.SecureCredentialManager
+import com.rpeters.jellyfin.data.emby.EmbyAuthDataSource
+import com.rpeters.jellyfin.data.emby.EmbyHttpException
+import com.rpeters.jellyfin.data.model.ServerType
 import com.rpeters.jellyfin.data.model.QuickConnectResult
 import com.rpeters.jellyfin.data.model.QuickConnectState
 import com.rpeters.jellyfin.data.network.TokenProvider
@@ -40,8 +43,15 @@ class JellyfinAuthRepository @Inject constructor(
     private val secureCredentialManager: SecureCredentialManager,
     private val connectionOptimizerProvider: Provider<ConnectionOptimizer>,
     private val timeProvider: () -> Long = System::currentTimeMillis,
+    private val embyAuthDataSource: Provider<EmbyAuthDataSource>? = null,
+    private val isEmbySupportEnabled: () -> Boolean = { false },
+    private val embyConnectClient: Provider<com.rpeters.jellyfin.data.emby.EmbyConnectClient>? = null,
 ) : IJellyfinAuthRepository, TokenProvider {
     private val authMutex = Mutex()
+
+    // Server type found by the last connection test of each URL, so the sign-in that follows
+    // knows which API to talk to.
+    private val probedServerTypes = java.util.concurrent.ConcurrentHashMap<String, ServerType>()
 
     // Token state for TokenProvider implementation
     private val _tokenState = MutableStateFlow<String?>(null)
@@ -77,6 +87,7 @@ class JellyfinAuthRepository @Inject constructor(
             when (throwable) {
                 is java.io.IOException -> "Network error"
                 is org.jellyfin.sdk.api.client.exception.InvalidStatusException -> "Server returned error ${throwable.status}"
+                is EmbyHttpException -> "Server returned error ${throwable.code}"
                 else -> "Internal application error"
             }
         }
@@ -98,6 +109,11 @@ class JellyfinAuthRepository @Inject constructor(
         val result = connectionOptimizerProvider.get().testServerConnection(serverUrl)
         if (result is ApiResult.Success) {
             val serverVersion = result.data.version
+            val serverType = ServerType.detect(result.data.productName, serverVersion)
+            probedServerTypes[normalizeServerUrl(serverUrl)] = serverType
+            if (serverType == ServerType.EMBY) {
+                return checkEmbySupport(serverVersion) ?: result
+            }
             if (!isServerVersionSupported(serverVersion)) {
                 SecureLogger.w(
                     TAG,
@@ -127,6 +143,48 @@ class JellyfinAuthRepository @Inject constructor(
         return majorVersion >= Constants.ServerCompatibility.MIN_SUPPORTED_SERVER_MAJOR_VERSION
     }
 
+    /** @return the reason an Emby server cannot be used, or null when it can. */
+    private fun checkEmbySupport(version: String?): ApiResult.Error<PublicSystemInfo>? {
+        if (!isEmbySupportEnabled() || embyAuthDataSource == null) {
+            SecureLogger.w(TAG, "testServerConnection: Emby server found but Emby support is disabled")
+            return ApiResult.Error(
+                message = "This is an Emby server. Emby support is not available in this version of the app yet.",
+                errorType = ErrorType.UNSUPPORTED_SERVER_VERSION,
+            )
+        }
+        if (!isEmbyVersionSupported(version)) {
+            val minimum = "${Constants.ServerCompatibility.MIN_SUPPORTED_EMBY_MAJOR_VERSION}." +
+                "${Constants.ServerCompatibility.MIN_SUPPORTED_EMBY_MINOR_VERSION}"
+            SecureLogger.w(TAG, "testServerConnection: Emby version $version is below the minimum supported ($minimum)")
+            return ApiResult.Error(
+                message = "This app requires Emby Server $minimum or later. " +
+                    "Your server is running version ${version ?: "unknown"}. Please update your Emby server.",
+                errorType = ErrorType.UNSUPPORTED_SERVER_VERSION,
+            )
+        }
+        return null
+    }
+
+    /** As with Jellyfin, a version that cannot be parsed never blocks the connection. */
+    private fun isEmbyVersionSupported(version: String?): Boolean {
+        val parts = version?.split('.') ?: return true
+        val major = parts.getOrNull(0)?.toIntOrNull() ?: return true
+        val minor = parts.getOrNull(1)?.toIntOrNull() ?: 0
+        val minMajor = Constants.ServerCompatibility.MIN_SUPPORTED_EMBY_MAJOR_VERSION
+        return major > minMajor || (major == minMajor && minor >= Constants.ServerCompatibility.MIN_SUPPORTED_EMBY_MINOR_VERSION)
+    }
+
+    /**
+     * The type of the server at [serverUrl]: what the last connection test found, else the type
+     * of the current session when it is the same server (re-authentication), else Jellyfin.
+     */
+    private fun resolveServerType(normalizedServerUrl: String): ServerType =
+        probedServerTypes[normalizedServerUrl]
+            ?: _currentServer.value
+                ?.takeIf { normalizeServerUrl(it.url) == normalizedServerUrl }
+                ?.serverType
+            ?: ServerType.JELLYFIN
+
     override suspend fun authenticateUser(
         serverUrl: String,
         username: String,
@@ -147,15 +205,18 @@ class JellyfinAuthRepository @Inject constructor(
             SecureLogger.d(TAG, "authenticateUser: Attempting authentication")
             val normalizedServerUrl = normalizeServerUrl(serverUrl)
 
-            val client = createApiClient(serverUrl)
-            val response = client.authenticationApi.authenticateUserByName(
-                AuthenticateUserByName(
-                    username = username,
-                    pw = password,
-                ),
-            )
-
-            val authResult = response.content
+            val serverType = resolveServerType(normalizedServerUrl)
+            val embyAuth = embyAuthDataSource?.get()
+            val authResult = if (serverType == ServerType.EMBY && embyAuth != null) {
+                embyAuth.signIn(serverUrl, username, password)
+            } else {
+                createApiClient(serverUrl).authenticationApi.authenticateUserByName(
+                    AuthenticateUserByName(
+                        username = username,
+                        pw = password,
+                    ),
+                ).content
+            }
             SecureLogger.d(TAG, "authenticateUser: Authentication successful")
 
             persistAuthenticationState(
@@ -163,6 +224,7 @@ class JellyfinAuthRepository @Inject constructor(
                 normalizedServerUrl = normalizedServerUrl,
                 authResult = authResult,
                 usernameHint = username,
+                serverType = serverType,
             )
 
             return ApiResult.Success(authResult)
@@ -200,8 +262,64 @@ class JellyfinAuthRepository @Inject constructor(
         }
     }
 
+    override fun isEmbyConnectSupported(): Boolean = isEmbySupportEnabled() && embyConnectClient != null
+
+    override suspend fun authenticateWithEmbyConnect(
+        serverUrl: String,
+        connectUserId: String,
+        accessKey: String,
+        expectedServerId: String,
+    ): ApiResult<AuthenticationResult> = authMutex.withLock {
+        authenticateWithEmbyConnectInternal(serverUrl, connectUserId, accessKey, expectedServerId)
+    }
+
+    private suspend fun authenticateWithEmbyConnectInternal(
+        serverUrl: String,
+        connectUserId: String,
+        accessKey: String,
+        expectedServerId: String,
+    ): ApiResult<AuthenticationResult> {
+        return try {
+            val probe = testServerConnection(serverUrl)
+            if (probe is ApiResult.Error) return ApiResult.Error(
+                probe.cause?.let { com.rpeters.jellyfin.data.emby.EmbyConnectFailure.message(it) } ?: probe.message,
+                probe.cause, probe.errorType,
+            )
+            val info = (probe as? ApiResult.Success)?.data ?: return ApiResult.Error("Unable to identify the server")
+            if (ServerType.detect(info.productName, info.version) != ServerType.EMBY || info.id != expectedServerId) {
+                return ApiResult.Error("This address does not match the linked Emby server")
+            }
+            val client = embyConnectClient?.get() ?: return ApiResult.Error("Emby Connect is unavailable")
+            val result = client.exchange(serverUrl, connectUserId, accessKey).copy(serverId = info.id)
+            persistAuthenticationState(
+                serverUrl = serverUrl,
+                authResult = result,
+                serverType = ServerType.EMBY,
+                embyConnectUserId = connectUserId,
+                embyConnectAccessKey = accessKey,
+            )
+            ApiResult.Success(result)
+        } catch (e: IOException) {
+            connectAuthenticationError(e)
+        } catch (e: kotlinx.serialization.SerializationException) {
+            connectAuthenticationError(e)
+        } catch (e: IllegalArgumentException) {
+            connectAuthenticationError(e)
+        }
+    }
+
+    private fun connectAuthenticationError(error: Throwable): ApiResult<AuthenticationResult> = ApiResult.Error(
+        com.rpeters.jellyfin.data.emby.EmbyConnectFailure.message(error), error,
+        com.rpeters.jellyfin.data.emby.EmbyConnectFailure.type(error),
+    )
+
     private suspend fun reAuthenticateInternal(): Boolean {
         val server = _currentServer.value ?: return false
+        if (server.embyConnectUserId != null && server.embyConnectAccessKey != null) {
+            return authenticateWithEmbyConnectInternal(
+                server.url, server.embyConnectUserId, server.embyConnectAccessKey, server.id,
+            ) is ApiResult.Success
+        }
         val username = server.username ?: return false
         val serverUrl = server.url
 
@@ -305,6 +423,9 @@ class JellyfinAuthRepository @Inject constructor(
         normalizedServerUrl: String = normalizeServerUrl(serverUrl),
         authResult: AuthenticationResult,
         usernameHint: String? = null,
+        serverType: ServerType = ServerType.JELLYFIN,
+        embyConnectUserId: String? = null,
+        embyConnectAccessKey: String? = null,
     ) {
         val resolvedUsername = usernameHint ?: authResult.user?.name
         val server = JellyfinServer(
@@ -318,6 +439,9 @@ class JellyfinAuthRepository @Inject constructor(
             loginTimestamp = System.currentTimeMillis(),
             normalizedUrl = normalizedServerUrl,
             isAdministrator = authResult.user?.policy?.isAdministrator == true,
+            serverType = serverType,
+            embyConnectUserId = embyConnectUserId,
+            embyConnectAccessKey = embyConnectAccessKey,
         )
 
         _currentServer.update { server }

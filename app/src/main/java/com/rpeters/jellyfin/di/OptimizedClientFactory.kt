@@ -3,8 +3,11 @@ package com.rpeters.jellyfin.di
 import android.content.Context
 import android.util.Log
 import com.rpeters.jellyfin.BuildConfig
+import com.rpeters.jellyfin.data.emby.EmbyApiClient
+import com.rpeters.jellyfin.data.model.ServerType
 import com.rpeters.jellyfin.data.repository.IJellyfinAuthRepository
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
+import com.rpeters.jellyfin.utils.normalizeServerUrl
 import dagger.hilt.android.qualifiers.ApplicationContext
 import okhttp3.Interceptor
 import okhttp3.logging.HttpLoggingInterceptor
@@ -39,12 +42,26 @@ class OptimizedClientFactory @Inject constructor(
      * Create ApiClient bound to the current token for the given server URL.
      * Note: Jellyfin SDK uses its own Ktor client; OkHttp interceptors here would have no effect.
      */
-    private fun createOptimizedClient(serverUrl: String, token: String?): ApiClient {
+    private fun createOptimizedClient(serverUrl: String, token: String?, embyUserId: String?): ApiClient {
         // Build the Jellyfin ApiClient with the current token so requests include X-Emby-Token
-        return jellyfin.createApi(
+        val client = jellyfin.createApi(
             baseUrl = serverUrl,
             accessToken = token,
         )
+        // An Emby session gets the same SDK surface through a translating client.
+        return if (embyUserId != null) EmbyApiClient(client, embyUserId) else client
+    }
+
+    /**
+     * The signed-in Emby user when [serverUrl] is the current Emby session, else null. A URL
+     * that is only being probed (no session yet) is treated as Jellyfin, which is all the
+     * unauthenticated public-info request needs.
+     */
+    private fun embyUserIdFor(serverUrl: String): String? {
+        val server = authRepositoryProvider.get().getCurrentServerSync() ?: return null
+        if (server.serverType != ServerType.EMBY) return null
+        if (normalizeServerUrl(server.url) != normalizeServerUrl(serverUrl)) return null
+        return server.userId
     }
 
     // Note: Token/header interceptors using OkHttp are not applicable to Jellyfin SDK (Ktor-backed)
@@ -95,11 +112,12 @@ class OptimizedClientFactory @Inject constructor(
      */
     suspend fun getOptimizedClient(serverUrl: String): ApiClient {
         val token = authRepositoryProvider.get().token()
-        val key = "$serverUrl|${token ?: ""}"
+        val embyUserId = embyUserIdFor(serverUrl)
+        val key = "$serverUrl|${token ?: ""}|${embyUserId ?: ""}"
         return synchronized(clientLock) {
             clients.getOrPut(key) {
                 logDebug("Creating new optimized client for: $serverUrl")
-                createOptimizedClient(serverUrl, token)
+                createOptimizedClient(serverUrl, token, embyUserId)
             }
         }
     }

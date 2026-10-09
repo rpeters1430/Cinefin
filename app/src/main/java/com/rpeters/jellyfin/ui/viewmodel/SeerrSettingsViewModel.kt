@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -28,6 +29,10 @@ class SeerrSettingsViewModel @Inject constructor(
     private val seerrRepository: SeerrRepository,
     private val cinefinPluginRepository: com.rpeters.jellyfin.data.repository.CinefinPluginRepository,
 ) : ViewModel() {
+
+    val supportsCinefinPlugin: StateFlow<Boolean> = cinefinPluginRepository.currentServer
+        .map { it?.serverType?.supportsCinefinPlugin == true }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     val seerrPreferences: StateFlow<SeerrPreferences> = preferencesRepository.seerrPreferencesFlow
         .stateIn(

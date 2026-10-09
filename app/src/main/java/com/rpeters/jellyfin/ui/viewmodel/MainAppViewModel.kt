@@ -34,7 +34,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
@@ -163,6 +165,24 @@ constructor(
                     com.rpeters.jellyfin.data.worker.OfflineProgressSyncWorker.schedule(context)
                 }
             }
+        }
+
+        // Switching server profiles replaces the session while this ViewModel stays alive.
+        // Drop everything loaded for the previous session so the app-level initial load runs
+        // again for the new one.
+        viewModelScope.launch {
+            var previousSession: String? = null
+            repository.currentServerFlow
+                .map { server -> server?.let { "${it.id}|${it.userId}|${it.url}" } }
+                .distinctUntilChanged()
+                .collect { session ->
+                    if (session != null) {
+                        if (previousSession != null && previousSession != session) {
+                            clearState()
+                        }
+                        previousSession = session
+                    }
+                }
         }
     }
 
@@ -704,14 +724,23 @@ constructor(
         )
     }
 
+    // Favourite state this ViewModel last confirmed with the server, by item. A detail screen
+    // can hold its own copy of an item that is never reloaded, so the item passed in may be stale.
+    private val confirmedFavorites = java.util.concurrent.ConcurrentHashMap<UUID, Boolean>()
+
     fun toggleFavorite(item: BaseItemDto) {
         viewModelScope.launch {
-            val currentFavoriteState = item.userData?.isFavorite ?: false
+            val currentFavoriteState = confirmedFavorites[item.id] ?: item.userData?.isFavorite ?: false
             when (
+                // The repository takes the item's current state and flips it.
                 val result =
-                    userRepository.toggleFavorite(item.id.toString(), !currentFavoriteState)
+                    userRepository.toggleFavorite(item.id.toString(), currentFavoriteState)
             ) {
                 is ApiResult.Success -> {
+                    // Keep the loaded copies of this item in step, so the next tap on a screen
+                    // that is still open toggles from the new state instead of the stale one.
+                    confirmedFavorites[item.id] = result.data
+                    updateItemUserData(item.id) { it.copy(isFavorite = result.data) }
                     loadInitialData() // Refresh data
                 }
 
@@ -769,21 +798,26 @@ constructor(
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    private fun updateItemWatchedStatus(itemId: UUID?, isWatched: Boolean) {
-        if (itemId == null) return
+    private fun updateItemWatchedStatus(itemId: UUID?, isWatched: Boolean) =
+        updateItemUserData(itemId) {
+            it.copy(
+                played = isWatched,
+                playedPercentage = if (isWatched) 100.0 else 0.0,
+            )
+        }
 
-        val currentState = _appState.value
+    /** Applies [change] to the user data of every loaded copy of the item. */
+    private fun updateItemUserData(
+        itemId: UUID?,
+        change: (org.jellyfin.sdk.model.api.UserItemDataDto) -> org.jellyfin.sdk.model.api.UserItemDataDto,
+    ) {
+        if (itemId == null) return
 
         // Helper function to update item in a list
         fun updateItemInList(items: List<BaseItemDto>): List<BaseItemDto> {
             return items.map { item ->
                 if (item.id == itemId) {
-                    item.copy(
-                        userData = item.userData?.copy(
-                            played = isWatched,
-                            playedPercentage = if (isWatched) 100.0 else 0.0,
-                        ),
-                    )
+                    item.copy(userData = item.userData?.let(change))
                 } else {
                     item
                 }
@@ -874,8 +908,9 @@ constructor(
     fun logout() {
         viewModelScope.launch {
             analytics.logUiEvent("Account", "logout")
+            // The repository logout clears the saved password for this server only, so other
+            // saved profiles keep theirs.
             userRepository.logout()
-            credentialManager.clearCredentials()
             clearState()
         }
     }
@@ -1425,6 +1460,7 @@ constructor(
     }
 
     fun clearState() {
+        confirmedFavorites.clear()
         _appState.value = MainAppState()
     }
 

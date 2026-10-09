@@ -95,6 +95,7 @@ fun ExpressiveVideoControls(
     onToggleMute: () -> Unit,
     onCastClick: () -> Unit,
     onSyncPlayClick: () -> Unit = {},
+    supportsSyncPlay: Boolean = true,
     onSubtitlesClick: () -> Unit,
     onAspectRatioChange: (AspectRatioMode) -> Unit,
     onPlaybackSpeedChange: (Float) -> Unit,
@@ -155,6 +156,7 @@ fun ExpressiveVideoControls(
                     onBackClick = onBackClick,
                     onCastClick = onCastClick,
                     onSyncPlayClick = onSyncPlayClick,
+                    supportsSyncPlay = supportsSyncPlay,
                     overlayContent = overlayContent,
                     overlayScrim = overlayScrim,
                 )
@@ -192,6 +194,7 @@ private fun ExpressiveTopControls(
     onBackClick: () -> Unit,
     onCastClick: () -> Unit,
     onSyncPlayClick: () -> Unit = {},
+    supportsSyncPlay: Boolean = true,
     overlayContent: Color,
     overlayScrim: Color,
     modifier: Modifier = Modifier,
@@ -302,7 +305,7 @@ private fun ExpressiveTopControls(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    ExpressiveIconButton(
+                    if (supportsSyncPlay) ExpressiveIconButton(
                         icon = Icons.Default.Groups,
                         contentDescription = "SyncPlay",
                         onClick = onSyncPlayClick,

@@ -83,7 +83,8 @@ class UserActionsViewModel @Inject constructor(
             val currentFavoriteState = item.userData?.isFavorite ?: false
             val newFavoriteState = !currentFavoriteState
 
-            when (val result = userRepository.toggleFavorite(item.id.toString(), newFavoriteState)) {
+            // The repository takes the item's current state and flips it.
+            when (val result = userRepository.toggleFavorite(item.id.toString(), currentFavoriteState)) {
                 is ApiResult.Success -> {
                     _userActionsState.value = _userActionsState.value.copy(
                         isProcessingAction = false,

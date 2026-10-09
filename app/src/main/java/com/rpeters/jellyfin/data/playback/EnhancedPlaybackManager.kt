@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.data.playback
 
+import com.rpeters.jellyfin.data.emby.ServerIdCodec
 import android.content.Context
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.DeviceCapabilities
@@ -290,7 +291,7 @@ class EnhancedPlaybackManager @Inject constructor(
         return buildString {
             append(serverUrl)
             append("/Videos/")
-            append(itemId)
+            append(ServerIdCodec.decode(itemId))
             append("/stream.")
             append(container)
             append("?static=true&mediaSourceId=")

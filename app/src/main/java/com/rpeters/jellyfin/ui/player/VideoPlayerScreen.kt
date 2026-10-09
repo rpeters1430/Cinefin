@@ -149,6 +149,10 @@ fun VideoPlayerScreen(
     var showSyncPlayDialog by remember { mutableStateOf(false) }
     val syncPlayViewModel: SyncPlayViewModel = hiltViewModel()
     val syncPlayState by syncPlayViewModel.state.collectAsStateWithLifecycle()
+    val supportsSyncPlay by syncPlayViewModel.isSupported.collectAsStateWithLifecycle()
+    LaunchedEffect(supportsSyncPlay) {
+        if (!supportsSyncPlay) showSyncPlayDialog = false
+    }
 
     // Real-time position for gestures
     var currentPosMs by remember { mutableLongStateOf(0L) }
@@ -275,7 +279,8 @@ fun VideoPlayerScreen(
                 onIntent = viewModel::onIntent,
                 onClose = onClose,
                 onPictureInPictureClick = onPictureInPictureClick,
-                onSyncPlayClick = { showSyncPlayDialog = true },
+                onSyncPlayClick = { if (supportsSyncPlay) showSyncPlayDialog = true },
+                supportsSyncPlay = supportsSyncPlay,
                 supportsPip = supportsPip,
             )
         }
@@ -325,7 +330,7 @@ fun VideoPlayerScreen(
             )
         }
 
-        if (showSyncPlayDialog) {
+        if (showSyncPlayDialog && supportsSyncPlay) {
             LaunchedEffect(Unit) {
                 syncPlayViewModel.loadGroups()
             }

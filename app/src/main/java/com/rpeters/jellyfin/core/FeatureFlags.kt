@@ -60,6 +60,9 @@ object FeatureFlags {
         /** Toggle visibility of transcoding diagnostics tool */
         const val SHOW_TRANSCODING_DIAGNOSTICS = "show_transcoding_diagnostics"
 
+        /** Allow connecting to Emby servers. Off until Emby support is ready for everyone. */
+        const val ENABLE_EMBY_SUPPORT = "enable_emby_support"
+
         /** Experimental player buffer size in milliseconds */
         const val EXPERIMENTAL_PLAYER_BUFFER_MS = "experimental_player_buffer_ms"
     }

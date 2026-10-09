@@ -17,8 +17,11 @@ import com.rpeters.jellyfin.core.constants.Constants
 import com.rpeters.jellyfin.data.JellyfinServer
 import com.rpeters.jellyfin.data.SecureCredentialManager
 import com.rpeters.jellyfin.data.credentials.PasswordCredentialSyncManager
+import com.rpeters.jellyfin.data.model.ServerProfile
+import com.rpeters.jellyfin.data.model.ServerType
 import com.rpeters.jellyfin.data.offline.DownloadStatus
 import com.rpeters.jellyfin.data.offline.OfflineDownloadManager
+import com.rpeters.jellyfin.data.preferences.ServerProfileRepository
 import com.rpeters.jellyfin.data.repository.DemoModeRepository
 import com.rpeters.jellyfin.data.repository.IJellyfinAuthRepository
 import com.rpeters.jellyfin.data.repository.IJellyfinRepository
@@ -70,6 +73,9 @@ object PreferencesKeys {
     val BIOMETRIC_AUTH_ENABLED = booleanPreferencesKey("biometric_auth_enabled") // New preference
     val BIOMETRIC_REQUIRE_STRONG = booleanPreferencesKey("biometric_require_strong")
     val SESSION_IS_ADMIN = booleanPreferencesKey("session_is_admin")
+    val SESSION_SERVER_TYPE = stringPreferencesKey("session_server_type")
+    val EMBY_CONNECT_USER_ID = stringPreferencesKey("emby_connect_user_id")
+    val EMBY_CONNECT_ACCESS_KEY = stringPreferencesKey("emby_connect_access_key")
 }
 
 @HiltViewModel
@@ -85,6 +91,8 @@ class ServerConnectionViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val dispatchers: DispatcherProvider = DefaultDispatcherProvider(),
     private val demoModeRepository: DemoModeRepository = DemoModeRepository(),
+    private val serverProfileRepository: ServerProfileRepository = ServerProfileRepository(context),
+    private val embyConnectClient: Provider<com.rpeters.jellyfin.data.emby.EmbyConnectClient>? = null,
 ) : ViewModel() {
 
     private val _connectionState = MutableStateFlow(ConnectionState())
@@ -93,6 +101,120 @@ class ServerConnectionViewModel @Inject constructor(
     private var quickConnectPollingJob: Job? = null
     private var lastAttempt: ConnectionAttempt? = null
     private var discoveryJob: Job? = null
+    private var embyConnectJob: Job? = null
+    private var isSelectingEmbyServer = false
+    private var embyAttemptGeneration = 0L
+    private var serverTypeProbeJob: Job? = null
+
+    fun probeServerType(url: String) {
+        serverTypeProbeJob?.cancel()
+        _connectionState.value = _connectionState.value.copy(detectedServerUrl = null, detectedServerType = null)
+        val normalized = ServerUrlValidator.validateAndNormalizeUrl(url) ?: return
+        serverTypeProbeJob = viewModelScope.launch {
+            delay(500)
+            when (val result = authRepository.testServerConnection(normalized)) {
+                is ApiResult.Success -> _connectionState.value = _connectionState.value.copy(
+                    detectedServerUrl = normalized,
+                    detectedServerType = ServerType.detect(result.data.productName, result.data.version),
+                )
+                else -> Unit
+            }
+        }
+    }
+    private val _embyConnectState = MutableStateFlow(EmbyConnectState())
+    val embyConnectState: StateFlow<EmbyConnectState> = _embyConnectState.asStateFlow()
+
+    val isEmbyConnectSupported: Boolean get() = authRepository.isEmbyConnectSupported()
+
+    fun cancelEmbyConnect() {
+        embyAttemptGeneration++
+        embyConnectJob?.cancel()
+        if (isSelectingEmbyServer) {
+            isSelectingEmbyServer = false
+            _connectionState.value = _connectionState.value.copy(isConnecting = false)
+        }
+        _embyConnectState.value = EmbyConnectState()
+    }
+
+    fun signInEmbyConnect(name: String, password: String) {
+        if (_embyConnectState.value.isBusy || _connectionState.value.isConnecting) return
+        val client = embyConnectClient?.get() ?: return
+        _embyConnectState.value = EmbyConnectState(isBusy = true)
+        embyConnectJob = viewModelScope.launch {
+            try {
+                val servers = client.signIn(name.trim(), password)
+                _embyConnectState.value = EmbyConnectState(
+                    servers = servers,
+                    error = if (servers.isEmpty()) "No linked Emby servers found. Link your account on the server or enter its address manually." else null,
+                )
+            } catch (e: java.io.IOException) {
+                reportEmbyAccountError(e)
+            } catch (e: kotlinx.serialization.SerializationException) {
+                reportEmbyAccountError(e)
+            } catch (e: IllegalArgumentException) {
+                reportEmbyAccountError(e)
+            }
+        }
+    }
+
+    private fun reportEmbyAccountError(error: Throwable) {
+        SecureLogger.w("ServerConnectionVM", "Emby account sign-in failed (${error.javaClass.simpleName})")
+        _embyConnectState.value = EmbyConnectState(
+            error = com.rpeters.jellyfin.data.emby.EmbyConnectFailure.message(error, accountSignIn = true),
+        )
+    }
+
+    fun selectEmbyConnectServer(server: com.rpeters.jellyfin.data.emby.EmbyConnectServer) {
+        if (_embyConnectState.value.isBusy || _connectionState.value.isConnecting) return
+        _embyConnectState.value = _embyConnectState.value.copy(isBusy = true, error = null)
+        val attemptGeneration = ++embyAttemptGeneration
+        isSelectingEmbyServer = true
+        _connectionState.value = _connectionState.value.copy(isConnecting = true, errorMessage = null)
+        embyConnectJob = viewModelScope.launch {
+            var connected = false
+            var error = "Could not reach this Emby server. Check server access or enter its address manually."
+            try {
+                for (address in server.addresses) {
+                    when (val result = authRepository.authenticateWithEmbyConnect(
+                        address, server.userId, server.accessKey, server.systemId,
+                    )) {
+                        is ApiResult.Success -> {
+                            withContext(NonCancellable) {
+                                if (_connectionState.value.rememberLogin) saveCurrentSessionToken()
+                                else clearSavedCredentials()
+                            }
+                            connected = true
+                            break
+                        }
+                        is ApiResult.Error -> {
+                            error = result.message
+                            if (result.errorType == ErrorType.AUTHENTICATION || result.errorType == ErrorType.PINNING) break
+                        }
+                        else -> Unit
+                    }
+                }
+            } catch (e: java.io.IOException) {
+                error = "Could not save the Emby session. Retry sign-in."
+                SecureLogger.w("ServerConnectionVM", "Emby session storage failed (${e.javaClass.simpleName})")
+            } finally {
+                // A cancelled picker must not clear loading/error state for a newer attempt.
+                if (attemptGeneration == embyAttemptGeneration) {
+                    isSelectingEmbyServer = false
+                    _connectionState.value = _connectionState.value.copy(isConnecting = false)
+                    if (!connected) _embyConnectState.value = _embyConnectState.value.copy(isBusy = false, error = error)
+                }
+            }
+            if (attemptGeneration != embyAttemptGeneration) return@launch
+            _connectionState.value = _connectionState.value.copy(
+                isConnecting = false,
+                isConnected = connected,
+                connectionPhase = if (connected) ConnectionPhase.Connected else ConnectionPhase.Idle,
+            )
+            _embyConnectState.value = if (connected) EmbyConnectState() else _embyConnectState.value.copy(
+                isBusy = false, error = error,
+            )
+        }
+    }
 
     companion object {
         private const val AUTO_LOGIN_DEBOUNCE_MS = 2_000L
@@ -178,13 +300,20 @@ class ServerConnectionViewModel @Inject constructor(
                 val sessionAgeMs = System.currentTimeMillis() - restoredLoginTimestamp
                 val isSessionStale = sessionAgeMs > Constants.SESSION_TOKEN_MAX_AGE_MS
 
-                if (isSessionStale) {
+                val hasConnectLink = !preferences[PreferencesKeys.EMBY_CONNECT_USER_ID].isNullOrBlank() &&
+                    !preferences[PreferencesKeys.EMBY_CONNECT_ACCESS_KEY].isNullOrBlank()
+                if (isSessionStale && !hasConnectLink) {
                     // Session is very old; clear it and fall through to auto-login or login screen.
                     SecureLogger.w(
                         "ServerConnectionVM",
                         "Persisted session is stale (age ${sessionAgeMs / 86_400_000}d), clearing.",
                     )
                     clearPersistedSessionToken()
+                    profileStoreCall("clear the stale profile token") {
+                        serverProfileRepository.clearToken(
+                            ServerProfile.profileId(savedSessionServerId, savedSessionUserId, savedServerUrl, savedUsername),
+                        )
+                    }
                 } else {
                     // Normalise the stored URL before restoring to handle legacy values that may
                     // have been saved with trailing slashes or other format variations. Without
@@ -203,8 +332,42 @@ class ServerConnectionViewModel @Inject constructor(
                         loginTimestamp = restoredLoginTimestamp,
                         normalizedUrl = normalizedSavedUrl,
                         isAdministrator = savedIsAdmin,
+                        serverType = preferences[PreferencesKeys.SESSION_SERVER_TYPE]
+                            ?.let { saved -> ServerType.entries.firstOrNull { it.name == saved } }
+                            ?: ServerType.JELLYFIN,
+                        embyConnectUserId = preferences[PreferencesKeys.EMBY_CONNECT_USER_ID],
+                        embyConnectAccessKey = preferences[PreferencesKeys.EMBY_CONNECT_ACCESS_KEY],
                     )
-                    authRepository.restorePersistedSession(restoredServer)
+                    val connectUserId = restoredServer.embyConnectUserId
+                    val connectKey = restoredServer.embyConnectAccessKey
+                    if (connectUserId != null && connectKey != null && connectivityChecker.isOnline()) {
+                        _connectionState.value = _connectionState.value.copy(isConnecting = true)
+                        val result = authRepository.authenticateWithEmbyConnect(
+                            restoredServer.url, connectUserId, connectKey, restoredServer.id,
+                        )
+                        if (result !is ApiResult.Success) {
+                            if (result is ApiResult.Error && result.errorType == ErrorType.AUTHENTICATION) {
+                                clearPersistedSessionToken()
+                                profileStoreCall("forget revoked Emby credentials") {
+                                    serverProfileRepository.clearAuthentication(
+                                        ServerProfile.profileId(restoredServer.id, restoredServer.userId, restoredServer.url, savedUsername),
+                                    )
+                                }
+                            }
+                            _connectionState.value = _connectionState.value.copy(
+                                isConnecting = false,
+                                errorMessage = (result as? ApiResult.Error)?.message
+                                    ?: "Could not reconnect to Emby. Retry or sign in again.",
+                            )
+                            return@launch
+                        }
+                        saveCurrentSessionToken()
+                    } else {
+                        authRepository.restorePersistedSession(restoredServer)
+                    }
+                    // Also covers the upgrade from the single saved session: it becomes the
+                    // first saved profile the first time it is restored.
+                    saveProfile(authRepository.getCurrentServerSync() ?: restoredServer)
                     _connectionState.value = _connectionState.value.copy(
                         isConnected = true,
                         isConnecting = false,
@@ -308,7 +471,7 @@ class ServerConnectionViewModel @Inject constructor(
             repository.isConnectedFlow.collect { isConnected ->
                 // Demo Mode is not backed by a real server connection; don't let this flow
                 // (which reflects the real repository/server state) stomp on it.
-                if (_connectionState.value.isDemoMode) return@collect
+                if (_connectionState.value.isDemoMode || _connectionState.value.isConnecting) return@collect
                 _connectionState.value = _connectionState.value.copy(
                     isConnected = isConnected,
                     isConnecting = false,
@@ -661,6 +824,13 @@ class ServerConnectionViewModel @Inject constructor(
     private suspend fun clearSavedCredentials() {
         val currentState = _connectionState.value
         val currentServer = authRepository.getCurrentServerSync()
+        if (currentServer != null && !currentServer.username.isNullOrBlank()) {
+            profileStoreCall("forget the unremembered sign-in") {
+                serverProfileRepository.clearAuthentication(ServerProfile.profileId(
+                    currentServer.id, currentServer.userId, currentServer.url, currentServer.username,
+                ))
+            }
+        }
         withContext(dispatchers.io) {
             context.dataStore.edit { preferences ->
                 preferences.remove(PreferencesKeys.SERVER_URL)
@@ -671,6 +841,9 @@ class ServerConnectionViewModel @Inject constructor(
                 preferences.remove(PreferencesKeys.SESSION_SERVER_NAME)
                 preferences.remove(PreferencesKeys.SESSION_LOGIN_TIMESTAMP)
                 preferences.remove(PreferencesKeys.SESSION_IS_ADMIN)
+                preferences.remove(PreferencesKeys.SESSION_SERVER_TYPE)
+                preferences.remove(PreferencesKeys.EMBY_CONNECT_USER_ID)
+                preferences.remove(PreferencesKeys.EMBY_CONNECT_ACCESS_KEY)
             }
             if (currentServer != null && !currentServer.username.isNullOrBlank()) {
                 runCatching {
@@ -683,7 +856,10 @@ class ServerConnectionViewModel @Inject constructor(
                 }
             }
         }
-        _connectionState.value = ConnectionState()
+        _connectionState.value = ConnectionState(
+            rememberLogin = currentState.rememberLogin,
+            isLocalCredentialCheckComplete = currentState.isLocalCredentialCheckComplete,
+        )
     }
 
     private suspend fun clearPersistedSessionToken() {
@@ -695,17 +871,23 @@ class ServerConnectionViewModel @Inject constructor(
                 preferences.remove(PreferencesKeys.SESSION_SERVER_NAME)
                 preferences.remove(PreferencesKeys.SESSION_LOGIN_TIMESTAMP)
                 preferences.remove(PreferencesKeys.SESSION_IS_ADMIN)
+                preferences.remove(PreferencesKeys.SESSION_SERVER_TYPE)
+                preferences.remove(PreferencesKeys.EMBY_CONNECT_USER_ID)
+                preferences.remove(PreferencesKeys.EMBY_CONNECT_ACCESS_KEY)
             }
         }
     }
 
     private suspend fun saveCurrentSessionToken() {
-        val server = repository.currentServerFlow.first { it != null } ?: return
+        val server = authRepository.getCurrentServerSync() ?: repository.currentServerFlow.first { it != null } ?: return
         if (server.url.isBlank() || server.username.isNullOrBlank() || server.accessToken.isNullOrBlank()) {
             return
         }
 
-        withContext(dispatchers.io) {
+        // NonCancellable for the same reason as saveCredentials(): a successful sign-in flips
+        // repository.isConnected, which navigates away and cancels viewModelScope. Without it the
+        // token and the saved profile are lost whenever navigation wins that race.
+        withContext(dispatchers.io + NonCancellable) {
             context.dataStore.edit { preferences ->
                 preferences[PreferencesKeys.SERVER_URL] = normalizeServerUrl(server.url)
                 preferences[PreferencesKeys.USERNAME] = server.username
@@ -715,6 +897,41 @@ class ServerConnectionViewModel @Inject constructor(
                 preferences[PreferencesKeys.SESSION_SERVER_NAME] = server.name
                 preferences[PreferencesKeys.SESSION_LOGIN_TIMESTAMP] = server.loginTimestamp ?: System.currentTimeMillis()
                 preferences[PreferencesKeys.SESSION_IS_ADMIN] = server.isAdministrator
+                preferences[PreferencesKeys.SESSION_SERVER_TYPE] = server.serverType.name
+                server.embyConnectUserId?.let { preferences[PreferencesKeys.EMBY_CONNECT_USER_ID] = it }
+                    ?: preferences.remove(PreferencesKeys.EMBY_CONNECT_USER_ID)
+                server.embyConnectAccessKey?.let { preferences[PreferencesKeys.EMBY_CONNECT_ACCESS_KEY] = it }
+                    ?: preferences.remove(PreferencesKeys.EMBY_CONNECT_ACCESS_KEY)
+            }
+            saveProfile(server)
+        }
+    }
+
+    private suspend fun saveProfile(server: JellyfinServer) {
+        val profile = ServerProfile.fromServer(server) ?: return
+        profileStoreCall("save the server profile") { serverProfileRepository.saveAndActivate(profile) }
+    }
+
+    /** Sign-in, session restore, and sign-out must still complete when the profile list fails. */
+    private suspend fun profileStoreCall(action: String, block: suspend () -> Unit) {
+        try {
+            block()
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            SecureLogger.w("ServerConnectionVM", "Could not $action", e)
+        }
+    }
+
+    /** Removes the saved profile behind the current session, leaving other profiles untouched. */
+    private suspend fun removeActiveProfile() {
+        val currentServer = authRepository.getCurrentServerSync()
+        profileStoreCall("remove the server profile") {
+            val profileId = currentServer?.let { ServerProfile.fromServer(it)?.id }
+                ?: serverProfileRepository.current().activeProfileId
+                ?: return@profileStoreCall
+            withContext(dispatchers.io) {
+                serverProfileRepository.remove(profileId)
             }
         }
     }
@@ -723,6 +940,7 @@ class ServerConnectionViewModel @Inject constructor(
         viewModelScope.launch {
             updateRememberLoginPreference(remember)
             if (!remember) {
+                removeActiveProfile()
                 clearSavedCredentials()
             }
         }
@@ -984,6 +1202,17 @@ class ServerConnectionViewModel @Inject constructor(
                 }
             ) {
                 is ApiResult.Success -> {
+                    if (ServerType.detect(serverResult.data.productName, serverResult.data.version) == ServerType.EMBY) {
+                        _connectionState.value = _connectionState.value.copy(
+                            isConnecting = false,
+                            isQuickConnectActive = false,
+                            quickConnectStatus = "",
+                            errorMessage = "Use Emby Connect or your Emby server username and password to sign in.",
+                            detectedServerUrl = normalizedServerUrl,
+                            detectedServerType = ServerType.EMBY,
+                        )
+                        return@launch
+                    }
                     when (
                         val enabledResult = withContext(dispatchers.io) {
                             authRepository.isQuickConnectEnabled(normalizedServerUrl)
@@ -1217,6 +1446,7 @@ class ServerConnectionViewModel @Inject constructor(
         )
         viewModelScope.launch {
             // Clear saved credentials and auth session when user explicitly logs out
+            removeActiveProfile()
             clearSavedCredentials()
             authRepository.logout()
         }
@@ -1250,6 +1480,8 @@ class ServerConnectionViewModel @Inject constructor(
         // Cancel any ongoing quick connect polling when ViewModel is destroyed
         quickConnectPollingJob?.cancel()
         discoveryJob?.cancel()
+        embyConnectJob?.cancel()
+        serverTypeProbeJob?.cancel()
     }
 
     private fun shouldAutoLoginNow(key: String): Boolean {

@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -35,6 +36,10 @@ class MediaRequestSettingsViewModel @Inject constructor(
     private val cinefinPluginRepository: CinefinPluginRepository,
     private val authRepository: IJellyfinAuthRepository,
 ) : ViewModel() {
+
+    val supportsCinefinPlugin: StateFlow<Boolean> = authRepository.currentServer
+        .map { it?.serverType?.supportsCinefinPlugin == true }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     val isCurrentUserAdmin: StateFlow<Boolean> = authRepository.currentServer
         .map { it?.isAdministrator == true }
@@ -53,7 +58,14 @@ class MediaRequestSettingsViewModel @Inject constructor(
     val isPluginConfigurationSupported: StateFlow<Boolean> = _isPluginConfigurationSupported.asStateFlow()
 
     init {
-        fetchPluginInfo()
+        viewModelScope.launch {
+            authRepository.currentServer.collectLatest { server ->
+                _isPluginConfigured.value = false
+                _allowNonAdminImports.value = false
+                _isPluginConfigurationSupported.value = false
+                if (server?.serverType?.supportsCinefinPlugin == true) fetchPluginInfo()
+            }
+        }
     }
 
     fun fetchPluginInfo() {

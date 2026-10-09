@@ -18,6 +18,7 @@ import com.rpeters.jellyfin.data.repository.SonarrRepository
 import com.rpeters.jellyfin.data.repository.RadarrRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import io.mockk.MockKAnnotations
+import io.mockk.every
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.impl.annotations.MockK
@@ -76,6 +77,9 @@ class RequestsViewModelTest {
     @Before
     fun setup() {
         MockKAnnotations.init(this, relaxUnitFun = true)
+        every { cinefinPluginRepository.currentServer } returns MutableStateFlow(
+            com.rpeters.jellyfin.data.JellyfinServer("test", "Jellyfin", "https://example.com"),
+        )
         Dispatchers.setMain(testDispatcher)
 
         seerrPreferencesFlow = MutableStateFlow(SeerrPreferences.DEFAULT)

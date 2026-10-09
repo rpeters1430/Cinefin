@@ -76,6 +76,8 @@ class ServerConnectionViewModelTest {
     private lateinit var discoveryRepository: com.rpeters.jellyfin.data.repository.IJellyfinDiscoveryRepository
     private lateinit var context: Context
     private lateinit var viewModel: ServerConnectionViewModel
+    private val defaultProfileRepository =
+        mockk<com.rpeters.jellyfin.data.preferences.ServerProfileRepository>(relaxed = true)
 
     @Before
     fun setUp() = runTest {
@@ -85,6 +87,7 @@ class ServerConnectionViewModelTest {
         context = ApplicationProvider.getApplicationContext()
         repository = mockk(relaxed = true)
         authRepository = mockk(relaxed = true)
+        every { authRepository.getCurrentServerSync() } returns null
         secureCredentialManager = mockk(relaxed = true)
         passwordCredentialSyncManager = mockk(relaxed = true)
         certificatePinningManager = mockk(relaxed = true)
@@ -102,6 +105,7 @@ class ServerConnectionViewModelTest {
         every { mockServer.url } returns "https://example.com"
         every { mockServer.username } returns "user"
         every { mockServer.accessToken } returns "token"
+        every { mockServer.serverType } returns com.rpeters.jellyfin.data.model.ServerType.JELLYFIN
         every { repository.currentServerFlow } returns MutableStateFlow(mockServer)
         
         every { authRepository.isTokenExpired() } returns false
@@ -169,6 +173,7 @@ class ServerConnectionViewModelTest {
                 offlineDownloadManagerProvider,
                 context,
                 TestDispatcherProvider(mainDispatcherRule.dispatcher),
+                serverProfileRepository = defaultProfileRepository,
             )
             awaitCondition {
                 viewModel.connectionState.value.savedServerUrl == "https://example.com"
@@ -212,6 +217,7 @@ class ServerConnectionViewModelTest {
             offlineDownloadManagerProvider,
             context,
             TestDispatcherProvider(mainDispatcherRule.dispatcher),
+            serverProfileRepository = defaultProfileRepository,
         )
         awaitCondition {
             viewModel.connectionState.value.savedServerUrl == "https://example.com"
@@ -248,6 +254,7 @@ class ServerConnectionViewModelTest {
             offlineDownloadManagerProvider,
             context,
             TestDispatcherProvider(mainDispatcherRule.dispatcher),
+            serverProfileRepository = defaultProfileRepository,
         )
         awaitCondition(timeoutMs = 5000) {
             val preferences = context.dataStore.data.first()
@@ -300,6 +307,7 @@ class ServerConnectionViewModelTest {
                 offlineDownloadManagerProvider,
                 context,
                 TestDispatcherProvider(mainDispatcherRule.dispatcher),
+                serverProfileRepository = defaultProfileRepository,
             )
             awaitCondition {
                 viewModel.connectionState.value.savedServerUrl == "https://example.com"
@@ -350,6 +358,7 @@ class ServerConnectionViewModelTest {
             offlineDownloadManagerProvider,
             context,
             TestDispatcherProvider(mainDispatcherRule.dispatcher),
+            serverProfileRepository = defaultProfileRepository,
         )
         awaitCondition {
             !viewModel.connectionState.value.rememberLogin
@@ -380,6 +389,7 @@ class ServerConnectionViewModelTest {
             offlineDownloadManagerProvider,
             context,
             TestDispatcherProvider(mainDispatcherRule.dispatcher),
+            serverProfileRepository = defaultProfileRepository,
         )
         awaitCondition {
             viewModel.connectionState.value.savedServerUrl == "https://example.com"
@@ -419,6 +429,7 @@ class ServerConnectionViewModelTest {
             offlineDownloadManagerProvider,
             context,
             TestDispatcherProvider(mainDispatcherRule.dispatcher),
+            serverProfileRepository = defaultProfileRepository,
         )
         awaitCondition {
             viewModel.connectionState.value.savedServerUrl == "https://example.com"
@@ -459,6 +470,7 @@ class ServerConnectionViewModelTest {
                 offlineDownloadManagerProvider,
                 context,
                 TestDispatcherProvider(mainDispatcherRule.dispatcher),
+                serverProfileRepository = defaultProfileRepository,
             )
             awaitCondition { viewModel.connectionState.value.savedServerUrl == "https://example.com" }
             advanceUntilIdle()
@@ -493,6 +505,7 @@ class ServerConnectionViewModelTest {
                 offlineDownloadManagerProvider,
                 context,
                 TestDispatcherProvider(mainDispatcherRule.dispatcher),
+                serverProfileRepository = defaultProfileRepository,
             )
             awaitCondition { viewModel.connectionState.value.savedServerUrl == "https://example.com" }
             advanceUntilIdle()
@@ -539,6 +552,7 @@ class ServerConnectionViewModelTest {
                 offlineDownloadManagerProvider,
                 context,
                 TestDispatcherProvider(mainDispatcherRule.dispatcher),
+                serverProfileRepository = defaultProfileRepository,
             )
             awaitCondition { capturedServer.isCaptured }
             advanceUntilIdle()
@@ -564,6 +578,7 @@ class ServerConnectionViewModelTest {
                 offlineDownloadManagerProvider,
                 context,
                 TestDispatcherProvider(mainDispatcherRule.dispatcher),
+                serverProfileRepository = defaultProfileRepository,
             )
             advanceUntilIdle()
 
@@ -598,6 +613,7 @@ class ServerConnectionViewModelTest {
                 offlineDownloadManagerProvider,
                 context,
                 TestDispatcherProvider(mainDispatcherRule.dispatcher),
+                serverProfileRepository = defaultProfileRepository,
             )
             advanceUntilIdle()
 
@@ -627,6 +643,7 @@ class ServerConnectionViewModelTest {
                 offlineDownloadManagerProvider,
                 context,
                 TestDispatcherProvider(mainDispatcherRule.dispatcher),
+                serverProfileRepository = defaultProfileRepository,
             )
             advanceUntilIdle()
 
@@ -651,6 +668,7 @@ class ServerConnectionViewModelTest {
             offlineDownloadManagerProvider,
             context,
             TestDispatcherProvider(mainDispatcherRule.dispatcher),
+            serverProfileRepository = defaultProfileRepository,
         )
         advanceUntilIdle()
 
@@ -667,6 +685,224 @@ class ServerConnectionViewModelTest {
 
         viewModel.viewModelScope.cancel()
     }
+
+    // endregion
+
+    @Test
+    fun embyConnect_cancelledSelection_doesNotClearNewSelectionsLoadingState() = runTest(mainDispatcherRule.dispatcher) {
+        context.dataStore.edit { it[REMEMBER_LOGIN] = false }
+        val pending = kotlinx.coroutines.CompletableDeferred<ApiResult<AuthenticationResult>>()
+        coEvery { authRepository.authenticateWithEmbyConnect(any(), any(), any(), any()) } coAnswers { pending.await() }
+        viewModel = createViewModelWithProfiles(defaultProfileRepository)
+        awaitCondition { viewModel.connectionState.value.isLocalCredentialCheckComplete }
+        val linked = com.rpeters.jellyfin.data.emby.EmbyConnectServer(
+            "NAS", "server", listOf("https://example.com"), "connect-user", "linked-key",
+        )
+        viewModel.selectEmbyConnectServer(linked)
+        runCurrent()
+        viewModel.cancelEmbyConnect()
+        viewModel.selectEmbyConnectServer(linked)
+        runCurrent()
+        assertTrue(viewModel.connectionState.value.isConnecting)
+        assertTrue(viewModel.embyConnectState.value.isBusy)
+        viewModel.cancelEmbyConnect()
+        runCurrent()
+        assertFalse(viewModel.connectionState.value.isConnecting)
+        assertFalse(viewModel.embyConnectState.value.isBusy)
+    }
+
+    @Test
+    fun embyConnect_rememberLoginOff_forgetsSavedProfileAndSessionKeys() = runTest(mainDispatcherRule.dispatcher) {
+        val server = JellyfinServer(
+            id = "emby-server", name = "NAS", url = "https://example.com", userId = "emby-user", username = "user",
+            accessToken = "local-token", serverType = com.rpeters.jellyfin.data.model.ServerType.EMBY,
+            embyConnectUserId = "connect-user", embyConnectAccessKey = "linked-key",
+        )
+        context.dataStore.edit { it[REMEMBER_LOGIN] = false }
+        every { authRepository.getCurrentServerSync() } returns server
+        coEvery { authRepository.authenticateWithEmbyConnect(any(), any(), any(), any()) } returns
+            ApiResult.Success(mockk<AuthenticationResult>())
+        viewModel = createViewModelWithProfiles(defaultProfileRepository)
+        awaitCondition { viewModel.connectionState.value.isLocalCredentialCheckComplete }
+        viewModel.selectEmbyConnectServer(com.rpeters.jellyfin.data.emby.EmbyConnectServer(
+            "NAS", "emby-server", listOf("https://example.com"), "connect-user", "linked-key",
+        ))
+        awaitCondition { viewModel.connectionState.value.isConnected }
+        assertFalse(viewModel.connectionState.value.rememberLogin)
+        assertNull(context.dataStore.data.first()[SESSION_TOKEN])
+        assertNull(context.dataStore.data.first()[PreferencesKeys.EMBY_CONNECT_ACCESS_KEY])
+        coVerify { defaultProfileRepository.clearAuthentication("emby-server:emby-user") }
+    }
+
+    @Test
+    fun embyConnect_staleTokenOnLaunch_usesLinkedKeyInsteadOfDiscardingSession() = runTest(mainDispatcherRule.dispatcher) {
+        context.dataStore.edit {
+            it[SESSION_TOKEN] = "stale-token"
+            it[SESSION_USER_ID] = "emby-user"
+            it[SESSION_SERVER_ID] = "emby-server"
+            it[SESSION_LOGIN_TIMESTAMP] = 1L
+            it[PreferencesKeys.SESSION_SERVER_TYPE] = "EMBY"
+            it[PreferencesKeys.EMBY_CONNECT_USER_ID] = "connect-user"
+            it[PreferencesKeys.EMBY_CONNECT_ACCESS_KEY] = "linked-key"
+        }
+        val refreshed = JellyfinServer(
+            "emby-server", "NAS", "https://example.com", userId = "emby-user", username = "user",
+            accessToken = "fresh-token", loginTimestamp = System.currentTimeMillis(),
+            serverType = com.rpeters.jellyfin.data.model.ServerType.EMBY,
+            embyConnectUserId = "connect-user", embyConnectAccessKey = "linked-key",
+        )
+        every { authRepository.getCurrentServerSync() } returns refreshed
+        coEvery { authRepository.authenticateWithEmbyConnect(any(), any(), any(), any()) } returns
+            ApiResult.Success(mockk<AuthenticationResult>())
+        viewModel = createViewModelWithProfiles(defaultProfileRepository)
+        awaitCondition { viewModel.connectionState.value.isConnected }
+        assertEquals("fresh-token", context.dataStore.data.first()[SESSION_TOKEN])
+        coVerify { authRepository.authenticateWithEmbyConnect("https://example.com", "connect-user", "linked-key", "emby-server") }
+        coVerify(exactly = 0) { defaultProfileRepository.clearAuthentication(any()) }
+    }
+
+    // region Saved server profiles
+
+    private fun createViewModelWithProfiles(
+        profileRepository: com.rpeters.jellyfin.data.preferences.ServerProfileRepository,
+    ) = ServerConnectionViewModel(
+        repository,
+        authRepository,
+        secureCredentialManager,
+        passwordCredentialSyncManager,
+        certificatePinningManager,
+        connectivityChecker,
+        discoveryRepository,
+        offlineDownloadManagerProvider,
+        context,
+        TestDispatcherProvider(mainDispatcherRule.dispatcher),
+        serverProfileRepository = profileRepository,
+    )
+
+    @Test
+    fun sessionRestore_legacySingleSession_becomesSavedProfile() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val profileRepository = mockk<com.rpeters.jellyfin.data.preferences.ServerProfileRepository>(relaxed = true)
+            val saved = slot<com.rpeters.jellyfin.data.model.ServerProfile>()
+            coEvery { profileRepository.saveAndActivate(capture(saved)) } just Runs
+            context.dataStore.edit { preferences ->
+                preferences[SESSION_TOKEN] = "existing-token"
+                preferences[SESSION_USER_ID] = "user-id-1"
+                preferences[SESSION_SERVER_ID] = "server-id-1"
+                preferences[SESSION_LOGIN_TIMESTAMP] = System.currentTimeMillis() - (60 * 60 * 1000L)
+            }
+
+            viewModel = createViewModelWithProfiles(profileRepository)
+            awaitCondition { saved.isCaptured }
+            advanceUntilIdle()
+
+            assertEquals("server-id-1:user-id-1", saved.captured.id)
+            assertEquals("https://example.com", saved.captured.serverUrl)
+            assertEquals("user", saved.captured.username)
+            assertEquals("existing-token", saved.captured.accessToken)
+            assertEquals(com.rpeters.jellyfin.data.model.ServerType.JELLYFIN, saved.captured.serverType)
+            viewModel.viewModelScope.cancel()
+        }
+
+    @Test
+    fun sessionRestore_staleSession_clearsProfileTokenInsteadOfSavingProfile() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val profileRepository = mockk<com.rpeters.jellyfin.data.preferences.ServerProfileRepository>(relaxed = true)
+            coEvery { secureCredentialManager.hasSavedPassword(any(), any()) } returns false
+            context.dataStore.edit { preferences ->
+                preferences[SESSION_TOKEN] = "existing-token"
+                preferences[SESSION_USER_ID] = "user-id-1"
+                preferences[SESSION_SERVER_ID] = "server-id-1"
+                preferences[SESSION_LOGIN_TIMESTAMP] =
+                    System.currentTimeMillis() - Constants.SESSION_TOKEN_MAX_AGE_MS - 1_000L
+            }
+
+            viewModel = createViewModelWithProfiles(profileRepository)
+            awaitCondition {
+                runCatching { coVerify { profileRepository.clearToken("server-id-1:user-id-1") } }.isSuccess
+            }
+            advanceUntilIdle()
+
+            coVerify(exactly = 0) { profileRepository.saveAndActivate(any()) }
+            viewModel.viewModelScope.cancel()
+        }
+
+    @Test
+    fun connectToServer_rememberLoginOn_savesSignedInServerAsProfile() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val profileRepository = mockk<com.rpeters.jellyfin.data.preferences.ServerProfileRepository>(relaxed = true)
+            val saved = slot<com.rpeters.jellyfin.data.model.ServerProfile>()
+            coEvery { profileRepository.saveAndActivate(capture(saved)) } just Runs
+            coEvery { authRepository.testServerConnection(any()) } returns ApiResult.Success(mockk(relaxed = true))
+            coEvery { authRepository.authenticateUser(any(), any(), any()) } returns ApiResult.Success(mockk(relaxed = true))
+            every { repository.currentServerFlow } returns MutableStateFlow(
+                JellyfinServer(
+                    id = "server-id-2",
+                    name = "Second",
+                    url = "https://example.com",
+                    userId = "user-id-2",
+                    username = "user",
+                    accessToken = "new-token",
+                    loginTimestamp = 5_000L,
+                ),
+            )
+
+            viewModel = createViewModelWithProfiles(profileRepository)
+            awaitCondition { viewModel.connectionState.value.savedServerUrl == "https://example.com" }
+            advanceUntilIdle()
+            viewModel.connectToServer("https://example.com", "user", "pass")
+            viewModel.connectionState.first { it.connectionPhase == ConnectionPhase.Connected }
+
+            assertEquals("server-id-2:user-id-2", saved.captured.id)
+            assertEquals("new-token", saved.captured.accessToken)
+            viewModel.viewModelScope.cancel()
+        }
+
+    @Test
+    fun connectToServer_profileSaveFails_stillConnects() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val profileRepository = mockk<com.rpeters.jellyfin.data.preferences.ServerProfileRepository>(relaxed = true)
+            coEvery { profileRepository.saveAndActivate(any()) } throws java.io.IOException("disk full")
+            coEvery { authRepository.testServerConnection(any()) } returns ApiResult.Success(mockk(relaxed = true))
+            coEvery { authRepository.authenticateUser(any(), any(), any()) } returns ApiResult.Success(mockk(relaxed = true))
+            every { repository.currentServerFlow } returns MutableStateFlow(
+                JellyfinServer(id = "s", name = "S", url = "https://example.com", userId = "u", username = "user", accessToken = "t"),
+            )
+
+            viewModel = createViewModelWithProfiles(profileRepository)
+            awaitCondition { viewModel.connectionState.value.savedServerUrl == "https://example.com" }
+            advanceUntilIdle()
+            viewModel.connectToServer("https://example.com", "user", "pass")
+            val finalState = viewModel.connectionState.first { it.connectionPhase == ConnectionPhase.Connected }
+
+            assertTrue(finalState.isConnected)
+            viewModel.viewModelScope.cancel()
+        }
+
+    @Test
+    fun logout_removesOnlyTheCurrentSessionsProfile() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val profileRepository = mockk<com.rpeters.jellyfin.data.preferences.ServerProfileRepository>(relaxed = true)
+            coEvery { authRepository.logout() } just Runs
+            every { authRepository.getCurrentServerSync() } returns JellyfinServer(
+                id = "server-id-1",
+                name = "First",
+                url = "https://example.com",
+                userId = "user-id-1",
+                username = "user",
+                accessToken = "token",
+            )
+
+            viewModel = createViewModelWithProfiles(profileRepository)
+            advanceUntilIdle()
+            viewModel.logout()
+            awaitCondition { runCatching { coVerify { authRepository.logout() } }.isSuccess }
+            advanceUntilIdle()
+
+            coVerify(exactly = 1) { profileRepository.remove("server-id-1:user-id-1") }
+            coVerify(exactly = 1) { profileRepository.remove(any()) }
+            viewModel.viewModelScope.cancel()
+        }
 
     // endregion
 

@@ -13,19 +13,25 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.compose.ui.res.stringResource
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.ui.components.ServerProfilesCard
 import com.rpeters.jellyfin.ui.screens.OfflineLibraryScreen
 import com.rpeters.jellyfin.ui.screens.QuickConnectScreen
 import com.rpeters.jellyfin.ui.screens.ServerConnectionScreen
+import com.rpeters.jellyfin.ui.viewmodel.ProfilesViewModel
 import com.rpeters.jellyfin.ui.viewmodel.ServerConnectionViewModel
 
 /**
  * Authentication and connection routes.
  */
+@androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 fun androidx.navigation.NavGraphBuilder.authNavGraph(
     navController: NavHostController,
 ) {
     composable(Screen.ServerConnection.route) {
         val viewModel: ServerConnectionViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel()
+        val profilesViewModel: ProfilesViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel()
+        val savedProfiles by profilesViewModel.profiles.collectAsStateWithLifecycle()
+        val profilesUiState by profilesViewModel.uiState.collectAsStateWithLifecycle()
         val lifecycleOwner = LocalLifecycleOwner.current
         val context = LocalContext.current
         val connectionState by viewModel.connectionState.collectAsStateWithLifecycle(
@@ -106,7 +112,18 @@ fun androidx.navigation.NavGraphBuilder.authNavGraph(
 
         val biometricErrorMsg = stringResource(R.string.biometric_activity_error)
 
+        val embyConnectState by viewModel.embyConnectState.collectAsStateWithLifecycle()
         ServerConnectionScreen(
+            onServerUrlEdited = viewModel::probeServerType,
+            embyConnectSection = {
+                if (viewModel.isEmbyConnectSupported) com.rpeters.jellyfin.ui.components.EmbyConnectCard(
+                    state = embyConnectState,
+                    onSignIn = viewModel::signInEmbyConnect,
+                    onServerSelected = viewModel::selectEmbyConnectServer,
+                    onSkip = viewModel::cancelEmbyConnect,
+                    enabled = !connectionState.isConnecting,
+                )
+            },
             onConnect = { serverUrl, username, password ->
                 viewModel.connectToServer(serverUrl, username, password, activity = activity)
             },
@@ -138,7 +155,31 @@ fun androidx.navigation.NavGraphBuilder.authNavGraph(
             onDismissPinningAlert = { viewModel.dismissPinningAlert() },
             onRequireStrongBiometricChange = { viewModel.setRequireStrongBiometric(it) },
             onContinueOffline = { viewModel.enterOfflineMode() },
+            savedProfilesSection = {
+                // Signed out with saved profiles: offer them above the sign-in form. Picking one
+                // restores its session, which this screen's isConnected observer turns into
+                // navigation to Home.
+                if (savedProfiles.profiles.isNotEmpty() && !connectionState.isConnected) {
+                    ServerProfilesCard(
+                        profiles = savedProfiles.profiles,
+                        activeProfileId = null,
+                        onSwitch = { profilesViewModel.switchTo(it.id) },
+                        onRemove = { profilesViewModel.remove(it.id) },
+                        onAddServer = null,
+                        enabled = !profilesUiState.isSwitching && !connectionState.isConnecting,
+                    )
+                }
+            },
         )
+
+        val signInRequiredProfile = profilesUiState.signInRequiredFor
+        if (signInRequiredProfile != null) {
+            val message = stringResource(R.string.server_profiles_sign_in_required, signInRequiredProfile.serverName)
+            LaunchedEffect(signInRequiredProfile.id) {
+                viewModel.showError(message)
+                profilesViewModel.consumeSignInRequired()
+            }
+        }
     }
 
     composable(Screen.OfflineLibrary.route) {
