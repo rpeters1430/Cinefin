@@ -87,6 +87,7 @@ class ServerConnectionViewModelTest {
         context = ApplicationProvider.getApplicationContext()
         repository = mockk(relaxed = true)
         authRepository = mockk(relaxed = true)
+        every { authRepository.getCurrentServerSync() } returns null
         secureCredentialManager = mockk(relaxed = true)
         passwordCredentialSyncManager = mockk(relaxed = true)
         certificatePinningManager = mockk(relaxed = true)
