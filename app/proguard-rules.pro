@@ -145,6 +145,13 @@
 -keep interface com.google.firebase.ai.** { *; }
 -dontwarn com.google.firebase.ai.**
 
+# Protobuf Lite resolves message schemas by reflecting on generated field names
+# (e.g. Firebase Performance's PerfSession.sessionId_). If R8 renames them, building
+# a screen trace in onActivityStopped crashes with "Field sessionId_ ... not found".
+-keepclassmembers class * extends com.google.protobuf.GeneratedMessageLite {
+    <fields>;
+}
+
 # ================================
 # COIL IMAGE LOADING
 # ================================
