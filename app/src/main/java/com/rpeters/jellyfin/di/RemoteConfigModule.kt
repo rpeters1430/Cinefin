@@ -72,8 +72,8 @@ object RemoteConfigModule {
             "video_player_seek_interval_ms" to 10000L,
             "show_transcoding_diagnostics" to true,
             "experimental_player_buffer_ms" to 5000L,
-            // Emby support is still being built: on for debug builds only until it ships.
-            "enable_emby_support" to BuildConfig.DEBUG,
+            // Emby support is ready and enabled by default.
+            "enable_emby_support" to true,
         )
         remoteConfig.setDefaultsAsync(defaults)
 

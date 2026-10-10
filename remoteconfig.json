@@ -244,6 +244,13 @@
       },
       "description": "Experimental player buffer size in milliseconds.",
       "valueType": "NUMBER"
+    },
+    "enable_emby_support": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "description": "Allow connecting to Emby servers.",
+      "valueType": "BOOLEAN"
     }
   }
 }
