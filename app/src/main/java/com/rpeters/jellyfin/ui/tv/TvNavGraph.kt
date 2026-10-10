@@ -25,6 +25,7 @@ import com.rpeters.jellyfin.ui.screens.tv.TvQuickConnectScreen
 import com.rpeters.jellyfin.ui.screens.tv.TvSearchScreen
 import com.rpeters.jellyfin.ui.screens.tv.TvServerConnectionScreen
 import com.rpeters.jellyfin.ui.screens.tv.TvSettingsScreen
+import com.rpeters.jellyfin.ui.viewmodel.ProfilesViewModel
 import com.rpeters.jellyfin.ui.viewmodel.ServerConnectionViewModel
 
 private object TvRoutes {
@@ -92,6 +93,9 @@ fun TvNavGraph(
         modifier = modifier,
     ) {
         composable(TvRoutes.ServerConnection) {
+            val profilesViewModel: ProfilesViewModel = hiltViewModel()
+            val savedProfiles by profilesViewModel.profiles.collectAsStateWithLifecycle()
+
             // Navigate to Home when successfully connected
             LaunchedEffect(connectionState.isConnected, connectionState.isConnecting, connectionState.errorMessage) {
                 Log.d("TvNavGraph", "Connection state changed - isConnected: ${connectionState.isConnected}, isConnecting: ${connectionState.isConnecting}, error: ${connectionState.errorMessage}")
@@ -116,6 +120,10 @@ fun TvNavGraph(
                 savedServerUrl = connectionState.savedServerUrl,
                 savedUsername = connectionState.savedUsername,
                 discoveredServers = connectionState.discoveredServers,
+                savedProfiles = savedProfiles.profiles,
+                onSelectProfile = { profilesViewModel.switchTo(it.id) },
+                detectedServerType = connectionState.detectedServerType,
+                onServerUrlEdited = connectionViewModel::probeServerType,
             )
         }
 

@@ -18,6 +18,7 @@ import org.jellyfin.sdk.api.client.util.ApiSerializer
 import org.jellyfin.sdk.api.sockets.SocketApi
 import org.jellyfin.sdk.model.ClientInfo
 import org.jellyfin.sdk.model.DeviceInfo
+import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemDtoQueryResult
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemFields
@@ -247,6 +248,76 @@ class EmbyApiClientTest {
         client.request(HttpMethod.POST, "/Sessions/Playing", emptyMap(), emptyMap(), report)
 
         assertSame(report, delegate.body)
+    }
+
+    @Test
+    fun getItems_normalizesChapterMarkersForIntroAndCredits() = runTest {
+        delegate.respondWith(
+            """{
+                "Items": [{
+                    "Name": "Episode 1",
+                    "Id": "1035",
+                    "Type": "Episode",
+                    "Chapters": [
+                        {"StartPositionTicks": 0, "Name": "Scene 1", "MarkerType": "IntroStart"},
+                        {"StartPositionTicks": 900000000, "Name": "Scene 2", "MarkerType": "IntroEnd"},
+                        {"StartPositionTicks": 24000000000, "Name": "End Scene", "MarkerType": "CreditsStart"},
+                        {"StartPositionTicks": 25000000000, "Name": "Credits Scene", "MarkerType": "CreditsStart"}
+                    ]
+                }],
+                "TotalRecordCount": 1
+            }""",
+        )
+
+        val response = client.request(
+            HttpMethod.GET,
+            "/Items",
+            emptyMap(),
+            mapOf("userId" to userUuid, "ids" to listOf(movieId)),
+            null,
+        )
+
+        val result = sdkJson.decodeFromString(BaseItemDtoQueryResult.serializer(), response.body.decodeToString())
+        val item = result.items.single()
+        val chapters = item.chapters!!
+        assertEquals(4, chapters.size)
+        assertEquals("Intro - Scene 1", chapters[0].name)
+        assertEquals("Scene 2", chapters[1].name)
+        assertEquals("Credits - End Scene", chapters[2].name)
+        assertEquals("Credits Scene", chapters[3].name)
+    }
+
+    @Test
+    fun getItemById_decodesBaseItemDtoAndNormalizesChapters() = runTest {
+        delegate.respondWith(
+            """{
+                "Name": "Episode 1",
+                "Id": "1035",
+                "Type": "Episode",
+                "Chapters": [
+                    {"StartPositionTicks": 0, "Name": "", "MarkerType": "IntroStart"},
+                    {"StartPositionTicks": 900000000, "Name": "Intro End", "MarkerType": "IntroEnd"},
+                    {"StartPositionTicks": 24000000000, "Name": "Outro", "MarkerType": "CreditsStart"}
+                ]
+            }""",
+        )
+
+        val response = client.request(
+            HttpMethod.GET,
+            "/Items/{itemId}",
+            mapOf("itemId" to movieId),
+            emptyMap(),
+            null,
+        )
+
+        assertEquals("/Items/{itemId}", delegate.path)
+        assertEquals("1035", delegate.pathParameters["itemId"])
+        val item = sdkJson.decodeFromString(BaseItemDto.serializer(), response.body.decodeToString())
+        assertEquals(movieId, item.id)
+        val chapters = item.chapters!!
+        assertEquals("Intro", chapters[0].name)
+        assertEquals("Intro End", chapters[1].name)
+        assertEquals("Outro", chapters[2].name)
     }
 
     @Test

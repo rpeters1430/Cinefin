@@ -435,6 +435,20 @@ class JellyfinStreamRepositoryTest {
     }
 
     @Test
+    fun streamUrls_forNumericEmbyIdString_returnValidUrls() {
+        every { authRepository.getCurrentServerSync() } returns testServer
+        val numericId = "1035"
+
+        val streamUrl = streamRepository.getStreamUrl(numericId)
+        val transcodedUrl = streamRepository.getTranscodedStreamUrl(numericId, useHls = true)
+
+        assertNotNull(streamUrl)
+        assertTrue(streamUrl!!.contains("/Videos/1035/stream"))
+        assertNotNull(transcodedUrl)
+        assertTrue(transcodedUrl!!.contains("/Videos/1035/master.m3u8"))
+    }
+
+    @Test
     fun imageUrls_forEmbyItem_useEmbyNumericId() {
         every { authRepository.getCurrentServerSync() } returns testServer
         val id = embyItemId.toString()

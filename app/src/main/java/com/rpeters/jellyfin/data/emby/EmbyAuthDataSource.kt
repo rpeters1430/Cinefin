@@ -23,7 +23,12 @@ class EmbyAuthDataSource @Inject constructor(
         return EmbyJsonNormalizer.decode(AuthenticationResult.serializer(), response)
     }
 
+    suspend fun logout(serverUrl: String) {
+        httpClient.postEmpty(serverUrl, LOGOUT_PATH)
+    }
+
     private companion object {
         const val AUTHENTICATE_PATH = "Users/AuthenticateByName"
+        const val LOGOUT_PATH = "Sessions/Logout"
     }
 }

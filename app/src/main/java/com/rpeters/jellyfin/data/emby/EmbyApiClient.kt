@@ -5,6 +5,7 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
@@ -17,6 +18,7 @@ import org.jellyfin.sdk.api.client.util.ApiSerializer
 import org.jellyfin.sdk.api.sockets.SocketApi
 import org.jellyfin.sdk.model.ClientInfo
 import org.jellyfin.sdk.model.DeviceInfo
+import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemDtoQueryResult
 import org.jellyfin.sdk.model.api.PlaybackInfoResponse
 import org.jellyfin.sdk.model.api.PublicSystemInfo
@@ -167,7 +169,52 @@ internal class EmbyRoute(
     val reshape: (JsonElement, String?) -> JsonElement = { element, _ -> element },
 ) {
     companion object {
-        private val items = EmbyRoute(response = BaseItemDtoQueryResult.serializer(), listsItems = true)
+        private fun reshapeChapter(ch: JsonElement): JsonElement {
+            if (ch !is JsonObject) return ch
+            val markerType = (ch["MarkerType"] as? JsonPrimitive)?.content
+            val currentName = (ch["Name"] as? JsonPrimitive)?.content.orEmpty()
+            val newName = when {
+                markerType.equals("IntroStart", ignoreCase = true) &&
+                    !currentName.contains("intro", ignoreCase = true) &&
+                    !currentName.contains("opening", ignoreCase = true) -> {
+                    if (currentName.isBlank()) "Intro" else "Intro - $currentName"
+                }
+                markerType.equals("CreditsStart", ignoreCase = true) &&
+                    !currentName.contains("credits", ignoreCase = true) &&
+                    !currentName.contains("outro", ignoreCase = true) &&
+                    !currentName.contains("ending", ignoreCase = true) -> {
+                    if (currentName.isBlank()) "Credits" else "Credits - $currentName"
+                }
+                else -> null
+            }
+            return if (newName != null) JsonObject(ch + ("Name" to JsonPrimitive(newName))) else ch
+        }
+
+        private fun reshapeItem(element: JsonElement): JsonElement {
+            if (element !is JsonObject) return element
+            val chapters = element["Chapters"] as? JsonArray ?: return element
+            val reshapedChapters = chapters.map(::reshapeChapter)
+            return JsonObject(element + ("Chapters" to JsonArray(reshapedChapters)))
+        }
+
+        private val reshapeItems = { element: JsonElement, _: String? ->
+            if (element !is JsonObject) {
+                element
+            } else {
+                val items = element["Items"] as? JsonArray
+                if (items != null) {
+                    JsonObject(element + ("Items" to JsonArray(items.map(::reshapeItem))))
+                } else {
+                    reshapeItem(element)
+                }
+            }
+        }
+
+        private val items = EmbyRoute(
+            response = BaseItemDtoQueryResult.serializer(),
+            listsItems = true,
+            reshape = reshapeItems,
+        )
 
         /** Emby leaves `ItemId` out of user data; the SDK requires it. */
         private val userData = { element: JsonElement, itemId: String? ->
@@ -191,11 +238,15 @@ internal class EmbyRoute(
             "/Sessions/Playing" to EmbyRoute(),
             "/Sessions/Playing/Progress" to EmbyRoute(),
             "/Sessions/Playing/Stopped" to EmbyRoute(),
-            "/Items/{itemId}" to EmbyRoute(),
+            "/Items/{itemId}" to EmbyRoute(response = BaseItemDto.serializer(), reshape = reshapeItems),
             "/Library/Refresh" to EmbyRoute(),
 
             // Named differently on Emby: the user is part of the path.
-            "/UserViews" to EmbyRoute(embyPath = "/Users/{userId}/Views", response = BaseItemDtoQueryResult.serializer()),
+            "/UserViews" to EmbyRoute(
+                embyPath = "/Users/{userId}/Views",
+                response = BaseItemDtoQueryResult.serializer(),
+                reshape = reshapeItems,
+            ),
             "/Users/Me" to EmbyRoute(embyPath = "/Users/{userId}", response = UserDto.serializer()),
             "/UserFavoriteItems/{itemId}" to EmbyRoute(
                 embyPath = "/Users/{userId}/FavoriteItems/{itemId}",

@@ -352,6 +352,7 @@ class JellyfinAuthRepository @Inject constructor(
 
     override fun isTokenExpired(): Boolean {
         val server = _currentServer.value ?: return true
+        if (server.serverType == ServerType.EMBY) return false
         val loginTimestamp = server.loginTimestamp ?: return true
         val currentTime = timeProvider()
 
@@ -365,6 +366,7 @@ class JellyfinAuthRepository @Inject constructor(
      */
     override fun shouldRefreshToken(): Boolean {
         val server = _currentServer.value ?: return false
+        if (server.serverType == ServerType.EMBY) return false
         val loginTimestamp = server.loginTimestamp ?: return false
         val currentTime = timeProvider()
 
@@ -394,6 +396,15 @@ class JellyfinAuthRepository @Inject constructor(
                     Log.d(TAG, "logout: Cleared saved credentials for user ${server.username}")
                 } catch (e: IOException) {
                     Log.w(TAG, "logout: I/O error clearing credentials", e)
+                }
+            }
+
+            if (server?.serverType == ServerType.EMBY && !server.url.isNullOrBlank()) {
+                try {
+                    embyAuthDataSource?.get()?.logout(server.url)
+                    Log.d(TAG, "logout: Notified Emby server of logout")
+                } catch (e: Exception) {
+                    Log.w(TAG, "logout: Failed to notify Emby server of logout", e)
                 }
             }
 
