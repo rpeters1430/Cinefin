@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
@@ -598,7 +599,7 @@ private fun DetailScreenScaffold(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding())
+                        .navigationBarsPadding()
                 ) {
                     MiniPlayer(
                         onExpandClick = { navController.navigate(Screen.NowPlaying.route) },

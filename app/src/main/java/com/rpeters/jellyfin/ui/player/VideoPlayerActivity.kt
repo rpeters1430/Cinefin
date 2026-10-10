@@ -139,6 +139,7 @@ class VideoPlayerActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        WindowCompat.enableEdgeToEdge(window)
         onBackPressedDispatcher.addCallback(this, backPressedCallback)
         lifecycle.addObserver(playbackProgressManager)
 
@@ -312,7 +313,6 @@ class VideoPlayerActivity : FragmentActivity() {
     }
 
     private fun setupFullScreenMode() {
-        WindowCompat.setDecorFitsSystemWindows(window, false)
         val controller = WindowInsetsControllerCompat(window, window.decorView)
         controller.hide(WindowInsetsCompat.Type.systemBars())
         controller.systemBarsBehavior =
