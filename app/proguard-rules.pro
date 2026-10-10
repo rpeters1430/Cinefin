@@ -135,6 +135,11 @@
 -keep interface com.google.firebase.appcheck.** { *; }
 -dontwarn com.google.firebase.appcheck.**
 
+# Protobuf-lite resolves message fields (e.g. `sessionId_`) by name via reflection.
+# Without this, R8 renames them and Firebase Performance crashes building PerfSession
+# ("Field sessionId_ for ... not found") when an activity stops.
+-keepclassmembers class * extends com.google.protobuf.GeneratedMessageLite { <fields>; }
+
 # Keep Firebase AI (Generative AI)
 -keep class com.google.firebase.ai.** { *; }
 -keep interface com.google.firebase.ai.** { *; }
