@@ -143,8 +143,9 @@
 # Protobuf Lite resolves message schemas by reflecting on generated field names
 # (e.g. Firebase Performance's PerfSession.sessionId_). If R8 renames them, building
 # a screen trace in onActivityStopped crashes with "Field sessionId_ ... not found".
--keep class * extends com.google.protobuf.GeneratedMessageLite { <fields>; }
--keep class com.google.firebase.perf.v1.** { *; }
+-keepclassmembers class * extends com.google.protobuf.GeneratedMessageLite {
+    <fields>;
+}
 
 # ================================
 # COIL IMAGE LOADING
