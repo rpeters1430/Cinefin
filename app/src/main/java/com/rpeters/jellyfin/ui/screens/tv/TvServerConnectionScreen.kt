@@ -49,6 +49,9 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.data.model.DiscoveredServer
+import com.rpeters.jellyfin.data.model.ServerProfile
+import com.rpeters.jellyfin.data.model.ServerType
 import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
 import com.rpeters.jellyfin.ui.components.tv.TvImmersiveBackground
 import com.rpeters.jellyfin.ui.theme.CinefinTvTheme
@@ -67,7 +70,11 @@ fun TvServerConnectionScreen(
     errorMessage: String?,
     savedServerUrl: String?,
     savedUsername: String?,
-    discoveredServers: List<com.rpeters.jellyfin.data.model.DiscoveredServer> = emptyList(),
+    discoveredServers: List<DiscoveredServer> = emptyList(),
+    savedProfiles: List<ServerProfile> = emptyList(),
+    onSelectProfile: (ServerProfile) -> Unit = {},
+    detectedServerType: ServerType? = null,
+    onServerUrlEdited: (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val tvLayout = CinefinTvTheme.layout
@@ -76,6 +83,9 @@ fun TvServerConnectionScreen(
     var password by remember { mutableStateOf("") }
     var showPassword by remember { mutableStateOf(false) }
     var passwordFocused by remember { mutableStateOf(false) }
+
+    val isEmby = detectedServerType == ServerType.EMBY ||
+        discoveredServers.find { it.address.equals(serverUrl, ignoreCase = true) }?.serverType == ServerType.EMBY
 
     val serverUrlFocusRequester = remember { FocusRequester() }
     val usernameFocusRequester = remember { FocusRequester() }
@@ -124,18 +134,80 @@ fun TvServerConnectionScreen(
                     )
 
                     TvText(
-                        text = "Connect to your Jellyfin server",
+                        text = if (isEmby) "Connect to your Emby server" else "Connect to your media server",
                         style = TvMaterialTheme.typography.headlineSmall,
                         color = Color.White,
                         textAlign = TextAlign.Center,
                     )
 
                     TvText(
-                        text = "Use your saved server details, sign in manually, or switch to Quick Connect if typing on TV is not worth it.",
+                        text = if (isEmby) {
+                            "Use your saved server details or sign in manually with your username and password."
+                        } else {
+                            "Use your saved server details, sign in manually, or switch to Quick Connect if typing on TV is not worth it."
+                        },
                         style = TvMaterialTheme.typography.bodyLarge,
                         color = TvMaterialTheme.colorScheme.onSurface.copy(alpha = 0.78f),
                         textAlign = TextAlign.Center,
                     )
+                }
+
+                if (savedProfiles.isNotEmpty() && !isConnecting) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        TvText(
+                            text = stringResource(id = R.string.server_profiles_title),
+                            style = TvMaterialTheme.typography.titleMedium,
+                            color = TvMaterialTheme.colorScheme.primary,
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
+                        ) {
+                            savedProfiles.forEach { profile ->
+                                val displayServerName = profile.serverName.takeIf { it.isNotBlank() && it != profile.username }
+                                    ?: runCatching { java.net.URI(profile.serverUrl).host }.getOrNull()?.takeIf { it.isNotBlank() }
+                                    ?: profile.serverUrl
+                                TvCard(
+                                    onClick = { onSelectProfile(profile) },
+                                    modifier = Modifier.width(220.dp),
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(12.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                                    ) {
+                                        TvText(
+                                            text = profile.username,
+                                            style = TvMaterialTheme.typography.bodyLarge,
+                                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                            maxLines = 1,
+                                        )
+                                        TvText(
+                                            text = displayServerName,
+                                            style = TvMaterialTheme.typography.bodySmall,
+                                            color = Color.White.copy(alpha = 0.7f),
+                                            maxLines = 1,
+                                        )
+                                        val typeLabel = stringResource(
+                                            id = when (profile.serverType) {
+                                                ServerType.JELLYFIN -> R.string.server_type_jellyfin
+                                                ServerType.EMBY -> R.string.server_type_emby
+                                            },
+                                        )
+                                        TvText(
+                                            text = typeLabel,
+                                            style = TvMaterialTheme.typography.labelSmall,
+                                            color = TvMaterialTheme.colorScheme.primary,
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
 
                 if (discoveredServers.isNotEmpty() && serverUrl.isEmpty() && !isConnecting) {
@@ -155,15 +227,40 @@ fun TvServerConnectionScreen(
                         ) {
                             discoveredServers.forEach { server ->
                                 TvCard(
-                                    onClick = { serverUrl = server.address },
+                                    onClick = {
+                                        serverUrl = server.address
+                                        onServerUrlEdited(server.address)
+                                    },
                                     modifier = Modifier.width(200.dp),
                                 ) {
                                     Column(
                                         modifier = Modifier.padding(12.dp),
                                         horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.spacedBy(4.dp),
                                     ) {
-                                        TvText(text = server.name, style = TvMaterialTheme.typography.bodyLarge, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                                        TvText(text = server.address, style = TvMaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.6f))
+                                        TvText(
+                                            text = server.name,
+                                            style = TvMaterialTheme.typography.bodyLarge,
+                                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                            maxLines = 1,
+                                        )
+                                        TvText(
+                                            text = server.address,
+                                            style = TvMaterialTheme.typography.bodySmall,
+                                            color = Color.White.copy(alpha = 0.6f),
+                                            maxLines = 1,
+                                        )
+                                        val typeLabel = stringResource(
+                                            id = when (server.serverType) {
+                                                ServerType.JELLYFIN -> R.string.server_type_jellyfin
+                                                ServerType.EMBY -> R.string.server_type_emby
+                                            },
+                                        )
+                                        TvText(
+                                            text = typeLabel,
+                                            style = TvMaterialTheme.typography.labelSmall,
+                                            color = TvMaterialTheme.colorScheme.primary,
+                                        )
                                     }
                                 }
                             }
@@ -273,8 +370,10 @@ fun TvServerConnectionScreen(
                                 onDone = {
                                     if (serverUrl.isNotBlank() && username.isNotBlank() && password.isNotBlank()) {
                                         connectButtonFocusRequester.requestFocus()
-                                    } else {
+                                    } else if (!isEmby) {
                                         quickConnectButtonFocusRequester.requestFocus()
+                                    } else {
+                                        connectButtonFocusRequester.requestFocus()
                                     }
                                 },
                             ),
@@ -290,8 +389,10 @@ fun TvServerConnectionScreen(
                                             Key.DirectionDown -> {
                                                 if (serverUrl.isNotBlank() && username.isNotBlank() && password.isNotBlank()) {
                                                     connectButtonFocusRequester.requestFocus()
-                                                } else {
+                                                } else if (!isEmby) {
                                                     quickConnectButtonFocusRequester.requestFocus()
+                                                } else {
+                                                    connectButtonFocusRequester.requestFocus()
                                                 }
                                                 true
                                             }
@@ -327,39 +428,41 @@ fun TvServerConnectionScreen(
                     }
                 }
 
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(
-                            color = TvMaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.22f),
-                            shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
-                        ),
-                ) {
-                    Column(
-                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 20.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                if (!isEmby) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                color = TvMaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.22f),
+                                shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                            ),
                     ) {
-                        TvText(
-                            text = "Quick Connect Alternative",
-                            style = TvMaterialTheme.typography.titleMedium,
-                            color = Color.White,
-                        )
-                        TvText(
-                            text = "Use another device to approve sign-in if you do not want to enter a password with the remote.",
-                            style = TvMaterialTheme.typography.bodyLarge,
-                            color = Color.White.copy(alpha = 0.72f),
-                        )
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            TvQuickTipChip(text = "1. Pick Quick Connect")
-                            TvQuickTipChip(text = "2. Get a code")
-                            TvQuickTipChip(text = "3. Approve on another device")
+                        Column(
+                            modifier = Modifier.padding(horizontal = 24.dp, vertical = 20.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            TvText(
+                                text = "Quick Connect Alternative",
+                                style = TvMaterialTheme.typography.titleMedium,
+                                color = Color.White,
+                            )
+                            TvText(
+                                text = "Use another device to approve sign-in if you do not want to enter a password with the remote.",
+                                style = TvMaterialTheme.typography.bodyLarge,
+                                color = Color.White.copy(alpha = 0.72f),
+                            )
+                            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                TvQuickTipChip(text = "1. Pick Quick Connect")
+                                TvQuickTipChip(text = "2. Get a code")
+                                TvQuickTipChip(text = "3. Approve on another device")
+                            }
                         }
                     }
                 }
 
                 Row(
                     modifier = Modifier
-                        .fillMaxWidth(0.85f)
+                        .fillMaxWidth(if (isEmby) 0.5f else 0.85f)
                         .padding(horizontal = PaddingValues(horizontal = tvLayout.drawerPadding).calculateLeftPadding(layoutDirection = androidx.compose.ui.unit.LayoutDirection.Ltr)),
                     horizontalArrangement = Arrangement.spacedBy(tvLayout.drawerItemSpacing, Alignment.CenterHorizontally),
                 ) {
@@ -402,29 +505,35 @@ fun TvServerConnectionScreen(
                         }
                     }
 
-                    TvButton(
-                        onClick = {
-                            Log.d("TvServerConnectionScreen", "Quick Connect button clicked")
-                            onQuickConnect()
-                        },
-                        enabled = !isConnecting,
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(56.dp)
-                            .focusRequester(quickConnectButtonFocusRequester)
-                            .onPreviewKeyEvent { keyEvent ->
-                                if (keyEvent.type == KeyEventType.KeyDown && keyEvent.key == Key.DirectionUp) {
-                                    passwordFocusRequester.requestFocus()
-                                    true
-                                } else false
+                    if (!isEmby) {
+                        TvButton(
+                            onClick = {
+                                Log.d("TvServerConnectionScreen", "Quick Connect button clicked")
+                                onQuickConnect()
                             },
-                    ) {
-                        TvText(stringResource(id = R.string.quick_connect), style = TvMaterialTheme.typography.labelLarge)
+                            enabled = !isConnecting,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(56.dp)
+                                .focusRequester(quickConnectButtonFocusRequester)
+                                .onPreviewKeyEvent { keyEvent ->
+                                    if (keyEvent.type == KeyEventType.KeyDown && keyEvent.key == Key.DirectionUp) {
+                                        passwordFocusRequester.requestFocus()
+                                        true
+                                    } else false
+                                },
+                        ) {
+                            TvText(stringResource(id = R.string.quick_connect), style = TvMaterialTheme.typography.labelLarge)
+                        }
                     }
                 }
 
                 TvText(
-                    text = "Tip: Use Quick Connect to sign in without typing your password on TV",
+                    text = if (isEmby) {
+                        "Tip: Emby servers use username and password sign-in"
+                    } else {
+                        "Tip: Use Quick Connect to sign in without typing your password on TV"
+                    },
                     style = TvMaterialTheme.typography.bodyMedium,
                     color = TvMaterialTheme.colorScheme.onSurface.copy(alpha = 0.68f),
                     textAlign = TextAlign.Center,

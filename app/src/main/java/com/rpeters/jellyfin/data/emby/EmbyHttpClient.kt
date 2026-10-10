@@ -39,6 +39,14 @@ class EmbyHttpClient @Inject constructor(
                 .build(),
         )
 
+    suspend fun postEmpty(serverUrl: String, path: String): String =
+        execute(
+            Request.Builder()
+                .url(resolve(serverUrl, path))
+                .post(ByteArray(0).toRequestBody(null))
+                .build(),
+        )
+
     suspend fun get(serverUrl: String, path: String): String =
         execute(Request.Builder().url(resolve(serverUrl, path)).get().build())
 

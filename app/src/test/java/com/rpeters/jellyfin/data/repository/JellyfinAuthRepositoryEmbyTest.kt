@@ -213,6 +213,36 @@ class JellyfinAuthRepositoryEmbyTest {
     }
 
     @Test
+    fun logout_embyServer_callsEmbyLogout() = runTest {
+        probeReturns(productName = null, version = "4.11.0.6")
+        coEvery { embyAuthDataSource.signIn(EMBY_URL, "tester", "secret") } returns embyAuthResult
+        coEvery { embyAuthDataSource.logout(EMBY_URL) } returns Unit
+        repository.testServerConnection(EMBY_URL)
+        repository.authenticateUser(EMBY_URL, "tester", "secret")
+
+        repository.logout()
+
+        coVerify(exactly = 1) { embyAuthDataSource.logout(EMBY_URL) }
+        assertNull(repository.getCurrentServerSync())
+    }
+
+    @Test
+    fun tokenExpiry_bypassedForEmbyServer() = runTest {
+        val server = com.rpeters.jellyfin.data.JellyfinServer(
+            id = "1",
+            name = "Emby",
+            url = EMBY_URL,
+            serverType = ServerType.EMBY,
+            accessToken = "token",
+            loginTimestamp = 1000L,
+        )
+        repository.seedCurrentServer(server)
+
+        assertFalse(repository.isTokenExpired())
+        assertFalse(repository.shouldRefreshToken())
+    }
+
+    @Test
     fun detect_identifiesServerTypeFromPublicInfo() {
         assertEquals(ServerType.JELLYFIN, ServerType.detect("Jellyfin Server", "12.0.1"))
         assertEquals(ServerType.EMBY, ServerType.detect(null, "4.11.0.6"))

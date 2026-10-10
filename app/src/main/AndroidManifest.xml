@@ -56,6 +56,7 @@
             android:theme="@style/Theme.JellyfinAndroid"
             android:importantForAutofill="noExcludeDescendants"
             android:screenOrientation="user"
+            android:windowSoftInputMode="adjustResize"
             android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

@@ -33,12 +33,14 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalFocusManager
 import com.rpeters.jellyfin.BuildConfig
+import com.rpeters.jellyfin.data.model.ServerType
 import com.rpeters.jellyfin.ui.components.tv.TvImmersiveBackground
 import com.rpeters.jellyfin.ui.theme.CinefinTvTheme
 import com.rpeters.jellyfin.ui.tv.TvScreenFocusScope
 import com.rpeters.jellyfin.ui.tv.rememberTvFocusManager
 import com.rpeters.jellyfin.ui.tv.requestInitialFocus
 import com.rpeters.jellyfin.ui.viewmodel.PlaybackPreferencesViewModel
+import com.rpeters.jellyfin.ui.viewmodel.ProfilesViewModel
 import com.rpeters.jellyfin.ui.viewmodel.ServerConnectionViewModel
 import com.rpeters.jellyfin.ui.viewmodel.SubtitleAppearancePreferencesViewModel
 import com.rpeters.jellyfin.ui.viewmodel.ThemePreferencesViewModel
@@ -54,11 +56,13 @@ fun TvSettingsScreen(
     onSignOut: () -> Unit,
     modifier: Modifier = Modifier,
     connectionViewModel: ServerConnectionViewModel = hiltViewModel(),
+    profilesViewModel: ProfilesViewModel = hiltViewModel(),
     playbackPreferencesViewModel: PlaybackPreferencesViewModel = hiltViewModel(),
     subtitlePreferencesViewModel: SubtitleAppearancePreferencesViewModel = hiltViewModel(),
     themePreferencesViewModel: ThemePreferencesViewModel = hiltViewModel(),
 ) {
     val connectionState by connectionViewModel.connectionState.collectAsStateWithLifecycle()
+    val savedProfiles by profilesViewModel.profiles.collectAsStateWithLifecycle()
     val playbackPreferences by playbackPreferencesViewModel.preferences.collectAsStateWithLifecycle()
     val subtitlePreferences by subtitlePreferencesViewModel.preferences.collectAsStateWithLifecycle()
     val themePreferences by themePreferencesViewModel.themePreferences.collectAsStateWithLifecycle()
@@ -69,62 +73,91 @@ fun TvSettingsScreen(
 
     initialFocusRequester.requestInitialFocus(condition = true, delayMs = 300)
 
-    val sections = remember(connectionState, playbackPreferences, subtitlePreferences, themePreferences) {
-        listOf(
-            TvSettingsSection(
-                title = "Account",
-                subtitle = "Who you are signed in as and where this TV is connected.",
-                items = listOf(
-                    TvSettingsItem("Server", connectionState.savedServerUrl.ifBlank { "Not connected" }),
-                    TvSettingsItem("Username", connectionState.savedUsername.ifBlank { "Unknown account" }),
-                    TvSettingsItem(
-                        "Session",
-                        if (connectionState.hasSavedPassword) "Saved sign-in available" else "No saved credentials",
+    val sections = remember(connectionState, playbackPreferences, subtitlePreferences, themePreferences, savedProfiles) {
+        buildList {
+            add(
+                TvSettingsSection(
+                    title = "Account",
+                    subtitle = "Who you are signed in as and where this TV is connected.",
+                    items = listOf(
+                        TvSettingsItem("Server", connectionState.savedServerUrl.ifBlank { "Not connected" }),
+                        TvSettingsItem("Username", connectionState.savedUsername.ifBlank { "Unknown account" }),
+                        TvSettingsItem("Server Type", (connectionState.detectedServerType ?: ServerType.JELLYFIN).name),
+                        TvSettingsItem(
+                            "Session",
+                            if (connectionState.hasSavedPassword) "Saved sign-in available" else "No saved credentials",
+                        ),
                     ),
                 ),
-            ),
-            TvSettingsSection(
-                title = "Playback",
-                subtitle = "How playback resumes, streams, and moves between episodes.",
-                items = listOf(
-                    TvSettingsItem("Resume Playback", playbackPreferences.resumePlaybackMode.name.prettySettingLabel()),
-                    TvSettingsItem("Autoplay Next Episode", playbackPreferences.autoPlayNextEpisode.onOffLabel()),
-                    TvSettingsItem("Transcoding Quality", playbackPreferences.transcodingQuality.name.prettySettingLabel()),
-                    TvSettingsItem("Audio Channels", playbackPreferences.audioChannels.name.prettySettingLabel()),
+            )
+            if (savedProfiles.profiles.size > 1) {
+                add(
+                    TvSettingsSection(
+                        title = "Switch Profile",
+                        subtitle = "Select another saved account to switch active server.",
+                        items = savedProfiles.profiles.map { profile ->
+                            val isCurrent = profile.id == savedProfiles.activeProfileId
+                            TvSettingsItem(
+                                label = profile.username,
+                                value = "${profile.serverName} (${profile.serverType.name})${if (isCurrent) " [Active]" else " - Select to Switch"}",
+                                onClick = if (!isCurrent) {
+                                    { profilesViewModel.switchTo(profile.id) }
+                                } else null,
+                            )
+                        },
+                    ),
+                )
+            }
+            add(
+                TvSettingsSection(
+                    title = "Playback",
+                    subtitle = "How playback resumes, streams, and moves between episodes.",
+                    items = listOf(
+                        TvSettingsItem("Resume Playback", playbackPreferences.resumePlaybackMode.name.prettySettingLabel()),
+                        TvSettingsItem("Autoplay Next Episode", playbackPreferences.autoPlayNextEpisode.onOffLabel()),
+                        TvSettingsItem("Transcoding Quality", playbackPreferences.transcodingQuality.name.prettySettingLabel()),
+                        TvSettingsItem("Audio Channels", playbackPreferences.audioChannels.name.prettySettingLabel()),
+                    ),
                 ),
-            ),
-            TvSettingsSection(
-                title = "Audio & Subtitles",
-                subtitle = "Subtitle presentation and language defaults used during playback.",
-                items = listOf(
-                    TvSettingsItem("Preferred Audio Language", playbackPreferences.preferredAudioLanguage ?: "System default"),
-                    TvSettingsItem("Subtitle Size", subtitlePreferences.textSize.name.prettySettingLabel()),
-                    TvSettingsItem("Subtitle Font", subtitlePreferences.font.name.prettySettingLabel()),
-                    TvSettingsItem("Subtitle Background", subtitlePreferences.background.name.prettySettingLabel()),
+            )
+            add(
+                TvSettingsSection(
+                    title = "Audio & Subtitles",
+                    subtitle = "Subtitle presentation and language defaults used during playback.",
+                    items = listOf(
+                        TvSettingsItem("Preferred Audio Language", playbackPreferences.preferredAudioLanguage ?: "System default"),
+                        TvSettingsItem("Subtitle Size", subtitlePreferences.textSize.name.prettySettingLabel()),
+                        TvSettingsItem("Subtitle Font", subtitlePreferences.font.name.prettySettingLabel()),
+                        TvSettingsItem("Subtitle Background", subtitlePreferences.background.name.prettySettingLabel()),
+                    ),
                 ),
-            ),
-            TvSettingsSection(
-                title = "Appearance",
-                subtitle = "Theme choices that affect contrast, motion, and overall presentation.",
-                items = listOf(
-                    TvSettingsItem("Theme Mode", themePreferences.themeMode.name.prettySettingLabel()),
-                    TvSettingsItem("Accent Color", themePreferences.accentColor.name.prettySettingLabel()),
-                    TvSettingsItem("Contrast", themePreferences.contrastLevel.name.prettySettingLabel()),
-                    TvSettingsItem("Dynamic Color", themePreferences.useDynamicColors.onOffLabel()),
-                    TvSettingsItem("Reduce Motion", themePreferences.respectReduceMotion.onOffLabel()),
+            )
+            add(
+                TvSettingsSection(
+                    title = "Appearance",
+                    subtitle = "Theme choices that affect contrast, motion, and overall presentation.",
+                    items = listOf(
+                        TvSettingsItem("Theme Mode", themePreferences.themeMode.name.prettySettingLabel()),
+                        TvSettingsItem("Accent Color", themePreferences.accentColor.name.prettySettingLabel()),
+                        TvSettingsItem("Contrast", themePreferences.contrastLevel.name.prettySettingLabel()),
+                        TvSettingsItem("Dynamic Color", themePreferences.useDynamicColors.onOffLabel()),
+                        TvSettingsItem("Reduce Motion", themePreferences.respectReduceMotion.onOffLabel()),
+                    ),
                 ),
-            ),
-            TvSettingsSection(
-                title = "Diagnostics",
-                subtitle = "Useful environment details when checking this TV setup.",
-                items = listOf(
-                    TvSettingsItem("App Version", BuildConfig.VERSION_NAME),
-                    TvSettingsItem("Build Type", BuildConfig.BUILD_TYPE.prettySettingLabel()),
-                    TvSettingsItem("Remember Login", connectionState.rememberLogin.onOffLabel()),
-                    TvSettingsItem("Biometric Sign-In", connectionState.isBiometricAuthEnabled.onOffLabel()),
+            )
+            add(
+                TvSettingsSection(
+                    title = "Diagnostics",
+                    subtitle = "Useful environment details when checking this TV setup.",
+                    items = listOf(
+                        TvSettingsItem("App Version", BuildConfig.VERSION_NAME),
+                        TvSettingsItem("Build Type", BuildConfig.BUILD_TYPE.prettySettingLabel()),
+                        TvSettingsItem("Remember Login", connectionState.rememberLogin.onOffLabel()),
+                        TvSettingsItem("Biometric Sign-In", connectionState.isBiometricAuthEnabled.onOffLabel()),
+                    ),
                 ),
-            ),
-        )
+            )
+        }
     }
 
     TvScreenFocusScope(screenKey = "tv_settings", focusManager = focusManager) {
@@ -209,6 +242,7 @@ private data class TvSettingsSection(
 private data class TvSettingsItem(
     val label: String,
     val value: String,
+    val onClick: (() -> Unit)? = null,
 )
 
 @Composable
@@ -260,7 +294,7 @@ private fun TvSettingsSectionCard(
                     }
 
                 TvCard(
-                    onClick = {},
+                    onClick = { item.onClick?.invoke() },
                     modifier = cardModifier,
                     scale = TvCardDefaults.scale(focusedScale = 1.03f),
                     colors = TvCardDefaults.colors(containerColor = Color.White.copy(alpha = 0.08f)),

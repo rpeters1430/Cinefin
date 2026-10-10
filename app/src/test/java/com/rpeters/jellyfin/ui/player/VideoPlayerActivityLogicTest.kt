@@ -119,4 +119,50 @@ class VideoPlayerActivityLogicTest {
             )
         }
     }
+
+    @Test
+    fun `MainActivity manifest configures windowSoftInputMode adjustResize for Android 15 edge-to-edge`() {
+        val manifest = File("src/main/AndroidManifest.xml").takeIf { it.exists() }
+            ?: File("../app/src/main/AndroidManifest.xml").takeIf { it.exists() }
+
+        requireNotNull(manifest) { "Could not locate AndroidManifest.xml from test working directory" }
+
+        val content = manifest.readText()
+        val mainActivityEntry = content
+            .substringAfter("MainActivity")
+            .substringBefore("</activity>")
+
+        assertTrue(
+            "MainActivity must configure windowSoftInputMode='adjustResize' for Android 15 edge-to-edge IME handling",
+            mainActivityEntry.contains("android:windowSoftInputMode=\"adjustResize\""),
+        )
+    }
+
+    @Test
+    fun `Activities do not use deprecated setDecorFitsSystemWindows for Android 15 edge-to-edge`() {
+        val mainActivityFile = File("src/main/java/com/rpeters/jellyfin/MainActivity.kt").takeIf { it.exists() }
+            ?: File("../app/src/main/java/com/rpeters/jellyfin/MainActivity.kt").takeIf { it.exists() }
+        val videoPlayerActivityFile = File("src/main/java/com/rpeters/jellyfin/ui/player/VideoPlayerActivity.kt").takeIf { it.exists() }
+            ?: File("../app/src/main/java/com/rpeters/jellyfin/ui/player/VideoPlayerActivity.kt").takeIf { it.exists() }
+
+        requireNotNull(mainActivityFile) { "Could not locate MainActivity.kt" }
+        requireNotNull(videoPlayerActivityFile) { "Could not locate VideoPlayerActivity.kt" }
+
+        assertFalse(
+            "MainActivity must not use deprecated setDecorFitsSystemWindows",
+            mainActivityFile.readText().contains("setDecorFitsSystemWindows"),
+        )
+        assertFalse(
+            "VideoPlayerActivity must not use deprecated setDecorFitsSystemWindows",
+            videoPlayerActivityFile.readText().contains("setDecorFitsSystemWindows"),
+        )
+        assertTrue(
+            "MainActivity must call enableEdgeToEdge",
+            mainActivityFile.readText().contains("enableEdgeToEdge"),
+        )
+        assertTrue(
+            "VideoPlayerActivity must call enableEdgeToEdge",
+            videoPlayerActivityFile.readText().contains("enableEdgeToEdge"),
+        )
+    }
 }

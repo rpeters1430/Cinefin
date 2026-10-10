@@ -76,13 +76,13 @@ class ServerConnectionViewModelTest {
     private lateinit var discoveryRepository: com.rpeters.jellyfin.data.repository.IJellyfinDiscoveryRepository
     private lateinit var context: Context
     private lateinit var viewModel: ServerConnectionViewModel
-    private val defaultProfileRepository =
-        mockk<com.rpeters.jellyfin.data.preferences.ServerProfileRepository>(relaxed = true)
+    private lateinit var defaultProfileRepository: com.rpeters.jellyfin.data.preferences.ServerProfileRepository
 
     @Before
     fun setUp() = runTest {
         unmockkAll()
         MockKAnnotations.init(this)
+        defaultProfileRepository = mockk(relaxed = true)
         
         context = ApplicationProvider.getApplicationContext()
         repository = mockk(relaxed = true)
@@ -907,15 +907,18 @@ class ServerConnectionViewModelTest {
     // endregion
 
     private suspend fun awaitCondition(timeoutMs: Long = 2000, condition: suspend () -> Boolean) {
-        val maxIterations = timeoutMs / 10
-        var iterations = 0
-        while (iterations < maxIterations) {
+        val start = System.currentTimeMillis()
+        while (System.currentTimeMillis() - start < timeoutMs) {
             if (condition()) return
-            delay(10)
-            iterations++
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+                kotlinx.coroutines.delay(10)
+            }
         }
         if (!condition()) {
-            throw AssertionError("Condition not met within $timeoutMs ms")
+            val details = if (::viewModel.isInitialized) {
+                "connectionState=${viewModel.connectionState.value}, embyState=${viewModel.embyConnectState.value}"
+            } else "viewModel not initialized"
+            throw AssertionError("Condition not met within $timeoutMs ms. $details")
         }
     }
 }

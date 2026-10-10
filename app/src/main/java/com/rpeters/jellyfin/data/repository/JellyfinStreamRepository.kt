@@ -59,8 +59,9 @@ class JellyfinStreamRepository @Inject constructor(
             return null
         }
 
-        // Validate that itemId is a valid UUID format
-        runCatching { UUID.fromString(itemId) }.getOrNull() ?: run {
+        // Validate that itemId is a valid UUID or numeric Emby ID
+        val isValidId = runCatching { UUID.fromString(itemId) }.isSuccess || itemId.all { it.isDigit() }
+        if (!isValidId) {
             Log.w("JellyfinStreamRepository", "getStreamUrl: Invalid item ID format: $itemId")
             return null
         }
@@ -228,8 +229,9 @@ class JellyfinStreamRepository @Inject constructor(
             return null
         }
 
-        // Validate that itemId is a valid UUID format
-        runCatching { java.util.UUID.fromString(itemId) }.getOrNull() ?: run {
+        // Validate that itemId is a valid UUID or numeric Emby ID
+        val isValidId = runCatching { java.util.UUID.fromString(itemId) }.isSuccess || itemId.all { it.isDigit() }
+        if (!isValidId) {
             Log.w("JellyfinStreamRepository", "getTranscodedStreamUrl: Invalid item ID format: $itemId")
             return null
         }

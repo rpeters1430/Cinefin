@@ -283,9 +283,9 @@ fun AppearanceSettingsScreen(
                 )
             }
 
-            // On API 36+, edge-to-edge is enforced by the system and cannot be opted out.
-            // Only show the toggle on older API levels where it has an effect.
-            if (Build.VERSION.SDK_INT < 36) {
+            // On API 35+ (Android 15+), edge-to-edge is enforced by the system for apps targeting SDK 35+
+            // and cannot be opted out. Only show the toggle on older API levels.
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) {
                 ExpressiveSettingsCard(
                     title = "Layout",
                     icon = Icons.Default.AutoAwesome,
