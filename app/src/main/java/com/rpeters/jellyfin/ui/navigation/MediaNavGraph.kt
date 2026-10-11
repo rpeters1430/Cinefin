@@ -4,6 +4,7 @@ package com.rpeters.jellyfin.ui.navigation
 
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
@@ -74,6 +75,7 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
             return@composable
         }
         val viewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<MainAppViewModel>()
+        val trailerScope = rememberCoroutineScope()
         LocalLifecycleOwner.current
 
         LaunchedEffect(seriesId) {
@@ -117,7 +119,7 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
                 }
             },
             onTrailerClick = { url ->
-                com.rpeters.jellyfin.ui.utils.TrailerUtils.playTrailer(navController.context, url)
+                trailerScope.launchTrailer(navController.context, viewModel, seriesId, url)
             },
             onSearchRequests = { query ->
                 navController.navigate(Screen.Requests.createRoute(query))

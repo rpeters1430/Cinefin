@@ -888,6 +888,8 @@ private fun MovieActionRow(
     onMoreClick: () -> Unit,
 ) {
     val trailerUrl = movie.remoteTrailers?.firstOrNull()?.url
+    // Trailers saved beside the media (e.g. by Trailarr) play in-app and take precedence.
+    val hasTrailer = !trailerUrl.isNullOrBlank() || (movie.localTrailerCount ?: 0) > 0
 
     Column(
         modifier = Modifier
@@ -943,7 +945,7 @@ private fun MovieActionRow(
                 ) {
                     Icon(Icons.Default.Movie, contentDescription = null, modifier = Modifier.size(20.dp))
                     Text(
-                        text = if (trailerUrl.isNullOrBlank()) "Find Trailer" else "Trailer",
+                        text = if (hasTrailer) "Trailer" else "Find Trailer",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,

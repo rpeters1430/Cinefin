@@ -1440,6 +1440,13 @@ constructor(
     fun getStreamUrl(item: BaseItemDto): String? =
         streamRepository.getStreamUrl(item.id.toString())
 
+    /**
+     * The first trailer saved on the server for [itemId] (e.g. downloaded by Trailarr), or null
+     * when there is none or the server cannot be reached.
+     */
+    suspend fun getLocalTrailer(itemId: String): BaseItemDto? =
+        (repository.getLocalTrailers(itemId) as? ApiResult.Success)?.data?.firstOrNull()
+
     fun getDownloadUrl(item: BaseItemDto): String? =
         streamRepository.getDownloadUrl(item.id.toString())
 

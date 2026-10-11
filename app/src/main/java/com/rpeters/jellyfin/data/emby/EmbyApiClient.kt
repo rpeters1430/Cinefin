@@ -253,6 +253,11 @@ internal class EmbyRoute(
                 response = UserItemDataDto.serializer(),
                 reshape = userData,
             ),
+            "/Items/{itemId}/LocalTrailers" to EmbyRoute(
+                embyPath = "/Users/{userId}/Items/{itemId}/LocalTrailers",
+                response = ListSerializer(BaseItemDto.serializer()),
+                reshape = { element, _ -> if (element is JsonArray) JsonArray(element.map(::reshapeItem)) else element },
+            ),
             "/UserPlayedItems/{itemId}" to EmbyRoute(
                 embyPath = "/Users/{userId}/PlayedItems/{itemId}",
                 response = UserItemDataDto.serializer(),

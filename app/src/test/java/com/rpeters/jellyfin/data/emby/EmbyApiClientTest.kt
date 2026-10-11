@@ -6,6 +6,7 @@ import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkAll
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -184,6 +185,26 @@ class EmbyApiClientTest {
         val userData = sdkJson.decodeFromString(UserItemDataDto.serializer(), response.body.decodeToString())
         assertEquals(900L, userData.playbackPositionTicks)
         assertEquals(movieId, userData.itemId)
+    }
+
+    @Test
+    fun getLocalTrailers_usesEmbyUserScopedPathAndDecodesItems() = runTest {
+        delegate.respondWith("""[{"Name":"Sample Trailer","Id":"2001","Type":"Trailer"}]""")
+
+        val response = client.request(
+            HttpMethod.GET,
+            "/Items/{itemId}/LocalTrailers",
+            mapOf("itemId" to movieId),
+            mapOf("userId" to userUuid),
+            null,
+        )
+
+        assertEquals("/Users/{userId}/Items/{itemId}/LocalTrailers", delegate.path)
+        assertEquals(USER_ID, delegate.pathParameters["userId"])
+        assertEquals("1035", delegate.pathParameters["itemId"])
+        val trailers = sdkJson.decodeFromString(ListSerializer(BaseItemDto.serializer()), response.body.decodeToString())
+        assertEquals("2001", ServerIdCodec.decode(trailers.single().id))
+        assertEquals(BaseItemKind.TRAILER, trailers.single().type)
     }
 
     @Test
