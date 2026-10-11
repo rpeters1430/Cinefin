@@ -67,6 +67,7 @@ interface IJellyfinRepository {
     suspend fun getEpisodeDetails(episodeId: String): ApiResult<BaseItemDto>
     suspend fun getItemDetails(itemId: String): ApiResult<BaseItemDto>
     suspend fun getMediaSegments(itemId: String): ApiResult<List<MediaSegmentDto>>
+    suspend fun getLocalTrailers(itemId: String): ApiResult<List<BaseItemDto>>
     suspend fun getNextUp(
         limit: Int = 24,
     ): ApiResult<List<BaseItemDto>>

@@ -560,6 +560,8 @@ private fun ShowHeroContent(
 ) {
     val logoUrl = getLogoUrl(series)
     val trailerUrl = series.remoteTrailers?.firstOrNull()?.url
+    // Trailers saved beside the media (e.g. by Trailarr) play in-app and take precedence.
+    val hasTrailer = !trailerUrl.isNullOrBlank() || (series.localTrailerCount ?: 0) > 0
 
     Box(
         modifier = Modifier
@@ -667,7 +669,7 @@ private fun ShowHeroContent(
                     Icon(Icons.Default.Movie, contentDescription = null, modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = if (trailerUrl.isNullOrBlank()) "Find Trailer" else "Trailer",
+                        text = if (hasTrailer) "Trailer" else "Find Trailer",
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )

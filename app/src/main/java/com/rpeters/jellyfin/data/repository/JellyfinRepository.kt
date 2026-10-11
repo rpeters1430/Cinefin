@@ -812,6 +812,7 @@ open class JellyfinRepository @Inject constructor(
                     ItemFields.TAGS,
                     ItemFields.CHAPTERS,
                     ItemFields.REMOTE_TRAILERS,
+                    ItemFields.LOCAL_TRAILER_COUNT,
                 ),
             )
             val item = response.content.items.firstOrNull()
@@ -887,6 +888,21 @@ open class JellyfinRepository @Inject constructor(
                 ),
             )
             response.content.items
+        }
+    }
+
+    /**
+     * Trailers stored as files next to the media (the layout Trailarr writes: `Trailers/` or a
+     * `-trailer` suffix). Jellyfin and Emby both index these as local trailers of the item;
+     * [com.rpeters.jellyfin.data.emby.EmbyApiClient] maps the route for Emby.
+     */
+    override suspend fun getLocalTrailers(itemId: String): ApiResult<List<BaseItemDto>> {
+        return withServerClient("getLocalTrailers") { server, client ->
+            val userUuid = runCatching { UUID.fromString(server.userId ?: "") }.getOrNull()
+            client.libraryApi.getLocalTrailers(
+                itemId = parseUuid(itemId, "item"),
+                userId = userUuid,
+            ).content
         }
     }
 

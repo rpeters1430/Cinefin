@@ -13,6 +13,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -324,6 +325,7 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
         val mainViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<MainAppViewModel>()
         val detailViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<MovieDetailViewModel>()
         val downloadsViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<DownloadsViewModel>()
+        val trailerScope = rememberCoroutineScope()
 
         val lifecycleOwner = LocalLifecycleOwner.current
         val appState by mainViewModel.appState.collectAsStateWithLifecycle(
@@ -395,7 +397,7 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                     downloadsViewModel.startDownload(movieItem, quality)
                 },
                 onTrailerClick = { url ->
-                    com.rpeters.jellyfin.ui.utils.TrailerUtils.playTrailer(navController.context, url)
+                    trailerScope.launchTrailer(navController.context, mainViewModel, resolvedMovie.id.toString(), url)
                 },
                 onSearchRequests = { query ->
                     navController.navigate(Screen.Requests.createRoute(query))
