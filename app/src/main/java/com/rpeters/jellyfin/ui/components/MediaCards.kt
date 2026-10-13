@@ -513,6 +513,15 @@ fun PosterMediaCard(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             if (item.type == BaseItemKind.EPISODE) {
+                                val season = item.parentIndexNumber
+                                val episode = item.indexNumber
+                                if (season != null && episode != null) {
+                                    Text(
+                                        text = "S${season}E$episode",
+                                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = MaterialTheme.colorScheme.primary,
+                                    )
+                                }
                                 formatShortAirDate(item.premiereDate)?.let { airDate ->
                                     Text(
                                         text = airDate,

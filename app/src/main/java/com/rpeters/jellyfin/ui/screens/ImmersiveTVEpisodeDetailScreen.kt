@@ -773,112 +773,107 @@ private fun EpisodeOverviewSection(
             )
         }
 
-        // ✅ Enhanced Metadata Section
-        Surface(
-            shape = MaterialTheme.shapes.medium,
-            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        // Media info cards sit directly on the page; wrapping these elevated cards in a
+        // tinted surface drew a box inside a box (#1349).
+        Column(
             modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                // Media Info Cards
-                episode.mediaSources?.firstOrNull()?.mediaStreams?.let { streams ->
-                    val videoStream = streams.find { it.type == org.jellyfin.sdk.model.api.MediaStreamType.VIDEO }
-                    val audioStream = streams.find { it.type == org.jellyfin.sdk.model.api.MediaStreamType.AUDIO }
+            // Media Info Cards
+            episode.mediaSources?.firstOrNull()?.mediaStreams?.let { streams ->
+                val videoStream = streams.find { it.type == org.jellyfin.sdk.model.api.MediaStreamType.VIDEO }
+                val audioStream = streams.find { it.type == org.jellyfin.sdk.model.api.MediaStreamType.AUDIO }
 
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        // Video Info Card
-                        videoStream?.let { stream ->
-                            val resolution = ResolutionQuality.fromResolution(stream.width, stream.height)
-                            val codecText = when (stream.codec?.lowercase()) {
-                                "hevc", "h265" -> "HEVC"
-                                "h264", "avc" -> "AVC"
-                                "av1" -> "AV1"
-                                "vp9" -> "VP9"
-                                else -> stream.codec?.uppercase() ?: ""
-                            }
-                            val hdrType = HdrType.detect(
-                                stream.videoRange.toString(),
-                                stream.videoRangeType.toString(),
-                            )
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    // Video Info Card
+                    videoStream?.let { stream ->
+                        val resolution = ResolutionQuality.fromResolution(stream.width, stream.height)
+                        val codecText = when (stream.codec?.lowercase()) {
+                            "hevc", "h265" -> "HEVC"
+                            "h264", "avc" -> "AVC"
+                            "av1" -> "AV1"
+                            "vp9" -> "VP9"
+                            else -> stream.codec?.uppercase() ?: ""
+                        }
+                        val hdrType = HdrType.detect(
+                            stream.videoRange.toString(),
+                            stream.videoRangeType.toString(),
+                        )
 
-                            VideoInfoCard(
-                                resolution = resolution,
-                                codec = codecText,
-                                bitDepth = stream.bitDepth,
-                                frameRate = stream.averageFrameRate?.toDouble(),
-                                isHdr = hdrType != null,
-                                hdrType = hdrType ?: HdrType.HDR,
-                            )
+                        VideoInfoCard(
+                            resolution = resolution,
+                            codec = codecText,
+                            bitDepth = stream.bitDepth,
+                            frameRate = stream.averageFrameRate?.toDouble(),
+                            isHdr = hdrType != null,
+                            hdrType = hdrType ?: HdrType.HDR,
+                        )
+                    }
+
+                    // Audio Info Card
+                    audioStream?.let { stream ->
+                        val channelText = when (stream.channels) {
+                            8 -> "7.1"
+                            6 -> "5.1"
+                            2 -> "Stereo"
+                            1 -> "Mono"
+                            else -> stream.channels?.toString()?.let { "$it.0" } ?: ""
                         }
 
-                        // Audio Info Card
-                        audioStream?.let { stream ->
-                            val channelText = when (stream.channels) {
-                                8 -> "7.1"
-                                6 -> "5.1"
-                                2 -> "Stereo"
-                                1 -> "Mono"
-                                else -> stream.channels?.toString()?.let { "$it.0" } ?: ""
-                            }
-
-                            val codecText = when (stream.codec?.lowercase()) {
-                                "truehd" -> "TrueHD"
-                                "eac3" -> "DD+"
-                                "aac" -> "AAC"
-                                "ac3" -> "DD"
-                                "dca", "dts" -> "DTS"
-                                "dtshd" -> "DTS-HD"
-                                "flac" -> "FLAC"
-                                else -> stream.codec?.uppercase() ?: ""
-                            }
-
-                            val isAtmos = stream.title?.contains("atmos", ignoreCase = true) == true ||
-                                stream.codec?.contains("atmos", ignoreCase = true) == true
-
-                            AudioInfoCard(
-                                channels = channelText,
-                                codec = codecText,
-                                isAtmos = isAtmos,
-                                language = stream.language?.uppercase(),
-                            )
+                        val codecText = when (stream.codec?.lowercase()) {
+                            "truehd" -> "TrueHD"
+                            "eac3" -> "DD+"
+                            "aac" -> "AAC"
+                            "ac3" -> "DD"
+                            "dca", "dts" -> "DTS"
+                            "dtshd" -> "DTS-HD"
+                            "flac" -> "FLAC"
+                            else -> stream.codec?.uppercase() ?: ""
                         }
+
+                        val isAtmos = stream.title?.contains("atmos", ignoreCase = true) == true ||
+                            stream.codec?.contains("atmos", ignoreCase = true) == true
+
+                        AudioInfoCard(
+                            channels = channelText,
+                            codec = codecText,
+                            isAtmos = isAtmos,
+                            language = stream.language?.uppercase(),
+                        )
                     }
                 }
+            }
 
-                // Air Date & Runtime (MM - DD - YYYY)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    episode.premiereDate?.let { date ->
-                        // Input format is typically 2024-01-23T00:00:00Z
-                        val dateStr = date.toString().substringBefore('T')
-                        val parts = dateStr.split("-")
-                        if (parts.size == 3) {
-                            val formattedDate = "${parts[1]} - ${parts[2]} - ${parts[0]}" // MM - DD - YYYY
-                            DetailInfoRow(
-                                label = "Aired",
-                                value = formattedDate,
-                                modifier = Modifier.weight(1f),
-                            )
-                        }
-                    }
-
-                    episode.runTimeTicks?.let { ticks ->
-                        val minutes = (ticks / 10_000_000 / 60).toInt()
+            // Air Date & Runtime (MM - DD - YYYY)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                episode.premiereDate?.let { date ->
+                    // Input format is typically 2024-01-23T00:00:00Z
+                    val dateStr = date.toString().substringBefore('T')
+                    val parts = dateStr.split("-")
+                    if (parts.size == 3) {
+                        val formattedDate = "${parts[1]} - ${parts[2]} - ${parts[0]}" // MM - DD - YYYY
                         DetailInfoRow(
-                            label = "Duration",
-                            value = "${minutes}m",
+                            label = "Aired",
+                            value = formattedDate,
                             modifier = Modifier.weight(1f),
                         )
                     }
+                }
+
+                episode.runTimeTicks?.let { ticks ->
+                    val minutes = (ticks / 10_000_000 / 60).toInt()
+                    DetailInfoRow(
+                        label = "Duration",
+                        value = "${minutes}m",
+                        modifier = Modifier.weight(1f),
+                    )
                 }
             }
         }

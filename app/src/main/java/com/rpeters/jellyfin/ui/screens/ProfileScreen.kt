@@ -63,6 +63,8 @@ import com.rpeters.jellyfin.ui.components.ExpressiveContentCard
 import com.rpeters.jellyfin.ui.components.ExpressiveFilledButton
 import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBar
 import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBarAction
+import com.rpeters.jellyfin.ui.components.ServerTypeBadge
+import com.rpeters.jellyfin.ui.components.serverTypeLabel
 import com.rpeters.jellyfin.ui.image.AvatarImage
 import java.text.DateFormat
 import java.util.Date
@@ -167,7 +169,7 @@ fun ProfileScreen(
                             isConnected = currentServer?.isConnected == true,
                             version = serverVersion,
                             operatingSystem = serverInfo?.operatingSystem,
-                            productName = serverInfo?.productName,
+                            productName = serverInfo?.productName ?: currentServer?.let { serverTypeLabel(it.serverType) },
                         )
                     }
 
@@ -200,7 +202,7 @@ fun ProfileScreen(
                     isConnected = currentServer?.isConnected == true,
                     version = serverVersion,
                     operatingSystem = serverInfo?.operatingSystem,
-                    productName = serverInfo?.productName,
+                    productName = serverInfo?.productName ?: currentServer?.let { serverTypeLabel(it.serverType) },
                 )
 
                 ServerInformationCard(
@@ -338,8 +340,9 @@ private fun ServerInformationCard(
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f, fill = false),
                 )
+                currentServer?.let { server -> ServerTypeBadge(serverType = server.serverType) }
             }
 
             Spacer(modifier = Modifier.height(12.dp))

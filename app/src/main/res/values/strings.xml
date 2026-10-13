@@ -90,6 +90,9 @@
     <string name="server_status_version">Version %1$s</string>
     <string name="server_status_os">OS %1$s</string>
     <string name="server_status_product">Product %1$s</string>
+    <string name="server_type_jellyfin">Jellyfin</string>
+    <string name="server_type_emby">Emby</string>
+    <string name="server_type_badge_description">Connected to a %1$s server</string>
     
     <!-- Buttons -->
     <string name="sign_out">Sign Out</string>
