@@ -520,13 +520,19 @@ fun PosterMediaCard(
                                         text = "S${season}E$episode",
                                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                                         color = MaterialTheme.colorScheme.primary,
+                                        maxLines = 1,
+                                        softWrap = false,
                                     )
                                 }
                                 formatShortAirDate(item.premiereDate)?.let { airDate ->
+                                    // Takes only the space left so narrow cards truncate the date rather than the rating.
                                     Text(
                                         text = airDate,
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.weight(1f, fill = false),
                                     )
                                 }
                             } else {

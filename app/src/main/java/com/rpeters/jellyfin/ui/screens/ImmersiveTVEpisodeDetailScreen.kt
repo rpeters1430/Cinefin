@@ -796,7 +796,7 @@ private fun EpisodeOverviewSection(
                             "h264", "avc" -> "AVC"
                             "av1" -> "AV1"
                             "vp9" -> "VP9"
-                            else -> stream.codec?.uppercase() ?: ""
+                            else -> stream.codec?.uppercase().orEmpty()
                         }
                         val hdrType = HdrType.detect(
                             stream.videoRange.toString(),
@@ -820,7 +820,7 @@ private fun EpisodeOverviewSection(
                             6 -> "5.1"
                             2 -> "Stereo"
                             1 -> "Mono"
-                            else -> stream.channels?.toString()?.let { "$it.0" } ?: ""
+                            else -> stream.channels?.toString()?.let { "$it.0" }.orEmpty()
                         }
 
                         val codecText = when (stream.codec?.lowercase()) {
@@ -831,7 +831,7 @@ private fun EpisodeOverviewSection(
                             "dca", "dts" -> "DTS"
                             "dtshd" -> "DTS-HD"
                             "flac" -> "FLAC"
-                            else -> stream.codec?.uppercase() ?: ""
+                            else -> stream.codec?.uppercase().orEmpty()
                         }
 
                         val isAtmos = stream.title?.contains("atmos", ignoreCase = true) == true ||

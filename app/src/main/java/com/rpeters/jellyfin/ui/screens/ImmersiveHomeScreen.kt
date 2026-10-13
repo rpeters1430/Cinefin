@@ -394,7 +394,8 @@ private fun BoxScope.ImmersiveHomeOverlayContent(
                     .statusBarsPadding()
                     .fillMaxWidth()
                     .height(56.dp)
-                    .padding(horizontal = 16.dp),
+                    // End padding keeps the server name and badge clear of the overlaid settings button.
+                    .padding(start = 16.dp, end = 72.dp),
                 contentAlignment = Alignment.CenterStart,
             ) {
                 androidx.compose.foundation.layout.Row(
