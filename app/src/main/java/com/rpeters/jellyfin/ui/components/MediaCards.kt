@@ -419,17 +419,7 @@ fun PosterMediaCard(
                     shape = RoundedCornerShape(6.dp),
                 ) {
                     Text(
-                        text = when (item.type) {
-                            BaseItemKind.MOVIE -> "Movie"
-                            BaseItemKind.SERIES -> "Series"
-                            BaseItemKind.EPISODE -> "Episode"
-                            BaseItemKind.AUDIO -> "Music"
-                            BaseItemKind.MUSIC_ALBUM -> "Album"
-                            BaseItemKind.MUSIC_ARTIST -> "Artist"
-                            BaseItemKind.BOOK -> "Book"
-                            BaseItemKind.AUDIO_BOOK -> "Audiobook"
-                            else -> "Media"
-                        },
+                        text = posterContentTypeLabel(item.type),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
@@ -507,66 +497,84 @@ fun PosterMediaCard(
                     }
 
                     if (showMetadata) {
-                        Row(
-                            modifier = Modifier.heightIn(min = 24.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            if (item.type == BaseItemKind.EPISODE) {
-                                val season = item.parentIndexNumber
-                                val episode = item.indexNumber
-                                if (season != null && episode != null) {
-                                    Text(
-                                        text = "S${season}E$episode",
-                                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                                        color = MaterialTheme.colorScheme.primary,
-                                        maxLines = 1,
-                                        softWrap = false,
-                                    )
-                                }
-                                formatShortAirDate(item.premiereDate)?.let { airDate ->
-                                    // Takes only the space left so narrow cards truncate the date rather than the rating.
-                                    Text(
-                                        text = airDate,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                        modifier = Modifier.weight(1f, fill = false),
-                                    )
-                                }
-                            } else {
-                                item.productionYear?.let { year ->
-                                    Text(
-                                        text = year.toString(),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-                            }
-
-                            item.communityRating?.let { rating ->
-                                // ✅ Performance: Removed animation to reduce recomposition overhead
-                                val ratingColor = when {
-                                    rating >= 7.5f -> RatingGold
-                                    rating >= 5.0f -> RatingSilver
-                                    else -> RatingBronze
-                                }
-                                Box(contentAlignment = Alignment.Center) {
-                                    ExpressiveCircularLoading(
-                                        size = 20.dp,
-                                        color = ratingColor,
-                                    )
-                                    Text(
-                                        text = rating.toInt().toString(),
-                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                        color = ratingColor,
-                                    )
-                                }
-                            }
-                        }
+                        PosterCardMetadataRow(item)
                     }
                 }
+            }
+        }
+    }
+}
+
+private fun posterContentTypeLabel(type: BaseItemKind?): String = when (type) {
+    BaseItemKind.MOVIE -> "Movie"
+    BaseItemKind.SERIES -> "Series"
+    BaseItemKind.EPISODE -> "Episode"
+    BaseItemKind.AUDIO -> "Music"
+    BaseItemKind.MUSIC_ALBUM -> "Album"
+    BaseItemKind.MUSIC_ARTIST -> "Artist"
+    BaseItemKind.BOOK -> "Book"
+    BaseItemKind.AUDIO_BOOK -> "Audiobook"
+    else -> "Media"
+}
+
+/** Air date (with SxEy for episodes) or year, plus the community rating, under a poster. */
+@Composable
+private fun PosterCardMetadataRow(item: BaseItemDto) {
+    Row(
+        modifier = Modifier.heightIn(min = 24.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (item.type == BaseItemKind.EPISODE) {
+            val season = item.parentIndexNumber
+            val episode = item.indexNumber
+            if (season != null && episode != null) {
+                Text(
+                    text = "S${season}E$episode",
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.primary,
+                    maxLines = 1,
+                    softWrap = false,
+                )
+            }
+            formatShortAirDate(item.premiereDate)?.let { airDate ->
+                // Takes only the space left so narrow cards truncate the date rather than the rating.
+                Text(
+                    text = airDate,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+            }
+        } else {
+            item.productionYear?.let { year ->
+                Text(
+                    text = year.toString(),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
+        item.communityRating?.let { rating ->
+            // ✅ Performance: Removed animation to reduce recomposition overhead
+            val ratingColor = when {
+                rating >= 7.5f -> RatingGold
+                rating >= 5.0f -> RatingSilver
+                else -> RatingBronze
+            }
+            Box(contentAlignment = Alignment.Center) {
+                ExpressiveCircularLoading(
+                    size = 20.dp,
+                    color = ratingColor,
+                )
+                Text(
+                    text = rating.toInt().toString(),
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                    color = ratingColor,
+                )
             }
         }
     }

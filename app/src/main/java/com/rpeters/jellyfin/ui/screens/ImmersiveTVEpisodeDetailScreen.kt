@@ -691,79 +691,14 @@ private fun EpisodeOverviewSection(
         }
 
         if (isLoadingContentWarnings || contentWarnings.isNotEmpty()) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.Warning,
-                        contentDescription = "Content Warnings",
-                        tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Content Warnings",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-                if (isLoadingContentWarnings) {
-                    com.rpeters.jellyfin.ui.components.ExpressiveWavyLinearLoading(
-                        modifier = Modifier.fillMaxWidth(),
-                        color = MaterialTheme.colorScheme.error
-                    )
-                } else {
-                    androidx.compose.foundation.layout.FlowRow(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        contentWarnings.forEach { warning ->
-                            AssistChip(
-                                onClick = { },
-                                label = { Text(warning) },
-                                colors = androidx.compose.material3.AssistChipDefaults.assistChipColors(
-                                    containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f),
-                                    labelColor = MaterialTheme.colorScheme.onErrorContainer
-                                ),
-                                border = null
-                            )
-                        }
-                    }
-                }
-            }
+            EpisodeContentWarnings(contentWarnings = contentWarnings, isLoading = isLoadingContentWarnings)
         }
 
         // Playback Capability
         playbackAnalysis?.let { PlaybackStatusBadge(analysis = it) }
 
         if (playbackAnalysis?.transcodeReasons?.isNotEmpty() == true) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text(
-                    text = "Needs conversion for",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.78f),
-                )
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(horizontal = 8.dp),
-                ) {
-                    items(playbackAnalysis.transcodeReasons.distinct()) { reason ->
-                        AssistChip(
-                            onClick = {},
-                            enabled = false,
-                            label = { Text(reason) },
-                        )
-                    }
-                }
-            }
+            TranscodeReasonsRow(reasons = playbackAnalysis.transcodeReasons)
         }
 
         if (playbackAnalysis?.breakdown?.isNotEmpty() == true) {
@@ -773,109 +708,195 @@ private fun EpisodeOverviewSection(
             )
         }
 
-        // Media info cards sit directly on the page; wrapping these elevated cards in a
-        // tinted surface drew a box inside a box (#1349).
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            // Media Info Cards
-            episode.mediaSources?.firstOrNull()?.mediaStreams?.let { streams ->
-                val videoStream = streams.find { it.type == org.jellyfin.sdk.model.api.MediaStreamType.VIDEO }
-                val audioStream = streams.find { it.type == org.jellyfin.sdk.model.api.MediaStreamType.AUDIO }
+        EpisodeMediaInfoSection(episode)
+    }
+}
 
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    // Video Info Card
-                    videoStream?.let { stream ->
-                        val resolution = ResolutionQuality.fromResolution(stream.width, stream.height)
-                        val codecText = when (stream.codec?.lowercase()) {
-                            "hevc", "h265" -> "HEVC"
-                            "h264", "avc" -> "AVC"
-                            "av1" -> "AV1"
-                            "vp9" -> "VP9"
-                            else -> stream.codec?.uppercase().orEmpty()
-                        }
-                        val hdrType = HdrType.detect(
-                            stream.videoRange.toString(),
-                            stream.videoRangeType.toString(),
-                        )
-
-                        VideoInfoCard(
-                            resolution = resolution,
-                            codec = codecText,
-                            bitDepth = stream.bitDepth,
-                            frameRate = stream.averageFrameRate?.toDouble(),
-                            isHdr = hdrType != null,
-                            hdrType = hdrType ?: HdrType.HDR,
-                        )
-                    }
-
-                    // Audio Info Card
-                    audioStream?.let { stream ->
-                        val channelText = when (stream.channels) {
-                            8 -> "7.1"
-                            6 -> "5.1"
-                            2 -> "Stereo"
-                            1 -> "Mono"
-                            else -> stream.channels?.toString()?.let { "$it.0" }.orEmpty()
-                        }
-
-                        val codecText = when (stream.codec?.lowercase()) {
-                            "truehd" -> "TrueHD"
-                            "eac3" -> "DD+"
-                            "aac" -> "AAC"
-                            "ac3" -> "DD"
-                            "dca", "dts" -> "DTS"
-                            "dtshd" -> "DTS-HD"
-                            "flac" -> "FLAC"
-                            else -> stream.codec?.uppercase().orEmpty()
-                        }
-
-                        val isAtmos = stream.title?.contains("atmos", ignoreCase = true) == true ||
-                            stream.codec?.contains("atmos", ignoreCase = true) == true
-
-                        AudioInfoCard(
-                            channels = channelText,
-                            codec = codecText,
-                            isAtmos = isAtmos,
-                            language = stream.language?.uppercase(),
-                        )
-                    }
-                }
-            }
-
-            // Air Date & Runtime (MM - DD - YYYY)
-            Row(
+@Composable
+private fun EpisodeContentWarnings(contentWarnings: List<String>, isLoading: Boolean) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = Icons.Default.Warning,
+                contentDescription = "Content Warnings",
+                tint = MaterialTheme.colorScheme.error,
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Content Warnings",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.error
+            )
+        }
+        if (isLoading) {
+            com.rpeters.jellyfin.ui.components.ExpressiveWavyLinearLoading(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
+                color = MaterialTheme.colorScheme.error
+            )
+        } else {
+            androidx.compose.foundation.layout.FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                episode.premiereDate?.let { date ->
-                    // Input format is typically 2024-01-23T00:00:00Z
-                    val dateStr = date.toString().substringBefore('T')
-                    val parts = dateStr.split("-")
-                    if (parts.size == 3) {
-                        val formattedDate = "${parts[1]} - ${parts[2]} - ${parts[0]}" // MM - DD - YYYY
-                        DetailInfoRow(
-                            label = "Aired",
-                            value = formattedDate,
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                }
-
-                episode.runTimeTicks?.let { ticks ->
-                    val minutes = (ticks / 10_000_000 / 60).toInt()
-                    DetailInfoRow(
-                        label = "Duration",
-                        value = "${minutes}m",
-                        modifier = Modifier.weight(1f),
+                contentWarnings.forEach { warning ->
+                    AssistChip(
+                        onClick = { },
+                        label = { Text(warning) },
+                        colors = androidx.compose.material3.AssistChipDefaults.assistChipColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f),
+                            labelColor = MaterialTheme.colorScheme.onErrorContainer
+                        ),
+                        border = null
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun TranscodeReasonsRow(reasons: List<String>) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            text = "Needs conversion for",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.78f),
+        )
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(horizontal = 8.dp),
+        ) {
+            items(reasons.distinct()) { reason ->
+                AssistChip(
+                    onClick = {},
+                    enabled = false,
+                    label = { Text(reason) },
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Video/audio info cards plus air date and runtime. The cards sit directly on the page; wrapping
+ * these elevated cards in a tinted surface drew a box inside a box (#1349).
+ */
+@Composable
+private fun EpisodeMediaInfoSection(episode: BaseItemDto) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        episode.mediaSources?.firstOrNull()?.mediaStreams?.let { streams ->
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                streams.find { it.type == org.jellyfin.sdk.model.api.MediaStreamType.VIDEO }
+                    ?.let { EpisodeVideoInfoCard(it) }
+                streams.find { it.type == org.jellyfin.sdk.model.api.MediaStreamType.AUDIO }
+                    ?.let { EpisodeAudioInfoCard(it) }
+            }
+        }
+
+        EpisodeAirDateRuntimeRow(episode)
+    }
+}
+
+@Composable
+private fun EpisodeVideoInfoCard(stream: org.jellyfin.sdk.model.api.MediaStream) {
+    val hdrType = HdrType.detect(
+        stream.videoRange.toString(),
+        stream.videoRangeType.toString(),
+    )
+    VideoInfoCard(
+        resolution = ResolutionQuality.fromResolution(stream.width, stream.height),
+        codec = videoCodecLabel(stream.codec),
+        bitDepth = stream.bitDepth,
+        frameRate = stream.averageFrameRate?.toDouble(),
+        isHdr = hdrType != null,
+        hdrType = hdrType ?: HdrType.HDR,
+    )
+}
+
+@Composable
+private fun EpisodeAudioInfoCard(stream: org.jellyfin.sdk.model.api.MediaStream) {
+    val isAtmos = stream.title?.contains("atmos", ignoreCase = true) == true ||
+        stream.codec?.contains("atmos", ignoreCase = true) == true
+    AudioInfoCard(
+        channels = audioChannelLabel(stream.channels),
+        codec = audioCodecLabel(stream.codec),
+        isAtmos = isAtmos,
+        language = stream.language?.uppercase(),
+    )
+}
+
+private fun videoCodecLabel(codec: String?): String = when (codec?.lowercase()) {
+    "hevc", "h265" -> "HEVC"
+    "h264", "avc" -> "AVC"
+    "av1" -> "AV1"
+    "vp9" -> "VP9"
+    else -> codec?.uppercase().orEmpty()
+}
+
+private fun audioChannelLabel(channels: Int?): String = when (channels) {
+    8 -> "7.1"
+    6 -> "5.1"
+    2 -> "Stereo"
+    1 -> "Mono"
+    else -> channels?.toString()?.let { "$it.0" }.orEmpty()
+}
+
+private fun audioCodecLabel(codec: String?): String = when (codec?.lowercase()) {
+    "truehd" -> "TrueHD"
+    "eac3" -> "DD+"
+    "aac" -> "AAC"
+    "ac3" -> "DD"
+    "dca", "dts" -> "DTS"
+    "dtshd" -> "DTS-HD"
+    "flac" -> "FLAC"
+    else -> codec?.uppercase().orEmpty()
+}
+
+/** Air date (MM - DD - YYYY) and runtime. */
+@Composable
+private fun EpisodeAirDateRuntimeRow(episode: BaseItemDto) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        episode.premiereDate?.let { date ->
+            // Input format is typically 2024-01-23T00:00:00Z
+            val dateStr = date.toString().substringBefore('T')
+            val parts = dateStr.split("-")
+            if (parts.size == 3) {
+                val formattedDate = "${parts[1]} - ${parts[2]} - ${parts[0]}" // MM - DD - YYYY
+                DetailInfoRow(
+                    label = "Aired",
+                    value = formattedDate,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        }
+
+        episode.runTimeTicks?.let { ticks ->
+            val minutes = (ticks / 10_000_000 / 60).toInt()
+            DetailInfoRow(
+                label = "Duration",
+                value = "${minutes}m",
+                modifier = Modifier.weight(1f),
+            )
         }
     }
 }
