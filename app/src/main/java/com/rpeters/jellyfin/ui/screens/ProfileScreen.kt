@@ -63,6 +63,8 @@ import com.rpeters.jellyfin.ui.components.ExpressiveContentCard
 import com.rpeters.jellyfin.ui.components.ExpressiveFilledButton
 import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBar
 import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBarAction
+import com.rpeters.jellyfin.ui.components.ServerTypeBadge
+import com.rpeters.jellyfin.ui.components.serverTypeLabel
 import com.rpeters.jellyfin.ui.image.AvatarImage
 import java.text.DateFormat
 import java.util.Date
@@ -116,19 +118,11 @@ fun ProfileScreen(
         val serverVersion = serverInfo?.version ?: currentServer?.version ?: stringResource(id = R.string.unknown)
         val serverName = currentServer?.name ?: stringResource(id = R.string.unknown)
         val appVersion = BuildConfig.VERSION_NAME.ifBlank { unknownLabel }
-        val appUpdatedDate = remember {
-            runCatching {
-                val packageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    context.packageManager.getPackageInfo(
-                        context.packageName,
-                        PackageManager.PackageInfoFlags.of(0),
-                    )
-                } else {
-                    @Suppress("DEPRECATION")
-                    context.packageManager.getPackageInfo(context.packageName, 0)
-                }
-                DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(packageInfo.lastUpdateTime))
-            }.getOrElse { unknownLabel }
+        val appUpdatedDate = remember { appUpdatedDate(context, unknownLabel) }
+        // Emby sends no ProductName; fall back to the detected server type.
+        val productName = serverInfo?.productName ?: currentServer?.let { serverTypeLabel(it.serverType) }
+        val onOpenServerUrl = currentServer?.takeIf { it.url.startsWith("http") }?.let {
+            { uriHandler.openUri(it.url) }
         }
         val scrollState = rememberScrollState()
 
@@ -167,7 +161,7 @@ fun ProfileScreen(
                             isConnected = currentServer?.isConnected == true,
                             version = serverVersion,
                             operatingSystem = serverInfo?.operatingSystem,
-                            productName = serverInfo?.productName,
+                            productName = productName,
                         )
                     }
 
@@ -178,9 +172,7 @@ fun ProfileScreen(
                         ServerInformationCard(
                             serverName = serverName,
                             currentServer = currentServer,
-                            onOpenServerUrl = currentServer?.takeIf { it.url.startsWith("http") }?.let {
-                                { uriHandler.openUri(it.url) }
-                            },
+                            onOpenServerUrl = onOpenServerUrl,
                         )
                         ProfileActionsCard(onSettingsClick = onSettingsClick)
                         profilesSection()
@@ -200,15 +192,13 @@ fun ProfileScreen(
                     isConnected = currentServer?.isConnected == true,
                     version = serverVersion,
                     operatingSystem = serverInfo?.operatingSystem,
-                    productName = serverInfo?.productName,
+                    productName = productName,
                 )
 
                 ServerInformationCard(
                     serverName = serverName,
                     currentServer = currentServer,
-                    onOpenServerUrl = currentServer?.takeIf { it.url.startsWith("http") }?.let {
-                        { uriHandler.openUri(it.url) }
-                    },
+                    onOpenServerUrl = onOpenServerUrl,
                 )
 
                 ProfileActionsCard(onSettingsClick = onSettingsClick)
@@ -222,6 +212,20 @@ fun ProfileScreen(
         }
     }
 }
+
+/** The date this app was last installed or updated, or [fallback] if it cannot be read. */
+private fun appUpdatedDate(context: Context, fallback: String): String = runCatching {
+    val packageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        context.packageManager.getPackageInfo(
+            context.packageName,
+            PackageManager.PackageInfoFlags.of(0),
+        )
+    } else {
+        @Suppress("DEPRECATION")
+        context.packageManager.getPackageInfo(context.packageName, 0)
+    }
+    DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(packageInfo.lastUpdateTime))
+}.getOrElse { fallback }
 
 @Composable
 private fun ProfileBrandHeader(
@@ -338,8 +342,9 @@ private fun ServerInformationCard(
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f, fill = false),
                 )
+                currentServer?.let { server -> ServerTypeBadge(serverType = server.serverType) }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
