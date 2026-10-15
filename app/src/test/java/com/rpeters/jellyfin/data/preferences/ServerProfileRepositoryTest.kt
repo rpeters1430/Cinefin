@@ -66,7 +66,7 @@ class ServerProfileRepositoryTest {
         userId = "42",
         username = "dana",
         accessToken = "server-token",
-        plexAccountToken = "account-token",
+        plexAccountToken = ACCOUNT_TOKEN,
         alternateServerUrls = listOf("https://203-0-113-9.abc.plex.direct:32400"),
     )
 
@@ -269,7 +269,7 @@ class ServerProfileRepositoryTest {
         repository.saveAndActivate(plexProfile)
 
         val stored = storedProfilesJson()
-        assertFalse(stored.contains("account-token"))
+        assertFalse(stored.contains(ACCOUNT_TOKEN))
         assertTrue(stored.contains("enc1:"))
         assertEquals(plexProfile, repository.current().activeProfile)
     }
@@ -279,14 +279,14 @@ class ServerProfileRepositoryTest {
         dataStore.edit {
             it[profilesKey] =
                 """[{"id":"machine-1:42","serverUrl":"https://plex.example.com","serverName":"Plex",""" +
-                """"serverType":"PLEX","username":"dana","plexAccountToken":"account-token"}]"""
+                """"serverType":"PLEX","username":"dana","plexAccountToken":"$ACCOUNT_TOKEN"}]"""
         }
 
-        assertEquals("account-token", repository.current().profiles.single().plexAccountToken)
+        assertEquals(ACCOUNT_TOKEN, repository.current().profiles.single().plexAccountToken)
 
         repository.saveAndActivate(embyProfile)
         val stored = storedProfilesJson()
-        assertFalse(stored.contains("account-token"))
+        assertFalse(stored.contains(ACCOUNT_TOKEN))
     }
 
     @Test
@@ -300,13 +300,23 @@ class ServerProfileRepositoryTest {
     }
 
     @Test
+    fun current_malformedEncryptedToken_keepsProfileWithoutToken() = runTest {
+        repository.saveAndActivate(plexProfile)
+        cipher.throwOnDecrypt = true
+
+        val profile = repository.current().activeProfile
+
+        assertEquals(plexProfile.copy(plexAccountToken = null), profile)
+    }
+
+    @Test
     fun saveAndActivate_encryptionFails_dropsTokenInsteadOfStoringPlaintext() = runTest {
         cipher.failEncrypt = true
 
         repository.saveAndActivate(plexProfile)
 
         val stored = storedProfilesJson()
-        assertFalse(stored.contains("account-token"))
+        assertFalse(stored.contains(ACCOUNT_TOKEN))
         assertNull(repository.current().activeProfile?.plexAccountToken)
         assertEquals("server-token", repository.current().activeProfile?.accessToken)
     }
@@ -314,7 +324,7 @@ class ServerProfileRepositoryTest {
     @Test
     fun clearAuthentication_plexProfile_forgetsAccountToken() = runTest {
         repository.saveAndActivate(
-            jellyfinProfile.copy(id = "p", serverType = ServerType.PLEX, plexAccountToken = "account-token"),
+            jellyfinProfile.copy(id = "p", serverType = ServerType.PLEX, plexAccountToken = ACCOUNT_TOKEN),
         )
 
         repository.clearAuthentication("p")
@@ -388,11 +398,19 @@ class ServerProfileRepositoryTest {
     private class FakeCipher : SecretCipher {
         var failEncrypt = false
         var failDecrypt = false
+        var throwOnDecrypt = false
 
         override fun encryptValue(value: String): String? = if (failEncrypt) null else value.reversed()
 
-        override fun decryptValue(encryptedValue: String?): String? =
-            if (failDecrypt) null else encryptedValue?.reversed()
+        override fun decryptValue(encryptedValue: String?): String? {
+            // android.util.Base64 throws IllegalArgumentException for malformed input.
+            if (throwOnDecrypt) throw IllegalArgumentException("bad base-64")
+            return if (failDecrypt) null else encryptedValue?.reversed()
+        }
+    }
+
+    private companion object {
+        const val ACCOUNT_TOKEN = "account-token"
     }
 
     private class InMemoryDataStore : DataStore<Preferences> {

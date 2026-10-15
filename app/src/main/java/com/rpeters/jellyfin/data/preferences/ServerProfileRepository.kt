@@ -193,13 +193,18 @@ class ServerProfileRepository(
     /**
      * Values without the prefix were written before encryption (debug builds only) and are read
      * as-is; the next write encrypts them. A value that no longer decrypts (key lost after a
-     * restore to a new device) becomes null so the profile asks for sign-in again.
+     * restore to a new device, or a corrupted value) becomes null so the profile asks for sign-in again.
      */
     private fun decryptSecret(stored: String): String? {
         if (!stored.startsWith(ENCRYPTED_PREFIX)) return stored
-        return secretCipher.decryptValue(stored.removePrefix(ENCRYPTED_PREFIX)).also {
-            if (it == null) SecureLogger.w(TAG, "Saved Plex account token could not be decrypted")
+        // A corrupted value (e.g. malformed Base64) can throw; it must not stop the profiles loading.
+        val decrypted = try {
+            secretCipher.decryptValue(stored.removePrefix(ENCRYPTED_PREFIX))
+        } catch (e: IllegalArgumentException) {
+            null
         }
+        if (decrypted == null) SecureLogger.w(TAG, "Saved Plex account token could not be decrypted")
+        return decrypted
     }
 
     private object Keys {
