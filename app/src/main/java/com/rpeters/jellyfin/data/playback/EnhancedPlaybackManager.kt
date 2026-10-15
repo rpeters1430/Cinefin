@@ -5,6 +5,8 @@ import android.content.Context
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.DeviceCapabilities
 import com.rpeters.jellyfin.data.DevicePerformanceProfile
+import com.rpeters.jellyfin.data.repository.JellyfinUserRepository
+import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.data.preferences.PlaybackPreferences
 import com.rpeters.jellyfin.data.preferences.PlaybackPreferencesRepository
 import com.rpeters.jellyfin.data.preferences.TranscodingQuality
@@ -40,6 +42,7 @@ class EnhancedPlaybackManager @Inject constructor(
     private val deviceCapabilities: DeviceCapabilities,
     private val connectivityChecker: ConnectivityChecker,
     private val playbackPreferencesRepository: PlaybackPreferencesRepository,
+    private val userRepository: JellyfinUserRepository,
 ) {
 
     companion object {
@@ -94,9 +97,10 @@ class EnhancedPlaybackManager @Inject constructor(
 
                 // Get preferences once
                 val playbackPreferences = playbackPreferencesRepository.preferences.first()
+                val remoteBitrateLimit = getRemoteBitrateLimit(playbackPreferences)
 
                 // CENTRALIZED DECISION (Phase 2)
-                val decision = computePlaybackDecision(item, playbackInfo, playbackPreferences, audioStreamIndex, subtitleStreamIndex)
+                val decision = computePlaybackDecision(item, playbackInfo, playbackPreferences, audioStreamIndex, subtitleStreamIndex, remoteBitrateLimit)
                 
                 if (decision is PlaybackResult.Error) {
                     SecureLogger.e(TAG, "Playback decision failed: ${decision.message}")
@@ -143,6 +147,7 @@ class EnhancedPlaybackManager @Inject constructor(
                 SecureLogger.d(TAG, "Getting fallback URL for: ${item.name} (Direct Play failed)")
 
                 val playbackPreferences = playbackPreferencesRepository.preferences.first()
+                val remoteBitrateLimit = getRemoteBitrateLimit(playbackPreferences)
 
                 val playbackInfo = getPlaybackInfo(itemId, audioStreamIndex, subtitleStreamIndex)
                 if (playbackInfo == null) {
@@ -154,10 +159,10 @@ class EnhancedPlaybackManager @Inject constructor(
 
                 // Try Direct Stream first — copies video, only transcodes audio.
                 // This avoids unnecessary video re-encoding when only the audio was the problem.
-                if (canDirectStreamMediaSource(anySource, item, playbackPreferences, null)) {
+                if (canDirectStreamMediaSource(anySource, item, playbackPreferences, null, remoteBitrateLimit)) {
                     SecureLogger.d(TAG, "Direct Play fallback → trying Direct Stream (video copy, audio transcode)")
                     val directStreamResult = getDirectStreamWithAudioTranscode(
-                        item, anySource, playbackInfo, playbackPreferences, audioStreamIndex, subtitleStreamIndex,
+                        item, anySource, playbackInfo, playbackPreferences, audioStreamIndex, subtitleStreamIndex, remoteBitrateLimit,
                     )
                     if (directStreamResult !is PlaybackResult.Error) {
                         return@withContext directStreamResult
@@ -167,7 +172,7 @@ class EnhancedPlaybackManager @Inject constructor(
 
                 // Full transcoding fallback
                 SecureLogger.d(TAG, "Using full transcoding fallback for: ${item.name}")
-                getOptimalTranscodingUrl(item, playbackInfo, playbackPreferences, audioStreamIndex, subtitleStreamIndex)
+                getOptimalTranscodingUrl(item, playbackInfo, playbackPreferences, audioStreamIndex, subtitleStreamIndex, remoteBitrateLimit)
             } catch (e: CancellationException) {
                 throw e
             }
@@ -184,6 +189,7 @@ class EnhancedPlaybackManager @Inject constructor(
         playbackPreferences: PlaybackPreferences,
         audioStreamIndex: Int? = null,
         subtitleStreamIndex: Int? = null,
+        remoteBitrateLimit: Int? = null,
     ): PlaybackResult {
         val itemId = item.id.toString()
         val serverUrl = repository.getCurrentServerSync()?.url
@@ -212,7 +218,7 @@ class EnhancedPlaybackManager @Inject constructor(
                 deviceCapabilities.canPlayAudioCodecStrict(audioCodec, audioChannels)
             } else true
 
-            if (audioCanBeDirectPlayed && canDirectPlayMediaSource(anySource, item, playbackPreferences, reasons, bypassServerDecision = true)) {
+            if (audioCanBeDirectPlayed && canDirectPlayMediaSource(anySource, item, playbackPreferences, reasons, bypassServerDecision = true, remoteBitrateLimit = remoteBitrateLimit)) {
                 // Audio is fine — server likely incorrectly rejected (e.g. 10-bit HEVC profile)
                 val container = anySource.container ?: "mkv"
                 val url = buildDirectPlayUrl(serverUrl, itemId, anySource.id, container, playSessionId)
@@ -237,7 +243,7 @@ class EnhancedPlaybackManager @Inject constructor(
 
         // Try standard Direct Play
         val directPlaySource = mediaSources.firstOrNull { it.supportsDirectPlay }
-        if (directPlaySource != null && canDirectPlayMediaSource(directPlaySource, item, playbackPreferences, reasons)) {
+        if (directPlaySource != null && canDirectPlayMediaSource(directPlaySource, item, playbackPreferences, reasons, remoteBitrateLimit = remoteBitrateLimit)) {
             val container = directPlaySource.container ?: "mkv"
             val url = buildDirectPlayUrl(serverUrl, itemId, directPlaySource.id, container, playSessionId)
             
@@ -258,7 +264,7 @@ class EnhancedPlaybackManager @Inject constructor(
         }
 
         // Try Direct Stream (audio transcode only)
-        if (canDirectStreamMediaSource(anySource, item, playbackPreferences, reasons)) {
+        if (canDirectStreamMediaSource(anySource, item, playbackPreferences, reasons, remoteBitrateLimit)) {
             reasons.add(ReasonCodes.DIRECT_STREAM_VIDEO_COPY_OK)
             val result = getDirectStreamWithAudioTranscode(
                 item,
@@ -267,6 +273,7 @@ class EnhancedPlaybackManager @Inject constructor(
                 playbackPreferences,
                 audioStreamIndex,
                 subtitleStreamIndex,
+                remoteBitrateLimit,
             )
             
             if (result is PlaybackResult.Transcoding) {
@@ -277,7 +284,7 @@ class EnhancedPlaybackManager @Inject constructor(
 
         // Fallback to Full Transcoding
         reasons.add(ReasonCodes.FULL_TRANSCODE_REQUIRED)
-        val result = getOptimalTranscodingUrl(item, playbackInfo, playbackPreferences, audioStreamIndex, subtitleStreamIndex)
+        val result = getOptimalTranscodingUrl(item, playbackInfo, playbackPreferences, audioStreamIndex, subtitleStreamIndex, remoteBitrateLimit)
         if (result is PlaybackResult.Transcoding) {
             val trace = createTrace(sessionId, "TRANSCODING", "FULL_TRANSCODE", reasons, anySource, deviceCaps, networkClass)
             return result.copy(reasonCodes = reasons, decisionTrace = trace)
@@ -349,6 +356,7 @@ class EnhancedPlaybackManager @Inject constructor(
         playbackPreferences: PlaybackPreferences,
         reasons: MutableList<String>? = null,
         bypassServerDecision: Boolean = false,
+        remoteBitrateLimit: Int? = null,
     ): Boolean {
         if (!bypassServerDecision) {
             if (!mediaSource.supportsDirectPlay && !mediaSource.supportsDirectStream) {
@@ -402,6 +410,11 @@ class EnhancedPlaybackManager @Inject constructor(
 
         // Check network conditions for high-bitrate content
         val bitrate = mediaSource.bitrate ?: 0
+        if (remoteBitrateLimit != null && bitrate > remoteBitrateLimit) {
+            SecureLogger.d(TAG, "❌ Remote server bitrate limit exceeded (bitrate: $bitrate, limit: $remoteBitrateLimit)")
+            reasons?.add(ReasonCodes.NETWORK_BITRATE_EXCEEDED)
+            return false
+        }
         val isNetworkOk = isNetworkSuitableForDirectPlay(bitrate, playbackPreferences)
         if (!isNetworkOk) {
             SecureLogger.d(TAG, "❌ Network conditions not suitable for Direct Play (bitrate: ${bitrate / 1_000_000} Mbps)")
@@ -422,6 +435,7 @@ class EnhancedPlaybackManager @Inject constructor(
         item: BaseItemDto,
         playbackPreferences: PlaybackPreferences,
         reasons: MutableList<String>? = null,
+        remoteBitrateLimit: Int? = null,
     ): Boolean {
         // Check video codec support (REQUIRED for direct stream)
         val videoStream = mediaSource.mediaStreams.findDefaultVideoStream()
@@ -458,6 +472,10 @@ class EnhancedPlaybackManager @Inject constructor(
 
         // Check network conditions
         val bitrate = mediaSource.bitrate ?: 0
+        if (remoteBitrateLimit != null && bitrate > remoteBitrateLimit) {
+            SecureLogger.d(TAG, "❌ Remote server bitrate limit exceeded (bitrate: $bitrate, limit: $remoteBitrateLimit)")
+            return false
+        }
         if (!isNetworkSuitableForDirectPlay(bitrate, playbackPreferences)) {
             SecureLogger.d(TAG, "❌ Network conditions not suitable for Direct Stream (bitrate: ${bitrate / 1_000_000} Mbps)")
             return false
@@ -496,6 +514,7 @@ class EnhancedPlaybackManager @Inject constructor(
         playbackPreferences: PlaybackPreferences,
         audioStreamIndex: Int? = null,
         subtitleStreamIndex: Int? = null,
+        remoteBitrateLimit: Int? = null,
     ): PlaybackResult {
         val itemId = item.id.toString()
         val serverUrl = repository.getCurrentServerSync()?.url
@@ -511,7 +530,7 @@ class EnhancedPlaybackManager @Inject constructor(
         // VideoCodec=copy tells the server to NOT transcode video
         val directStreamUrl = streamRepository.getTranscodedStreamUrl(
             itemId = itemId,
-            maxBitrate = mediaSource.bitrate ?: 20_000_000, // Use source bitrate
+            maxBitrate = minOf(mediaSource.bitrate ?: 20_000_000, remoteBitrateLimit ?: Int.MAX_VALUE), // Use source bitrate within the remote limit
             maxWidth = sourceVideoStream?.width ?: 1920,
             maxHeight = sourceVideoStream?.height ?: 1080,
             videoCodec = "copy", // CRITICAL: This tells server to copy video stream without transcoding
@@ -539,7 +558,7 @@ class EnhancedPlaybackManager @Inject constructor(
 
         return PlaybackResult.Transcoding(
             url = directStreamUrl,
-            targetBitrate = mediaSource.bitrate ?: 20_000_000,
+            targetBitrate = minOf(mediaSource.bitrate ?: 20_000_000, remoteBitrateLimit ?: Int.MAX_VALUE),
             targetResolution = "${sourceVideoStream?.width ?: 1920}x${sourceVideoStream?.height ?: 1080}",
             targetVideoCodec = sourceVideoStream?.codec ?: "h264", // Original codec (video is copied)
             targetAudioCodec = "aac",
@@ -560,6 +579,7 @@ class EnhancedPlaybackManager @Inject constructor(
         playbackPreferences: PlaybackPreferences,
         audioStreamIndex: Int? = null,
         subtitleStreamIndex: Int? = null,
+        remoteBitrateLimit: Int? = null,
     ): PlaybackResult {
         val itemId = item.id.toString()
         val transcodingSource = playbackInfo.mediaSources.firstOrNull {
@@ -629,19 +649,20 @@ class EnhancedPlaybackManager @Inject constructor(
         }
 
         val maxAudioChannels = playbackPreferences.audioChannels.channels ?: 2
+        val maxBitrate = minOf(transcodingParams.maxBitrate, remoteBitrateLimit ?: Int.MAX_VALUE)
 
         SecureLogger.d(
             TAG,
             "Transcoding params: source=${sourceWidth}x$sourceHeight, " +
                 "target=${transcodingParams.maxWidth}x${transcodingParams.maxHeight}, " +
-                "bitrate=${transcodingParams.maxBitrate / 1_000_000}Mbps, " +
+                "bitrate=${maxBitrate / 1_000_000}Mbps, " +
                 "quality=$effectiveQuality, channels=$maxAudioChannels",
         )
 
         // Try primary transcoding URL
         val transcodingUrl = streamRepository.getTranscodedStreamUrl(
             itemId = itemId,
-            maxBitrate = transcodingParams.maxBitrate,
+            maxBitrate = maxBitrate,
             maxWidth = transcodingParams.maxWidth,
             maxHeight = transcodingParams.maxHeight,
             videoCodec = transcodingParams.videoCodec,
@@ -663,7 +684,7 @@ class EnhancedPlaybackManager @Inject constructor(
 
         return PlaybackResult.Transcoding(
             url = transcodingUrl,
-            targetBitrate = transcodingParams.maxBitrate,
+            targetBitrate = maxBitrate,
             targetResolution = "${transcodingParams.maxWidth}x${transcodingParams.maxHeight}",
             targetVideoCodec = transcodingParams.videoCodec,
             targetAudioCodec = transcodingParams.audioCodec,
@@ -688,6 +709,27 @@ class EnhancedPlaybackManager @Inject constructor(
             if (e is CancellationException) throw e
             e.printStackTrace()
             SecureLogger.e(TAG, "Failed to get playback info for item $itemId", e)
+            null
+        }
+    }
+
+    private suspend fun getRemoteBitrateLimit(preferences: PlaybackPreferences): Int? {
+        val server = repository.getCurrentServerSync() ?: return null
+        if (!server.serverType.supportsRemoteBitrateLimit) return null
+
+        return try {
+            val user = (userRepository.getCurrentUser() as? ApiResult.Success)?.data ?: return null
+            val localAddress = (repository.getServerInfo() as? ApiResult.Success)?.data?.localAddress
+            RemoteStreamingQualityPolicy.resolveLimit(
+                serverType = server.serverType,
+                serverUrl = server.url,
+                localAddress = localAddress,
+                remoteBitrateLimit = user.remoteClientBitrateLimit,
+                preferences = preferences,
+            )
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            SecureLogger.w(TAG, "Unable to read remote bitrate policy; using Cinefin playback settings")
             null
         }
     }

@@ -200,6 +200,7 @@ object NetworkModule {
         deviceCapabilities: DeviceCapabilities,
         connectivityChecker: ConnectivityChecker,
         playbackPreferencesRepository: PlaybackPreferencesRepository,
+        userRepository: com.rpeters.jellyfin.data.repository.JellyfinUserRepository,
     ): EnhancedPlaybackManager {
         return EnhancedPlaybackManager(
             context,
@@ -208,6 +209,7 @@ object NetworkModule {
             deviceCapabilities,
             connectivityChecker,
             playbackPreferencesRepository,
+            userRepository,
         )
     }
 
