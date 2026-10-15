@@ -13,24 +13,17 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Test
 
 class PlexTvClientTest {
 
-    private lateinit var server: MockWebServer
-    private lateinit var client: PlexTvClient
-
-    @Before
-    fun setUp() {
-        val identity = mockk<DeviceIdentityProvider>()
-        every { identity.plexClientIdentifier() } returns CLIENT_ID
-        every { identity.clientVersion() } returns "15.104"
-        every { identity.deviceName() } returns "Pixel 9"
-        server = MockWebServer()
-        server.start()
-        client = PlexTvClient(identity, server.url("/").toString())
+    private val identity = mockk<DeviceIdentityProvider> {
+        every { plexClientIdentifier() } returns CLIENT_ID
+        every { clientVersion() } returns VERSION
+        every { deviceName() } returns DEVICE
     }
+    private val server = MockWebServer().apply { start() }
+    private val client = PlexTvClient(identity, server.url("/").toString())
 
     @After
     fun tearDown() {
@@ -61,10 +54,10 @@ class PlexTvClientTest {
         val request = server.takeRequest()
         assertEquals(CLIENT_ID, request.getHeader(PlexClientHeaders.CLIENT_IDENTIFIER))
         assertEquals("Cinefin", request.getHeader(PlexClientHeaders.PRODUCT))
-        assertEquals("15.104", request.getHeader(PlexClientHeaders.VERSION))
+        assertEquals(VERSION, request.getHeader(PlexClientHeaders.VERSION))
         assertEquals("Android", request.getHeader(PlexClientHeaders.PLATFORM))
-        assertEquals("Pixel 9", request.getHeader(PlexClientHeaders.DEVICE))
-        assertEquals("application/json", request.getHeader("Accept"))
+        assertEquals(DEVICE, request.getHeader(PlexClientHeaders.DEVICE))
+        assertEquals(JSON, request.getHeader("Accept"))
         assertNull(request.getHeader(PlexClientHeaders.TOKEN))
         assertNull(request.getHeader("X-Emby-Token"))
     }
@@ -128,8 +121,8 @@ class PlexTvClientTest {
         val shared = servers[1]
         assertFalse(shared.owned)
         assertEquals("alex", shared.sourceTitle)
-        assertEquals("shared-server-token", shared.accessToken)
-        assertFalse(shared.toString().contains("shared-server-token"))
+        assertEquals(SHARED_TOKEN, shared.accessToken)
+        assertFalse(shared.toString().contains(SHARED_TOKEN))
         val request = server.takeRequest()
         assertEquals("/api/v2/resources?includeHttps=1&includeRelay=1", request.path)
         assertEquals(ACCOUNT_TOKEN, request.getHeader(PlexClientHeaders.TOKEN))
@@ -166,11 +159,15 @@ class PlexTvClientTest {
     private fun fixture(name: String, code: Int = 200): MockResponse {
         val body = requireNotNull(javaClass.classLoader?.getResource("plex/plextv/$name")) { "Missing fixture $name" }
             .readText()
-        return MockResponse().setResponseCode(code).setHeader("Content-Type", "application/json").setBody(body)
+        return MockResponse().setResponseCode(code).setHeader("Content-Type", JSON).setBody(body)
     }
 
     private companion object {
         const val CLIENT_ID = "cinefin-test-client"
         const val ACCOUNT_TOKEN = "account-token-standin"
+        const val DEVICE = "Pixel 9"
+        const val VERSION = "15.104"
+        const val JSON = "application/json"
+        const val SHARED_TOKEN = "shared-server-token"
     }
 }

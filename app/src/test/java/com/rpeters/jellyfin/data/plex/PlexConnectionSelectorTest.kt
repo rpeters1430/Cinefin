@@ -15,11 +15,11 @@ class PlexConnectionSelectorTest {
     private val probe = mockk<PlexIdentityProbe>()
     private val selector = PlexConnectionSelector(probe)
 
-    private val remoteHttps = PlexConnection(protocol = "https", uri = REMOTE_HTTPS, local = false)
-    private val localHttps = PlexConnection(protocol = "https", uri = LOCAL_HTTPS, local = true)
-    private val localHttp = PlexConnection(protocol = "http", uri = LOCAL_HTTP, local = true)
-    private val relay = PlexConnection(protocol = "https", uri = RELAY, local = false, relay = true)
-    private val remoteHttp = PlexConnection(protocol = "http", uri = REMOTE_HTTP, local = false)
+    private val remoteHttps = PlexConnection(protocol = HTTPS, uri = REMOTE_HTTPS, local = false)
+    private val localHttps = PlexConnection(protocol = HTTPS, uri = LOCAL_HTTPS, local = true)
+    private val localHttp = PlexConnection(protocol = HTTP, uri = LOCAL_HTTP, local = true)
+    private val relay = PlexConnection(protocol = HTTPS, uri = RELAY, local = false, relay = true)
+    private val remoteHttp = PlexConnection(protocol = HTTP, uri = REMOTE_HTTP, local = false)
 
     @Test
     fun rank_prefersLocalHttpsThenLocalHttpThenRemoteThenRelay() {
@@ -102,6 +102,8 @@ class PlexConnectionSelectorTest {
     )
 
     private companion object {
+        const val HTTPS = "https"
+        const val HTTP = "http"
         const val MACHINE_ID = "machine-owned-1"
         const val LOCAL_HTTPS = "https://10-0-0-5.abc123.plex.direct:32400"
         const val LOCAL_HTTP = "http://10.0.0.5:32400"

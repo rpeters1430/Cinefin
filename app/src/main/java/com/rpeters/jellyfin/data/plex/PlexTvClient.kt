@@ -3,7 +3,6 @@ package com.rpeters.jellyfin.data.plex
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.data.repository.common.ErrorType
 import com.rpeters.jellyfin.network.DeviceIdentityProvider
-import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
@@ -96,8 +95,6 @@ class PlexTvClient internal constructor(
         } else {
             ApiResult.Error(errorMessage(response), errorType = errorType(response.code()))
         }
-    } catch (e: CancellationException) {
-        throw e
     } catch (e: IOException) {
         ApiResult.Error("Could not reach plex.tv", e, ErrorType.NETWORK)
     } catch (e: SerializationException) {
