@@ -1,5 +1,12 @@
 package com.rpeters.jellyfin.data.plex
 
+import com.rpeters.jellyfin.network.JellyfinAuthInterceptor
+import io.mockk.mockk
+import io.mockk.verify
+import kotlinx.coroutines.test.runTest
+import okhttp3.OkHttpClient
+import okhttp3.mockwebserver.MockResponse
+import okhttp3.mockwebserver.MockWebServer
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -37,5 +44,24 @@ class PlexIdentityProbeTest {
             "",
             "{broken",
         ).forEach { assertNull(it, PlexIdentityProbe.parse(it)) }
+    }
+
+    @Test
+    fun probe_skipsTheSessionInterceptor_soNoServerTokenIsSent() = runTest {
+        // Any call into this interceptor fails the test: it would add the signed-in server's token.
+        val sessionInterceptor = mockk<JellyfinAuthInterceptor>()
+        val shared = OkHttpClient.Builder().addInterceptor(sessionInterceptor).build()
+        MockWebServer().use { server ->
+            server.enqueue(MockResponse().setBody("""{"MediaContainer":{"machineIdentifier":"abc123"}}"""))
+            server.start()
+
+            val identity = PlexIdentityProbe(dagger.Lazy { shared }).probe(server.url("/").toString())
+
+            assertEquals("abc123", identity?.machineIdentifier)
+            val request = server.takeRequest()
+            assertNull(request.getHeader("X-Emby-Token"))
+            assertNull(request.getHeader(PlexClientHeaders.TOKEN))
+            verify(exactly = 0) { sessionInterceptor.intercept(any()) }
+        }
     }
 }

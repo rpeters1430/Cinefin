@@ -3,6 +3,7 @@ package com.rpeters.jellyfin.network
 import com.rpeters.jellyfin.data.JellyfinServer
 import com.rpeters.jellyfin.data.common.ids.ServerIdCodec
 import com.rpeters.jellyfin.data.model.ServerType
+import com.rpeters.jellyfin.data.plex.PlexClientHeaders
 import com.rpeters.jellyfin.data.plex.PlexTokenUrls
 import com.rpeters.jellyfin.data.repository.IJellyfinAuthRefreshManager
 import com.rpeters.jellyfin.utils.SecureLogger
@@ -102,22 +103,17 @@ class JellyfinAuthInterceptor @Inject constructor(
         val plexUrl = ServerIdCodec.decodeAllIn(originalUrl)
         if (plexUrl != originalUrl) builder.url(plexUrl)
 
-        builder
+        PlexClientHeaders.applyTo(builder, deviceIdentityProvider)
             .header(HEADER_CONNECTION, "keep-alive")
             .header(HEADER_USER_AGENT, "${deviceIdentityProvider.clientName()}/${deviceIdentityProvider.clientVersion()}")
             .header(HEADER_ACCEPT, "application/json")
-            .header(HEADER_PLEX_CLIENT_IDENTIFIER, deviceIdentityProvider.plexClientIdentifier())
-            .header(HEADER_PLEX_PRODUCT, PLEX_PRODUCT)
-            .header(HEADER_PLEX_VERSION, deviceIdentityProvider.clientVersion())
-            .header(HEADER_PLEX_PLATFORM, PLEX_PLATFORM)
-            .header(HEADER_PLEX_DEVICE, deviceIdentityProvider.deviceName())
             .removeHeader(HEADER_TOKEN)
             .removeHeader(HEADER_AUTHORIZATION)
             .removeHeader(HEADER_MEDIA_BROWSER_AUTHORIZATION)
-            .removeHeader(HEADER_PLEX_TOKEN)
+            .removeHeader(PlexClientHeaders.TOKEN)
 
         if (!token.isNullOrBlank() && PlexTokenUrls.isServerHost(request.url, server)) {
-            builder.header(HEADER_PLEX_TOKEN, token)
+            builder.header(PlexClientHeaders.TOKEN, token)
         }
         return builder.build()
     }
@@ -190,14 +186,6 @@ class JellyfinAuthInterceptor @Inject constructor(
         private const val HEADER_CONNECTION = "Connection"
         private const val HEADER_USER_AGENT = "User-Agent"
         private const val HEADER_ACCEPT = "Accept"
-        private const val HEADER_PLEX_TOKEN = "X-Plex-Token"
-        private const val HEADER_PLEX_CLIENT_IDENTIFIER = "X-Plex-Client-Identifier"
-        private const val HEADER_PLEX_PRODUCT = "X-Plex-Product"
-        private const val HEADER_PLEX_VERSION = "X-Plex-Version"
-        private const val HEADER_PLEX_PLATFORM = "X-Plex-Platform"
-        private const val HEADER_PLEX_DEVICE = "X-Plex-Device"
-        private const val PLEX_PRODUCT = "Cinefin"
-        private const val PLEX_PLATFORM = "Android"
         private const val MAX_AUTH_RETRIES = 3
         private val AUTH_PATHS = listOf("/Users/Authenticate", "/Sessions")
     }

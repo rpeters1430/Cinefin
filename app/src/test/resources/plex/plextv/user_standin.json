@@ -1,0 +1,15 @@
+{
+  "id": 12345678,
+  "uuid": "0a1b2c3d4e5f6a7b",
+  "username": "dana",
+  "title": "dana",
+  "email": "dana@example.com",
+  "thumb": "https://plex.tv/users/0a1b2c3d4e5f6a7b/avatar?c=1",
+  "hasPassword": true,
+  "authToken": "account-token-standin",
+  "subscription": {
+    "active": false,
+    "status": "Inactive",
+    "plan": null
+  }
+}

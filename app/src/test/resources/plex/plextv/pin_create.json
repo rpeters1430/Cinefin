@@ -1,0 +1,13 @@
+{
+  "id": 1297906816,
+  "code": "QPRV",
+  "product": "Cinefin",
+  "trusted": false,
+  "qr": "https://plex.tv/api/v2/pins/qr/QPRV",
+  "clientIdentifier": "cinefin-test-client",
+  "expiresIn": 900,
+  "createdAt": "2026-10-15T22:30:57Z",
+  "expiresAt": "2026-10-15T22:45:57Z",
+  "authToken": null,
+  "newRegistration": null
+}
