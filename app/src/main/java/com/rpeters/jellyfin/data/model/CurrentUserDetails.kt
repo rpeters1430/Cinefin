@@ -5,4 +5,5 @@ data class CurrentUserDetails(
     val primaryImageTag: String?,
     val lastLoginDate: String?,
     val isAdministrator: Boolean,
+    val remoteClientBitrateLimit: Int = 0,
 )

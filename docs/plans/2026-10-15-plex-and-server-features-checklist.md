@@ -37,6 +37,8 @@ Three small changes that make Emby feel native. All land inside `EmbyApiClient` 
 
 ### A3. Respect per-user remote streaming quality
 
+> Implementation submitted for review. The tests cover local connections, remote caps, and Cinefin preference overrides, but Gradle could not run because the required 9.7.1 distribution was unavailable. The manual Emby playback check is still pending. Leave these boxes unchecked until validation passes and the change is merged.
+
 - [ ] Find where Emby 4.9.3 exposes the per-user remote quality setting (user policy or configuration on `/Users/{id}`)
 - [ ] When on a non-local connection, use it as the default max bitrate in `EnhancedPlaybackManager` unless the user picked one in Cinefin
 - [ ] Test: local connection ignores it; remote connection caps the bitrate

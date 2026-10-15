@@ -14,6 +14,7 @@ class ServerTypeCapabilitiesTest {
         val mediaSegments: Boolean,
         val passwordSignIn: Boolean,
         val remotePass: Boolean,
+        val remoteBitrateLimit: Boolean = false,
         val managedUsers: Boolean = false,
         val watchlist: Boolean = false,
         val serverHubs: Boolean = false,
@@ -28,6 +29,7 @@ class ServerTypeCapabilitiesTest {
         mediaSegments = supportsMediaSegments,
         passwordSignIn = supportsPasswordSignIn,
         remotePass = remoteStreamingMayRequirePass,
+        remoteBitrateLimit = supportsRemoteBitrateLimit,
         managedUsers = supportsManagedUsers,
         watchlist = supportsWatchlist,
         serverHubs = providesServerHubs,
@@ -40,14 +42,17 @@ class ServerTypeCapabilitiesTest {
             ServerType.JELLYFIN to Row(
                 syncPlay = true, cinefinPlugin = true, quickConnect = true, favorites = true,
                 mediaSegments = true, passwordSignIn = true, remotePass = false,
+                remoteBitrateLimit = false,
             ),
             ServerType.EMBY to Row(
                 syncPlay = false, cinefinPlugin = false, quickConnect = false, favorites = true,
                 mediaSegments = true, passwordSignIn = true, remotePass = false,
+                remoteBitrateLimit = true,
             ),
             ServerType.PLEX to Row(
                 syncPlay = false, cinefinPlugin = false, quickConnect = false, favorites = false,
                 mediaSegments = false, passwordSignIn = false, remotePass = true,
+                remoteBitrateLimit = false,
             ),
         )
 

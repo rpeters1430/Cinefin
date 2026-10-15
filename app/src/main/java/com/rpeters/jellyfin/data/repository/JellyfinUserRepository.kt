@@ -171,6 +171,7 @@ class JellyfinUserRepository @Inject constructor(
                 primaryImageTag = user.primaryImageTag,
                 lastLoginDate = user.lastLoginDate?.toString(),
                 isAdministrator = user.policy?.isAdministrator == true,
+                remoteClientBitrateLimit = user.policy?.remoteClientBitrateLimit ?: 0,
             )
         }
 

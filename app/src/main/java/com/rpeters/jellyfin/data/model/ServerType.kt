@@ -31,6 +31,9 @@ enum class ServerType {
     /** Streaming away from the server's home network may need the owner's Plex Pass. */
     val remoteStreamingMayRequirePass: Boolean get() = this == PLEX
 
+    /** The server exposes a per-user remote client bitrate limit. */
+    val supportsRemoteBitrateLimit: Boolean get() = this == EMBY
+
     // Server-specific features that are not built yet; each turns on with its feature.
 
     /** Plex Home managed users. */

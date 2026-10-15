@@ -8,6 +8,7 @@ import com.rpeters.jellyfin.data.DeviceCapabilities
 import com.rpeters.jellyfin.data.repository.IJellyfinRepository
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
+import com.rpeters.jellyfin.data.repository.JellyfinUserRepository
 import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.every
@@ -46,6 +47,7 @@ class EnhancedPlaybackManagerTest {
     private lateinit var deviceCapabilities: DeviceCapabilities
     private lateinit var connectivityChecker: com.rpeters.jellyfin.network.ConnectivityChecker
     private lateinit var playbackPreferencesRepository: com.rpeters.jellyfin.data.preferences.PlaybackPreferencesRepository
+    private lateinit var userRepository: JellyfinUserRepository
     private lateinit var connectivityManager: ConnectivityManager
     private lateinit var network: Network
     private lateinit var networkCapabilities: NetworkCapabilities
@@ -63,6 +65,7 @@ class EnhancedPlaybackManagerTest {
         
         connectivityChecker = mockk(relaxed = true)
         playbackPreferencesRepository = mockk(relaxed = true)
+        userRepository = mockk(relaxed = true)
         val prefs = com.rpeters.jellyfin.data.preferences.PlaybackPreferences.DEFAULT
         every { playbackPreferencesRepository.preferences } returns kotlinx.coroutines.flow.MutableStateFlow(prefs)
         every { connectivityChecker.getNetworkType() } returns com.rpeters.jellyfin.network.NetworkType.WIFI
@@ -111,6 +114,7 @@ class EnhancedPlaybackManagerTest {
             deviceCapabilities = deviceCapabilities,
             connectivityChecker = connectivityChecker,
             playbackPreferencesRepository = playbackPreferencesRepository,
+            userRepository = userRepository,
         )
     }
 
@@ -124,6 +128,7 @@ class EnhancedPlaybackManagerTest {
             connectivityManager,
             network,
             networkCapabilities,
+            userRepository,
         )
         unmockkAll()
     }
