@@ -87,7 +87,14 @@ class PlexTvClient internal constructor(
             is ApiResult.Loading -> ApiResult.Loading()
         }
 
+    /** Retrofit throws [SerializationException] for a body it cannot decode. */
     private suspend fun <T> call(request: suspend () -> Response<T>): ApiResult<T> = try {
+        callOrNetworkError(request)
+    } catch (e: SerializationException) {
+        ApiResult.Error("plex.tv sent a response Cinefin could not read", e, ErrorType.SERVER_ERROR)
+    }
+
+    private suspend fun <T> callOrNetworkError(request: suspend () -> Response<T>): ApiResult<T> = try {
         val response = request()
         val body = response.body()
         if (response.isSuccessful && body != null) {
@@ -97,8 +104,6 @@ class PlexTvClient internal constructor(
         }
     } catch (e: IOException) {
         ApiResult.Error("Could not reach plex.tv", e, ErrorType.NETWORK)
-    } catch (e: SerializationException) {
-        ApiResult.Error("plex.tv sent a response Cinefin could not read", e, ErrorType.SERVER_ERROR)
     }
 
     private fun errorMessage(response: Response<*>): String {
