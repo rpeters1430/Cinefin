@@ -55,6 +55,11 @@ class ActiveSessionStore(
                 ?: preferences.remove(PreferencesKeys.EMBY_CONNECT_USER_ID)
             server.embyConnectAccessKey?.let { preferences[PreferencesKeys.EMBY_CONNECT_ACCESS_KEY] = it }
                 ?: preferences.remove(PreferencesKeys.EMBY_CONNECT_ACCESS_KEY)
+            server.plexAccountToken?.let { preferences[PreferencesKeys.PLEX_ACCOUNT_TOKEN] = it }
+                ?: preferences.remove(PreferencesKeys.PLEX_ACCOUNT_TOKEN)
+            server.alternateServerUrls.takeIf { it.isNotEmpty() }
+                ?.let { preferences[PreferencesKeys.ALTERNATE_SERVER_URLS] = it.joinToString(PreferencesKeys.URL_LIST_SEPARATOR) }
+                ?: preferences.remove(PreferencesKeys.ALTERNATE_SERVER_URLS)
         }
     }
 
@@ -72,6 +77,8 @@ class ActiveSessionStore(
             preferences.remove(PreferencesKeys.SESSION_SERVER_TYPE)
             preferences.remove(PreferencesKeys.EMBY_CONNECT_USER_ID)
             preferences.remove(PreferencesKeys.EMBY_CONNECT_ACCESS_KEY)
+            preferences.remove(PreferencesKeys.PLEX_ACCOUNT_TOKEN)
+            preferences.remove(PreferencesKeys.ALTERNATE_SERVER_URLS)
         }
     }
 }

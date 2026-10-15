@@ -76,6 +76,11 @@ object PreferencesKeys {
     val SESSION_SERVER_TYPE = stringPreferencesKey("session_server_type")
     val EMBY_CONNECT_USER_ID = stringPreferencesKey("emby_connect_user_id")
     val EMBY_CONNECT_ACCESS_KEY = stringPreferencesKey("emby_connect_access_key")
+    val PLEX_ACCOUNT_TOKEN = stringPreferencesKey("plex_account_token")
+
+    /** The server's other addresses, in preference order, joined by [URL_LIST_SEPARATOR]. */
+    val ALTERNATE_SERVER_URLS = stringPreferencesKey("alternate_server_urls")
+    const val URL_LIST_SEPARATOR = "\n"
 }
 
 @HiltViewModel
@@ -337,6 +342,11 @@ class ServerConnectionViewModel @Inject constructor(
                             ?: ServerType.JELLYFIN,
                         embyConnectUserId = preferences[PreferencesKeys.EMBY_CONNECT_USER_ID],
                         embyConnectAccessKey = preferences[PreferencesKeys.EMBY_CONNECT_ACCESS_KEY],
+                        plexAccountToken = preferences[PreferencesKeys.PLEX_ACCOUNT_TOKEN],
+                        alternateServerUrls = preferences[PreferencesKeys.ALTERNATE_SERVER_URLS]
+                            ?.split(PreferencesKeys.URL_LIST_SEPARATOR)
+                            ?.filter { it.isNotBlank() }
+                            .orEmpty(),
                     )
                     val connectUserId = restoredServer.embyConnectUserId
                     val connectKey = restoredServer.embyConnectAccessKey
@@ -844,6 +854,8 @@ class ServerConnectionViewModel @Inject constructor(
                 preferences.remove(PreferencesKeys.SESSION_SERVER_TYPE)
                 preferences.remove(PreferencesKeys.EMBY_CONNECT_USER_ID)
                 preferences.remove(PreferencesKeys.EMBY_CONNECT_ACCESS_KEY)
+                preferences.remove(PreferencesKeys.PLEX_ACCOUNT_TOKEN)
+                preferences.remove(PreferencesKeys.ALTERNATE_SERVER_URLS)
             }
             if (currentServer != null && !currentServer.username.isNullOrBlank()) {
                 runCatching {
@@ -874,6 +886,8 @@ class ServerConnectionViewModel @Inject constructor(
                 preferences.remove(PreferencesKeys.SESSION_SERVER_TYPE)
                 preferences.remove(PreferencesKeys.EMBY_CONNECT_USER_ID)
                 preferences.remove(PreferencesKeys.EMBY_CONNECT_ACCESS_KEY)
+                preferences.remove(PreferencesKeys.PLEX_ACCOUNT_TOKEN)
+                preferences.remove(PreferencesKeys.ALTERNATE_SERVER_URLS)
             }
         }
     }
@@ -902,6 +916,11 @@ class ServerConnectionViewModel @Inject constructor(
                     ?: preferences.remove(PreferencesKeys.EMBY_CONNECT_USER_ID)
                 server.embyConnectAccessKey?.let { preferences[PreferencesKeys.EMBY_CONNECT_ACCESS_KEY] = it }
                     ?: preferences.remove(PreferencesKeys.EMBY_CONNECT_ACCESS_KEY)
+                server.plexAccountToken?.let { preferences[PreferencesKeys.PLEX_ACCOUNT_TOKEN] = it }
+                    ?: preferences.remove(PreferencesKeys.PLEX_ACCOUNT_TOKEN)
+                server.alternateServerUrls.takeIf { it.isNotEmpty() }
+                    ?.let { preferences[PreferencesKeys.ALTERNATE_SERVER_URLS] = it.joinToString(PreferencesKeys.URL_LIST_SEPARATOR) }
+                    ?: preferences.remove(PreferencesKeys.ALTERNATE_SERVER_URLS)
             }
             saveProfile(server)
         }

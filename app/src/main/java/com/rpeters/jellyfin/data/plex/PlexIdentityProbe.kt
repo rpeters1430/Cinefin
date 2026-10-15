@@ -1,6 +1,6 @@
 package com.rpeters.jellyfin.data.plex
 
-import kotlinx.coroutines.CancellationException
+import com.rpeters.jellyfin.utils.SecureLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -41,16 +41,18 @@ class PlexIdentityProbe @Inject constructor(
             client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) null else parse(response.body.string())
             }
-        } catch (e: CancellationException) {
-            throw e
         } catch (e: IOException) {
+            // Unreachable or not answering /identity: not a Plex server we can use.
+            SecureLogger.d(TAG, "No Plex identity at this address: ${e.javaClass.simpleName}")
             null
         } catch (e: IllegalArgumentException) {
+            SecureLogger.d(TAG, "Not a usable URL for a Plex probe: ${e.javaClass.simpleName}")
             null
         }
     }
 
     companion object {
+        private const val TAG = "PlexIdentityProbe"
         private const val IDENTITY_PATH = "/identity"
         private const val PROBE_TIMEOUT_SECONDS = 5L
         private val json = Json { ignoreUnknownKeys = true }

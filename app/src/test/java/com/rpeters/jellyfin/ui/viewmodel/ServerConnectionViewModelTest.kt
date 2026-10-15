@@ -805,6 +805,36 @@ class ServerConnectionViewModelTest {
         }
 
     @Test
+    fun sessionRestore_plexSession_keepsAccountTokenAndAlternateUrls() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val profileRepository = mockk<com.rpeters.jellyfin.data.preferences.ServerProfileRepository>(relaxed = true)
+            val saved = slot<com.rpeters.jellyfin.data.model.ServerProfile>()
+            coEvery { profileRepository.saveAndActivate(capture(saved)) } just Runs
+            context.dataStore.edit { preferences ->
+                preferences[SESSION_TOKEN] = "server-token"
+                preferences[SESSION_USER_ID] = "42"
+                preferences[SESSION_SERVER_ID] = "machine-1"
+                preferences[SESSION_LOGIN_TIMESTAMP] = System.currentTimeMillis() - (60 * 60 * 1000L)
+                preferences[PreferencesKeys.SESSION_SERVER_TYPE] = "PLEX"
+                preferences[PreferencesKeys.PLEX_ACCOUNT_TOKEN] = "account-token"
+                preferences[PreferencesKeys.ALTERNATE_SERVER_URLS] =
+                    "https://a.plex.direct:32400\nhttps://b.plex.direct:32400"
+            }
+
+            viewModel = createViewModelWithProfiles(profileRepository)
+            awaitCondition { saved.isCaptured }
+            advanceUntilIdle()
+
+            assertEquals(com.rpeters.jellyfin.data.model.ServerType.PLEX, saved.captured.serverType)
+            assertEquals("account-token", saved.captured.plexAccountToken)
+            assertEquals(
+                listOf("https://a.plex.direct:32400", "https://b.plex.direct:32400"),
+                saved.captured.alternateServerUrls,
+            )
+            viewModel.viewModelScope.cancel()
+        }
+
+    @Test
     fun sessionRestore_staleSession_clearsProfileTokenInsteadOfSavingProfile() =
         runTest(mainDispatcherRule.dispatcher) {
             val profileRepository = mockk<com.rpeters.jellyfin.data.preferences.ServerProfileRepository>(relaxed = true)
