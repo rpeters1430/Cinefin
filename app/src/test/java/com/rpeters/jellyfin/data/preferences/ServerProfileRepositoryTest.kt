@@ -8,16 +8,19 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import com.rpeters.jellyfin.data.JellyfinServer
 import com.rpeters.jellyfin.data.model.ServerProfile
 import com.rpeters.jellyfin.data.model.ServerType
+import com.rpeters.jellyfin.data.security.SecretCipher
 import io.mockk.every
 import io.mockk.mockkObject
 import io.mockk.unmockkAll
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -27,6 +30,7 @@ class ServerProfileRepositoryTest {
 
     private lateinit var dataStore: InMemoryDataStore
     private lateinit var repository: ServerProfileRepository
+    private val cipher = FakeCipher()
 
     private val jellyfinProfile = ServerProfile(
         id = "server-a:user-1",
@@ -52,13 +56,26 @@ class ServerProfileRepositoryTest {
         loginTimestamp = 2_000L,
     )
 
+    private val plexProfile = ServerProfile(
+        id = "machine-1:42",
+        serverId = "machine-1",
+        serverUrl = "https://10-0-0-5.abc.plex.direct:32400",
+        serverName = "Plex",
+        serverType = ServerType.PLEX,
+        userId = "42",
+        username = "dana",
+        accessToken = "server-token",
+        plexAccountToken = "account-token",
+        alternateServerUrls = listOf("https://203-0-113-9.abc.plex.direct:32400"),
+    )
+
     @Before
     fun setUp() {
         // SecureLogger writes through android.util.Log, which is not available on the JVM.
         mockkObject(com.rpeters.jellyfin.utils.SecureLogger)
         every { com.rpeters.jellyfin.utils.SecureLogger.w(any(), any(), any()) } returns Unit
         dataStore = InMemoryDataStore()
-        repository = ServerProfileRepository(dataStore)
+        repository = ServerProfileRepository(dataStore, cipher)
     }
 
     @After
@@ -193,7 +210,7 @@ class ServerProfileRepositoryTest {
         repository.saveAndActivate(jellyfinProfile)
         repository.saveAndActivate(embyProfile)
 
-        val reopened = ServerProfileRepository(dataStore).current()
+        val reopened = ServerProfileRepository(dataStore, cipher).current()
 
         assertEquals(listOf(jellyfinProfile, embyProfile), reopened.profiles)
         assertEquals(embyProfile, reopened.activeProfile)
@@ -240,22 +257,57 @@ class ServerProfileRepositoryTest {
 
     @Test
     fun saveAndActivate_plexProfile_roundTripsPlexFields() = runTest {
-        val plexProfile = ServerProfile(
-            id = "machine-1:42",
-            serverId = "machine-1",
-            serverUrl = "https://10-0-0-5.abc.plex.direct:32400",
-            serverName = "Plex",
-            serverType = ServerType.PLEX,
-            userId = "42",
-            username = "dana",
-            accessToken = "server-token",
-            plexAccountToken = "account-token",
-            alternateServerUrls = listOf("https://203-0-113-9.abc.plex.direct:32400"),
-        )
         repository.saveAndActivate(plexProfile)
 
-        assertEquals(plexProfile, ServerProfileRepository(dataStore).current().activeProfile)
+        assertEquals(plexProfile, ServerProfileRepository(dataStore, cipher).current().activeProfile)
         assertEquals(plexProfile, ServerProfile.fromServer(plexProfile.toJellyfinServer()))
+    }
+
+    @Test
+    fun saveAndActivate_plexProfile_storesAccountTokenEncrypted() = runTest {
+        repository.saveAndActivate(plexProfile)
+
+        val stored = dataStore.data.first()[stringPreferencesKey("profiles")]!!
+        assertFalse(stored.contains("account-token"))
+        assertTrue(stored.contains("enc1:"))
+        assertEquals(plexProfile, repository.current().activeProfile)
+    }
+
+    @Test
+    fun current_plaintextAccountTokenFromEarlierBuild_loadsAndIsEncryptedOnNextWrite() = runTest {
+        dataStore.edit {
+            it[stringPreferencesKey("profiles")] =
+                """[{"id":"machine-1:42","serverUrl":"https://plex.example.com","serverName":"Plex",""" +
+                """"serverType":"PLEX","username":"dana","plexAccountToken":"account-token"}]"""
+        }
+
+        assertEquals("account-token", repository.current().profiles.single().plexAccountToken)
+
+        repository.saveAndActivate(embyProfile)
+        val stored = dataStore.data.first()[stringPreferencesKey("profiles")]!!
+        assertFalse(stored.contains("account-token"))
+    }
+
+    @Test
+    fun current_accountTokenThatNoLongerDecrypts_keepsProfileWithoutToken() = runTest {
+        repository.saveAndActivate(plexProfile)
+        cipher.failDecrypt = true
+
+        val profile = repository.current().activeProfile!!
+
+        assertEquals(plexProfile.copy(plexAccountToken = null), profile)
+    }
+
+    @Test
+    fun saveAndActivate_encryptionFails_dropsTokenInsteadOfStoringPlaintext() = runTest {
+        cipher.failEncrypt = true
+
+        repository.saveAndActivate(plexProfile)
+
+        val stored = dataStore.data.first()[stringPreferencesKey("profiles")]!!
+        assertFalse(stored.contains("account-token"))
+        assertNull(repository.current().activeProfile?.plexAccountToken)
+        assertEquals("server-token", repository.current().activeProfile?.accessToken)
     }
 
     @Test
@@ -327,6 +379,17 @@ class ServerProfileRepositoryTest {
         val server = JellyfinServer(id = "s", name = "n", url = "https://s.example.com", username = null)
 
         assertNull(ServerProfile.fromServer(server))
+    }
+
+    /** Reverses the string so a stored value never contains the plaintext. */
+    private class FakeCipher : SecretCipher {
+        var failEncrypt = false
+        var failDecrypt = false
+
+        override fun encryptValue(value: String): String? = if (failEncrypt) null else value.reversed()
+
+        override fun decryptValue(encryptedValue: String?): String? =
+            if (failDecrypt) null else encryptedValue?.reversed()
     }
 
     private class InMemoryDataStore : DataStore<Preferences> {

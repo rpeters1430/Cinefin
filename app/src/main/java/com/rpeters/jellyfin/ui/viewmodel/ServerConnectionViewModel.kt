@@ -91,7 +91,8 @@ class ServerConnectionViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val dispatchers: DispatcherProvider = DefaultDispatcherProvider(),
     private val demoModeRepository: DemoModeRepository = DemoModeRepository(),
-    private val serverProfileRepository: ServerProfileRepository = ServerProfileRepository(context),
+    private val serverProfileRepository: ServerProfileRepository =
+        ServerProfileRepository(context, com.rpeters.jellyfin.data.security.EncryptedPreferences(context)),
     private val embyConnectClient: Provider<com.rpeters.jellyfin.data.emby.EmbyConnectClient>? = null,
 ) : ViewModel() {
 

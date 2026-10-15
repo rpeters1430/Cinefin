@@ -8,6 +8,8 @@ import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.rpeters.jellyfin.data.model.ServerProfile
+import com.rpeters.jellyfin.data.security.EncryptedPreferences
+import com.rpeters.jellyfin.data.security.SecretCipher
 import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
@@ -42,16 +44,21 @@ data class ServerProfiles(
  * Access tokens are stored the same way the single saved session always was (app-private
  * DataStore), so a profile can be restored at launch without a biometric prompt. Passwords stay
  * in [com.rpeters.jellyfin.data.SecureCredentialManager].
+ *
+ * The Plex account token can list and reach every server on the account, so it is encrypted with
+ * [secretCipher] (Android Keystore, no user authentication) before it is written.
  */
 @Singleton
 class ServerProfileRepository(
     private val dataStore: DataStore<Preferences>,
+    private val secretCipher: SecretCipher,
 ) {
 
     @Inject
     constructor(
         @ApplicationContext context: Context,
-    ) : this(context.serverProfilesDataStore)
+        encryptedPreferences: EncryptedPreferences,
+    ) : this(context.serverProfilesDataStore, encryptedPreferences)
 
     private val json = Json {
         ignoreUnknownKeys = true
@@ -159,15 +166,41 @@ class ServerProfileRepository(
     }
 
     private fun encode(profiles: List<ServerProfile>): String =
-        json.encodeToString(ListSerializer(ServerProfile.serializer()), profiles)
+        json.encodeToString(
+            ListSerializer(ServerProfile.serializer()),
+            profiles.map { it.copy(plexAccountToken = it.plexAccountToken?.let(::encryptSecret)) },
+        )
 
     private fun decode(raw: String): List<ServerProfile> =
         try {
             json.decodeFromString(ListSerializer(ServerProfile.serializer()), raw)
+                .map { it.copy(plexAccountToken = it.plexAccountToken?.let(::decryptSecret)) }
         } catch (e: SerializationException) {
             SecureLogger.w(TAG, "Saved server profiles could not be read, starting with an empty list", e)
             emptyList()
         }
+
+    /** Never falls back to plaintext: a token that cannot be encrypted is dropped and must be signed in again. */
+    private fun encryptSecret(value: String): String? {
+        val encrypted = secretCipher.encryptValue(value)
+        if (encrypted == null) {
+            SecureLogger.w(TAG, "Could not encrypt the Plex account token; it will not be saved")
+            return null
+        }
+        return ENCRYPTED_PREFIX + encrypted
+    }
+
+    /**
+     * Values without the prefix were written before encryption (debug builds only) and are read
+     * as-is; the next write encrypts them. A value that no longer decrypts (key lost after a
+     * restore to a new device) becomes null so the profile asks for sign-in again.
+     */
+    private fun decryptSecret(stored: String): String? {
+        if (!stored.startsWith(ENCRYPTED_PREFIX)) return stored
+        return secretCipher.decryptValue(stored.removePrefix(ENCRYPTED_PREFIX)).also {
+            if (it == null) SecureLogger.w(TAG, "Saved Plex account token could not be decrypted")
+        }
+    }
 
     private object Keys {
         val PROFILES = stringPreferencesKey("profiles")
@@ -176,5 +209,6 @@ class ServerProfileRepository(
 
     companion object {
         private const val TAG = "ServerProfileRepository"
+        private const val ENCRYPTED_PREFIX = "enc1:"
     }
 }

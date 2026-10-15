@@ -59,7 +59,7 @@ import javax.inject.Singleton
 @Singleton
 class EncryptedPreferences @Inject constructor(
     private val context: Context,
-) {
+) : SecretCipher {
 
     companion object {
         private const val TAG = "EncryptedPreferences"
@@ -137,7 +137,7 @@ class EncryptedPreferences @Inject constructor(
      * @param value The plaintext value to encrypt
      * @return Base64 encoded (IV + ciphertext), or null on error
      */
-    fun encryptValue(value: String): String? {
+    override fun encryptValue(value: String): String? {
         if (value.isEmpty()) return null
 
         return try {
@@ -192,7 +192,7 @@ class EncryptedPreferences @Inject constructor(
      * @param encryptedValue Base64 encoded (IV + ciphertext)
      * @return Decrypted plaintext value, or null on error
      */
-    fun decryptValue(encryptedValue: String?): String? {
+    override fun decryptValue(encryptedValue: String?): String? {
         if (encryptedValue.isNullOrEmpty()) return null
 
         return try {
