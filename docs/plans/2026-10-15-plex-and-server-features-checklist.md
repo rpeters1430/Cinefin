@@ -19,7 +19,7 @@ Conventions for every task:
 
 _Last updated: 2026-10-15_
 
-**Done in code**: A1 and A2 code tasks, A3 (remote bitrate cap, merged), and every Phase 1 code task, including Keystore encryption of the stored Plex account token.
+**Done in code**: A1 and A2 code tasks, A3 (remote bitrate cap, merged in #1356), and every Phase 1 code task. The last one, Keystore encryption of the stored Plex account token, is in review in #1359.
 
 **What blocks the next code work**: everything left before Phase 2 needs real servers. These steps have to be done by hand:
 
@@ -122,7 +122,7 @@ Nothing user-visible changes in this phase; the exit test is that Jellyfin and E
 
 ### Profiles
 
-- [x] Add to `ServerProfile`: `plexAccountToken` (encrypted), alternate connection URIs; all default to null/empty (`ServerProfileRepository` encrypts the token with `EncryptedPreferences` (Android Keystore AES-GCM, no user auth) behind an `enc1:` prefix. If encryption fails the token is dropped rather than stored as plaintext. A token that no longer decrypts loads as null and asks for sign-in again)
+- [x] Add to `ServerProfile`: `plexAccountToken` (encrypted), alternate connection URIs; all default to null/empty (`ServerProfileRepository` encrypts the token with `EncryptedPreferences` (Android Keystore AES-GCM, no user auth) behind an `enc1:` prefix. If encryption fails the token is dropped rather than stored as plaintext. A token that no longer decrypts loads as null and asks for sign-in again; #1359)
 - [x] App-wide `plexClientIdentifier` (generated once, persisted) (`DeviceIdentityProvider.plexClientIdentifier()`, kept in app-private SharedPreferences)
 - [x] Test: profiles saved by the current release still load unchanged
 
