@@ -15,6 +15,20 @@ Conventions for every task:
 - Every mapper or translator change ships with a fixture-driven unit test in `app/src/test/.../data/<server>/`.
 - After each phase, run the Jellyfin and Emby smoke checklists in the Rollout section.
 
+## Status and next step
+
+_Last updated: 2026-10-15_
+
+**Done in code**: A1 and A2 code tasks, A3 (remote bitrate cap, merged in #1356), and every Phase 1 code task. The last one, Keystore encryption of the stored Plex account token, is in review in #1359.
+
+**What blocks the next code work**: everything left before Phase 2 needs real servers. These steps have to be done by hand:
+
+1. **Phase 0 spike** (blocks all Plex work): capture the plex.tv and PMS responses listed under Phase 0 into `app/src/test/resources/plex/`, then record the KD6 decision (JWT or legacy token) in the plan.
+2. **Track A manual checks on Emby**: capture a real `/Items/{id}?Fields=Chapters` response and a mixed library to replace the hand-written fixtures. Then check skip intro/credits and the remote bitrate cap on a real Emby server.
+3. **Phase 1 exit**: run the Jellyfin and Emby smoke checklists (Rollout section).
+
+**Next code step** once the Phase 0 fixtures exist: Phase 2, starting with `PlexTvClient` and `PlexModels` and their fixture tests. These are written against the captured `/api/v2/pins`, `/api/v2/user` and `/api/v2/resources` responses.
+
 ## Track A: Emby quick wins
 
 Three small changes that make Emby feel native. All land inside `EmbyApiClient` or existing settings, with no new screens.
@@ -37,11 +51,10 @@ Three small changes that make Emby feel native. All land inside `EmbyApiClient` 
 
 ### A3. Respect per-user remote streaming quality
 
-> Implementation submitted for review. The tests cover local connections, remote caps, and Cinefin preference overrides, but Gradle could not run because the required 9.7.1 distribution was unavailable. The manual Emby playback check is still pending. Leave these boxes unchecked until validation passes and the change is merged.
-
-- [ ] Find where Emby 4.9.3 exposes the per-user remote quality setting (user policy or configuration on `/Users/{id}`)
-- [ ] When on a non-local connection, use it as the default max bitrate in `EnhancedPlaybackManager` unless the user picked one in Cinefin
-- [ ] Test: local connection ignores it; remote connection caps the bitrate
+- [x] Find where Emby 4.9.3 exposes the per-user remote quality setting (user policy or configuration on `/Users/{id}`) (`Policy.RemoteClientBitrateLimit`, read into `CurrentUserDetails.remoteClientBitrateLimit`; gated by `ServerType.supportsRemoteBitrateLimit`)
+- [x] When on a non-local connection, use it as the default max bitrate in `EnhancedPlaybackManager` unless the user picked one in Cinefin (`RemoteStreamingQualityPolicy`; any non-default Cinefin quality or bitrate wins)
+- [x] Test: local connection ignores it; remote connection caps the bitrate (`RemoteStreamingQualityPolicyTest`)
+- [ ] Manual check: off-LAN playback on Emby is capped at the user's remote limit; on LAN it is not
 
 ## Track B, Phase 0: Plex spike and fixtures
 
@@ -109,7 +122,7 @@ Nothing user-visible changes in this phase; the exit test is that Jellyfin and E
 
 ### Profiles
 
-- [ ] Add to `ServerProfile`: `plexAccountToken` (encrypted), alternate connection URIs; all default to null/empty (fields added and round-tripped; the token is stored like `accessToken` for now, Keystore encryption still to do)
+- [x] Add to `ServerProfile`: `plexAccountToken` (encrypted), alternate connection URIs; all default to null/empty (`ServerProfileRepository` encrypts the token with `EncryptedPreferences` (Android Keystore AES-GCM, no user auth) behind an `enc1:` prefix. If encryption fails the token is dropped rather than stored as plaintext. A token that no longer decrypts loads as null and asks for sign-in again; #1359)
 - [x] App-wide `plexClientIdentifier` (generated once, persisted) (`DeviceIdentityProvider.plexClientIdentifier()`, kept in app-private SharedPreferences)
 - [x] Test: profiles saved by the current release still load unchanged
 

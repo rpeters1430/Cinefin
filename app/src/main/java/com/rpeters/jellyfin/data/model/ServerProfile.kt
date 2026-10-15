@@ -23,7 +23,8 @@ data class ServerProfile(
     val isAdministrator: Boolean = false,
     /**
      * Plex only: the plex.tv account token, used for plex.tv calls (server list, sign-out) and
-     * never sent to the media server, which gets [accessToken]. Stored like [accessToken].
+     * never sent to the media server, which gets [accessToken]. Encrypted at rest by
+     * [com.rpeters.jellyfin.data.preferences.ServerProfileRepository].
      */
     val plexAccountToken: String? = null,
     /** Other addresses the same server answers on (Plex lists local, remote and relay ones). */
