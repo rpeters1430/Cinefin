@@ -404,7 +404,7 @@ class ServerProfileRepositoryTest {
 
         override fun decryptValue(encryptedValue: String?): String? {
             // android.util.Base64 throws IllegalArgumentException for malformed input.
-            if (throwOnDecrypt) throw IllegalArgumentException("bad base-64")
+            require(!throwOnDecrypt) { "bad base-64" }
             return if (failDecrypt) null else encryptedValue?.reversed()
         }
     }

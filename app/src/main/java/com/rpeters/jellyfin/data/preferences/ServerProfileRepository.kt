@@ -201,7 +201,8 @@ class ServerProfileRepository(
         val decrypted = try {
             secretCipher.decryptValue(stored.removePrefix(ENCRYPTED_PREFIX))
         } catch (e: IllegalArgumentException) {
-            null
+            SecureLogger.w(TAG, "Saved Plex account token is malformed", e)
+            return null
         }
         if (decrypted == null) SecureLogger.w(TAG, "Saved Plex account token could not be decrypted")
         return decrypted
