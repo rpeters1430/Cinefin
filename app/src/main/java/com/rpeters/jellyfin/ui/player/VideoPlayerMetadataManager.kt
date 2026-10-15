@@ -1,6 +1,6 @@
 package com.rpeters.jellyfin.ui.player
 
-import com.rpeters.jellyfin.data.emby.ServerIdCodec
+import com.rpeters.jellyfin.data.common.ids.ServerIdCodec
 import androidx.media3.common.util.UnstableApi
 import com.rpeters.jellyfin.data.repository.IJellyfinRepository
 import com.rpeters.jellyfin.utils.SecureLogger

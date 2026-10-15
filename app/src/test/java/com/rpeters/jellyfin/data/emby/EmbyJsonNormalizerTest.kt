@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.data.emby
 
+import com.rpeters.jellyfin.data.common.ids.ServerIdCodec
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import org.jellyfin.sdk.model.api.AuthenticationResult

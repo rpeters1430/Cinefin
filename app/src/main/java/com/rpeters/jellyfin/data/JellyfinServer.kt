@@ -22,6 +22,8 @@ data class JellyfinServer(
     val serverType: ServerType = ServerType.JELLYFIN,
     val embyConnectUserId: String? = null,
     val embyConnectAccessKey: String? = null,
+    val plexAccountToken: String? = null,
+    val alternateServerUrls: List<String> = emptyList(),
 )
 
 @Serializable

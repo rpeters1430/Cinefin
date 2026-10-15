@@ -53,6 +53,7 @@ import com.rpeters.jellyfin.data.model.DiscoveredServer
 import com.rpeters.jellyfin.data.model.ServerProfile
 import com.rpeters.jellyfin.data.model.ServerType
 import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
+import com.rpeters.jellyfin.ui.components.labelRes
 import com.rpeters.jellyfin.ui.components.tv.TvImmersiveBackground
 import com.rpeters.jellyfin.ui.theme.CinefinTvTheme
 import androidx.tv.material3.Button as TvButton
@@ -84,8 +85,12 @@ fun TvServerConnectionScreen(
     var showPassword by remember { mutableStateOf(false) }
     var passwordFocused by remember { mutableStateOf(false) }
 
-    val isEmby = detectedServerType == ServerType.EMBY ||
-        discoveredServers.find { it.address.equals(serverUrl, ignoreCase = true) }?.serverType == ServerType.EMBY
+    val serverTypes = listOfNotNull(
+        detectedServerType,
+        discoveredServers.find { it.address.equals(serverUrl, ignoreCase = true) }?.serverType,
+    )
+    val isEmby = ServerType.EMBY in serverTypes
+    val supportsQuickConnect = serverTypes.all { it.supportsQuickConnect }
 
     val serverUrlFocusRequester = remember { FocusRequester() }
     val usernameFocusRequester = remember { FocusRequester() }
@@ -192,12 +197,7 @@ fun TvServerConnectionScreen(
                                             color = Color.White.copy(alpha = 0.7f),
                                             maxLines = 1,
                                         )
-                                        val typeLabel = stringResource(
-                                            id = when (profile.serverType) {
-                                                ServerType.JELLYFIN -> R.string.server_type_jellyfin
-                                                ServerType.EMBY -> R.string.server_type_emby
-                                            },
-                                        )
+                                        val typeLabel = stringResource(id = profile.serverType.labelRes)
                                         TvText(
                                             text = typeLabel,
                                             style = TvMaterialTheme.typography.labelSmall,
@@ -250,12 +250,7 @@ fun TvServerConnectionScreen(
                                             color = Color.White.copy(alpha = 0.6f),
                                             maxLines = 1,
                                         )
-                                        val typeLabel = stringResource(
-                                            id = when (server.serverType) {
-                                                ServerType.JELLYFIN -> R.string.server_type_jellyfin
-                                                ServerType.EMBY -> R.string.server_type_emby
-                                            },
-                                        )
+                                        val typeLabel = stringResource(id = server.serverType.labelRes)
                                         TvText(
                                             text = typeLabel,
                                             style = TvMaterialTheme.typography.labelSmall,
@@ -370,7 +365,7 @@ fun TvServerConnectionScreen(
                                 onDone = {
                                     if (serverUrl.isNotBlank() && username.isNotBlank() && password.isNotBlank()) {
                                         connectButtonFocusRequester.requestFocus()
-                                    } else if (!isEmby) {
+                                    } else if (supportsQuickConnect) {
                                         quickConnectButtonFocusRequester.requestFocus()
                                     } else {
                                         connectButtonFocusRequester.requestFocus()
@@ -389,7 +384,7 @@ fun TvServerConnectionScreen(
                                             Key.DirectionDown -> {
                                                 if (serverUrl.isNotBlank() && username.isNotBlank() && password.isNotBlank()) {
                                                     connectButtonFocusRequester.requestFocus()
-                                                } else if (!isEmby) {
+                                                } else if (supportsQuickConnect) {
                                                     quickConnectButtonFocusRequester.requestFocus()
                                                 } else {
                                                     connectButtonFocusRequester.requestFocus()
@@ -428,7 +423,7 @@ fun TvServerConnectionScreen(
                     }
                 }
 
-                if (!isEmby) {
+                if (supportsQuickConnect) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -462,7 +457,7 @@ fun TvServerConnectionScreen(
 
                 Row(
                     modifier = Modifier
-                        .fillMaxWidth(if (isEmby) 0.5f else 0.85f)
+                        .fillMaxWidth(if (supportsQuickConnect) 0.85f else 0.5f)
                         .padding(horizontal = PaddingValues(horizontal = tvLayout.drawerPadding).calculateLeftPadding(layoutDirection = androidx.compose.ui.unit.LayoutDirection.Ltr)),
                     horizontalArrangement = Arrangement.spacedBy(tvLayout.drawerItemSpacing, Alignment.CenterHorizontally),
                 ) {
@@ -505,7 +500,7 @@ fun TvServerConnectionScreen(
                         }
                     }
 
-                    if (!isEmby) {
+                    if (supportsQuickConnect) {
                         TvButton(
                             onClick = {
                                 Log.d("TvServerConnectionScreen", "Quick Connect button clicked")

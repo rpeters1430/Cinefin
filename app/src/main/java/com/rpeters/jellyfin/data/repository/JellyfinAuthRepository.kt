@@ -46,6 +46,8 @@ class JellyfinAuthRepository @Inject constructor(
     private val embyAuthDataSource: Provider<EmbyAuthDataSource>? = null,
     private val isEmbySupportEnabled: () -> Boolean = { false },
     private val embyConnectClient: Provider<com.rpeters.jellyfin.data.emby.EmbyConnectClient>? = null,
+    private val plexIdentityProbe: Provider<com.rpeters.jellyfin.data.plex.PlexIdentityProbe>? = null,
+    private val isPlexSupportEnabled: () -> Boolean = { false },
 ) : IJellyfinAuthRepository, TokenProvider {
     private val authMutex = Mutex()
 
@@ -107,6 +109,9 @@ class JellyfinAuthRepository @Inject constructor(
     override suspend fun testServerConnection(serverUrl: String): ApiResult<PublicSystemInfo> {
         SecureLogger.d(TAG, "testServerConnection: Testing connection for $serverUrl using optimizer")
         val result = connectionOptimizerProvider.get().testServerConnection(serverUrl)
+        if (result is ApiResult.Error) {
+            detectPlex(serverUrl)?.let { return it }
+        }
         if (result is ApiResult.Success) {
             val serverVersion = result.data.version
             val serverType = ServerType.detect(result.data.productName, serverVersion)
@@ -141,6 +146,25 @@ class JellyfinAuthRepository @Inject constructor(
     private fun isServerVersionSupported(version: String?): Boolean {
         val majorVersion = version?.substringBefore('.')?.toIntOrNull() ?: return true
         return majorVersion >= Constants.ServerCompatibility.MIN_SUPPORTED_SERVER_MAJOR_VERSION
+    }
+
+    /**
+     * Plex does not answer `/System/Info/Public`, so a URL that failed the Jellyfin/Emby probe is
+     * checked for a Plex `/identity`.
+     *
+     * @return the error to show for a Plex server, or null when [serverUrl] is not one.
+     */
+    private suspend fun detectPlex(serverUrl: String): ApiResult.Error<PublicSystemInfo>? {
+        val identity = plexIdentityProbe?.get()?.probe(serverUrl) ?: return null
+        probedServerTypes[normalizeServerUrl(serverUrl)] = ServerType.PLEX
+        SecureLogger.i(TAG, "testServerConnection: Plex server found (version ${identity.version ?: "unknown"})")
+        // Sign in with Plex arrives in a later phase; until then both states explain themselves.
+        val message = if (isPlexSupportEnabled()) {
+            "This is a Plex server. Sign in with Plex is not available in this build yet."
+        } else {
+            "This is a Plex server. Plex support is not available yet."
+        }
+        return ApiResult.Error(message = message, errorType = ErrorType.UNSUPPORTED_SERVER_VERSION)
     }
 
     /** @return the reason an Emby server cannot be used, or null when it can. */

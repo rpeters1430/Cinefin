@@ -1,6 +1,6 @@
 package com.rpeters.jellyfin.data.playback
 
-import com.rpeters.jellyfin.data.emby.ServerIdCodec
+import com.rpeters.jellyfin.data.common.ids.ServerIdCodec
 import android.content.Context
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.DeviceCapabilities

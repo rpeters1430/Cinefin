@@ -907,7 +907,8 @@ open class JellyfinRepository @Inject constructor(
     }
 
     override suspend fun getMediaSegments(itemId: String): ApiResult<List<org.jellyfin.sdk.model.api.MediaSegmentDto>> {
-        return withServerClient("getMediaSegments") { _, client ->
+        return withServerClient("getMediaSegments") { server, client ->
+            if (!server.serverType.supportsMediaSegments) return@withServerClient emptyList()
             // The Media Segments API is only available on Jellyfin 10.9+ with a
             // segment provider (e.g. Intro Skipper) installed. Older/unconfigured
             // servers respond with 404/503, which would otherwise flood error

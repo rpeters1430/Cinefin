@@ -167,11 +167,12 @@ class MainAppViewModelHomeVideoLoadTest {
         viewModel.loadLibraryTypeData(unknownLibrary, LibraryType.STUFF)
         advanceUntilIdle()
 
-        // Then - API was called with itemTypes filter (not null), including Folder for browsing
+        // Then - API was called with itemTypes filter (not null), including Folder for browsing,
+        // and Movie/Series because a library with no type is a mixed Movies + Shows library
         coVerify(exactly = 1) {
             mediaRepository.getLibraryItems(
                 parentId = libraryId.toString(),
-                itemTypes = "Book,AudioBook,Video,Folder",
+                itemTypes = "Book,AudioBook,Video,Folder,Movie,Series",
                 collectionType = null,
             )
         }

@@ -165,12 +165,7 @@ private fun ServerProfileRow(
     onSwitch: () -> Unit,
     onRemove: () -> Unit,
 ) {
-    val typeLabel = stringResource(
-        id = when (profile.serverType) {
-            ServerType.JELLYFIN -> R.string.server_type_jellyfin
-            ServerType.EMBY -> R.string.server_type_emby
-        },
-    )
+    val typeLabel = stringResource(id = profile.serverType.labelRes)
     val switchLabel = stringResource(id = R.string.server_profiles_switch_to, profile.username, profile.displayServerName())
 
     Row(

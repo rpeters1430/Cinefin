@@ -18,6 +18,7 @@ import com.rpeters.jellyfin.utils.getRatingAsDouble
 import com.rpeters.jellyfin.utils.hasHighRating
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
+import org.jellyfin.sdk.model.api.CollectionType
 
 /**
  * Shared constants for library screens.
@@ -119,6 +120,19 @@ enum class LibraryType(
         color = BookPurple,
         itemKinds = listOf(BaseItemKind.BOOK, BaseItemKind.AUDIO_BOOK, BaseItemKind.VIDEO, BaseItemKind.FOLDER),
     ),
+    ;
+
+    /**
+     * The item kinds to request from a library of this type. A library with no collection type
+     * is a mixed folder (Jellyfin "Mixed Movies and Shows", Emby "Mixed content"); it is opened
+     * as [STUFF] and must also list its movies and series.
+     */
+    fun itemKindsFor(collectionType: CollectionType?): List<BaseItemKind> =
+        if (this == STUFF && collectionType == null) itemKinds + MIXED_LIBRARY_KINDS else itemKinds
+
+    private companion object {
+        val MIXED_LIBRARY_KINDS = listOf(BaseItemKind.MOVIE, BaseItemKind.SERIES)
+    }
 }
 
 /**

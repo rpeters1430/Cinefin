@@ -1,0 +1,28 @@
+{
+  "Items": [
+    {
+      "Name": "Movies",
+      "ServerId": "6f8e3c2b9a0d4e1f8c7b6a5d4e3f2a1b",
+      "Id": "5",
+      "Type": "CollectionFolder",
+      "CollectionType": "movies",
+      "IsFolder": true
+    },
+    {
+      "Name": "Everything",
+      "ServerId": "6f8e3c2b9a0d4e1f8c7b6a5d4e3f2a1b",
+      "Id": "9",
+      "Type": "CollectionFolder",
+      "CollectionType": "mixed",
+      "IsFolder": true
+    },
+    {
+      "Name": "No Type",
+      "ServerId": "6f8e3c2b9a0d4e1f8c7b6a5d4e3f2a1b",
+      "Id": "11",
+      "Type": "CollectionFolder",
+      "IsFolder": true
+    }
+  ],
+  "TotalRecordCount": 3
+}

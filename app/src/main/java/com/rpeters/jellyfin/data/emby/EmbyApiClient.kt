@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.data.emby
 
+import com.rpeters.jellyfin.data.common.ids.ServerIdCodec
 import com.rpeters.jellyfin.utils.SecureLogger
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
@@ -20,6 +21,7 @@ import org.jellyfin.sdk.model.ClientInfo
 import org.jellyfin.sdk.model.DeviceInfo
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemDtoQueryResult
+import org.jellyfin.sdk.model.api.MediaSegmentDtoQueryResult
 import org.jellyfin.sdk.model.api.PlaybackInfoResponse
 import org.jellyfin.sdk.model.api.PublicSystemInfo
 import org.jellyfin.sdk.model.api.SessionInfoDto
@@ -70,7 +72,8 @@ class EmbyApiClient(
         route?.cannedResponse?.let { return RawResponse(it.toByteArray(), HTTP_OK, emptyMap()) }
 
         val embyPathParameters = pathParameters.mapValues { toEmbyParameter(it.value) }.toMutableMap()
-        val embyQueryParameters = queryParameters.mapValues { toEmbyParameter(it.value) }.toMutableMap()
+        val embyQueryParameters = (route?.fixedQuery ?: queryParameters.mapValues { toEmbyParameter(it.value) })
+            .toMutableMap()
         if (route?.listsItems == true) {
             embyQueryParameters[FIELDS_PARAMETER] = withListFields(embyQueryParameters[FIELDS_PARAMETER])
         }
@@ -160,12 +163,15 @@ class EmbyApiClient(
  * @param cannedResponse returned without contacting the server, for features Emby does not have.
  * @param reshape adjusts the parsed response before normalizing; receives the request's item ID.
  * @param listsItems true for item queries, which need the list fields Emby omits by default.
+ * @param fixedQuery sent instead of the SDK's query parameters, for routes served by a different
+ *   Emby call whose parameters have nothing in common with the SDK's.
  */
 internal class EmbyRoute(
     val embyPath: String? = null,
     val response: KSerializer<*>? = null,
     val cannedResponse: String? = null,
     val listsItems: Boolean = false,
+    val fixedQuery: Map<String, Any?>? = null,
     val reshape: (JsonElement, String?) -> JsonElement = { element, _ -> element },
 ) {
     companion object {
@@ -272,10 +278,23 @@ internal class EmbyRoute(
                 },
             ),
 
-            // Jellyfin-only: intro and credit segments. Emby marks these on chapters instead.
-            "/MediaSegments/{itemId}" to EmbyRoute(cannedResponse = """{"Items":[],"TotalRecordCount":0,"StartIndex":0}"""),
+            // Jellyfin's intro and credit segments; Emby marks these on the item's chapters.
+            "/MediaSegments/{itemId}" to EmbyRoute(
+                embyPath = "/Users/{userId}/Items/{itemId}",
+                response = MediaSegmentDtoQueryResult.serializer(),
+                fixedQuery = mapOf("Fields" to "Chapters"),
+                reshape = { element, itemId ->
+                    val segments = itemId?.let { EmbyMediaSegments.fromItem(element, it) }.orEmpty()
+                    segmentJson.encodeToJsonElement(
+                        MediaSegmentDtoQueryResult.serializer(),
+                        MediaSegmentDtoQueryResult(items = segments, totalRecordCount = segments.size, startIndex = 0),
+                    )
+                },
+            ),
         )
 
         fun find(pathTemplate: String): EmbyRoute? = routes[pathTemplate]
+
+        private val segmentJson = Json { encodeDefaults = true }
     }
 }

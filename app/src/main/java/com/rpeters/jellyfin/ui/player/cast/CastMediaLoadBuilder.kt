@@ -1,6 +1,6 @@
 package com.rpeters.jellyfin.ui.player.cast
 
-import com.rpeters.jellyfin.data.emby.ServerIdCodec
+import com.rpeters.jellyfin.data.common.ids.ServerIdCodec
 import android.net.Uri
 import androidx.core.net.toUri
 import androidx.media3.common.util.UnstableApi

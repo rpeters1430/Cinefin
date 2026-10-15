@@ -412,7 +412,7 @@ class JellyfinStreamRepositoryTest {
     // Emby item IDs are carried as ServerIdCodec UUIDs; URLs must name the item by Emby's number,
     // because not every consumer (Chromecast, DLNA) sends them through the app's HTTP client.
 
-    private val embyItemId = com.rpeters.jellyfin.data.emby.ServerIdCodec.encode("1035")!!
+    private val embyItemId = com.rpeters.jellyfin.data.common.ids.ServerIdCodec.encode("1035")!!
 
     @Test
     fun streamUrls_forEmbyItem_useEmbyNumericId() {
