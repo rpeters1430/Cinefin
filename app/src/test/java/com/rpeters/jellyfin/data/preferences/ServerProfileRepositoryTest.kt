@@ -31,6 +31,7 @@ class ServerProfileRepositoryTest {
     private lateinit var dataStore: InMemoryDataStore
     private lateinit var repository: ServerProfileRepository
     private val cipher = FakeCipher()
+    private val profilesKey = stringPreferencesKey("profiles")
 
     private val jellyfinProfile = ServerProfile(
         id = "server-a:user-1",
@@ -218,7 +219,7 @@ class ServerProfileRepositoryTest {
 
     @Test
     fun current_corruptStoredJson_returnsEmptyInsteadOfThrowing() = runTest {
-        dataStore.edit { it[stringPreferencesKey("profiles")] = "{not json" }
+        dataStore.edit { it[profilesKey] = "{not json" }
 
         assertTrue(repository.current().profiles.isEmpty())
     }
@@ -226,7 +227,7 @@ class ServerProfileRepositoryTest {
     @Test
     fun current_unknownServerTypeAndExtraFields_fallsBackToJellyfin() = runTest {
         dataStore.edit {
-            it[stringPreferencesKey("profiles")] =
+            it[profilesKey] =
                 """[{"id":"x:y","serverUrl":"https://s.example.com","serverName":"S","serverType":"FUTURE_SERVER",""" +
                 """"username":"carol","futureField":true}]"""
         }
@@ -241,7 +242,7 @@ class ServerProfileRepositoryTest {
     fun current_profileSavedByPreviousRelease_loadsWithPlexFieldsEmpty() = runTest {
         // The exact shape the release before Plex support writes.
         dataStore.edit {
-            it[stringPreferencesKey("profiles")] =
+            it[profilesKey] =
                 """[{"id":"server-b:user-2","serverId":"server-b","serverUrl":"https://emby.example.com",""" +
                 """"serverName":"Home Emby","serverType":"EMBY","userId":"user-2","username":"bob",""" +
                 """"accessToken":"token-b","loginTimestamp":2000,"isAdministrator":false}]"""
@@ -267,7 +268,7 @@ class ServerProfileRepositoryTest {
     fun saveAndActivate_plexProfile_storesAccountTokenEncrypted() = runTest {
         repository.saveAndActivate(plexProfile)
 
-        val stored = dataStore.data.first()[stringPreferencesKey("profiles")]!!
+        val stored = storedProfilesJson()
         assertFalse(stored.contains("account-token"))
         assertTrue(stored.contains("enc1:"))
         assertEquals(plexProfile, repository.current().activeProfile)
@@ -276,7 +277,7 @@ class ServerProfileRepositoryTest {
     @Test
     fun current_plaintextAccountTokenFromEarlierBuild_loadsAndIsEncryptedOnNextWrite() = runTest {
         dataStore.edit {
-            it[stringPreferencesKey("profiles")] =
+            it[profilesKey] =
                 """[{"id":"machine-1:42","serverUrl":"https://plex.example.com","serverName":"Plex",""" +
                 """"serverType":"PLEX","username":"dana","plexAccountToken":"account-token"}]"""
         }
@@ -284,7 +285,7 @@ class ServerProfileRepositoryTest {
         assertEquals("account-token", repository.current().profiles.single().plexAccountToken)
 
         repository.saveAndActivate(embyProfile)
-        val stored = dataStore.data.first()[stringPreferencesKey("profiles")]!!
+        val stored = storedProfilesJson()
         assertFalse(stored.contains("account-token"))
     }
 
@@ -293,7 +294,7 @@ class ServerProfileRepositoryTest {
         repository.saveAndActivate(plexProfile)
         cipher.failDecrypt = true
 
-        val profile = repository.current().activeProfile!!
+        val profile = repository.current().activeProfile
 
         assertEquals(plexProfile.copy(plexAccountToken = null), profile)
     }
@@ -304,7 +305,7 @@ class ServerProfileRepositoryTest {
 
         repository.saveAndActivate(plexProfile)
 
-        val stored = dataStore.data.first()[stringPreferencesKey("profiles")]!!
+        val stored = storedProfilesJson()
         assertFalse(stored.contains("account-token"))
         assertNull(repository.current().activeProfile?.plexAccountToken)
         assertEquals("server-token", repository.current().activeProfile?.accessToken)
@@ -380,6 +381,8 @@ class ServerProfileRepositoryTest {
 
         assertNull(ServerProfile.fromServer(server))
     }
+
+    private suspend fun storedProfilesJson(): String = dataStore.data.first()[profilesKey].orEmpty()
 
     /** Reverses the string so a stored value never contains the plaintext. */
     private class FakeCipher : SecretCipher {
