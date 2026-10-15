@@ -18,7 +18,8 @@ data class PlexPin(
     val authToken: String? = null,
 ) {
     override fun toString(): String =
-        "PlexPin(id=$id, code=$code, expiresIn=$expiresIn, authToken=${if (authToken == null) "null" else "redacted"})"
+        "PlexPin(id=$id, code=$code, expiresIn=${expiresIn ?: "unknown"}, " +
+            "authToken=${if (authToken == null) "null" else "redacted"})"
 }
 
 /** The signed-in plex.tv account. */
