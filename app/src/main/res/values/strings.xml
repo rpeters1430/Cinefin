@@ -106,6 +106,7 @@
     <string name="server_profiles_sign_in_required">Sign in to %1$s again to use this profile.</string>
     <string name="server_type_jellyfin">Jellyfin</string>
     <string name="server_type_emby">Emby</string>
+    <string name="server_type_plex">Plex</string>
     <string name="sign_in">Sign In</string>
     <string name="settings">Settings</string>
 

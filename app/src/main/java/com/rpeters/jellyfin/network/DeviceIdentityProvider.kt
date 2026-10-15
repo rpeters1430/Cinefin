@@ -3,6 +3,7 @@ package com.rpeters.jellyfin.network
 import android.content.Context
 import android.os.Build
 import android.provider.Settings
+import androidx.core.content.edit
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.UUID
 import javax.inject.Inject
@@ -27,12 +28,33 @@ class DeviceIdentityProvider @Inject constructor(
 
     fun clientName(): String = "Cinefin Android"
 
+    /**
+     * The `X-Plex-Client-Identifier` this install sends to plex.tv and Plex servers. Plex ties
+     * sign-ins and devices to it, so it is made once and kept for the life of the install.
+     */
+    fun plexClientIdentifier(): String = plexClientIdentifier
+
+    private val plexClientIdentifier: String by lazy { resolvePlexClientIdentifier() }
+
+    private fun resolvePlexClientIdentifier(): String {
+        val preferences = context.getSharedPreferences(PLEX_PREFERENCES, Context.MODE_PRIVATE)
+        preferences.getString(KEY_PLEX_CLIENT_IDENTIFIER, null)?.let { return it }
+        return UUID.randomUUID().toString().also {
+            preferences.edit { putString(KEY_PLEX_CLIENT_IDENTIFIER, it) }
+        }
+    }
+
     private fun resolveDeviceId(): String {
         val androidId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
         if (!androidId.isNullOrBlank()) {
             return androidId
         }
         return UUID.randomUUID().toString()
+    }
+
+    private companion object {
+        const val PLEX_PREFERENCES = "plex_identity"
+        const val KEY_PLEX_CLIENT_IDENTIFIER = "client_identifier"
     }
 }
 

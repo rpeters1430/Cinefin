@@ -74,6 +74,8 @@ object RemoteConfigModule {
             "experimental_player_buffer_ms" to 5000L,
             // Emby support is ready and enabled by default.
             "enable_emby_support" to true,
+            // Plex support is in development; turned on per tester via Remote Config.
+            "enable_plex_support" to false,
         )
         remoteConfig.setDefaultsAsync(defaults)
 

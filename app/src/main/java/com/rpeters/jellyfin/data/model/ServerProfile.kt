@@ -21,6 +21,13 @@ data class ServerProfile(
     val accessToken: String? = null,
     val loginTimestamp: Long? = null,
     val isAdministrator: Boolean = false,
+    /**
+     * Plex only: the plex.tv account token, used for plex.tv calls (server list, sign-out) and
+     * never sent to the media server, which gets [accessToken]. Stored like [accessToken].
+     */
+    val plexAccountToken: String? = null,
+    /** Other addresses the same server answers on (Plex lists local, remote and relay ones). */
+    val alternateServerUrls: List<String> = emptyList(),
 ) {
     fun toJellyfinServer(): JellyfinServer {
         val normalizedUrl = normalizeServerUrl(serverUrl)
@@ -38,6 +45,8 @@ data class ServerProfile(
             serverType = serverType,
             embyConnectUserId = embyConnectUserId,
             embyConnectAccessKey = embyConnectAccessKey,
+            plexAccountToken = plexAccountToken,
+            alternateServerUrls = alternateServerUrls,
         )
     }
 
@@ -71,6 +80,8 @@ data class ServerProfile(
                 accessToken = server.accessToken,
                 loginTimestamp = server.loginTimestamp,
                 isAdministrator = server.isAdministrator,
+                plexAccountToken = server.plexAccountToken,
+                alternateServerUrls = server.alternateServerUrls,
             )
         }
     }

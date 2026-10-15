@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.data.emby
 
+import com.rpeters.jellyfin.data.common.ids.ServerIdCodec
 import com.rpeters.jellyfin.utils.SecureLogger
 import io.mockk.every
 import io.mockk.mockk
@@ -208,10 +209,38 @@ class EmbyApiClientTest {
     }
 
     @Test
-    fun getMediaSegments_answersEmptyWithoutCallingTheServer() = runTest {
+    fun getMediaSegments_readsChapterMarkersFromTheItem() = runTest {
+        delegate.respondWith(
+            """{"Id":"1035","RunTimeTicks":5000,"Chapters":[""" +
+                """{"StartPositionTicks":100,"MarkerType":"IntroStart"},{"StartPositionTicks":400,"MarkerType":"IntroEnd"},""" +
+                """{"StartPositionTicks":4500,"MarkerType":"CreditsStart"}]}""",
+        )
+
+        val response = client.request(
+            HttpMethod.GET,
+            "/MediaSegments/{itemId}",
+            mapOf("itemId" to movieId),
+            mapOf("includeSegmentTypes" to listOf("Intro", "Outro")),
+            null,
+        )
+
+        assertEquals("/Users/{userId}/Items/{itemId}", delegate.path)
+        assertEquals("1035", delegate.pathParameters["itemId"])
+        assertEquals(USER_ID, delegate.pathParameters["userId"])
+        assertEquals(mapOf<String, Any?>("Fields" to "Chapters"), delegate.query)
+        val segments = sdkJson.decodeFromString(MediaSegmentDtoQueryResult.serializer(), response.body.decodeToString())
+        assertEquals(2, segments.items.size)
+        assertEquals(movieId, segments.items.first().itemId)
+        assertEquals(100L, segments.items.first().startTicks)
+        assertEquals(5000L, segments.items.last().endTicks)
+    }
+
+    @Test
+    fun getMediaSegments_itemWithoutMarkers_answersEmpty() = runTest {
+        delegate.respondWith("""{"Id":"1035","RunTimeTicks":5000,"Chapters":[{"StartPositionTicks":0,"MarkerType":"Chapter"}]}""")
+
         val response = client.request(HttpMethod.GET, "/MediaSegments/{itemId}", mapOf("itemId" to movieId), emptyMap(), null)
 
-        assertNull(delegate.path)
         val segments = sdkJson.decodeFromString(MediaSegmentDtoQueryResult.serializer(), response.body.decodeToString())
         assertTrue(segments.items.isEmpty())
     }

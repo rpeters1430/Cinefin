@@ -359,7 +359,7 @@ fun ServerConnectionScreen(
                 canSubmit = canSubmit,
                 onConnect = submitIfValid,
                 onQuickConnect = onQuickConnect,
-                showQuickConnect = selectedType != com.rpeters.jellyfin.data.model.ServerType.EMBY,
+                showQuickConnect = selectedType?.supportsQuickConnect ?: true,
             )
 
             Spacer(modifier = Modifier.height(48.dp))
@@ -472,7 +472,7 @@ private fun DiscoveredServersCard(
                             shape = ShapeTokens.Large,
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(text = "${if (server.serverType == com.rpeters.jellyfin.data.model.ServerType.EMBY) "Emby" else "Jellyfin"} · ${server.name}", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+                                Text(text = "${com.rpeters.jellyfin.ui.components.serverTypeLabel(server.serverType)} · ${server.name}", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
                                 Text(text = server.address, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f))
                             }
                         }

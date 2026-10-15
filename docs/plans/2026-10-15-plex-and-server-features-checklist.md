@@ -21,19 +21,19 @@ Three small changes that make Emby feel native. All land inside `EmbyApiClient` 
 
 ### A1. Intro and credits skip from chapter markers
 
-- [ ] Capture `/Items/{id}?Fields=Chapters` JSON for an episode with detected intro and credits from your Emby server; save to `app/src/test/resources/emby/`
+- [ ] Capture `/Items/{id}?Fields=Chapters` JSON (hand-written stand-ins in `app/src/test/resources/emby/` until a real capture replaces them) for an episode with detected intro and credits from your Emby server; save to `app/src/test/resources/emby/`
 - [ ] Confirm the `MarkerType` values Emby uses (expected `IntroStart`, `IntroEnd`, `CreditsStart`) and that positions are in ticks
-- [ ] Add an `EmbyRoute` handler for `/MediaSegments/{itemId}` that fetches the item's chapters and returns `MediaSegmentDto` list (Intro = IntroStart→IntroEnd, Outro = CreditsStart→runtime end)
-- [ ] Unit test: fixture → expected segments, including an item with no markers (empty list, no crash)
-- [ ] Add `supportsMediaSegments` to `ServerType` and turn it on for `EMBY`
+- [x] Add an `EmbyRoute` handler for `/MediaSegments/{itemId}` (`EmbyMediaSegments`; reads `/Users/{userId}/Items/{id}?Fields=Chapters`) that fetches the item's chapters and returns `MediaSegmentDto` list (Intro = IntroStart→IntroEnd, Outro = CreditsStart→runtime end)
+- [x] Unit test: fixture → expected segments, including an item with no markers (empty list, no crash)
+- [x] Add `supportsMediaSegments` to `ServerType` and turn it on for `EMBY`
 - [ ] Manual check: skip-intro and skip-credits buttons appear and seek correctly on Emby
 
 ### A2. Mixed Movies + Shows libraries
 
-- [ ] Create a mixed library on the Emby test server (4.9.3+) and capture `/UserViews` and its `/Items` JSON
-- [ ] Check the `CollectionType` value it reports and how `EmbyJsonNormalizer` handles it (unknown enum → dropped?)
-- [ ] Make library screens treat it like a mixed folder: show both movies and series, no crash on unknown type
-- [ ] Unit test for the normalizer with the mixed-library fixture
+- [ ] Create a mixed library on the Emby test server (`user_views_mixed.json` is hand-written until then) (4.9.3+) and capture `/UserViews` and its `/Items` JSON
+- [ ] Check the `CollectionType` value it reports (normalizer verified: any value the SDK enum lacks, e.g. `mixed`, becomes null and the library is kept; the real value still needs confirming) and how `EmbyJsonNormalizer` handles it (unknown enum → dropped?)
+- [x] Make library screens treat it like a mixed folder: show both movies and series, no crash on unknown type (a null collection type already routed to the Stuff screen, but it only requested books/videos/folders; `LibraryType.itemKindsFor` now adds movies and series)
+- [x] Unit test for the normalizer with the mixed-library fixture (`EmbyMixedLibraryTest`)
 
 ### A3. Respect per-user remote streaming quality
 
@@ -91,40 +91,40 @@ Nothing user-visible changes in this phase; the exit test is that Jellyfin and E
 
 ### IDs (KD2)
 
-- [ ] Move `ServerIdCodec` from `data/emby` to `data/common/ids` and parameterize it by a 4-byte marker
-- [ ] Add markers `PLEX` (ratingKeys, part IDs) and `PLXT` (tag IDs: people, genres)
-- [ ] Make `decodeAllIn` handle every marker; keep the cheap prefix check
-- [ ] Existing `ServerIdCodecTest` passes unchanged; add Plex and tag round-trip tests
+- [x] Move `ServerIdCodec` from `data/emby` to `data/common/ids` and parameterize it by a 4-byte marker
+- [x] Add markers `PLEX` (ratingKeys, part IDs) and `PLXT` (tag IDs: people, genres)
+- [x] Make `decodeAllIn` handle every marker; keep the cheap prefix check
+- [x] Existing `ServerIdCodecTest` passes unchanged; add Plex and tag round-trip tests (only its package line changed with the move)
 
 ### Server type and capabilities (KD7)
 
-- [ ] Add `ServerType.PLEX`
-- [ ] Add detection from `/identity` (try it when `/System/Info/Public` 404s)
-- [ ] Add capability getters: `supportsQuickConnect`, `supportsFavorites`, `supportsMediaSegments`, `supportsPasswordSignIn`, `remoteStreamingMayRequirePass`
-- [ ] Add placeholder getters for Tracks C/D, all false for now: `supportsManagedUsers`, `supportsWatchlist`, `providesServerHubs`, `supportsServerConvertedDownloads`
-- [ ] Replace any direct `serverType ==` checks in UI code with capability getters
-- [ ] Unit test for the capability table, one row per server type
+- [x] Add `ServerType.PLEX`
+- [x] Add detection from `/identity` (try it when `/System/Info/Public` 404s) (`PlexIdentityProbe`, called from `JellyfinAuthRepository.testServerConnection` when the Jellyfin/Emby probe fails)
+- [x] Add capability getters: `supportsQuickConnect`, `supportsFavorites`, `supportsMediaSegments`, `supportsPasswordSignIn`, `remoteStreamingMayRequirePass`
+- [x] Add placeholder getters for Tracks C/D, all false for now: `supportsManagedUsers`, `supportsWatchlist`, `providesServerHubs`, `supportsServerConvertedDownloads`
+- [x] Replace any direct `serverType ==` checks in UI code with capability getters (Quick Connect checks now use `supportsQuickConnect`; type labels go through `ServerType.labelRes`; the TV sign-in screen still checks for Emby for Emby-specific wording)
+- [x] Unit test for the capability table, one row per server type (`ServerTypeCapabilitiesTest`)
 
 ### Profiles
 
-- [ ] Add to `ServerProfile`: `plexAccountToken` (encrypted), alternate connection URIs; all default to null/empty
-- [ ] App-wide `plexClientIdentifier` (generated once, persisted)
-- [ ] Test: profiles saved by the current release still load unchanged
+- [ ] Add to `ServerProfile`: `plexAccountToken` (encrypted), alternate connection URIs; all default to null/empty (fields added and round-tripped; the token is stored like `accessToken` for now, Keystore encryption still to do)
+- [x] App-wide `plexClientIdentifier` (generated once, persisted) (`DeviceIdentityProvider.plexClientIdentifier()`, kept in app-private SharedPreferences)
+- [x] Test: profiles saved by the current release still load unchanged
 
 ### Network (KD8)
 
-- [ ] `JellyfinAuthInterceptor`: for Plex profiles send the X-Plex header set + `Accept: application/json`, and no Emby headers
-- [ ] Helper that appends `X-Plex-Token` as a query parameter for URLs handed to ExoPlayer, Coil and Cast
-- [ ] Test: a Plex token is never sent to a Jellyfin/Emby host and vice versa
+- [x] `JellyfinAuthInterceptor`: for Plex profiles send the X-Plex header set + `Accept: application/json`, and no Emby headers
+- [x] Helper that appends `X-Plex-Token` as a query parameter for URLs handed to ExoPlayer, Coil and Cast (`PlexTokenUrls.withToken`; callers wire it in Phase 3/4)
+- [x] Test: a Plex token is never sent to a Jellyfin/Emby host and vice versa (the Plex token is only attached for the server's own addresses)
 
 ### Flag (KD9)
 
-- [ ] Add `ENABLE_PLEX_SUPPORT` to `FeatureFlags.Experimental` and Remote Config, default off
-- [ ] With the flag off, a Plex URL shows "Plex support is not available yet"
+- [x] Add `ENABLE_PLEX_SUPPORT` to `FeatureFlags.Experimental` and Remote Config, default off
+- [x] With the flag off, a Plex URL shows "Plex support is not available yet"
 
 ### Exit
 
-- [ ] All unit tests green; Jellyfin and Emby smoke checklists pass
+- [ ] All unit tests green; Jellyfin and Emby smoke checklists pass (unit tests, lint and warning budget green; manual smoke checklists still to run)
 
 ## Track B, Phase 2: Sign in and pick a server
 

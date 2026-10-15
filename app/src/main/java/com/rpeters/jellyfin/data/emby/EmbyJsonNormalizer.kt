@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.data.emby
 
+import com.rpeters.jellyfin.data.common.ids.ServerIdCodec
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.descriptors.PrimitiveKind

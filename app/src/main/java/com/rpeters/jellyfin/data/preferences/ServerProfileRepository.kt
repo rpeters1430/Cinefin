@@ -146,6 +146,7 @@ class ServerProfileRepository(
                 if (it.id == profileId) it.copy(
                     accessToken = null, loginTimestamp = null,
                     embyConnectUserId = null, embyConnectAccessKey = null,
+                    plexAccountToken = null,
                 ) else it
             })
         }

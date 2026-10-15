@@ -1,6 +1,6 @@
 package com.rpeters.jellyfin.data.repository
 
-import com.rpeters.jellyfin.data.emby.ServerIdCodec
+import com.rpeters.jellyfin.data.common.ids.ServerIdCodec
 import android.util.Log
 import com.rpeters.jellyfin.data.DeviceCapabilities
 import com.rpeters.jellyfin.network.ConnectivityChecker

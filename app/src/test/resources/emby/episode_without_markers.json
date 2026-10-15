@@ -1,0 +1,11 @@
+{
+  "Name": "Second",
+  "ServerId": "6f8e3c2b9a0d4e1f8c7b6a5d4e3f2a1b",
+  "Id": "2042",
+  "RunTimeTicks": 26400000000,
+  "Type": "Episode",
+  "Chapters": [
+    { "StartPositionTicks": 0, "Name": "Chapter 1", "MarkerType": "Chapter", "ChapterIndex": 0 },
+    { "StartPositionTicks": 6000000000, "Name": "Chapter 2", "MarkerType": "Chapter", "ChapterIndex": 1 }
+  ]
+}

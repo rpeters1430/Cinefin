@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.ui.components
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -13,14 +14,20 @@ import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.model.ServerType
 
+/** The string resource naming a [ServerType]'s product. */
+@get:StringRes
+val ServerType.labelRes: Int
+    get() = when (this) {
+        ServerType.JELLYFIN -> R.string.server_type_jellyfin
+        ServerType.EMBY -> R.string.server_type_emby
+        ServerType.PLEX -> R.string.server_type_plex
+    }
+
 /** The product name shown to users for a [ServerType]. */
 @Composable
-fun serverTypeLabel(serverType: ServerType): String = when (serverType) {
-    ServerType.JELLYFIN -> stringResource(id = R.string.server_type_jellyfin)
-    ServerType.EMBY -> stringResource(id = R.string.server_type_emby)
-}
+fun serverTypeLabel(serverType: ServerType): String = stringResource(id = serverType.labelRes)
 
-/** A small pill naming the server product (Jellyfin or Emby) the app is connected to. */
+/** A small pill naming the server product (Jellyfin, Emby or Plex) the app is connected to. */
 @Composable
 fun ServerTypeBadge(
     serverType: ServerType,

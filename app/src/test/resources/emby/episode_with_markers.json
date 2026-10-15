@@ -1,0 +1,16 @@
+{
+  "Name": "Pilot",
+  "ServerId": "6f8e3c2b9a0d4e1f8c7b6a5d4e3f2a1b",
+  "Id": "2041",
+  "RunTimeTicks": 26400000000,
+  "Type": "Episode",
+  "SeriesId": "2001",
+  "SeasonId": "2002",
+  "Chapters": [
+    { "StartPositionTicks": 0, "Name": "Chapter 1", "MarkerType": "Chapter", "ChapterIndex": 0 },
+    { "StartPositionTicks": 900000000, "Name": "", "MarkerType": "IntroStart", "ChapterIndex": 1 },
+    { "StartPositionTicks": 1800000000, "Name": "", "MarkerType": "IntroEnd", "ChapterIndex": 2 },
+    { "StartPositionTicks": 6000000000, "Name": "Chapter 2", "MarkerType": "Chapter", "ChapterIndex": 3 },
+    { "StartPositionTicks": 25200000000, "Name": "", "MarkerType": "CreditsStart", "ChapterIndex": 4 }
+  ]
+}

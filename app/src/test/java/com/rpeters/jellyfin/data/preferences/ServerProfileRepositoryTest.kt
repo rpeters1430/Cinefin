@@ -210,7 +210,7 @@ class ServerProfileRepositoryTest {
     fun current_unknownServerTypeAndExtraFields_fallsBackToJellyfin() = runTest {
         dataStore.edit {
             it[stringPreferencesKey("profiles")] =
-                """[{"id":"x:y","serverUrl":"https://s.example.com","serverName":"S","serverType":"PLEX",""" +
+                """[{"id":"x:y","serverUrl":"https://s.example.com","serverName":"S","serverType":"FUTURE_SERVER",""" +
                 """"username":"carol","futureField":true}]"""
         }
 
@@ -218,6 +218,57 @@ class ServerProfileRepositoryTest {
 
         assertEquals(ServerType.JELLYFIN, profile.serverType)
         assertEquals("carol", profile.username)
+    }
+
+    @Test
+    fun current_profileSavedByPreviousRelease_loadsWithPlexFieldsEmpty() = runTest {
+        // The exact shape the release before Plex support writes.
+        dataStore.edit {
+            it[stringPreferencesKey("profiles")] =
+                """[{"id":"server-b:user-2","serverId":"server-b","serverUrl":"https://emby.example.com",""" +
+                """"serverName":"Home Emby","serverType":"EMBY","userId":"user-2","username":"bob",""" +
+                """"accessToken":"token-b","loginTimestamp":2000,"isAdministrator":false}]"""
+            it[stringPreferencesKey("active_profile_id")] = "server-b:user-2"
+        }
+
+        val profiles = repository.current()
+
+        assertEquals(embyProfile, profiles.activeProfile)
+        assertNull(profiles.activeProfile?.plexAccountToken)
+        assertTrue(profiles.activeProfile!!.alternateServerUrls.isEmpty())
+    }
+
+    @Test
+    fun saveAndActivate_plexProfile_roundTripsPlexFields() = runTest {
+        val plexProfile = ServerProfile(
+            id = "machine-1:42",
+            serverId = "machine-1",
+            serverUrl = "https://10-0-0-5.abc.plex.direct:32400",
+            serverName = "Plex",
+            serverType = ServerType.PLEX,
+            userId = "42",
+            username = "dana",
+            accessToken = "server-token",
+            plexAccountToken = "account-token",
+            alternateServerUrls = listOf("https://203-0-113-9.abc.plex.direct:32400"),
+        )
+        repository.saveAndActivate(plexProfile)
+
+        assertEquals(plexProfile, ServerProfileRepository(dataStore).current().activeProfile)
+        assertEquals(plexProfile, ServerProfile.fromServer(plexProfile.toJellyfinServer()))
+    }
+
+    @Test
+    fun clearAuthentication_plexProfile_forgetsAccountToken() = runTest {
+        repository.saveAndActivate(
+            jellyfinProfile.copy(id = "p", serverType = ServerType.PLEX, plexAccountToken = "account-token"),
+        )
+
+        repository.clearAuthentication("p")
+
+        val cleared = repository.current().profiles.single()
+        assertNull(cleared.accessToken)
+        assertNull(cleared.plexAccountToken)
     }
 
     @Test

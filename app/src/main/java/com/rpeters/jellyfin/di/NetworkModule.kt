@@ -221,6 +221,7 @@ object NetworkModule {
         embyAuthDataSource: Provider<com.rpeters.jellyfin.data.emby.EmbyAuthDataSource>,
         embyConnectClient: Provider<com.rpeters.jellyfin.data.emby.EmbyConnectClient>,
         remoteConfigRepository: com.rpeters.jellyfin.data.repository.RemoteConfigRepository,
+        plexIdentityProbe: Provider<com.rpeters.jellyfin.data.plex.PlexIdentityProbe>,
     ): JellyfinAuthRepository =
         JellyfinAuthRepository(
             jellyfin,
@@ -231,6 +232,10 @@ object NetworkModule {
             embyConnectClient = embyConnectClient,
             isEmbySupportEnabled = {
                 remoteConfigRepository.getBoolean(com.rpeters.jellyfin.core.FeatureFlags.Experimental.ENABLE_EMBY_SUPPORT)
+            },
+            plexIdentityProbe = plexIdentityProbe,
+            isPlexSupportEnabled = {
+                remoteConfigRepository.getBoolean(com.rpeters.jellyfin.core.FeatureFlags.Experimental.ENABLE_PLEX_SUPPORT)
             },
         )
 

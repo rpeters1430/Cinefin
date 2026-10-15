@@ -1003,7 +1003,7 @@ constructor(
                 if (library.collectionType == CollectionType.HOMEVIDEOS) {
                     null
                 } else {
-                    mapKindsToApiNames(libraryType.itemKinds)
+                    mapKindsToApiNames(libraryType.itemKindsFor(library.collectionType))
                 }
 
             SecureLogger.v("MainAppViewModel-Load", "  Calling API with:")

@@ -1,4 +1,4 @@
-package com.rpeters.jellyfin.data.emby
+package com.rpeters.jellyfin.data.common.ids
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -61,5 +61,50 @@ class ServerIdCodecTest {
         assertEquals("e96573aa-cb14-4a45-b3c4-585e3e5071c7", ServerIdCodec.decode("e96573aa-cb14-4a45-b3c4-585e3e5071c7"))
         assertEquals("mediasource_11032", ServerIdCodec.decode("mediasource_11032"))
         assertEquals("11032", ServerIdCodec.decode("11032"))
+    }
+
+    @Test
+    fun plexAndTagCodecs_roundTripAndDoNotCollideWithEmby() {
+        val emby = ServerIdCodec.EMBY.encode("1035")!!
+        val plex = ServerIdCodec.PLEX.encode("1035")!!
+        val tag = ServerIdCodec.PLEX_TAG.encode("1035")!!
+
+        assertEquals(3, setOf(emby, plex, tag).size)
+        assertEquals("1035", ServerIdCodec.PLEX.decode(plex))
+        assertEquals("1035", ServerIdCodec.PLEX_TAG.decode(tag))
+        assertTrue(plex.toString().startsWith("504c4558-0000-4000-"))
+        assertTrue(tag.toString().startsWith("504c5854-0000-4000-"))
+        assertEquals(4, plex.version())
+        assertEquals(2, tag.variant())
+    }
+
+    @Test
+    fun markerCodec_onlyDecodesItsOwnIds() {
+        val plex = ServerIdCodec.PLEX.encode("77")!!
+
+        assertFalse(ServerIdCodec.EMBY.isEncoded(plex))
+        assertEquals(plex.toString(), ServerIdCodec.EMBY.decode(plex))
+        assertEquals(ServerIdCodec.encode("77"), ServerIdCodec.EMBY.encode("77"))
+    }
+
+    @Test
+    fun companionDecode_acceptsEveryMarker() {
+        assertTrue(ServerIdCodec.isEncoded(ServerIdCodec.PLEX.encode("12")!!))
+        assertEquals("12", ServerIdCodec.decode(ServerIdCodec.PLEX.encode("12")!!))
+        assertEquals("34", ServerIdCodec.decode(ServerIdCodec.PLEX_TAG.encode("34")!!.toString()))
+    }
+
+    @Test
+    fun decodeAllIn_replacesIdsOfEveryMarkerAndLeavesOtherTextAlone() {
+        val emby = ServerIdCodec.EMBY.encode("1035")
+        val plex = ServerIdCodec.PLEX.encode("4410")
+        val tag = ServerIdCodec.PLEX_TAG.encode("9")
+        val other = "e96573aa-cb14-4a45-b3c4-585e3e5071c7"
+
+        assertEquals(
+            "/a/1035/b/4410?c=9&u=$other",
+            ServerIdCodec.decodeAllIn("/a/$emby/b/$plex?c=$tag&u=$other"),
+        )
+        assertEquals("/Videos/$other/stream", ServerIdCodec.decodeAllIn("/Videos/$other/stream"))
     }
 }

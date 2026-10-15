@@ -63,6 +63,9 @@ object FeatureFlags {
         /** Allow connecting to Emby servers. Enabled by default. */
         const val ENABLE_EMBY_SUPPORT = "enable_emby_support"
 
+        /** Allow connecting to Plex Media Servers. Off until Plex playback is complete. */
+        const val ENABLE_PLEX_SUPPORT = "enable_plex_support"
+
         /** Experimental player buffer size in milliseconds */
         const val EXPERIMENTAL_PLAYER_BUFFER_MS = "experimental_player_buffer_ms"
     }

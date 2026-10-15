@@ -31,6 +31,8 @@ class JellyfinAuthRefreshManager @Inject constructor(
         return authRepository.getCurrentServerSync()?.accessToken
     }
 
+    override fun currentServer(): com.rpeters.jellyfin.data.JellyfinServer? = authRepository.getCurrentServerSync()
+
     override fun scheduleProactiveRefreshIfNeeded() {
         if (!authRepository.isUserAuthenticated() || !authRepository.shouldRefreshToken()) {
             return
