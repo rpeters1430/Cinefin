@@ -64,7 +64,12 @@ class PlexConnectionSelectorTest {
         answers(REMOTE_HTTPS)
         coEvery { probe.probe(LOCAL_HTTPS) } returns PlexIdentity("someone-elses-server", null)
 
-        assertEquals(REMOTE_HTTPS, selector.select(server(localHttps, remoteHttps))?.uri)
+        val address = selector.select(server(localHttps, remoteHttps, relay))
+
+        assertEquals(REMOTE_HTTPS, address?.uri)
+        // Alternates get this server's token, so the other machine's address must not be one;
+        // the relay did not answer and stays as a fallback.
+        assertEquals(listOf(RELAY), address?.alternateUris)
     }
 
     @Test

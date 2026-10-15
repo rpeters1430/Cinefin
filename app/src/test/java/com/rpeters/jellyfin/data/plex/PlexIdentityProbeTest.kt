@@ -3,13 +3,18 @@ package com.rpeters.jellyfin.data.plex
 import com.rpeters.jellyfin.network.JellyfinAuthInterceptor
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.util.concurrent.TimeUnit
 
 /** Bodies follow the documented `/identity` shape; replace with captures in Phase 0. */
 class PlexIdentityProbeTest {
@@ -63,5 +68,29 @@ class PlexIdentityProbeTest {
             assertNull(request.getHeader(PlexClientHeaders.TOKEN))
             verify(exactly = 0) { sessionInterceptor.intercept(any()) }
         }
+    }
+
+    @Test
+    fun probe_cancelled_stopsTheHttpCallRightAway() = runTest {
+        MockWebServer().use { server ->
+            // A server that accepts the connection and then stalls past the probe's own 5 s limit.
+            server.enqueue(MockResponse().setHeadersDelay(STALL_SECONDS, TimeUnit.SECONDS))
+            server.start()
+            val probe = PlexIdentityProbe(dagger.Lazy { OkHttpClient() })
+
+            val started = System.nanoTime()
+            val identity = withContext(Dispatchers.Default) {
+                withTimeoutOrNull(SHORT_TIMEOUT_MS) { probe.probe(server.url("/").toString()) }
+            }
+            val elapsedMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started)
+
+            assertNull(identity)
+            assertTrue("probe took $elapsedMs ms", elapsedMs < SHORT_TIMEOUT_MS * 4)
+        }
+    }
+
+    private companion object {
+        const val STALL_SECONDS = 10L
+        const val SHORT_TIMEOUT_MS = 300L
     }
 }

@@ -1,20 +1,23 @@
 package com.rpeters.jellyfin.data.plex
 
 import com.rpeters.jellyfin.network.JellyfinAuthInterceptor
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import okhttp3.Authenticator
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
 import okhttp3.logging.HttpLoggingInterceptor
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.coroutines.resume
 
 /** What a Plex Media Server says about itself at `/identity`, which needs no sign-in. */
 data class PlexIdentity(
@@ -41,23 +44,29 @@ class PlexIdentityProbe @Inject constructor(
         }.build()
     }
 
-    /** @return the server's identity, or null when [serverUrl] is not a reachable Plex server. */
-    suspend fun probe(serverUrl: String): PlexIdentity? = withContext(Dispatchers.IO) {
-        val request = Request.Builder()
-            .url(serverUrl.trimEnd('/') + IDENTITY_PATH)
-            .header("Accept", "application/json")
-            .get()
-            .build()
-        try {
-            probeClient.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) null else parse(response.body.string())
-            }
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: IOException) {
-            null
-        } catch (e: IllegalArgumentException) {
-            null
+    /**
+     * @return the server's identity, or null when [serverUrl] is not a reachable Plex server.
+     *   Cancelling the caller (for example a `withTimeout`) cancels the HTTP call at once.
+     */
+    suspend fun probe(serverUrl: String): PlexIdentity? {
+        val url = (serverUrl.trimEnd('/') + IDENTITY_PATH).toHttpUrlOrNull() ?: return null
+        val call = probeClient.newCall(
+            Request.Builder().url(url).header("Accept", "application/json").get().build(),
+        )
+        return suspendCancellableCoroutine { continuation ->
+            continuation.invokeOnCancellation { call.cancel() }
+            call.enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    continuation.resume(null)
+                }
+
+                override fun onResponse(call: Call, response: Response) {
+                    val identity = runCatching {
+                        response.use { if (it.isSuccessful) parse(it.body.string()) else null }
+                    }.getOrNull()
+                    continuation.resume(identity)
+                }
+            })
         }
     }
 

@@ -25,15 +25,21 @@ class PlexConnectionSelector @Inject constructor(
     /** @return null when no connection answers with [server]'s machine identifier. */
     suspend fun select(server: PlexResource): PlexServerAddress? = coroutineScope {
         val ranked = rank(server.connections)
-        val answered = ranked.map { connection ->
-            async {
-                val identity = withTimeoutOrNull(PROBE_TIMEOUT_MS) { identityProbe.probe(connection.uri) }
-                // A plex.direct name or LAN address can lead to a different server; only accept this one.
-                identity?.machineIdentifier == server.clientIdentifier
-            }
+        val answers = ranked.map { connection ->
+            async { withTimeoutOrNull(PROBE_TIMEOUT_MS) { identityProbe.probe(connection.uri) } }
         }.awaitAll()
-        val best = ranked.zip(answered).firstOrNull { (_, ok) -> ok }?.first ?: return@coroutineScope null
-        PlexServerAddress(best.uri, ranked.map { it.uri }.filter { it != best.uri })
+        val results = ranked.zip(answers)
+        val best = results.firstOrNull { (_, identity) -> identity?.machineIdentifier == server.clientIdentifier }
+            ?.first ?: return@coroutineScope null
+        // A plex.direct name or LAN address can lead to a different server. Alternates later get
+        // this server's token, so drop any address that said it is another machine; keep ones
+        // that did not answer, since they may work from another network.
+        val alternates = results
+            .filter { (connection, identity) ->
+                connection != best && (identity == null || identity.machineIdentifier == server.clientIdentifier)
+            }
+            .map { (connection, _) -> connection.uri }
+        PlexServerAddress(best.uri, alternates)
     }
 
     companion object {
