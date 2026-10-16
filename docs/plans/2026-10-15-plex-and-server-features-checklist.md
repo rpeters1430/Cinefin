@@ -19,15 +19,15 @@ Conventions for every task:
 
 _Last updated: 2026-10-15_
 
-**Done in code**: A1 and A2 code tasks, A3 (remote bitrate cap, merged in #1356), and every Phase 1 code task. The last one, Keystore encryption of the stored Plex account token, is in review in #1359.
+**Done in code**: A1 and A2 code tasks, A3 (remote bitrate cap, #1356), all of Phase 1 (the last task, Keystore encryption of the Plex account token, merged in #1359), and the non-UI half of Phase 2: the plex.tv client, PIN sign-in and connection selection. The Phase 2 work is built and tested against real plex.tv captures where they could be made without an account, and hand-written stand-ins for the rest (see `app/src/test/resources/plex/README.md`).
 
-**What blocks the next code work**: everything left before Phase 2 needs real servers. These steps have to be done by hand:
+**Next code step**: the rest of Phase 2. That means the "Sign in with Plex" entry, the PIN screen and the server picker, then saving the profile. These can be built now on top of `PlexAuthDataSource`, `PlexTvClient.getServers` and `PlexConnectionSelector`.
 
-1. **Phase 0 spike** (blocks all Plex work): capture the plex.tv and PMS responses listed under Phase 0 into `app/src/test/resources/plex/`, then record the KD6 decision (JWT or legacy token) in the plan.
+**Still needs real servers** (done by hand; Phase 2 cannot exit without the first one):
+
+1. **Phase 0 spike**: sign in once with a real Plex account and save the approved PIN poll, `/api/v2/user` and `/api/v2/resources` over the stand-ins. Then capture the PMS responses listed under Phase 0 and record the KD6 decision (the code uses the legacy token for now, as KD6 suggests).
 2. **Track A manual checks on Emby**: capture a real `/Items/{id}?Fields=Chapters` response and a mixed library to replace the hand-written fixtures. Then check skip intro/credits and the remote bitrate cap on a real Emby server.
 3. **Phase 1 exit**: run the Jellyfin and Emby smoke checklists (Rollout section).
-
-**Next code step** once the Phase 0 fixtures exist: Phase 2, starting with `PlexTvClient` and `PlexModels` and their fixture tests. These are written against the captured `/api/v2/pins`, `/api/v2/user` and `/api/v2/resources` responses.
 
 ## Track A: Emby quick wins
 
@@ -63,15 +63,15 @@ No app code yet: this phase answers every [P0] question with real responses from
 ### Setup
 
 - [ ] Note the PMS version and whether the owner account has Plex Pass
-- [ ] Download the current OpenAPI spec from developer.plex.tv/pms and save it with its fetch date
-- [ ] Create `app/src/test/resources/plex/` for fixtures
+- [x] Download the current OpenAPI spec from developer.plex.tv/pms and save it with its fetch date (`docs/reference/plex/pms-openapi-2026-10-15.json`, OpenAPI 3.1, 207 paths, taken from the page's embedded Redoc data)
+- [x] Create `app/src/test/resources/plex/` for fixtures (its `README.md` lists which files are real captures and which are stand-ins)
 
 ### Auth and server discovery
 
-- [ ] PIN sign-in by hand with curl: create PIN, approve in browser, poll; save `/api/v2/pins` responses
+- [ ] PIN sign-in by hand with curl: create PIN, approve in browser, poll; save `/api/v2/pins` responses (create, pending poll and expired PIN (404, code 1020) captured on 2026-10-15; the approved poll still needs an account)
 - [ ] Save `/api/v2/user` and `/api/v2/resources?includeHttps=1&includeRelay=1`
 - [ ] Confirm each resource has its own `accessToken` and a list of `connections` (local / remote / relay)
-- [ ] Confirm `/identity` answers without auth and what it returns
+- [ ] Confirm `/identity` answers without auth and what it returns (Plex's OpenAPI spec says no auth and documents `claimed`, `machineIdentifier`, `version`; still to see on a real server)
 - [ ] Try the JWT/JWK PIN variant; check Ed25519 signing on the app's minSdk (Android Keystore vs Tink)
 - [ ] **Decide KD6**: ship JWT from day one, or legacy token first. Record the decision in the plan
 - [ ] Find the sign-out / token-revoke call for removing a profile
@@ -147,16 +147,16 @@ Exit: a user signs in with Plex, picks a server, and it appears in the profile s
 
 ### plex.tv client
 
-- [ ] `PlexTvClient` (Retrofit, its own OkHttp client, account token only, never the Jellyfin interceptor)
-- [ ] Endpoints: create PIN, poll PIN, `/api/v2/user`, `/api/v2/resources`
-- [ ] `PlexModels` for PIN, user, resource, connection (only fields used)
-- [ ] Fixture tests for each response
+- [x] `PlexTvClient` (Retrofit, its own OkHttp client, account token only, never the Jellyfin interceptor) (redirects off; X-Plex headers shared with the interceptor through `PlexClientHeaders`)
+- [x] Endpoints: create PIN, poll PIN, `/api/v2/user`, `/api/v2/resources` (`getServers` keeps only resources that provide `server`)
+- [x] `PlexModels` for PIN, user, resource, connection (only fields used) (token fields are redacted from `toString`)
+- [x] Fixture tests for each response (`PlexTvClientTest`; user, resources and the approved poll use stand-ins until Phase 0)
 
 ### PIN flow
 
-- [ ] `PlexAuthDataSource`: create PIN → poll with backoff → token; cancelable; stops when the PIN expires
-- [ ] If Phase 0 chose JWT: key generation, JWK on PIN create, signed device JWT on poll, refresh path
-- [ ] Unit test the state machine (approved, expired, cancelled, network error)
+- [x] `PlexAuthDataSource`: create PIN → poll with backoff → token; cancelable; stops when the PIN expires (polls at 1 s, 2 s, 4 s, then every 5 s; gives up after 5 network failures in a row)
+- [ ] If Phase 0 chose JWT: key generation, JWK on PIN create, signed device JWT on poll, refresh path (not chosen yet; the legacy token is used)
+- [x] Unit test the state machine (approved, expired, cancelled, network error) (`PlexAuthDataSourceTest`)
 
 ### UI
 
@@ -167,9 +167,9 @@ Exit: a user signs in with Plex, picks a server, and it appears in the profile s
 
 ### Connection selection
 
-- [ ] `PlexConnectionSelector`: probe `/identity` on every connection in parallel with short timeouts
-- [ ] Prefer local HTTPS → local HTTP → remote → relay; store all URIs on the profile
-- [ ] Unit test the ranking with fake probe results
+- [x] `PlexConnectionSelector`: probe `/identity` on every connection in parallel with short timeouts (3 s each; an address that answers with another server's `machineIdentifier` is skipped. `PlexIdentityProbe` no longer goes through the session interceptor, which used to add the signed-in Jellyfin/Emby token to every probe)
+- [ ] Prefer local HTTPS → local HTTP → remote → relay; store all URIs on the profile (ranking done, and the selector returns the other URIs best first; storing them happens with the profile save below)
+- [x] Unit test the ranking with fake probe results (`PlexConnectionSelectorTest`)
 
 ### Profile
 

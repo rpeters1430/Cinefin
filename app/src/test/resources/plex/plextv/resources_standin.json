@@ -1,0 +1,57 @@
+[
+  {
+    "name": "Living Room PMS",
+    "product": "Plex Media Server",
+    "productVersion": "1.41.0.8992-8463ad060",
+    "platform": "Linux",
+    "clientIdentifier": "machine-owned-1",
+    "provides": "server",
+    "owned": true,
+    "accessToken": "owned-server-token",
+    "publicAddress": "203.0.113.9",
+    "httpsRequired": false,
+    "relay": true,
+    "presence": true,
+    "home": false,
+    "sourceTitle": null,
+    "connections": [
+      {"protocol": "https", "address": "203.0.113.9", "port": 32400, "uri": "https://203-0-113-9.abc123.plex.direct:32400", "local": false, "relay": false, "IPv6": false},
+      {"protocol": "https", "address": "10.0.0.5", "port": 32400, "uri": "https://10-0-0-5.abc123.plex.direct:32400", "local": true, "relay": false, "IPv6": false},
+      {"protocol": "http", "address": "10.0.0.5", "port": 32400, "uri": "http://10.0.0.5:32400", "local": true, "relay": false, "IPv6": false},
+      {"protocol": "https", "address": "198.51.100.20", "port": 8443, "uri": "https://198-51-100-20.abc123.plex.direct:8443", "local": false, "relay": true, "IPv6": false}
+    ]
+  },
+  {
+    "name": "Friend's Server",
+    "product": "Plex Media Server",
+    "productVersion": "1.40.5.8897-e5987a19d",
+    "platform": "Windows",
+    "clientIdentifier": "machine-shared-2",
+    "provides": "server",
+    "owned": false,
+    "accessToken": "shared-server-token",
+    "publicAddress": "192.0.2.44",
+    "httpsRequired": true,
+    "relay": true,
+    "presence": false,
+    "home": false,
+    "sourceTitle": "alex",
+    "connections": [
+      {"protocol": "https", "address": "192.0.2.44", "port": 32400, "uri": "https://192-0-2-44.def456.plex.direct:32400", "local": false, "relay": false, "IPv6": false}
+    ]
+  },
+  {
+    "name": "Pixel 9",
+    "product": "Plex for Android (Mobile)",
+    "productVersion": "10.20.0.1234",
+    "platform": "Android",
+    "clientIdentifier": "phone-client-3",
+    "provides": "client,player,pubsub-player",
+    "owned": true,
+    "accessToken": null,
+    "presence": true,
+    "home": false,
+    "sourceTitle": null,
+    "connections": []
+  }
+]

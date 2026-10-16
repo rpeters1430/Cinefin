@@ -9,7 +9,7 @@ import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
  * handed to them carries its token as the `X-Plex-Token` query parameter instead of a header.
  */
 object PlexTokenUrls {
-    const val TOKEN_PARAMETER = "X-Plex-Token"
+    const val TOKEN_PARAMETER = PlexClientHeaders.TOKEN
 
     /**
      * @return [url] with `X-Plex-Token` set to [token], replacing any token already there; or
