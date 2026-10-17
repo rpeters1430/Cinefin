@@ -132,7 +132,7 @@ fun ServerConnectionScreen(
     // Only Plex lacks password sign-in.
     val isPlexUrlEntered = isPlexSignInAvailable && selectedType?.supportsPasswordSignIn == false
     // With Plex sign-in off, a Plex address keeps the form so connecting explains that it is unsupported.
-    val showPasswordSignIn = !isPlexUrlEntered
+    val showCredentialForm = !isPlexUrlEntered
     var username by rememberSaveable(savedUsername) { mutableStateOf(savedUsername) }
     var password by rememberSaveable { mutableStateOf("") }
 
@@ -186,12 +186,12 @@ fun ServerConnectionScreen(
     val isDemoModeTrigger by remember(serverUrl) {
         derivedStateOf { com.rpeters.jellyfin.data.repository.DemoModeRepository.isTriggerKeyword(serverUrl) }
     }
-    val canSubmit by remember(serverUrl, username, password, isServerUrlValid, isDemoModeTrigger, showPasswordSignIn) {
+    val canSubmit by remember(serverUrl, username, password, isServerUrlValid, isDemoModeTrigger, showCredentialForm) {
         derivedStateOf {
             isDemoModeTrigger ||
                 (
                     isServerUrlValid &&
-                        showPasswordSignIn &&
+                        showCredentialForm &&
                         username.isNotBlank() &&
                         password.isNotBlank()
                     )
@@ -324,7 +324,7 @@ fun ServerConnectionScreen(
                 onPasswordSubmit = submitIfValid,
                 showInvalidUrlError = showInvalidUrlError,
                 isDemoModeTrigger = isDemoModeTrigger,
-                showPasswordFields = showPasswordSignIn,
+                showPasswordFields = showCredentialForm,
                 modifier = Modifier.fillMaxWidth(),
             )
 
