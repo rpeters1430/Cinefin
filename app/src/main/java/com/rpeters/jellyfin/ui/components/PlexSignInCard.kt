@@ -49,7 +49,7 @@ fun PlexSignInCard(
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(stringResource(R.string.plex_sign_in_title), style = MaterialTheme.typography.titleLarge)
             PlexSignInStepContent(step, onStart, onServerSelected, plexUrlEntered, enabled)
-            if (step != PlexSignInStep.Idle) {
+            if (step != PlexSignInStep.Idle && step !is PlexSignInStep.Saving) {
                 TextButton(onClick = onCancel) { Text(stringResource(R.string.plex_sign_in_cancel)) }
             }
         }
@@ -70,6 +70,7 @@ private fun ColumnScope.PlexSignInStepContent(
         is PlexSignInStep.WaitingForApproval -> PinCode(step)
         PlexSignInStep.LoadingServers -> Busy(stringResource(R.string.plex_sign_in_loading_servers))
         is PlexSignInStep.ChooseServer -> ChooseServer(step, onServerSelected, enabled)
+        is PlexSignInStep.Saving -> Busy(stringResource(R.string.plex_server_connecting, step.serverName))
         PlexSignInStep.NoServers -> ErrorText(stringResource(R.string.plex_sign_in_no_servers))
         PlexSignInStep.Expired -> RetryAfter(stringResource(R.string.plex_sign_in_expired), onStart, enabled)
         is PlexSignInStep.Failed -> RetryAfter(step.message, onStart, enabled)

@@ -23,6 +23,7 @@ import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.slot
 import io.mockk.unmockkAll
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.TestScope
@@ -190,6 +191,30 @@ class PlexSignInViewModelTest {
         val step = viewModel.step.value as PlexSignInStep.ChooseServer
         assertEquals(PlexServerProblem.NO_ACCESS, step.problem)
         coVerify(exactly = 0) { profileSwitcher.addAndSwitch(any()) }
+    }
+
+    @Test
+    fun cancel_afterSavingBegan_isIgnoredAndTheSwitchCompletes() = runTest(mainDispatcherRule.dispatcher) {
+        signsInWith(PlexSignInState.SignedIn(ACCOUNT_TOKEN))
+        coEvery { connectionSelector.select(owned) } returns PlexServerAddress(LOCAL, emptyList())
+        val switchGate = CompletableDeferred<Unit>()
+        coEvery { profileSwitcher.addAndSwitch(any()) } coAnswers {
+            switchGate.await()
+            firstArg()
+        }
+        val viewModel = viewModel()
+        viewModel.start()
+        advanceUntilIdle()
+        viewModel.selectServer(MACHINE_OWNED)
+        advanceUntilIdle()
+        assertEquals(PlexSignInStep.Saving("Living Room"), viewModel.step.value)
+
+        viewModel.cancel()
+        switchGate.complete(Unit)
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { profileSwitcher.addAndSwitch(any()) }
+        assertEquals(PlexSignInStep.Idle, viewModel.step.value)
     }
 
     @Test

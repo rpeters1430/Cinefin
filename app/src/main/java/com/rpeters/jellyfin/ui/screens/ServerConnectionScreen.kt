@@ -76,6 +76,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.data.model.ServerType
 import com.rpeters.jellyfin.ui.components.ConnectionPhase
 import com.rpeters.jellyfin.ui.components.ConnectionState
 import com.rpeters.jellyfin.ui.components.ExpressiveBackNavigationIcon
@@ -129,8 +130,7 @@ fun ServerConnectionScreen(
     }?.serverType ?: connectionState.detectedServerType.takeIf {
         connectionState.detectedServerUrl == com.rpeters.jellyfin.utils.normalizeServerUrl(serverUrl)
     }
-    // Only Plex lacks password sign-in.
-    val isPlexUrlEntered = isPlexSignInAvailable && selectedType?.supportsPasswordSignIn == false
+    val isPlexUrlEntered = isPlexSignInAddress(isPlexSignInAvailable, selectedType)
     // With Plex sign-in off, a Plex address keeps the form so connecting explains that it is unsupported.
     val showCredentialForm = !isPlexUrlEntered
     var username by rememberSaveable(savedUsername) { mutableStateOf(savedUsername) }
@@ -188,13 +188,7 @@ fun ServerConnectionScreen(
     }
     val canSubmit by remember(serverUrl, username, password, isServerUrlValid, isDemoModeTrigger, showCredentialForm) {
         derivedStateOf {
-            isDemoModeTrigger ||
-                (
-                    isServerUrlValid &&
-                        showCredentialForm &&
-                        username.isNotBlank() &&
-                        password.isNotBlank()
-                    )
+            canSubmitLogin(isDemoModeTrigger, isServerUrlValid, showCredentialForm, username, password)
         }
     }
     val showInvalidUrlError by remember(serverUrl, isServerUrlValid, isDemoModeTrigger) {
@@ -376,6 +370,19 @@ fun ServerConnectionScreen(
         }
     }
 }
+
+/** The typed address is a Plex server, which is added through Plex sign-in. Only Plex lacks password sign-in. */
+private fun isPlexSignInAddress(isPlexSignInAvailable: Boolean, serverType: ServerType?): Boolean =
+    isPlexSignInAvailable && serverType?.supportsPasswordSignIn == false
+
+private fun canSubmitLogin(
+    isDemoModeTrigger: Boolean,
+    isServerUrlValid: Boolean,
+    showCredentialForm: Boolean,
+    username: String,
+    password: String,
+): Boolean = isDemoModeTrigger ||
+    (isServerUrlValid && showCredentialForm && username.isNotBlank() && password.isNotBlank())
 
 private data class LoginScreenUiFlags(
     val showAutoLoginCard: Boolean,

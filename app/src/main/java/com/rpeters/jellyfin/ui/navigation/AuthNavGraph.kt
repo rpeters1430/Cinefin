@@ -117,21 +117,16 @@ fun androidx.navigation.NavGraphBuilder.authNavGraph(
         val embyConnectState by viewModel.embyConnectState.collectAsStateWithLifecycle()
         val plexSignInViewModel: PlexSignInViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel()
         val plexSignInStep by plexSignInViewModel.step.collectAsStateWithLifecycle()
-        val isPlexSignInAvailable = plexSignInViewModel.isAvailable
         ServerConnectionScreen(
             onServerUrlEdited = viewModel::probeServerType,
-            isPlexSignInAvailable = isPlexSignInAvailable,
+            isPlexSignInAvailable = plexSignInViewModel.isAvailable,
             plexSignInSection = { plexUrlEntered ->
-                if (isPlexSignInAvailable) {
-                    PlexSignInCard(
-                        step = plexSignInStep,
-                        onStart = plexSignInViewModel::start,
-                        onServerSelected = { plexSignInViewModel.selectServer(it.id) },
-                        onCancel = plexSignInViewModel::cancel,
-                        plexUrlEntered = plexUrlEntered,
-                        enabled = !connectionState.isConnecting && !profilesUiState.isSwitching,
-                    )
-                }
+                PlexSignInSection(
+                    viewModel = plexSignInViewModel,
+                    step = plexSignInStep,
+                    plexUrlEntered = plexUrlEntered,
+                    enabled = !connectionState.isConnecting && !profilesUiState.isSwitching,
+                )
             },
             embyConnectSection = {
                 if (viewModel.isEmbyConnectSupported) com.rpeters.jellyfin.ui.components.EmbyConnectCard(
@@ -269,4 +264,24 @@ fun androidx.navigation.NavGraphBuilder.authNavGraph(
             },
         )
     }
+}
+
+/** The "Sign in with Plex" card, shown only while Plex support is switched on. */
+@androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
+@androidx.compose.runtime.Composable
+private fun PlexSignInSection(
+    viewModel: PlexSignInViewModel,
+    step: com.rpeters.jellyfin.ui.viewmodel.PlexSignInStep,
+    plexUrlEntered: Boolean,
+    enabled: Boolean,
+) {
+    if (!viewModel.isAvailable) return
+    PlexSignInCard(
+        step = step,
+        onStart = viewModel::start,
+        onServerSelected = { viewModel.selectServer(it.id) },
+        onCancel = viewModel::cancel,
+        plexUrlEntered = plexUrlEntered,
+        enabled = enabled,
+    )
 }

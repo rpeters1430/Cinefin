@@ -76,6 +76,9 @@ sealed interface PlexSignInStep {
         val problemServerName: String? = null,
     ) : PlexSignInStep
 
+    /** The profile is being saved and activated; this can no longer be cancelled. */
+    data class Saving(val serverName: String) : PlexSignInStep
+
     /** Signed in, but the account has no servers of its own or shared with it. */
     data object NoServers : PlexSignInStep
 
@@ -112,6 +115,7 @@ class PlexSignInViewModel @Inject constructor(
 
     /** Starts a new sign-in, dropping any earlier one. Also used to retry. */
     fun start() {
+        if (_step.value is PlexSignInStep.Saving) return
         reset()
         _step.value = PlexSignInStep.Starting
         job = viewModelScope.launch {
@@ -167,14 +171,19 @@ class PlexSignInViewModel @Inject constructor(
                 _step.value = choosing.copy(problem = problem, problemServerName = server.name)
                 return@launch
             }
-            // The switch signs in, which navigates away and clears this ViewModel; it must finish.
+            // The switch signs in, which navigates away and clears this ViewModel; it must finish,
+            // so from here on Cancel is ignored and hidden.
+            _step.value = PlexSignInStep.Saving(server.name)
             applicationScope.launch { profileSwitcher.addAndSwitch(profile) }.join()
             forgetAccount()
         }
     }
 
-    /** Stops polling and forgets the account token; nothing is saved. */
-    fun cancel() = reset()
+    /** Stops polling and forgets the account token; nothing is saved. Ignored once saving began. */
+    fun cancel() {
+        if (_step.value is PlexSignInStep.Saving) return
+        reset()
+    }
 
     private fun reset() {
         job?.cancel()
