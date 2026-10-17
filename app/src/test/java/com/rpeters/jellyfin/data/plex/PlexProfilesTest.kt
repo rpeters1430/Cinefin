@@ -1,6 +1,7 @@
 package com.rpeters.jellyfin.data.plex
 
 import com.rpeters.jellyfin.data.common.ids.ServerIdCodec
+import com.rpeters.jellyfin.data.model.ServerProfile
 import com.rpeters.jellyfin.data.model.ServerType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -18,7 +19,7 @@ class PlexProfilesTest {
 
     @Test
     fun create_ownedServer_savesServerTokenAndKeepsAccountTokenApart() {
-        val profile = PlexProfiles.create(server(owned = true), address, user, ACCOUNT_TOKEN, LOGIN_TIME)!!
+        val profile = profileFor(server(owned = true))
 
         assertEquals(ServerType.PLEX, profile.serverType)
         assertEquals(MACHINE_ID, profile.serverId)
@@ -34,14 +35,14 @@ class PlexProfilesTest {
 
     @Test
     fun create_alternates_dropTheChosenAddressAndDuplicates() {
-        val profile = PlexProfiles.create(server(owned = true), address, user, ACCOUNT_TOKEN, LOGIN_TIME)!!
+        val profile = profileFor(server(owned = true))
 
         assertEquals(listOf(REMOTE, RELAY), profile.alternateServerUrls)
     }
 
     @Test
     fun create_userId_isTheAccountIdAsAPlexUuid() {
-        val profile = PlexProfiles.create(server(owned = true), address, user, ACCOUNT_TOKEN, LOGIN_TIME)!!
+        val profile = profileFor(server(owned = true))
 
         val uuid = UUID.fromString(profile.userId)
         assertTrue(ServerIdCodec.PLEX.isEncoded(uuid))
@@ -50,7 +51,7 @@ class PlexProfilesTest {
 
     @Test
     fun create_sharedServer_isNotAdministrator() {
-        val profile = PlexProfiles.create(server(owned = false), address, user, ACCOUNT_TOKEN, LOGIN_TIME)!!
+        val profile = profileFor(server(owned = false))
 
         assertEquals(false, profile.isAdministrator)
         assertEquals(SERVER_TOKEN, profile.accessToken)
@@ -58,9 +59,7 @@ class PlexProfilesTest {
 
     @Test
     fun create_ownedServerWithoutToken_fallsBackToAccountToken() {
-        val profile = PlexProfiles.create(
-            server(owned = true, accessToken = null), address, user, ACCOUNT_TOKEN, LOGIN_TIME,
-        )!!
+        val profile = profileFor(server(owned = true, accessToken = null))
 
         assertEquals(ACCOUNT_TOKEN, profile.accessToken)
     }
@@ -69,6 +68,9 @@ class PlexProfilesTest {
     fun create_sharedServerWithoutToken_returnsNull() {
         assertNull(PlexProfiles.create(server(owned = false, accessToken = ""), address, user, ACCOUNT_TOKEN, LOGIN_TIME))
     }
+
+    private fun profileFor(server: PlexResource): ServerProfile =
+        checkNotNull(PlexProfiles.create(server, address, user, ACCOUNT_TOKEN, LOGIN_TIME))
 
     private fun server(owned: Boolean, accessToken: String? = SERVER_TOKEN) = PlexResource(
         name = "Living Room PMS",

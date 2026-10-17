@@ -48,55 +48,75 @@ fun PlexSignInCard(
     ElevatedCard(modifier = modifier.fillMaxWidth()) {
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(stringResource(R.string.plex_sign_in_title), style = MaterialTheme.typography.titleLarge)
-            when (step) {
-                PlexSignInStep.Idle -> {
-                    val intro = if (plexUrlEntered) R.string.plex_sign_in_url_detected else R.string.plex_sign_in_intro
-                    Text(stringResource(intro))
-                    if (plexUrlEntered) {
-                        Button(onClick = onStart, enabled = enabled) { Text(stringResource(R.string.plex_sign_in_start)) }
-                    } else {
-                        OutlinedButton(onClick = onStart, enabled = enabled) {
-                            Text(stringResource(R.string.plex_sign_in_start))
-                        }
-                    }
-                }
-                PlexSignInStep.Starting -> Busy(stringResource(R.string.plex_sign_in_starting))
-                is PlexSignInStep.WaitingForApproval -> PinCode(step)
-                PlexSignInStep.LoadingServers -> Busy(stringResource(R.string.plex_sign_in_loading_servers))
-                is PlexSignInStep.ChooseServer -> {
-                    PlexServerPicker(
-                        servers = step.servers,
-                        connectingTo = step.connectingTo,
-                        onServerSelected = onServerSelected,
-                        enabled = enabled,
-                    )
-                    step.connectingTo?.let { id ->
-                        val name = step.servers.firstOrNull { it.id == id }?.name.orEmpty()
-                        Busy(stringResource(R.string.plex_server_connecting, name))
-                    }
-                    step.problem?.let { problem ->
-                        val message = when (problem) {
-                            PlexServerProblem.UNREACHABLE -> R.string.plex_server_unreachable
-                            PlexServerProblem.NO_ACCESS -> R.string.plex_server_no_access
-                        }
-                        ErrorText(stringResource(message, step.problemServerName.orEmpty()))
-                    }
-                }
-                PlexSignInStep.NoServers -> ErrorText(stringResource(R.string.plex_sign_in_no_servers))
-                PlexSignInStep.Expired -> {
-                    ErrorText(stringResource(R.string.plex_sign_in_expired))
-                    Button(onClick = onStart, enabled = enabled) { Text(stringResource(R.string.plex_sign_in_retry)) }
-                }
-                is PlexSignInStep.Failed -> {
-                    ErrorText(step.message)
-                    Button(onClick = onStart, enabled = enabled) { Text(stringResource(R.string.plex_sign_in_retry)) }
-                }
-            }
+            PlexSignInStepContent(step, onStart, onServerSelected, plexUrlEntered, enabled)
             if (step != PlexSignInStep.Idle) {
                 TextButton(onClick = onCancel) { Text(stringResource(R.string.plex_sign_in_cancel)) }
             }
         }
     }
+}
+
+@Composable
+private fun ColumnScope.PlexSignInStepContent(
+    step: PlexSignInStep,
+    onStart: () -> Unit,
+    onServerSelected: (PlexServerOption) -> Unit,
+    plexUrlEntered: Boolean,
+    enabled: Boolean,
+) {
+    when (step) {
+        PlexSignInStep.Idle -> StartSignIn(onStart, plexUrlEntered, enabled)
+        PlexSignInStep.Starting -> Busy(stringResource(R.string.plex_sign_in_starting))
+        is PlexSignInStep.WaitingForApproval -> PinCode(step)
+        PlexSignInStep.LoadingServers -> Busy(stringResource(R.string.plex_sign_in_loading_servers))
+        is PlexSignInStep.ChooseServer -> ChooseServer(step, onServerSelected, enabled)
+        PlexSignInStep.NoServers -> ErrorText(stringResource(R.string.plex_sign_in_no_servers))
+        PlexSignInStep.Expired -> RetryAfter(stringResource(R.string.plex_sign_in_expired), onStart, enabled)
+        is PlexSignInStep.Failed -> RetryAfter(step.message, onStart, enabled)
+    }
+}
+
+@Composable
+private fun StartSignIn(onStart: () -> Unit, plexUrlEntered: Boolean, enabled: Boolean) {
+    val label = stringResource(R.string.plex_sign_in_start)
+    if (plexUrlEntered) {
+        Text(stringResource(R.string.plex_sign_in_url_detected))
+        Button(onClick = onStart, enabled = enabled) { Text(label) }
+    } else {
+        Text(stringResource(R.string.plex_sign_in_intro))
+        OutlinedButton(onClick = onStart, enabled = enabled) { Text(label) }
+    }
+}
+
+@Composable
+private fun ChooseServer(
+    step: PlexSignInStep.ChooseServer,
+    onServerSelected: (PlexServerOption) -> Unit,
+    enabled: Boolean,
+) {
+    PlexServerPicker(
+        servers = step.servers,
+        connectingTo = step.connectingTo,
+        onServerSelected = onServerSelected,
+        enabled = enabled,
+    )
+    step.connectingTo?.let { id ->
+        val name = step.servers.firstOrNull { it.id == id }?.name.orEmpty()
+        Busy(stringResource(R.string.plex_server_connecting, name))
+    }
+    step.problem?.let { problem ->
+        val message = when (problem) {
+            PlexServerProblem.UNREACHABLE -> R.string.plex_server_unreachable
+            PlexServerProblem.NO_ACCESS -> R.string.plex_server_no_access
+        }
+        ErrorText(stringResource(message, step.problemServerName.orEmpty()))
+    }
+}
+
+@Composable
+private fun RetryAfter(message: String, onStart: () -> Unit, enabled: Boolean) {
+    ErrorText(message)
+    Button(onClick = onStart, enabled = enabled) { Text(stringResource(R.string.plex_sign_in_retry)) }
 }
 
 @Composable

@@ -188,7 +188,9 @@ class PlexSignInViewModel @Inject constructor(
         _step.value = PlexSignInStep.Idle
     }
 
-    private class SignedInAccount(val accountToken: String, val user: PlexTvUser)
+    private data class SignedInAccount(val accountToken: String, val user: PlexTvUser) {
+        override fun toString(): String = "SignedInAccount(user=${user.id}, accountToken=redacted)"
+    }
 
     companion object {
         private const val TAG = "PlexSignInViewModel"
