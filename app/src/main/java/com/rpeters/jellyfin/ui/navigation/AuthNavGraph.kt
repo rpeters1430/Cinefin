@@ -13,10 +13,12 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.compose.ui.res.stringResource
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.ui.components.PlexSignInCard
 import com.rpeters.jellyfin.ui.components.ServerProfilesCard
 import com.rpeters.jellyfin.ui.screens.OfflineLibraryScreen
 import com.rpeters.jellyfin.ui.screens.QuickConnectScreen
 import com.rpeters.jellyfin.ui.screens.ServerConnectionScreen
+import com.rpeters.jellyfin.ui.viewmodel.PlexSignInViewModel
 import com.rpeters.jellyfin.ui.viewmodel.ProfilesViewModel
 import com.rpeters.jellyfin.ui.viewmodel.ServerConnectionViewModel
 
@@ -113,8 +115,24 @@ fun androidx.navigation.NavGraphBuilder.authNavGraph(
         val biometricErrorMsg = stringResource(R.string.biometric_activity_error)
 
         val embyConnectState by viewModel.embyConnectState.collectAsStateWithLifecycle()
+        val plexSignInViewModel: PlexSignInViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel()
+        val plexSignInStep by plexSignInViewModel.step.collectAsStateWithLifecycle()
+        val isPlexSignInAvailable = plexSignInViewModel.isAvailable
         ServerConnectionScreen(
             onServerUrlEdited = viewModel::probeServerType,
+            isPlexSignInAvailable = isPlexSignInAvailable,
+            plexSignInSection = { plexUrlEntered ->
+                if (isPlexSignInAvailable) {
+                    PlexSignInCard(
+                        step = plexSignInStep,
+                        onStart = plexSignInViewModel::start,
+                        onServerSelected = { plexSignInViewModel.selectServer(it.id) },
+                        onCancel = plexSignInViewModel::cancel,
+                        plexUrlEntered = plexUrlEntered,
+                        enabled = !connectionState.isConnecting && !profilesUiState.isSwitching,
+                    )
+                }
+            },
             embyConnectSection = {
                 if (viewModel.isEmbyConnectSupported) com.rpeters.jellyfin.ui.components.EmbyConnectCard(
                     state = embyConnectState,

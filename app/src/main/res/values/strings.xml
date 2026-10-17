@@ -110,6 +110,32 @@
     <string name="sign_in">Sign In</string>
     <string name="settings">Settings</string>
 
+    <!-- Sign in with Plex -->
+    <string name="plex_sign_in_title">Plex</string>
+    <string name="plex_sign_in_intro">Sign in with your Plex account to pick one of your servers or a server shared with you.</string>
+    <string name="plex_sign_in_url_detected">This address is a Plex server. Plex servers are added by signing in with your Plex account.</string>
+    <string name="plex_sign_in_start">Sign in with Plex</string>
+    <string name="plex_sign_in_starting">Getting a code from plex.tv…</string>
+    <string name="plex_sign_in_code_instructions">Approve this code on plex.tv. Cinefin continues on its own once you have.</string>
+    <string name="plex_sign_in_code_description">Plex code %1$s</string>
+    <string name="plex_sign_in_open">Open plex.tv</string>
+    <string name="plex_sign_in_link_fallback">Or go to plex.tv/link on any device and enter the code.</string>
+    <string name="plex_sign_in_waiting">Waiting for approval…</string>
+    <string name="plex_sign_in_loading_servers">Finding your Plex servers…</string>
+    <string name="plex_sign_in_expired">The code expired before it was approved.</string>
+    <string name="plex_sign_in_retry">Get a new code</string>
+    <string name="plex_sign_in_no_servers">This Plex account has no servers, and none are shared with it.</string>
+    <string name="plex_sign_in_cancel">Cancel</string>
+    <string name="plex_server_picker_title">Choose a Plex server</string>
+    <string name="plex_server_owned">Your server</string>
+    <string name="plex_server_shared_by">Shared by %1$s</string>
+    <string name="plex_server_shared">Shared with you</string>
+    <string name="plex_server_online">Online</string>
+    <string name="plex_server_offline">Offline</string>
+    <string name="plex_server_connecting">Connecting to %1$s…</string>
+    <string name="plex_server_unreachable">Could not reach %1$s from this network. Check that the server is running, or try again from its home network.</string>
+    <string name="plex_server_no_access">plex.tv did not give this account access to %1$s. Ask its owner to share it again.</string>
+
     <!-- Login / Server Connection -->
     <string name="server_url_label">Server URL</string>
     <string name="server_url_placeholder">https://jellyfin.example.com</string>

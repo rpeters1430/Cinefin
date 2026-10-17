@@ -99,6 +99,20 @@ class ProfileSwitcher @Inject constructor(
     }
 
     /**
+     * Saves a profile made by a sign-in that did not go through the server's own login (Plex)
+     * and makes it the active session, with the same reset as a switch.
+     */
+    suspend fun addAndSwitch(profile: ServerProfile): ServerProfile = switchMutex.withLock {
+        resetServerScopedState()
+        profileRepository.saveAndActivate(profile)
+        val server = profile.toJellyfinServer()
+        activeSessionStore.save(server)
+        authRepository.restorePersistedSession(server)
+        _profileChanged.tryEmit(profile)
+        profile
+    }
+
+    /**
      * Removes a saved profile with its token and saved password. When it was the active one, the
      * session ends and no other profile is activated; the caller decides where to go next.
      *

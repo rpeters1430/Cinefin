@@ -118,6 +118,14 @@ class ServerConnectionViewModel @Inject constructor(
                     detectedServerUrl = normalized,
                     detectedServerType = ServerType.detect(result.data.productName, result.data.version),
                 )
+                // A Plex server fails the Jellyfin/Emby probe; the screen still needs to know it
+                // so it can offer Sign in with Plex instead of a password form.
+                is ApiResult.Error -> if (authRepository.probedServerType(normalized) == ServerType.PLEX) {
+                    _connectionState.value = _connectionState.value.copy(
+                        detectedServerUrl = normalized,
+                        detectedServerType = ServerType.PLEX,
+                    )
+                }
                 else -> Unit
             }
         }
@@ -338,7 +346,7 @@ class ServerConnectionViewModel @Inject constructor(
                             ?: ServerType.JELLYFIN,
                         embyConnectUserId = preferences[PreferencesKeys.EMBY_CONNECT_USER_ID],
                         embyConnectAccessKey = preferences[PreferencesKeys.EMBY_CONNECT_ACCESS_KEY],
-                    )
+                    ).withSavedPlexFields()
                     val connectUserId = restoredServer.embyConnectUserId
                     val connectKey = restoredServer.embyConnectAccessKey
                     if (connectUserId != null && connectKey != null && connectivityChecker.isOnline()) {
@@ -911,6 +919,21 @@ class ServerConnectionViewModel @Inject constructor(
     private suspend fun saveProfile(server: JellyfinServer) {
         val profile = ServerProfile.fromServer(server) ?: return
         profileStoreCall("save the server profile") { serverProfileRepository.saveAndActivate(profile) }
+    }
+
+    /**
+     * The launch keys hold no Plex account token or alternate addresses. Without them, re-saving
+     * the restored session as a profile would erase both from the saved Plex profile.
+     */
+    private suspend fun JellyfinServer.withSavedPlexFields(): JellyfinServer {
+        if (serverType != ServerType.PLEX) return this
+        val profileId = ServerProfile.profileId(id, userId, url, username.orEmpty())
+        var saved: ServerProfile? = null
+        profileStoreCall("read the saved Plex profile") {
+            saved = serverProfileRepository.current().profiles.firstOrNull { it.id == profileId }
+        }
+        val profile = saved ?: return this
+        return copy(plexAccountToken = profile.plexAccountToken, alternateServerUrls = profile.alternateServerUrls)
     }
 
     /** Sign-in, session restore, and sign-out must still complete when the profile list fails. */

@@ -117,6 +117,9 @@ fun ServerConnectionScreen(
     modifier: Modifier = Modifier,
     savedProfilesSection: @Composable () -> Unit = {},
     embyConnectSection: @Composable () -> Unit = {},
+    /** Gets true when the typed address is a Plex server, which is added by Plex sign-in only. */
+    plexSignInSection: @Composable (plexUrlEntered: Boolean) -> Unit = {},
+    isPlexSignInAvailable: Boolean = false,
     onServerUrlEdited: (String) -> Unit = {},
 ) {
     var serverUrl by rememberSaveable(savedServerUrl) { mutableStateOf(savedServerUrl) }
@@ -126,6 +129,10 @@ fun ServerConnectionScreen(
     }?.serverType ?: connectionState.detectedServerType.takeIf {
         connectionState.detectedServerUrl == com.rpeters.jellyfin.utils.normalizeServerUrl(serverUrl)
     }
+    // Only Plex lacks password sign-in.
+    val isPlexUrlEntered = isPlexSignInAvailable && selectedType?.supportsPasswordSignIn == false
+    // With Plex sign-in off, a Plex address keeps the form so connecting explains that it is unsupported.
+    val showPasswordSignIn = !isPlexUrlEntered
     var username by rememberSaveable(savedUsername) { mutableStateOf(savedUsername) }
     var password by rememberSaveable { mutableStateOf("") }
 
@@ -179,11 +186,12 @@ fun ServerConnectionScreen(
     val isDemoModeTrigger by remember(serverUrl) {
         derivedStateOf { com.rpeters.jellyfin.data.repository.DemoModeRepository.isTriggerKeyword(serverUrl) }
     }
-    val canSubmit by remember(serverUrl, username, password, isServerUrlValid, isDemoModeTrigger) {
+    val canSubmit by remember(serverUrl, username, password, isServerUrlValid, isDemoModeTrigger, showPasswordSignIn) {
         derivedStateOf {
             isDemoModeTrigger ||
                 (
                     isServerUrlValid &&
+                        showPasswordSignIn &&
                         username.isNotBlank() &&
                         password.isNotBlank()
                     )
@@ -267,6 +275,7 @@ fun ServerConnectionScreen(
 
             savedProfilesSection()
             embyConnectSection()
+            plexSignInSection(isPlexUrlEntered)
 
             if (uiFlags.showDiscoveredServers) {
                 DiscoveredServersCard(
@@ -315,6 +324,7 @@ fun ServerConnectionScreen(
                 onPasswordSubmit = submitIfValid,
                 showInvalidUrlError = showInvalidUrlError,
                 isDemoModeTrigger = isDemoModeTrigger,
+                showPasswordFields = showPasswordSignIn,
                 modifier = Modifier.fillMaxWidth(),
             )
 
@@ -710,6 +720,7 @@ private fun LoginFormCard(
     onPasswordSubmit: () -> Unit,
     showInvalidUrlError: Boolean,
     isDemoModeTrigger: Boolean = false,
+    showPasswordFields: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -744,56 +755,59 @@ private fun LoginFormCard(
             shape = ShapeTokens.ExtraLarge,
         )
 
-        OutlinedTextField(
-            value = username,
-            onValueChange = onUsernameChange,
-            label = { Text(stringResource(id = R.string.username_label)) },
-            leadingIcon = { Icon(Icons.Rounded.Person, contentDescription = null) },
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Text,
-                imeAction = ImeAction.Next,
-            ),
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-            enabled = !isConnecting,
-            shape = ShapeTokens.ExtraLarge,
-        )
-
-        OutlinedTextField(
-            value = password,
-            onValueChange = onPasswordChange,
-            label = { Text(stringResource(id = R.string.password_label)) },
-            leadingIcon = { Icon(Icons.Rounded.Lock, contentDescription = null) },
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Password,
-                imeAction = ImeAction.Done,
-            ),
-            keyboardActions = KeyboardActions(
-                onDone = { onPasswordSubmit() },
-            ),
-            visualTransformation = PasswordVisualTransformation(),
-            modifier = Modifier.fillMaxWidth(),
-            enabled = !isConnecting,
-            shape = ShapeTokens.ExtraLarge,
-            singleLine = true,
-        )
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Switch(
-                checked = rememberLogin,
-                onCheckedChange = onRememberLoginChange,
+        // Plex servers are added through Plex sign-in, never with a username and password.
+        if (showPasswordFields) {
+            OutlinedTextField(
+                value = username,
+                onValueChange = onUsernameChange,
+                label = { Text(stringResource(id = R.string.username_label)) },
+                leadingIcon = { Icon(Icons.Rounded.Person, contentDescription = null) },
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Next,
+                ),
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
                 enabled = !isConnecting,
+                shape = ShapeTokens.ExtraLarge,
             )
-            Spacer(modifier = Modifier.width(16.dp))
-            Text(
-                stringResource(id = R.string.remember_login),
-                style = MaterialTheme.typography.bodyMedium,
+
+            OutlinedTextField(
+                value = password,
+                onValueChange = onPasswordChange,
+                label = { Text(stringResource(id = R.string.password_label)) },
+                leadingIcon = { Icon(Icons.Rounded.Lock, contentDescription = null) },
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Done,
+                ),
+                keyboardActions = KeyboardActions(
+                    onDone = { onPasswordSubmit() },
+                ),
+                visualTransformation = PasswordVisualTransformation(),
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isConnecting,
+                shape = ShapeTokens.ExtraLarge,
+                singleLine = true,
             )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Switch(
+                    checked = rememberLogin,
+                    onCheckedChange = onRememberLoginChange,
+                    enabled = !isConnecting,
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+                Text(
+                    stringResource(id = R.string.remember_login),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
         }
     }
 }

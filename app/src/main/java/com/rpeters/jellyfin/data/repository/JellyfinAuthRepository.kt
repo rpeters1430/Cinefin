@@ -158,9 +158,9 @@ class JellyfinAuthRepository @Inject constructor(
         val identity = plexIdentityProbe?.get()?.probe(serverUrl) ?: return null
         probedServerTypes[normalizeServerUrl(serverUrl)] = ServerType.PLEX
         SecureLogger.i(TAG, "testServerConnection: Plex server found (version ${identity.version ?: "unknown"})")
-        // Sign in with Plex arrives in a later phase; until then both states explain themselves.
+        // Plex servers are added through Sign in with Plex, never with a password.
         val message = if (isPlexSupportEnabled()) {
-            "This is a Plex server. Sign in with Plex is not available in this build yet."
+            "This is a Plex server. Use Sign in with Plex to add it."
         } else {
             "This is a Plex server. Plex support is not available yet."
         }
@@ -285,6 +285,8 @@ class JellyfinAuthRepository @Inject constructor(
             reAuthenticateInternal()
         }
     }
+
+    override fun probedServerType(serverUrl: String): ServerType? = probedServerTypes[normalizeServerUrl(serverUrl)]
 
     override fun isEmbyConnectSupported(): Boolean = isEmbySupportEnabled() && embyConnectClient != null
 
