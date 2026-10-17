@@ -137,7 +137,7 @@ class PlexSignInViewModel @Inject constructor(
         val user = (userResult as? ApiResult.Success)?.data
         val found = (serversResult as? ApiResult.Success)?.data
         if (user == null || found == null) {
-            val error = userResult as? ApiResult.Error ?: serversResult as? ApiResult.Error
+            val error = userResult as? ApiResult.Error<*> ?: serversResult as? ApiResult.Error<*>
             _step.value = PlexSignInStep.Failed(error?.message ?: "Could not load your Plex servers")
             return
         }
