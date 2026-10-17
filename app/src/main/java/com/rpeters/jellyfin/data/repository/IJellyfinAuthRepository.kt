@@ -3,6 +3,7 @@ package com.rpeters.jellyfin.data.repository
 import com.rpeters.jellyfin.data.JellyfinServer
 import com.rpeters.jellyfin.data.model.QuickConnectResult
 import com.rpeters.jellyfin.data.model.QuickConnectState
+import com.rpeters.jellyfin.data.model.ServerType
 import com.rpeters.jellyfin.data.network.TokenProvider
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import kotlinx.coroutines.flow.StateFlow
@@ -15,6 +16,9 @@ interface IJellyfinAuthRepository : TokenProvider {
     val isAuthenticating: StateFlow<Boolean>
 
     fun isEmbyConnectSupported(): Boolean = false
+
+    /** The server type the last [testServerConnection] found at [serverUrl], even when it failed. */
+    fun probedServerType(serverUrl: String): ServerType? = null
     fun getCurrentServerSync(): JellyfinServer?
     fun isUserAuthenticated(): Boolean
     fun isTokenExpired(): Boolean

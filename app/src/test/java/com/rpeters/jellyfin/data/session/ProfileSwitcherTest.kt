@@ -131,6 +131,37 @@ class ProfileSwitcherTest {
     }
 
     @Test
+    fun addAndSwitch_plexProfile_resetsThenSavesAndRestoresWithPlexFields() = runTest {
+        val plexProfile = ServerProfile(
+            id = "machine-1:plex-user",
+            serverId = "machine-1",
+            serverUrl = "https://10-0-0-5.abc.plex.direct:32400",
+            serverName = "Living Room PMS",
+            serverType = ServerType.PLEX,
+            userId = "plex-user",
+            username = "carol",
+            accessToken = "server-token",
+            loginTimestamp = now,
+            plexAccountToken = "account-token",
+            alternateServerUrls = listOf("https://203-0-113-9.abc.plex.direct:32400"),
+        )
+        val restored = slot<JellyfinServer>()
+
+        switcher.addAndSwitch(plexProfile)
+
+        coVerifyOrder {
+            clientFactory.clearAllClients()
+            profileRepository.saveAndActivate(plexProfile)
+            activeSessionStore.save(capture(restored))
+        }
+        verify { authRepository.restorePersistedSession(restored.captured) }
+        assertEquals(ServerType.PLEX, restored.captured.serverType)
+        assertEquals("server-token", restored.captured.accessToken)
+        assertEquals("account-token", restored.captured.plexAccountToken)
+        assertEquals(plexProfile.alternateServerUrls, restored.captured.alternateServerUrls)
+    }
+
+    @Test
     fun switchTo_otherSavedProfile_restoresItsSessionAndPersistsIt() = runTest {
         val restored = slot<JellyfinServer>()
 

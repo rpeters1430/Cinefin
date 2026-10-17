@@ -13,10 +13,12 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.compose.ui.res.stringResource
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.ui.components.PlexSignInCard
 import com.rpeters.jellyfin.ui.components.ServerProfilesCard
 import com.rpeters.jellyfin.ui.screens.OfflineLibraryScreen
 import com.rpeters.jellyfin.ui.screens.QuickConnectScreen
 import com.rpeters.jellyfin.ui.screens.ServerConnectionScreen
+import com.rpeters.jellyfin.ui.viewmodel.PlexSignInViewModel
 import com.rpeters.jellyfin.ui.viewmodel.ProfilesViewModel
 import com.rpeters.jellyfin.ui.viewmodel.ServerConnectionViewModel
 
@@ -113,8 +115,19 @@ fun androidx.navigation.NavGraphBuilder.authNavGraph(
         val biometricErrorMsg = stringResource(R.string.biometric_activity_error)
 
         val embyConnectState by viewModel.embyConnectState.collectAsStateWithLifecycle()
+        val plexSignInViewModel: PlexSignInViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel()
+        val plexSignInStep by plexSignInViewModel.step.collectAsStateWithLifecycle()
         ServerConnectionScreen(
             onServerUrlEdited = viewModel::probeServerType,
+            isPlexSignInAvailable = plexSignInViewModel.isAvailable,
+            plexSignInSection = { plexUrlEntered ->
+                PlexSignInSection(
+                    viewModel = plexSignInViewModel,
+                    step = plexSignInStep,
+                    plexUrlEntered = plexUrlEntered,
+                    enabled = !connectionState.isConnecting && !profilesUiState.isSwitching,
+                )
+            },
             embyConnectSection = {
                 if (viewModel.isEmbyConnectSupported) com.rpeters.jellyfin.ui.components.EmbyConnectCard(
                     state = embyConnectState,
@@ -251,4 +264,24 @@ fun androidx.navigation.NavGraphBuilder.authNavGraph(
             },
         )
     }
+}
+
+/** The "Sign in with Plex" card, shown only while Plex support is switched on. */
+@androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
+@androidx.compose.runtime.Composable
+private fun PlexSignInSection(
+    viewModel: PlexSignInViewModel,
+    step: com.rpeters.jellyfin.ui.viewmodel.PlexSignInStep,
+    plexUrlEntered: Boolean,
+    enabled: Boolean,
+) {
+    if (!viewModel.isAvailable) return
+    PlexSignInCard(
+        step = step,
+        onStart = viewModel::start,
+        onServerSelected = { viewModel.selectServer(it.id) },
+        onCancel = viewModel::cancel,
+        plexUrlEntered = plexUrlEntered,
+        enabled = enabled,
+    )
 }

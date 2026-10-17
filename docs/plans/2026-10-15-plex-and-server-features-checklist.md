@@ -17,11 +17,13 @@ Conventions for every task:
 
 ## Status and next step
 
-_Last updated: 2026-10-15_
+_Last updated: 2026-10-17_
 
-**Done in code**: A1 and A2 code tasks, A3 (remote bitrate cap, #1356), all of Phase 1 (the last task, Keystore encryption of the Plex account token, merged in #1359), and the non-UI half of Phase 2: the plex.tv client, PIN sign-in and connection selection. The Phase 2 work is built and tested against real plex.tv captures where they could be made without an account, and hand-written stand-ins for the rest (see `app/src/test/resources/plex/README.md`).
+**Done in code**: A1 and A2 code tasks, A3 (remote bitrate cap, #1356), all of Phase 1 (the last task, Keystore encryption of the Plex account token, merged in #1359), and Phase 2 apart from what needs a real account: the plex.tv client, PIN sign-in, connection selection (#1360), and the "Sign in with Plex" card, server picker and profile save. The Phase 2 work is tested against real plex.tv captures where they could be made without an account, and hand-written stand-ins for the rest (see `app/src/test/resources/plex/README.md`).
 
-**Next code step**: the rest of Phase 2. That means the "Sign in with Plex" entry, the PIN screen and the server picker, then saving the profile. These can be built now on top of `PlexAuthDataSource`, `PlexTvClient.getServers` and `PlexConnectionSelector`.
+**Next code step**: Phase 3 (browse), starting with the `PlexApiClient` skeleton and `PlexMapper`. Until it lands, a signed-in Plex profile is saved and restored but its home screen cannot load anything, which is expected behind `enable_plex_support`.
+
+**Phase 2 left for real servers**: the exit test (sign in, pick a server, restart, switch away and back) and the sign-out/revoke call for removing a profile (Phase 0 item).
 
 **Still needs real servers** (done by hand; Phase 2 cannot exit without the first one):
 
@@ -160,23 +162,23 @@ Exit: a user signs in with Plex, picks a server, and it appears in the profile s
 
 ### UI
 
-- [ ] "Sign in with Plex" entry on `ServerConnectionScreen`
-- [ ] PIN screen: code, "Open plex.tv" button (Custom Tab to app.plex.tv/auth with clientID and code), waiting state, expiry with retry
-- [ ] Typing a Plex URL in the manual field detects Plex and routes to "Sign in with Plex"
-- [ ] Server picker: name, owned vs shared (with owner name), online state
+- [x] "Sign in with Plex" entry on `ServerConnectionScreen` (`PlexSignInCard`, shown only when `enable_plex_support` is on; driven by `PlexSignInViewModel`)
+- [x] PIN screen: code, "Open plex.tv" button (Custom Tab to app.plex.tv/auth with clientID and code), waiting state, expiry with retry (opens the link in the browser through `LocalUriHandler`; the app has no `androidx.browser` dependency yet, so it is not a Custom Tab. The plex.tv/link fallback is shown under the code)
+- [x] Typing a Plex URL in the manual field detects Plex and routes to "Sign in with Plex" (the `/identity` probe result is kept by `probedServerType`; the username and password fields hide and the Plex card explains that Plex servers are added there)
+- [x] Server picker: name, owned vs shared (with owner name), online state (`PlexServerPicker`; own servers first, then online ones)
 
 ### Connection selection
 
 - [x] `PlexConnectionSelector`: probe `/identity` on every connection in parallel with short timeouts (3 s each; an address that answers with another server's `machineIdentifier` is skipped. `PlexIdentityProbe` no longer goes through the session interceptor, which used to add the signed-in Jellyfin/Emby token to every probe)
-- [ ] Prefer local HTTPS → local HTTP → remote → relay; store all URIs on the profile (ranking done, and the selector returns the other URIs best first; storing them happens with the profile save below)
+- [x] Prefer local HTTPS → local HTTP → remote → relay; store all URIs on the profile (`PlexProfiles.create` stores the other URIs as `alternateServerUrls`)
 - [x] Unit test the ranking with fake probe results (`PlexConnectionSelectorTest`)
 
 ### Profile
 
-- [ ] Save profile: `serverId` = machineIdentifier, `accessToken` = the resource's server token, `plexAccountToken` separate
-- [ ] Plex badge in `ServerTypeBadge` and the switcher
-- [ ] Switching to and from a Plex profile goes through the existing `switchProfile()` reset
-- [ ] Removing a Plex profile revokes/forgets its tokens
+- [x] Save profile: `serverId` = machineIdentifier, `accessToken` = the resource's server token, `plexAccountToken` separate (`PlexProfiles.create`; `userId` is the plex.tv account ID encoded with the `PLEX` marker so it parses as a UUID. A shared server without its own token is refused rather than given the account token. Restoring the session at launch now reads the account token and alternates back from the saved profile, so a restart does not erase them)
+- [x] Plex badge in `ServerTypeBadge` and the switcher (both go through `ServerType.labelRes`)
+- [x] Switching to and from a Plex profile goes through the existing `switchProfile()` reset (a new Plex profile is activated by `ProfileSwitcher.addAndSwitch`, which runs the same reset)
+- [ ] Removing a Plex profile revokes/forgets its tokens (forgetting works: removing the profile drops both tokens. Revoking waits on the Phase 0 sign-out endpoint)
 
 ### Exit
 
