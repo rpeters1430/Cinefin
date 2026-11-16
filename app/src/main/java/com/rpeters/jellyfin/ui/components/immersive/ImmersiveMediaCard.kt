@@ -59,6 +59,7 @@ import com.rpeters.jellyfin.ui.components.expressiveGlow
 import com.rpeters.jellyfin.ui.image.ImageQuality
 import com.rpeters.jellyfin.ui.image.ImageSize
 import com.rpeters.jellyfin.ui.image.OptimizedImage
+import com.rpeters.jellyfin.ui.image.rememberCoilSize
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
 import com.rpeters.jellyfin.ui.theme.ImmersiveShapes
 import com.rpeters.jellyfin.ui.theme.MotionTokens
@@ -435,12 +436,14 @@ fun ImmersivePosterCard(
                 .height(posterHeight)
                 .clip(posterShape),
         ) {
+            val posterRequestSize = rememberCoilSize(posterWidth, posterHeight)
             OptimizedImage(
                 imageUrl = if (loadImage) imageUrl else "",
                 contentDescription = title,
                 contentScale = ContentScale.Crop,
-                size = ImageSize.THUMBNAIL,
+                size = ImageSize.POSTER,
                 quality = imageQuality,
+                requestSize = posterRequestSize,
                 modifier = Modifier.fillMaxSize(),
             )
 

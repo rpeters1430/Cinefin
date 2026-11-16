@@ -86,3 +86,187 @@ internal data class PlexTvErrors(val errors: List<PlexTvError> = emptyList())
 
 @Serializable
 internal data class PlexTvError(val code: Int = 0, val message: String = "", val status: Int = 0)
+
+/*
+ * Plex Media Server (`/library/...`, `/identity`, etc.) responses.
+ */
+
+/** Response envelope returned by almost all Plex Media Server endpoints. */
+@Serializable
+data class PlexMediaContainerResponse(
+    @SerialName("MediaContainer") val mediaContainer: PlexMediaContainer,
+)
+
+/** The container holding library sections, items, or search hubs. */
+@Serializable
+data class PlexMediaContainer(
+    val size: Int = 0,
+    val totalSize: Int? = null,
+    val offset: Int? = null,
+    val identifier: String? = null,
+    val parentRatingKey: String? = null,
+    val parentTitle: String? = null,
+    val grandparentRatingKey: String? = null,
+    val grandparentTitle: String? = null,
+    val librarySectionID: Long? = null,
+    val librarySectionTitle: String? = null,
+    @SerialName("Directory") val directory: List<PlexDirectory> = emptyList(),
+    @SerialName("Metadata") val metadata: List<PlexMetadata> = emptyList(),
+    @SerialName("Hub") val hub: List<PlexHub> = emptyList(),
+)
+
+/** A library section (e.g. Movies, TV Shows) from `/library/sections`. */
+@Serializable
+data class PlexDirectory(
+    val key: String,
+    val type: String,
+    val title: String,
+    val agent: String? = null,
+    val scanner: String? = null,
+    val language: String? = null,
+    val uuid: String? = null,
+    val updatedAt: Long? = null,
+    val createdAt: Long? = null,
+    val composite: String? = null,
+    val thumb: String? = null,
+    val art: String? = null,
+)
+
+/** A media item (movie, series, season, episode, track, etc.) on Plex Media Server. */
+@Serializable
+data class PlexMetadata(
+    val ratingKey: String,
+    val key: String? = null,
+    val guid: String? = null,
+    val studio: String? = null,
+    val type: String,
+    val title: String,
+    val titleSort: String? = null,
+    val originalTitle: String? = null,
+    val contentRating: String? = null,
+    val summary: String? = null,
+    val rating: Double? = null,
+    val audienceRating: Double? = null,
+    val year: Int? = null,
+    val tagline: String? = null,
+    val thumb: String? = null,
+    val art: String? = null,
+    val clearLogo: String? = null,
+    val duration: Long? = null,
+    val originallyAvailableAt: String? = null,
+    val addedAt: Long? = null,
+    val updatedAt: Long? = null,
+    val viewOffset: Long? = null,
+    val viewCount: Int? = null,
+    val lastViewedAt: Long? = null,
+    val index: Int? = null,
+    val parentIndex: Int? = null,
+    val parentRatingKey: String? = null,
+    val parentTitle: String? = null,
+    val parentThumb: String? = null,
+    val grandparentRatingKey: String? = null,
+    val grandparentTitle: String? = null,
+    val grandparentThumb: String? = null,
+    val grandparentArt: String? = null,
+    val childCount: Int? = null,
+    val leafCount: Int? = null,
+    val viewedLeafCount: Int? = null,
+    @SerialName("Genre") val genres: List<PlexTag> = emptyList(),
+    @SerialName("Country") val countries: List<PlexTag> = emptyList(),
+    @SerialName("Role") val roles: List<PlexRole> = emptyList(),
+    @SerialName("Director") val directors: List<PlexTag> = emptyList(),
+    @SerialName("Writer") val writers: List<PlexTag> = emptyList(),
+    @SerialName("Producer") val producers: List<PlexTag> = emptyList(),
+    @SerialName("Media") val media: List<PlexMedia> = emptyList(),
+    @SerialName("Marker") val markers: List<PlexMarker> = emptyList(),
+)
+
+/** Tag entry (genre, country, director, writer, producer). */
+@Serializable
+data class PlexTag(
+    val id: Long? = null,
+    val tag: String,
+    val filter: String? = null,
+)
+
+/** Cast/actor role. */
+@Serializable
+data class PlexRole(
+    val id: Long? = null,
+    val tag: String,
+    val role: String? = null,
+    val thumb: String? = null,
+)
+
+/** Media container on an item. */
+@Serializable
+data class PlexMedia(
+    val id: Long? = null,
+    val duration: Long? = null,
+    val bitrate: Int? = null,
+    val width: Int? = null,
+    val height: Int? = null,
+    val aspectRatio: Double? = null,
+    val audioChannels: Int? = null,
+    val audioCodec: String? = null,
+    val videoCodec: String? = null,
+    val videoResolution: String? = null,
+    val container: String? = null,
+    val videoFrameRate: String? = null,
+    @SerialName("Part") val parts: List<PlexPart> = emptyList(),
+)
+
+/** Media part representing a file on disk. */
+@Serializable
+data class PlexPart(
+    val id: Long? = null,
+    val key: String? = null,
+    val duration: Long? = null,
+    val file: String? = null,
+    val size: Long? = null,
+    val container: String? = null,
+    val decision: String? = null,
+    @SerialName("Stream") val streams: List<PlexStream> = emptyList(),
+)
+
+/** Stream within a media part (video, audio, subtitle). */
+@Serializable
+data class PlexStream(
+    val id: Long? = null,
+    val streamType: Int? = null,
+    val default: Boolean? = null,
+    val selected: Boolean? = null,
+    val codec: String? = null,
+    val index: Int? = null,
+    val channels: Int? = null,
+    val language: String? = null,
+    val languageCode: String? = null,
+    val displayTitle: String? = null,
+    val extendedDisplayTitle: String? = null,
+    val title: String? = null,
+    val decision: String? = null,
+    val location: String? = null,
+    val key: String? = null,
+)
+
+/** Chapter/timeline marker (intro, credits). */
+@Serializable
+data class PlexMarker(
+    val id: Long? = null,
+    val type: String,
+    val startTimeOffset: Long,
+    val endTimeOffset: Long,
+)
+
+/** A hub in `/hubs/search` or `/hubs/continueWatching`. */
+@Serializable
+data class PlexHub(
+    val key: String? = null,
+    val title: String? = null,
+    val type: String? = null,
+    val hubIdentifier: String? = null,
+    val size: Int = 0,
+    val more: Boolean = false,
+    @SerialName("Metadata") val metadata: List<PlexMetadata> = emptyList(),
+)
+

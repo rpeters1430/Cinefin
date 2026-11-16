@@ -190,45 +190,45 @@ Exit: home rows, library grids with paging, series → season → episode, detai
 
 ### Client skeleton (KD3)
 
-- [ ] `PlexApiClient : ApiClient` with a route table keyed on SDK `pathTemplate`, each entry a handler
-- [ ] Unhandled routes: canned empty result + one log line; throw in debug builds
-- [ ] `OptimizedClientFactory` hands out `PlexApiClient` for Plex sessions
-- [ ] Handlers for `/System/Info/Public`, `/System/Info` (via `/identity`), `/Users/Me` (cached plex.tv user)
+- [x] `PlexApiClient : ApiClient` with a route table keyed on SDK `pathTemplate`, each entry a handler (`PlexApiClient`, route dispatch in `request`)
+- [x] Unhandled routes: canned empty result + one log line; throw in debug builds (`BuildConfig.DEBUG` throws `UnsupportedOperationException`)
+- [x] `OptimizedClientFactory` hands out `PlexApiClient` for Plex sessions (`isPlexServer` check instantiates `PlexApiClient`)
+- [x] Handlers for `/System/Info/Public`, `/System/Info` (via `/identity`), `/Users/Me` (cached plex.tv user)
 
 ### Mapper
 
-- [ ] `PlexMapper`: movie, show, season, episode → `BaseItemDto` with correct `BaseItemKind`
-- [ ] Parent links: `ParentId`/`SeasonId`/`SeriesId` from `parentRatingKey`/`grandparentRatingKey`
-- [ ] Times: `duration` and `viewOffset` ms → ticks (one helper, tested)
-- [ ] `UserData`: `viewOffset` → position, `viewCount` → Played
-- [ ] People from `Role`/`Director`/`Writer` with `PLXT`-encoded IDs; genres, studios, year, overview, ratings
-- [ ] Sections → `CollectionFolder` items with `CollectionType` (movies/tvshows)
-- [ ] Fixture tests for every mapped type
+- [x] `PlexMapper`: movie, show, season, episode → `BaseItemDto` with correct `BaseItemKind`
+- [x] Parent links: `ParentId`/`SeasonId`/`SeriesId` from `parentRatingKey`/`grandparentRatingKey`
+- [x] Times: `duration` and `viewOffset` ms → ticks (one helper, tested: `msToTicks`)
+- [x] `UserData`: `viewOffset` → position, `viewCount` → Played
+- [x] People from `Role`/`Director`/`Writer` with `PLXT`-encoded IDs; genres, studios, year, overview, ratings
+- [x] Sections → `CollectionFolder` items with `CollectionType` (movies/tvshows)
+- [x] Fixture tests for every mapped type (`PlexMapperTest` covering movies, shows, seasons, episodes, sections, markers)
 
 ### Query planner (KD4)
 
-- [ ] Capture the actual `getItems` parameter combinations from the repositories into a test table
-- [ ] `PlexQueryPlanner` rows: library all, series children, season children, allLeaves, ids, search, resumable, recently added, person, favorites (empty), music (empty + log)
-- [ ] Sort mapping (`SortName`, `DateCreated`, `PremiereDate`, `CommunityRating`, `Random`, `DatePlayed`) and order
-- [ ] Paging via `X-Plex-Container-Start/Size`; `TotalRecordCount` from `totalSize`
-- [ ] Table-driven test: one case per row
+- [x] Capture the actual `getItems` parameter combinations from the repositories into a test table
+- [x] `PlexQueryPlanner` rows: library all, series children, season children, allLeaves, ids, search, resumable, recently added, person, favorites (empty), music (empty + log)
+- [x] Sort mapping (`SortName`, `DateCreated`, `PremiereDate`, `CommunityRating`, `Random`, `DatePlayed`) and order
+- [x] Paging via `X-Plex-Container-Start/Size`; `TotalRecordCount` from `totalSize`
+- [x] Table-driven test: one case per row (`PlexQueryPlannerTest`)
 
 ### Other routes
 
-- [ ] `/UserViews`, `/Items/{id}`, `/Items/{id}/Similar`, `/Shows/NextUp`, `/Items/{id}/LocalTrailers`
-- [ ] Played / unplayed via `/:/scrobble` and `/:/unscrobble`; `getItemUserData`
-- [ ] Delete item and library refresh (admin only)
+- [x] `/UserViews`, `/Items/{id}`, `/Items/{id}/Similar`, `/Shows/NextUp`, `/Items/{id}/LocalTrailers` (`PlexApiClient` route table)
+- [x] Played / unplayed via `/:/scrobble` and `/:/unscrobble`; `getItemUserData`
+- [x] Delete item and library refresh (admin only) (`/library/sections/all/refresh` and `DELETE /library/metadata/{rk}`)
 
 ### Images
 
-- [ ] `PlexUrlBuilder`: Primary → `thumb`, Backdrop → `art`, Logo → `clearLogo`, episode series image → `grandparentThumb`
-- [ ] Resize through `/photo/:/transcode` to the app's requested max size; token as query param
-- [ ] `ImageTags["Primary"]` = thumb timestamp so caches bust on change
-- [ ] Plex branch in `JellyfinStreamRepository.getImageUrl` family and `VideoPlayerMetadataManager`
+- [x] `PlexUrlBuilder`: Primary → `thumb`, Backdrop → `art`, Logo → `clearLogo`, episode series image → `grandparentThumb`
+- [x] Resize through `/photo/:/transcode` to the app's requested max size; token as query param
+- [x] `ImageTags["Primary"]` = thumb timestamp so caches bust on change
+- [x] Plex branch in `JellyfinStreamRepository.getImageUrl` family and `VideoPlayerMetadataManager` (skip markers mapped from Plex markers)
 
 ### UI gating
 
-- [ ] Hide favorite heart and Favorites row when `supportsFavorites` is false
+- [x] Hide favorite heart and Favorites row when `supportsFavorites` is false (gated on mobile bottom nav bar, TV navigation drawer, library filter rows, and immersive movie/episode/home video detail action bars)
 - [ ] Walk every main screen on Plex; fix crashes from null fields found in Phase 0
 
 ## Track B, Phase 4: Play video
@@ -237,43 +237,43 @@ Exit: direct play and forced transcode both work, and resume position and watche
 
 ### Decision → PlaybackInfo (KD5)
 
-- [ ] Build a Plex client profile from `JellyfinDeviceProfile` codec support
-- [ ] Handler for `/Items/{id}/PlaybackInfo`: call the universal decision endpoint, map to one `MediaSourceInfo`
-- [ ] Direct play: `SupportsDirectPlay`, URL = `Part.key` + token
-- [ ] Transcode/direct stream: `TranscodingUrl` = `start.m3u8` with `session`, `TranscodingSubProtocol = hls`
-- [ ] `MediaStreams` from `Part.Stream[]` (video/audio/subtitle), indices preserved; `PlaySessionId` = session UUID
-- [ ] Fixture tests for the three Phase 0 decision captures
+- [x] Build a Plex client profile from `JellyfinDeviceProfile` codec support
+- [x] Handler for `/Items/{id}/PlaybackInfo`: call the universal decision endpoint, map to one `MediaSourceInfo`
+- [x] Direct play: `SupportsDirectPlay`, URL = `Part.key` + token
+- [x] Transcode/direct stream: `TranscodingUrl` = `start.m3u8` with `session`, `TranscodingSubProtocol = hls`
+- [x] `MediaStreams` from `Part.Stream[]` (video/audio/subtitle), indices preserved; `PlaySessionId` = session UUID
+- [x] Fixture tests for the three Phase 0 decision captures
 
 ### Stream URLs
 
-- [ ] Plex branch in `JellyfinStreamRepository` for direct, transcode, HLS and download, delegating to `PlexUrlBuilder`
+- [x] Plex branch in `JellyfinStreamRepository` for direct, transcode, HLS and download, delegating to `PlexUrlBuilder`
 
 ### Track selection
 
-- [ ] Audio/subtitle change: `PUT /library/parts/{partId}?audioStreamID=&subtitleStreamID=`, then re-request the decision and restart at current position
-- [ ] External/sidecar subtitle URLs work in ExoPlayer
+- [x] Audio/subtitle change: `PUT /library/parts/{partId}?audioStreamID=&subtitleStreamID=`, then re-request the decision and restart at current position
+- [x] External/sidecar subtitle URLs work in ExoPlayer
 
 ### Reporting
 
-- [ ] `/Sessions/Playing`, `/Progress`, `/Stopped` → `/:/timeline` (state playing/paused/stopped, ms)
-- [ ] Report every 10 s and on pause, resume, seek, stop
-- [ ] On stop, call transcode stop for the session
-- [ ] Auto-scrobble at the player's watched threshold (or rely on Plex's own threshold; confirm in testing)
-- [ ] Unit test: ticks → ms and state mapping
+- [x] `/Sessions/Playing`, `/Progress`, `/Stopped` → `/:/timeline` (state playing/paused/stopped, ms)
+- [x] Report every 10 s and on pause, resume, seek, stop
+- [x] On stop, call transcode stop for the session
+- [x] Auto-scrobble at the player's watched threshold (or rely on Plex's own threshold; confirm in testing)
+- [x] Unit test: ticks → ms and state mapping
 
 ### Markers and resume
 
-- [ ] `/MediaSegments/{itemId}` handler from Plex `Marker`s (intro, credits); turn on `supportsMediaSegments` for Plex
-- [ ] Resume prompt uses `viewOffset`
+- [x] `/MediaSegments/{itemId}` handler from Plex `Marker`s (intro, credits); turn on `supportsMediaSegments` for Plex
+- [x] Resume prompt uses `viewOffset`
 
 ### Remote paywall
 
-- [ ] Map the refusal captured in Phase 0 to a specific error: "This server needs Plex Pass or Remote Watch Pass for streaming outside its home network"
+- [x] Map the refusal captured in Phase 0 to a specific error: "This server needs Plex Pass or Remote Watch Pass for streaming outside its home network"
 
 ### Exit
 
 - [ ] Manual checklist on Plex: sign in, home rows, open a movie, direct play, forced transcode, switch audio and subtitles, skip intro, resume, watched state in app.plex.tv
-- [ ] Turn the flag on for debug builds
+- [x] Turn the flag on for debug builds
 
 ## Track B, Phase 5: Gating, wording, polish
 

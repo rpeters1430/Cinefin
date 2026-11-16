@@ -1,0 +1,35 @@
+{
+  "MediaContainer": {
+    "size": 1,
+    "allowSync": true,
+    "identifier": "com.plexapp.plugins.library",
+    "Metadata": [
+      {
+        "ratingKey": "2001",
+        "key": "/library/metadata/2001",
+        "guid": "plex://show/5d9c0827299a4e001f35db61",
+        "studio": "HBO",
+        "type": "show",
+        "title": "Succession",
+        "titleSort": "Succession",
+        "summary": "The Roy family is known for controlling the biggest media and entertainment company in the world.",
+        "rating": 8.9,
+        "year": 2018,
+        "thumb": "/library/metadata/2001/thumb/1715109492",
+        "art": "/library/metadata/2001/art/1715109492",
+        "childCount": 4,
+        "leafCount": 39,
+        "viewedLeafCount": 10,
+        "addedAt": 1715100000,
+        "updatedAt": 1715109492,
+        "Genre": [
+          { "id": 103, "tag": "Drama" }
+        ],
+        "Role": [
+          { "id": 303, "tag": "Brian Cox", "role": "Logan Roy", "thumb": "https://metadata-static.plex.tv/people/303.jpg" },
+          { "id": 304, "tag": "Jeremy Strong", "role": "Kendall Roy", "thumb": "https://metadata-static.plex.tv/people/304.jpg" }
+        ]
+      }
+    ]
+  }
+}

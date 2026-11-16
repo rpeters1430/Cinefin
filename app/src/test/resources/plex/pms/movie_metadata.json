@@ -1,0 +1,114 @@
+{
+  "MediaContainer": {
+    "size": 1,
+    "allowSync": true,
+    "identifier": "com.plexapp.plugins.library",
+    "librarySectionID": 1,
+    "librarySectionTitle": "Movies",
+    "Metadata": [
+      {
+        "ratingKey": "1001",
+        "key": "/library/metadata/1001",
+        "guid": "plex://movie/5d776824a737f2001e3b2e97",
+        "studio": "Syncopy",
+        "type": "movie",
+        "title": "Inception",
+        "titleSort": "Inception",
+        "originalTitle": "Inception",
+        "contentRating": "PG-13",
+        "summary": "Cobb, a skilled thief who commits corporate espionage by infiltrating the subconscious of his targets is offered a chance to regain his old life as payment for a task considered to be impossible: \"inception\", the implantation of another person's idea into a target's subconscious.",
+        "rating": 8.8,
+        "audienceRating": 9.1,
+        "year": 2010,
+        "tagline": "Your mind is the scene of the crime.",
+        "thumb": "/library/metadata/1001/thumb/1715109491",
+        "art": "/library/metadata/1001/art/1715109491",
+        "clearLogo": "/library/metadata/1001/clearLogo/1715109491",
+        "duration": 8880000,
+        "originallyAvailableAt": "2010-07-16",
+        "addedAt": 1715100000,
+        "updatedAt": 1715109491,
+        "viewOffset": 2400000,
+        "viewCount": 1,
+        "lastViewedAt": 1715105000,
+        "Genre": [
+          { "id": 101, "tag": "Action" },
+          { "id": 102, "tag": "Sci-Fi" }
+        ],
+        "Country": [
+          { "id": 201, "tag": "United States of America" }
+        ],
+        "Role": [
+          { "id": 301, "tag": "Leonardo DiCaprio", "role": "Dom Cobb", "thumb": "https://metadata-static.plex.tv/people/301.jpg" },
+          { "id": 302, "tag": "Joseph Gordon-Levitt", "role": "Arthur", "thumb": "https://metadata-static.plex.tv/people/302.jpg" }
+        ],
+        "Director": [
+          { "id": 401, "tag": "Christopher Nolan" }
+        ],
+        "Writer": [
+          { "id": 401, "tag": "Christopher Nolan" }
+        ],
+        "Producer": [
+          { "id": 501, "tag": "Emma Thomas" }
+        ],
+        "Media": [
+          {
+            "id": 9001,
+            "duration": 8880000,
+            "bitrate": 12000,
+            "width": 1920,
+            "height": 1080,
+            "aspectRatio": 1.78,
+            "audioChannels": 6,
+            "audioCodec": "dca",
+            "videoCodec": "h264",
+            "videoResolution": "1080",
+            "container": "mkv",
+            "videoFrameRate": "24p",
+            "Part": [
+              {
+                "id": 8001,
+                "key": "/library/parts/8001/1715109491/file.mkv",
+                "duration": 8880000,
+                "file": "/data/movies/Inception.2010.mkv",
+                "size": 15000000000,
+                "container": "mkv",
+                "Stream": [
+                  {
+                    "id": 7001,
+                    "streamType": 1,
+                    "default": true,
+                    "codec": "h264",
+                    "index": 0,
+                    "displayTitle": "1080p (H.264)"
+                  },
+                  {
+                    "id": 7002,
+                    "streamType": 2,
+                    "default": true,
+                    "selected": true,
+                    "codec": "dca",
+                    "index": 1,
+                    "channels": 6,
+                    "language": "English",
+                    "languageCode": "eng",
+                    "displayTitle": "English (DTS 5.1)"
+                  },
+                  {
+                    "id": 7003,
+                    "streamType": 3,
+                    "codec": "subrip",
+                    "index": 2,
+                    "language": "English",
+                    "languageCode": "eng",
+                    "displayTitle": "English (SRT)"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

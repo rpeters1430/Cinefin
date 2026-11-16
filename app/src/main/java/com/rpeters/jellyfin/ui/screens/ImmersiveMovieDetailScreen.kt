@@ -135,6 +135,7 @@ fun ImmersiveMovieDetailScreen(
     aiSummary: String? = null,
     isLoadingAiSummary: Boolean = false,
     animatedVisibilityScope: androidx.compose.animation.AnimatedVisibilityScope? = null,
+    supportsFavorites: Boolean = true,
 ) {
     val downloadsViewModel: DownloadsViewModel = hiltViewModel()
 
@@ -176,6 +177,7 @@ fun ImmersiveMovieDetailScreen(
         isLoadingAiSummary = isLoadingAiSummary,
         animatedVisibilityScope = animatedVisibilityScope,
         downloadsViewModel = downloadsViewModel,
+        supportsFavorites = supportsFavorites,
     )
 }
 
@@ -224,6 +226,7 @@ private fun ImmersiveMovieDetailContent(
     isLoadingAiSummary: Boolean = false,
     animatedVisibilityScope: androidx.compose.animation.AnimatedVisibilityScope? = null,
     downloadsViewModel: DownloadsViewModel? = null,
+    supportsFavorites: Boolean = true,
 ) {
     androidx.compose.runtime.CompositionLocalProvider(
         com.rpeters.jellyfin.ui.navigation.LocalAnimatedVisibilityScope provides animatedVisibilityScope,
@@ -307,6 +310,7 @@ private fun ImmersiveMovieDetailContent(
                                 movie = movie,
                                 isFavorite = isFavorite,
                                 isWatched = isWatched,
+                                supportsFavorites = supportsFavorites,
                                 onPlayClick = {
                                     val resumePos = playbackProgress?.positionMs ?: 0L
                                     onPlayClick(movie, null, resumePos)
@@ -886,6 +890,7 @@ private fun MovieActionRow(
     onShareClick: () -> Unit,
     onRequestClick: () -> Unit,
     onMoreClick: () -> Unit,
+    supportsFavorites: Boolean = true,
 ) {
     val trailerUrl = movie.remoteTrailers?.firstOrNull()?.url
     // Trailers saved beside the media (e.g. by Trailarr) play in-app and take precedence.
@@ -959,13 +964,15 @@ private fun MovieActionRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            ActionButton(
-                icon = if (isFavorite) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
-                label = if (isFavorite) "Liked" else "Like",
-                onClick = onFavoriteClick,
-                modifier = Modifier.weight(1f),
-                contentColor = if (isFavorite) Color.Red else MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            if (supportsFavorites) {
+                ActionButton(
+                    icon = if (isFavorite) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
+                    label = if (isFavorite) "Liked" else "Like",
+                    onClick = onFavoriteClick,
+                    modifier = Modifier.weight(1f),
+                    contentColor = if (isFavorite) Color.Red else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
 
             ActionButton(
                 icon = if (isWatched) Icons.Rounded.CheckCircle else Icons.Rounded.RadioButtonUnchecked,

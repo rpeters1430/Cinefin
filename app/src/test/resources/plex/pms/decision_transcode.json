@@ -1,0 +1,63 @@
+{
+  "MediaContainer": {
+    "size": 1,
+    "Metadata": [
+      {
+        "ratingKey": "1002",
+        "key": "/library/metadata/1002",
+        "type": "movie",
+        "title": "Heavy Video",
+        "duration": 7200000,
+        "Media": [
+          {
+            "id": 9002,
+            "duration": 7200000,
+            "bitrate": 45000,
+            "width": 3840,
+            "height": 2160,
+            "aspectRatio": 1.78,
+            "audioChannels": 8,
+            "audioCodec": "truehd",
+            "videoCodec": "hevc",
+            "container": "mkv",
+            "Part": [
+              {
+                "id": 8002,
+                "key": "/library/parts/8002/1715109492/file.mkv",
+                "duration": 7200000,
+                "file": "/data/movies/Heavy.2024.mkv",
+                "size": 35000000000,
+                "container": "mkv",
+                "decision": "transcode",
+                "Stream": [
+                  {
+                    "id": 7011,
+                    "streamType": 1,
+                    "default": true,
+                    "codec": "hevc",
+                    "index": 0,
+                    "displayTitle": "4K (HEVC Main 10)",
+                    "decision": "transcode"
+                  },
+                  {
+                    "id": 7012,
+                    "streamType": 2,
+                    "default": true,
+                    "selected": true,
+                    "codec": "truehd",
+                    "index": 1,
+                    "channels": 8,
+                    "language": "English",
+                    "languageCode": "eng",
+                    "displayTitle": "English (TrueHD 7.1)",
+                    "decision": "transcode"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

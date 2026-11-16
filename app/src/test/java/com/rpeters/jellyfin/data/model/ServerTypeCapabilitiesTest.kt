@@ -51,7 +51,7 @@ class ServerTypeCapabilitiesTest {
             ),
             ServerType.PLEX to Row(
                 syncPlay = false, cinefinPlugin = false, quickConnect = false, favorites = false,
-                mediaSegments = false, passwordSignIn = false, remotePass = true,
+                mediaSegments = true, passwordSignIn = false, remotePass = true,
                 remoteBitrateLimit = false,
             ),
         )

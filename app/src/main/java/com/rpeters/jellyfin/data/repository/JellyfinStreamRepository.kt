@@ -6,6 +6,8 @@ import com.rpeters.jellyfin.data.DeviceCapabilities
 import com.rpeters.jellyfin.network.ConnectivityChecker
 import com.rpeters.jellyfin.network.ConnectivityQuality
 import kotlinx.coroutines.CancellationException
+import com.rpeters.jellyfin.data.model.ServerType
+import com.rpeters.jellyfin.data.plex.PlexUrlBuilder
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ImageType
@@ -29,8 +31,8 @@ class JellyfinStreamRepository @Inject constructor(
         private const val DEFAULT_MAX_AUDIO_CHANNELS = 2
 
         // Image size constants
-        private const val DEFAULT_IMAGE_MAX_HEIGHT = 800
-        private const val DEFAULT_IMAGE_MAX_WIDTH = 800
+        private const val DEFAULT_IMAGE_MAX_HEIGHT = 1200
+        private const val DEFAULT_IMAGE_MAX_WIDTH = 1200
         private const val BACKDROP_MAX_HEIGHT = 1080
         private const val BACKDROP_MAX_WIDTH = 1920
 
@@ -46,6 +48,9 @@ class JellyfinStreamRepository @Inject constructor(
      */
     fun getStreamUrl(itemId: String): String? {
         val server = authRepository.getCurrentServerSync() ?: return null
+        if (server.serverType == ServerType.PLEX) {
+            return PlexUrlBuilder.buildDirectPlayStreamUrl(server, itemId)
+        }
 
         // Validate server connection and authentication
         if (server.accessToken.isNullOrBlank()) {
@@ -216,6 +221,19 @@ class JellyfinStreamRepository @Inject constructor(
         useHls: Boolean = false,
     ): String? {
         val server = authRepository.getCurrentServerSync() ?: return null
+        if (server.serverType == ServerType.PLEX) {
+            return PlexUrlBuilder.buildTranscodeStreamUrl(
+                server = server,
+                itemId = itemId,
+                session = playSessionId ?: java.util.UUID.randomUUID().toString(),
+                maxBitrate = maxBitrate,
+                maxWidth = maxWidth,
+                maxHeight = maxHeight,
+                audioChannels = audioChannels,
+                allowVideoStreamCopy = allowVideoStreamCopy,
+                allowAudioStreamCopy = allowAudioStreamCopy,
+            )
+        }
 
         // Validate server connection and authentication
         if (server.accessToken.isNullOrBlank()) {
@@ -278,6 +296,9 @@ class JellyfinStreamRepository @Inject constructor(
      */
     fun getHlsStreamUrl(itemId: String): String? {
         val server = authRepository.getCurrentServerSync() ?: return null
+        if (server.serverType == ServerType.PLEX) {
+            return PlexUrlBuilder.buildTranscodeStreamUrl(server, itemId)
+        }
         return "${server.url}/Videos/${ServerIdCodec.decode(itemId)}/master.m3u8?" +
             "VideoCodec=$DEFAULT_VIDEO_CODEC&" +
             "AudioCodec=$DEFAULT_AUDIO_CODEC&" +
@@ -302,6 +323,9 @@ class JellyfinStreamRepository @Inject constructor(
      */
     fun getDownloadUrl(itemId: String): String? {
         val server = authRepository.getCurrentServerSync() ?: return null
+        if (server.serverType == ServerType.PLEX) {
+            return PlexUrlBuilder.buildDownloadUrl(server, itemId)
+        }
         return "${server.url}/Items/${ServerIdCodec.decode(itemId)}/Download"
     }
 
@@ -310,6 +334,9 @@ class JellyfinStreamRepository @Inject constructor(
      */
     fun getDirectStreamUrl(itemId: String, container: String? = null): String? {
         val server = authRepository.getCurrentServerSync() ?: return null
+        if (server.serverType == ServerType.PLEX) {
+            return PlexUrlBuilder.buildDirectPlayStreamUrl(server, itemId)
+        }
         val ext = container ?: "mp4"
         val containerParam = container?.let { "&Container=$it" } ?: ""
         return "${server.url}/Videos/${ServerIdCodec.decode(itemId)}/stream.$ext?static=true$containerParam"
@@ -394,6 +421,9 @@ class JellyfinStreamRepository @Inject constructor(
     fun getImageUrl(itemId: String, imageType: String = "Primary", tag: String? = null): String? {
         return try {
             val server = authRepository.getCurrentServerSync() ?: return null
+            if (server.serverType == ServerType.PLEX) {
+                return PlexUrlBuilder.getImageUrl(server, itemId, imageType)
+            }
             if (server.accessToken.isNullOrBlank() || server.url.isNullOrBlank()) {
                 Log.w("JellyfinStreamRepository", "getImageUrl: Server not available or missing credentials")
                 return null
@@ -430,6 +460,9 @@ class JellyfinStreamRepository @Inject constructor(
     fun getSeriesImageUrl(item: BaseItemDto): String? {
         return try {
             val server = authRepository.getCurrentServerSync() ?: return null
+            if (server.serverType == ServerType.PLEX) {
+                return PlexUrlBuilder.getSeriesImageUrl(server, item)
+            }
             if (server.accessToken.isNullOrBlank() || server.url.isNullOrBlank()) {
                 Log.w("JellyfinStreamRepository", "getSeriesImageUrl: Server not available or missing credentials")
                 return null
@@ -453,6 +486,9 @@ class JellyfinStreamRepository @Inject constructor(
     fun getBackdropUrl(item: BaseItemDto): String? {
         return try {
             val server = authRepository.getCurrentServerSync() ?: return null
+            if (server.serverType == ServerType.PLEX) {
+                return PlexUrlBuilder.getBackdropUrl(server, item)
+            }
             if (server.accessToken.isNullOrBlank() || server.url.isNullOrBlank()) {
                 Log.w("JellyfinStreamRepository", "getBackdropUrl: Server not available or missing credentials")
                 return null

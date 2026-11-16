@@ -22,8 +22,8 @@ enum class ServerType {
     /** Per-item favorites. Plex has none (its watchlist is a plex.tv feature, see [supportsWatchlist]). */
     val supportsFavorites: Boolean get() = this != PLEX
 
-    /** Intro and credits segments. Emby's come from chapter markers; Plex's markers are not mapped yet. */
-    val supportsMediaSegments: Boolean get() = this != PLEX
+    /** Intro and credits segments. Jellyfin native, Emby from chapters, Plex from markers. */
+    val supportsMediaSegments: Boolean get() = true
 
     /** Username and password sign-in. Plex signs in with a plex.tv PIN only. */
     val supportsPasswordSignIn: Boolean get() = this != PLEX

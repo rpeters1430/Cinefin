@@ -30,6 +30,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
@@ -72,6 +73,9 @@ fun ImmersiveHomeVideoDetailScreen(
 ) {
     val perfConfig = rememberImmersivePerformanceConfig()
     val downloadsViewModel: DownloadsViewModel = hiltViewModel()
+    val mainAppViewModel: com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel = hiltViewModel()
+    val currentServer by mainAppViewModel.currentServer.collectAsStateWithLifecycle(initialValue = null)
+    val supportsFavorites = currentServer?.serverType?.supportsFavorites ?: true
     var isFavorite by remember { mutableStateOf(item.userData?.isFavorite == true) }
     var isWatched by remember { mutableStateOf(item.userData?.played == true) }
     var showDeleteConfirmation by remember { mutableStateOf(false) }
@@ -253,15 +257,17 @@ fun ImmersiveHomeVideoDetailScreen(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
-                            ImmersiveActionButton(
-                                icon = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                label = if (isFavorite) "Favorited" else "Favorite",
-                                onClick = {
-                                    isFavorite = !isFavorite
-                                    onFavoriteClick(item)
-                                },
-                                modifier = Modifier.weight(1f),
-                            )
+                            if (supportsFavorites) {
+                                ImmersiveActionButton(
+                                    icon = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                    label = if (isFavorite) "Favorited" else "Favorite",
+                                    onClick = {
+                                        isFavorite = !isFavorite
+                                        onFavoriteClick(item)
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                )
+                            }
                             ImmersiveActionButton(
                                 icon = if (isWatched) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
                                 label = if (isWatched) "Watched" else "Mark Watched",

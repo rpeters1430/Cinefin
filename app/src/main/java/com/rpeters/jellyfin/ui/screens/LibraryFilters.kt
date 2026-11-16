@@ -26,7 +26,8 @@ enum class FilterType(val displayName: String) {
 
     companion object {
         fun getDefault() = ALL
-        fun getAllFilters() = entries
+        fun getAllFilters(favoritesEnabled: Boolean = true) =
+            if (favoritesEnabled) entries else entries.filter { it != FAVORITES }
     }
 }
 
@@ -45,6 +46,7 @@ fun LibraryFilterRow(
     onFilterSelected: (FilterType) -> Unit,
     libraryType: LibraryType,
     modifier: Modifier = Modifier,
+    favoritesEnabled: Boolean = true,
 ) {
     LazyRow(
         modifier = modifier,
@@ -55,7 +57,7 @@ fun LibraryFilterRow(
         ),
     ) {
         items(
-            items = FilterType.getAllFilters(),
+            items = FilterType.getAllFilters(favoritesEnabled),
             key = { filter -> filter.name },
             contentType = { "library_filter_chip" },
         ) { filter ->

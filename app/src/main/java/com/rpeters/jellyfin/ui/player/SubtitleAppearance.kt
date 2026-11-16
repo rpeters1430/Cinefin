@@ -5,8 +5,8 @@ import android.graphics.Typeface
 import android.util.TypedValue
 import androidx.annotation.OptIn
 import androidx.core.graphics.toColorInt
+import androidx.media3.common.text.SubtitleStyle
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.ui.CaptionStyleCompat
 import androidx.media3.ui.PlayerView
 import com.rpeters.jellyfin.data.preferences.SubtitleAppearancePreferences
 import com.rpeters.jellyfin.data.preferences.SubtitleBackground
@@ -33,14 +33,14 @@ internal fun applySubtitleAppearance(
         SubtitleFont.ROBOTO_SERIF -> Typeface.SERIF
         SubtitleFont.ROBOTO_MONO -> Typeface.MONOSPACE
     }
-    val style = CaptionStyleCompat(
-        Color.WHITE,
-        backgroundColor,
-        Color.TRANSPARENT,
-        CaptionStyleCompat.EDGE_TYPE_NONE,
-        Color.BLACK,
-        typeface,
-    )
+    val style = SubtitleStyle.Builder()
+        .setForegroundColor(Color.WHITE)
+        .setBackgroundColor(backgroundColor)
+        .setWindowColor(Color.TRANSPARENT)
+        .setEdgeType(SubtitleStyle.EDGE_TYPE_NONE)
+        .setEdgeColor(Color.BLACK)
+        .setTypeface(typeface)
+        .build()
     subtitleView.setStyle(style)
     subtitleView.setFixedTextSize(TypedValue.COMPLEX_UNIT_SP, preferences.textSize.sizeSp)
 }

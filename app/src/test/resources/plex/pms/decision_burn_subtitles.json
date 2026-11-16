@@ -1,0 +1,75 @@
+{
+  "MediaContainer": {
+    "size": 1,
+    "Metadata": [
+      {
+        "ratingKey": "1003",
+        "key": "/library/metadata/1003",
+        "type": "movie",
+        "title": "Subtitled Movie",
+        "duration": 6000000,
+        "Media": [
+          {
+            "id": 9003,
+            "duration": 6000000,
+            "bitrate": 15000,
+            "width": 1920,
+            "height": 1080,
+            "aspectRatio": 1.78,
+            "audioChannels": 6,
+            "audioCodec": "dca",
+            "videoCodec": "h264",
+            "container": "mkv",
+            "Part": [
+              {
+                "id": 8003,
+                "key": "/library/parts/8003/1715109493/file.mkv",
+                "duration": 6000000,
+                "file": "/data/movies/Subtitled.2023.mkv",
+                "size": 12000000000,
+                "container": "mkv",
+                "decision": "transcode",
+                "Stream": [
+                  {
+                    "id": 7021,
+                    "streamType": 1,
+                    "default": true,
+                    "codec": "h264",
+                    "index": 0,
+                    "displayTitle": "1080p (H.264)",
+                    "decision": "transcode"
+                  },
+                  {
+                    "id": 7022,
+                    "streamType": 2,
+                    "default": true,
+                    "selected": true,
+                    "codec": "dca",
+                    "index": 1,
+                    "channels": 6,
+                    "language": "English",
+                    "languageCode": "eng",
+                    "displayTitle": "English (DTS 5.1)",
+                    "decision": "copy"
+                  },
+                  {
+                    "id": 7023,
+                    "streamType": 3,
+                    "default": true,
+                    "selected": true,
+                    "codec": "pgs",
+                    "index": 2,
+                    "language": "English",
+                    "languageCode": "eng",
+                    "displayTitle": "English (PGS)",
+                    "decision": "burn"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

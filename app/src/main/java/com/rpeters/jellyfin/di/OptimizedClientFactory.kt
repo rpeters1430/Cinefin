@@ -5,6 +5,7 @@ import android.util.Log
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.emby.EmbyApiClient
 import com.rpeters.jellyfin.data.model.ServerType
+import com.rpeters.jellyfin.data.plex.PlexApiClient
 import com.rpeters.jellyfin.data.repository.IJellyfinAuthRepository
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
 import com.rpeters.jellyfin.utils.normalizeServerUrl
@@ -42,14 +43,31 @@ class OptimizedClientFactory @Inject constructor(
      * Create ApiClient bound to the current token for the given server URL.
      * Note: Jellyfin SDK uses its own Ktor client; OkHttp interceptors here would have no effect.
      */
-    private fun createOptimizedClient(serverUrl: String, token: String?, embyUserId: String?): ApiClient {
+    private fun createOptimizedClient(serverUrl: String, token: String?, embyUserId: String?, isPlex: Boolean): ApiClient {
         // Build the Jellyfin ApiClient with the current token so requests include X-Emby-Token
         val client = jellyfin.createApi(
             baseUrl = serverUrl,
             accessToken = token,
         )
-        // An Emby session gets the same SDK surface through a translating client.
-        return if (embyUserId != null) EmbyApiClient(client, embyUserId) else client
+        // A Plex or Emby session gets the same SDK surface through a translating client.
+        return when {
+            isPlex -> PlexApiClient(
+                delegate = client,
+                serverProvider = { authRepositoryProvider.get().getCurrentServerSync() },
+            )
+            embyUserId != null -> EmbyApiClient(client, embyUserId)
+            else -> client
+        }
+    }
+
+    /**
+     * True when [serverUrl] is the active Plex session.
+     */
+    private fun isPlexServer(serverUrl: String): Boolean {
+        val server = authRepositoryProvider.get().getCurrentServerSync() ?: return false
+        if (server.serverType != ServerType.PLEX) return false
+        if (normalizeServerUrl(server.url) != normalizeServerUrl(serverUrl)) return false
+        return true
     }
 
     /**
@@ -113,11 +131,12 @@ class OptimizedClientFactory @Inject constructor(
     suspend fun getOptimizedClient(serverUrl: String): ApiClient {
         val token = authRepositoryProvider.get().token()
         val embyUserId = embyUserIdFor(serverUrl)
-        val key = "$serverUrl|${token ?: ""}|${embyUserId ?: ""}"
+        val isPlex = isPlexServer(serverUrl)
+        val key = "$serverUrl|${token ?: ""}|${embyUserId ?: ""}|$isPlex"
         return synchronized(clientLock) {
             clients.getOrPut(key) {
                 logDebug("Creating new optimized client for: $serverUrl")
-                createOptimizedClient(serverUrl, token, embyUserId)
+                createOptimizedClient(serverUrl, token, embyUserId, isPlex)
             }
         }
     }

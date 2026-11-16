@@ -30,5 +30,8 @@ sealed class TvNavigationItem(
 
     companion object {
         val items = listOf(Home, Movies, TvShows, Music, Stuff, Search, Favorites, Settings)
+
+        fun items(favoritesEnabled: Boolean = true): List<TvNavigationItem> =
+            if (favoritesEnabled) items else items.filter { it != Favorites }
     }
 }

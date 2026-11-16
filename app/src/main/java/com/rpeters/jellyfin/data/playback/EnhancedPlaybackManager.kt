@@ -294,6 +294,10 @@ class EnhancedPlaybackManager @Inject constructor(
     }
 
     private fun buildDirectPlayUrl(serverUrl: String?, itemId: String, sourceId: String?, container: String, playSessionId: String?): String? {
+        val server = repository.getCurrentServerSync()
+        if (server?.serverType == com.rpeters.jellyfin.data.model.ServerType.PLEX) {
+            return streamRepository.getDirectStreamUrl(itemId, container)
+        }
         if (serverUrl == null || sourceId == null) return streamRepository.getDirectStreamUrl(itemId, container)
         return buildString {
             append(serverUrl)
@@ -707,6 +711,7 @@ class EnhancedPlaybackManager @Inject constructor(
             info
         } catch (e: Exception) {
             if (e is CancellationException) throw e
+            if (e.message?.contains("Plex Pass", ignoreCase = true) == true) throw e
             e.printStackTrace()
             SecureLogger.e(TAG, "Failed to get playback info for item $itemId", e)
             null

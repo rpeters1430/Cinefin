@@ -1,0 +1,63 @@
+{
+  "MediaContainer": {
+    "size": 1,
+    "Metadata": [
+      {
+        "ratingKey": "1001",
+        "key": "/library/metadata/1001",
+        "type": "movie",
+        "title": "Inception",
+        "duration": 8880000,
+        "Media": [
+          {
+            "id": 9001,
+            "duration": 8880000,
+            "bitrate": 12000,
+            "width": 1920,
+            "height": 1080,
+            "aspectRatio": 1.78,
+            "audioChannels": 2,
+            "audioCodec": "aac",
+            "videoCodec": "h264",
+            "container": "mp4",
+            "Part": [
+              {
+                "id": 8001,
+                "key": "/library/parts/8001/1715109491/file.mp4",
+                "duration": 8880000,
+                "file": "/data/movies/Inception.2010.mp4",
+                "size": 8000000000,
+                "container": "mp4",
+                "decision": "directplay",
+                "Stream": [
+                  {
+                    "id": 7001,
+                    "streamType": 1,
+                    "default": true,
+                    "codec": "h264",
+                    "index": 0,
+                    "displayTitle": "1080p (H.264)",
+                    "decision": "copy"
+                  },
+                  {
+                    "id": 7002,
+                    "streamType": 2,
+                    "default": true,
+                    "selected": true,
+                    "codec": "aac",
+                    "index": 1,
+                    "channels": 2,
+                    "language": "English",
+                    "languageCode": "eng",
+                    "displayTitle": "English (AAC Stereo)",
+                    "decision": "copy"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

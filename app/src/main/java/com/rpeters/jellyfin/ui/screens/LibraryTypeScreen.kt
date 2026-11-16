@@ -88,6 +88,8 @@ fun LibraryTypeScreen(
     downloadsViewModel: DownloadsViewModel = hiltViewModel(),
 ) {
     val appState by viewModel.appState.collectAsStateWithLifecycle()
+    val currentServer by viewModel.currentServer.collectAsStateWithLifecycle(initialValue = null)
+    val supportsFavorites = currentServer?.serverType?.supportsFavorites ?: true
     val libraryActionPrefs by libraryActionsPreferencesViewModel.preferences.collectAsStateWithLifecycle()
     var viewMode by rememberSaveable(libraryType) {
         mutableStateOf(if (libraryType == LibraryType.STUFF) ViewMode.LIST else ViewMode.GRID)
@@ -298,6 +300,7 @@ fun LibraryTypeScreen(
                     selectedFilter = selectedFilter,
                     onFilterSelected = { selectedFilter = it },
                     libraryType = libraryType,
+                    favoritesEnabled = supportsFavorites,
                 )
 
                 when {

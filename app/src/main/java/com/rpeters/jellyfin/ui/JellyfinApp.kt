@@ -106,11 +106,16 @@ fun JellyfinApp(
     val audioPlaybackViewModel: AudioPlaybackViewModel = hiltViewModel()
     val audioPlaybackState by audioPlaybackViewModel.playbackState.collectAsStateWithLifecycle()
 
-    val activeNavItems = BottomNavItem.bottomNavItems(rememberRequestsEnabled())
-    val isMiniPlayerVisible = audioPlaybackState.currentMediaItem != null
-
     // Main app ViewModel for global state and sync tasks
     val mainAppViewModel: com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel = hiltViewModel()
+    val currentServer by mainAppViewModel.currentServer.collectAsStateWithLifecycle(initialValue = null)
+    val supportsFavorites = currentServer?.serverType?.supportsFavorites ?: true
+
+    val activeNavItems = BottomNavItem.bottomNavItems(
+        seerrEnabled = rememberRequestsEnabled(),
+        favoritesEnabled = supportsFavorites,
+    )
+    val isMiniPlayerVisible = audioPlaybackState.currentMediaItem != null
 
     JellyfinAndroidTheme(themePreferences = themePreferences) {
         val windowSizeClass = calculateWindowSizeClass(activity = checkNotNull(LocalActivity.current))

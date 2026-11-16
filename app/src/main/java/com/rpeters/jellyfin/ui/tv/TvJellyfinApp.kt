@@ -78,15 +78,20 @@ fun TvJellyfinApp(
                     val backStackEntry by navController.currentBackStackEntryAsState()
                     val currentDestination = backStackEntry?.destination
 
+                    val currentServer by mainAppViewModel.currentServer.collectAsStateWithLifecycle(initialValue = null)
+                    val supportsFavorites = currentServer?.serverType?.supportsFavorites ?: true
+                    val navItems = remember(supportsFavorites) { TvNavigationItem.items(supportsFavorites) }
+
                     val showDrawer = currentDestination?.route?.let { route ->
                         val normalizedRoute = normalizeTvRoute(route)
-                        TvNavigationItem.items.any { it.route == normalizedRoute }
+                        navItems.any { it.route == normalizedRoute }
                     } ?: false
 
                     CompositionLocalProvider(LocalTvFocusManager provides tvFocusManager) {
                         TvMainScreen(
                             navController = navController,
                             showDrawer = showDrawer,
+                            navItems = navItems,
                             modifier = Modifier.fillMaxSize(),
                         )
                     }
@@ -102,11 +107,12 @@ fun TvMainScreen(
     navController: NavHostController,
     modifier: Modifier = Modifier,
     showDrawer: Boolean = true,
+    navItems: List<TvNavigationItem> = TvNavigationItem.items,
 ) {
     val focusManager = LocalFocusManager.current
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
-    val selectedItem = TvNavigationItem.items.firstOrNull { item ->
+    val selectedItem = navItems.firstOrNull { item ->
         currentDestination?.hierarchy?.any {
             normalizeTvRoute(it.route) == item.route
         } == true
@@ -120,6 +126,7 @@ fun TvMainScreen(
             TvNavigationSidebar(
                 navController = navController,
                 selectedItem = selectedItem,
+                navItems = navItems,
                 modifier = Modifier.fillMaxHeight(),
             )
         }
@@ -181,6 +188,7 @@ private fun TvNavigationSidebar(
     navController: NavHostController,
     selectedItem: TvNavigationItem?,
     modifier: Modifier = Modifier,
+    navItems: List<TvNavigationItem> = TvNavigationItem.items,
 ) {
     val layout = CinefinTvTheme.layout
     var hasFocus by remember { mutableStateOf(false) }
@@ -206,7 +214,7 @@ private fun TvNavigationSidebar(
             modifier = Modifier.padding(vertical = layout.sectionSpacing),
         )
 
-        TvNavigationItem.items.forEach { item ->
+        navItems.forEach { item ->
             TvSidebarNavItem(
                 item = item,
                 selected = selectedItem == item,

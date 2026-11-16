@@ -1,0 +1,44 @@
+{
+  "MediaContainer": {
+    "size": 1,
+    "Metadata": [
+      {
+        "ratingKey": "2003",
+        "key": "/library/metadata/2003",
+        "parentRatingKey": "2002",
+        "grandparentRatingKey": "2001",
+        "parentTitle": "Season 1",
+        "grandparentTitle": "Succession",
+        "parentThumb": "/library/metadata/2002/thumb/1715109492",
+        "grandparentThumb": "/library/metadata/2001/thumb/1715109492",
+        "grandparentArt": "/library/metadata/2001/art/1715109492",
+        "type": "episode",
+        "title": "Celebration",
+        "summary": "On his 80th birthday, media magnate Logan Roy shocks his family.",
+        "index": 1,
+        "parentIndex": 1,
+        "duration": 3600000,
+        "viewOffset": 1200000,
+        "viewCount": 0,
+        "addedAt": 1715100000,
+        "updatedAt": 1715109492,
+        "originallyAvailableAt": "2018-06-03",
+        "thumb": "/library/metadata/2003/thumb/1715109492",
+        "Marker": [
+          {
+            "id": 1,
+            "type": "intro",
+            "startTimeOffset": 150000,
+            "endTimeOffset": 230000
+          },
+          {
+            "id": 2,
+            "type": "credits",
+            "startTimeOffset": 3500000,
+            "endTimeOffset": 3600000
+          }
+        ]
+      }
+    ]
+  }
+}

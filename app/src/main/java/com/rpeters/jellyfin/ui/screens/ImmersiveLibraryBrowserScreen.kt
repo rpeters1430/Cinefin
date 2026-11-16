@@ -43,6 +43,7 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -128,6 +129,9 @@ fun ImmersiveLibraryBrowserScreen(
     val errorTitle = stringResource(R.string.library_error_loading_title)
     var showSortMenu by remember { mutableStateOf(false) }
     val gridState = rememberLazyGridState()
+    val mainAppViewModel: com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel()
+    val currentServer by mainAppViewModel.currentServer.collectAsStateWithLifecycle(initialValue = null)
+    val supportsFavorites = currentServer?.serverType?.supportsFavorites ?: true
 
     // Density pass (item 7): single-select filter chip row in the sticky header, reusing the
     // same FilterType/applyFilter pattern as LibraryFilterRow (LibraryFilters.kt). Filtering
@@ -239,6 +243,7 @@ fun ImmersiveLibraryBrowserScreen(
                                     selectedFilter = selectedFilter,
                                     onFilterSelected = { selectedFilter = it },
                                     themeColor = config.themeColor,
+                                    favoritesEnabled = supportsFavorites,
                                 )
                             }
 
@@ -353,6 +358,7 @@ private fun LibraryStickyHeader(
     selectedFilter: FilterType,
     onFilterSelected: (FilterType) -> Unit,
     themeColor: Color,
+    favoritesEnabled: Boolean = true,
 ) {
     Column(
         modifier = Modifier
@@ -386,7 +392,7 @@ private fun LibraryStickyHeader(
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            FilterType.getAllFilters().forEach { filter ->
+            FilterType.getAllFilters(favoritesEnabled).forEach { filter ->
                 item {
                     FilterChip(
                         onClick = { onFilterSelected(filter) },

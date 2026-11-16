@@ -167,10 +167,11 @@ class VideoPlayerMetadataManager @Inject constructor(
                     }
 
                     if (mimeType != null && extension != null) {
-                        // Build subtitle URL WITHOUT api_key in query params
-                        // AuthInterceptor will handle authentication via headers for these server requests
+                        val isPlex = repository.getCurrentServerSync()?.serverType == com.rpeters.jellyfin.data.model.ServerType.PLEX
                         val subtitleUrl = if (stream.isExternal && !stream.deliveryUrl.isNullOrBlank()) {
                             buildServerUrl(serverUrl, stream.deliveryUrl!!)
+                        } else if (isPlex) {
+                            return@forEach
                         } else {
                             "$serverUrl/Videos/${ServerIdCodec.decode(itemId)}/${mediaSource.id}/Subtitles/${stream.index}/Stream.$extension"
                         }

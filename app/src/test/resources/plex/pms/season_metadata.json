@@ -1,0 +1,23 @@
+{
+  "MediaContainer": {
+    "size": 1,
+    "parentRatingKey": "2001",
+    "parentTitle": "Succession",
+    "Metadata": [
+      {
+        "ratingKey": "2002",
+        "key": "/library/metadata/2002",
+        "parentRatingKey": "2001",
+        "parentTitle": "Succession",
+        "type": "season",
+        "title": "Season 1",
+        "index": 1,
+        "summary": "Logan Roy contemplates stepping down from Waystar Royco.",
+        "thumb": "/library/metadata/2002/thumb/1715109492",
+        "leafCount": 10,
+        "addedAt": 1715100000,
+        "updatedAt": 1715109492
+      }
+    ]
+  }
+}

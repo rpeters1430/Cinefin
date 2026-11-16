@@ -358,6 +358,7 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
             // Use ImmersiveMovieDetailScreen by default
             ImmersiveMovieDetailScreen(
                 movie = resolvedMovie,
+                supportsFavorites = currentServer?.serverType?.supportsFavorites ?: true,
                 relatedItems = detailState.similarMovies,
                 playbackProgress = detailState.playbackProgress,
                 onBackClick = { navController.popBackStack() },

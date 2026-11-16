@@ -70,7 +70,6 @@ class AudioService : androidx.media3.session.MediaSessionService() {
 
         player = ExoPlayer.Builder(this)
             .setMediaSourceFactory(mediaSourceFactory)
-            .enablePerStreamMediaProgression(true)
             .setAudioAttributes(audioAttributes, true)
             .setHandleAudioBecomingNoisy(true)
             // Match the "10s" labels on the seek buttons (ExoPlayer defaults to 5s/15s).
@@ -313,7 +312,6 @@ class AudioService : androidx.media3.session.MediaSessionService() {
 
     private fun syncSessionUiState() {
         mediaSession?.setMediaButtonPreferences(buildMediaButtonPreferences(player))
-        mediaSession?.setCustomLayout(buildMediaButtonPreferences(player))
         updateQueueMetadata()
     }
 

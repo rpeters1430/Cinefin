@@ -42,12 +42,12 @@ import org.jellyfin.sdk.model.api.BaseItemKind
  * Image size presets for different use cases.
  */
 enum class ImageSize(val width: Int, val height: Int) {
-    THUMBNAIL(150, 225), // Small thumbnails
-    CARD(300, 450), // Media cards
+    THUMBNAIL(300, 450), // Small thumbnails
+    CARD(600, 900), // Media cards
     BANNER(1920, 1080), // Banners and backdrops
-    POSTER(600, 900), // Large posters
-    AVATAR(100, 100), // User avatars
-    ICON(48, 48), // Small icons
+    POSTER(800, 1200), // Large posters
+    AVATAR(240, 240), // User avatars
+    ICON(96, 96), // Small icons
 }
 
 /**
@@ -123,6 +123,7 @@ fun OptimizedImage(
     quality: ImageQuality = ImageQuality.MEDIUM,
     contentScale: ContentScale = ContentScale.Crop,
     cornerRadius: Dp = 0.dp,
+    requestSize: Size? = null,
     placeholder: @Composable (() -> Unit)? = null,
     error: @Composable (() -> Unit)? = null,
     loading: @Composable (() -> Unit)? = null,
@@ -144,10 +145,11 @@ fun OptimizedImage(
     }
 
     // ✅ Performance: Remember request with stable key to prevent recreation
-    val imageRequest: ImageRequest = remember(imageUrl, size.width, size.height, cornerRadius.value, quality) {
+    val resolvedSize = requestSize ?: Size(size.width, size.height)
+    val imageRequest: ImageRequest = remember(imageUrl, resolvedSize, cornerRadius.value, quality) {
         val builder = ImageRequest.Builder(context)
             .data(imageUrl)
-            .size(Size(size.width, size.height))
+            .size(resolvedSize)
             .memoryCachePolicy(CachePolicy.ENABLED)
             .diskCachePolicy(CachePolicy.ENABLED)
             .networkCachePolicy(CachePolicy.ENABLED)
@@ -223,7 +225,7 @@ fun MediaImage(
     showPlaceholder: Boolean = true,
 ) {
     val imageSize = when (item.type) {
-        BaseItemKind.MOVIE, BaseItemKind.SERIES -> ImageSize.POSTER
+        BaseItemKind.MOVIE, BaseItemKind.SERIES, BaseItemKind.SEASON -> ImageSize.POSTER
         BaseItemKind.EPISODE -> ImageSize.BANNER
         BaseItemKind.MUSIC_ALBUM -> ImageSize.CARD
         BaseItemKind.MUSIC_ARTIST -> ImageSize.CARD

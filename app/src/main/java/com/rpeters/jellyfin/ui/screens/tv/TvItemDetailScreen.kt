@@ -105,6 +105,8 @@ fun TvItemDetailScreen(
     onSearchRequests: ((String) -> Unit)? = null,
 ) {
     val appState by viewModel.appState.collectAsStateWithLifecycle()
+    val currentServer by viewModel.currentServer.collectAsStateWithLifecycle(initialValue = null)
+    val supportsFavorites = currentServer?.serverType?.supportsFavorites ?: true
     val seasonState by seasonViewModel.state.collectAsStateWithLifecycle()
     val userPrefs: UserPreferencesViewModel = hiltViewModel()
     val context = LocalContext.current
@@ -546,34 +548,36 @@ fun TvItemDetailScreen(
                                 }
                             }
 
-                            TvButton(
-                                onClick = {
-                                    item.let {
-                                        userPrefs.toggleFavorite(it) { _, _ -> }
-                                    }
-                                },
-                                modifier = Modifier
-                                    .focusRequester(favoriteButtonFocusRequester)
-                                    .onFocusChanged { focusState ->
-                                        if (focusState.isFocused) {
-                                            lastFocusedActionRequester = favoriteButtonFocusRequester
-                                        }
-                                    }
-                                    .onPreviewKeyEvent { keyEvent ->
-                                        if (keyEvent.type == KeyEventType.KeyDown && keyEvent.key == Key.DirectionDown) {
-                                            nextContentFocusRequester.requestFocus()
-                                            true
-                                        } else {
-                                            false
+                            if (supportsFavorites) {
+                                TvButton(
+                                    onClick = {
+                                        item.let {
+                                            userPrefs.toggleFavorite(it) { _, _ -> }
                                         }
                                     },
-                                colors = TvButtonDefaults.colors(
-                                    containerColor = Color.White.copy(alpha = 0.1f),
-                                    contentColor = Color.White,
-                                ),
-                            ) {
-                                val isFav = item.userData?.isFavorite == true
-                                TvIcon(if (isFav) Icons.Default.Favorite else Icons.Default.FavoriteBorder, null)
+                                    modifier = Modifier
+                                        .focusRequester(favoriteButtonFocusRequester)
+                                        .onFocusChanged { focusState ->
+                                            if (focusState.isFocused) {
+                                                lastFocusedActionRequester = favoriteButtonFocusRequester
+                                            }
+                                        }
+                                        .onPreviewKeyEvent { keyEvent ->
+                                            if (keyEvent.type == KeyEventType.KeyDown && keyEvent.key == Key.DirectionDown) {
+                                                nextContentFocusRequester.requestFocus()
+                                                true
+                                            } else {
+                                                false
+                                            }
+                                        },
+                                    colors = TvButtonDefaults.colors(
+                                        containerColor = Color.White.copy(alpha = 0.1f),
+                                        contentColor = Color.White,
+                                    ),
+                                ) {
+                                    val isFav = item.userData?.isFavorite == true
+                                    TvIcon(if (isFav) Icons.Default.Favorite else Icons.Default.FavoriteBorder, null)
+                                }
                             }
 
                             TvButton(

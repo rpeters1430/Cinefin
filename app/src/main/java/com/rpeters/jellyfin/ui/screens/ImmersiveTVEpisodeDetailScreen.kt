@@ -69,6 +69,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import coil3.request.crossfade
 import com.rpeters.jellyfin.OptInAppExperimentalApis
@@ -150,6 +151,8 @@ fun ImmersiveTVEpisodeDetailScreen(
     val listState = remember(episode.id.toString()) { LazyListState() }
     val context = LocalContext.current
     val mainAppViewModel: MainAppViewModel = hiltViewModel()
+    val currentServer by mainAppViewModel.currentServer.collectAsStateWithLifecycle(initialValue = null)
+    val supportsFavorites = currentServer?.serverType?.supportsFavorites ?: true
     var showQualityDialog by remember { mutableStateOf(false) }
     var showDeleteOfflineConfirmation by remember { mutableStateOf(false) }
     var pendingQuality by remember { mutableStateOf<com.rpeters.jellyfin.data.offline.VideoQuality?>(null) }
@@ -416,6 +419,7 @@ fun ImmersiveTVEpisodeDetailScreen(
 
                         EpisodeActionRow(
                             episode = episode,
+                            supportsFavorites = supportsFavorites,
                             onFavoriteClick = { onFavoriteClick(episode) },
                             onMarkWatchedClick = { onMarkWatchedClick(episode) },
                             onDownloadClick = { showQualityDialog = true },
@@ -974,6 +978,7 @@ private fun EpisodeActionRow(
     onDownloadClick: () -> Unit,
     onDeleteClick: () -> Unit,
     onShareClick: () -> Unit,
+    supportsFavorites: Boolean = true,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
@@ -982,13 +987,15 @@ private fun EpisodeActionRow(
         val isFavorite = episode.userData?.isFavorite == true
         val isWatched = episode.userData?.played == true
 
-        DetailActionButton(
-            icon = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-            label = if (isFavorite) "Liked" else "Favorite",
-            onClick = onFavoriteClick,
-            modifier = Modifier.weight(1f),
-            active = isFavorite,
-        )
+        if (supportsFavorites) {
+            DetailActionButton(
+                icon = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                label = if (isFavorite) "Liked" else "Favorite",
+                onClick = onFavoriteClick,
+                modifier = Modifier.weight(1f),
+                active = isFavorite,
+            )
+        }
         DetailActionButton(
             icon = if (isWatched) Icons.Default.CheckCircle else Icons.Default.VisibilityOff,
             label = if (isWatched) "Watched" else "Mark",
