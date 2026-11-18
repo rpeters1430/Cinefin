@@ -294,8 +294,8 @@ class JellyfinStreamRepositoryTest {
         assertTrue("URL should contain server URL", result!!.contains(testServer.url))
         assertTrue("URL should contain item ID", result.contains(itemId))
         assertTrue("URL should contain image type", result.contains("/Images/Primary"))
-        assertTrue("URL should contain dimensions", result.contains("maxHeight=800"))
-        assertTrue("URL should contain dimensions", result.contains("maxWidth=800"))
+        assertTrue("URL should contain dimensions", result.contains("maxHeight=1200"))
+        assertTrue("URL should contain dimensions", result.contains("maxWidth=1200"))
         assertTrue("URL should contain tag", result.contains("tag=test-tag"))
     }
 

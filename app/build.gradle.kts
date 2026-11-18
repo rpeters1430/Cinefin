@@ -92,10 +92,12 @@ android {
 
     buildTypes {
         debug {
-            // Keep regular debug builds fast/stable; opt in to coverage when needed:
+            // Keep regular debug builds fast/stable; coverage is on only when asked for:
+            //   ./gradlew :app:jacocoTestReport            (turns it on by itself)
             //   ./gradlew :app:assembleDebug -PenableCoverage=true
             val enableCoverage = (project.findProperty("enableCoverage") as String?)
-                ?.toBooleanStrictOrNull() == true
+                ?.toBooleanStrictOrNull() == true ||
+                gradle.startParameter.taskNames.any { it.contains("jacoco", ignoreCase = true) }
             enableUnitTestCoverage = enableCoverage
             enableAndroidTestCoverage = enableCoverage
         }
@@ -340,8 +342,16 @@ dependencies {
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 }
 
+/**
+ * Unit-test coverage report: build/reports/jacoco/jacocoTestReport/{html,jacocoTestReport.xml}.
+ *
+ * Runs on any machine (no device needed). If instrumented coverage from
+ * `./gradlew :app:createDebugCoverageReport` is already on disk, it is merged in.
+ */
 tasks.register<JacocoReport>("jacocoTestReport") {
-    dependsOn("testDebugUnitTest", "createDebugCoverageReport")
+    group = "verification"
+    description = "Unit-test coverage for the debug build (merges device coverage if present)."
+    dependsOn("testDebugUnitTest")
 
     reports {
         xml.required.set(true)
@@ -350,28 +360,47 @@ tasks.register<JacocoReport>("jacocoTestReport") {
     }
 
     val fileFilter = listOf(
+        // Android / build generated
         "**/R.class",
         "**/R$*.class",
         "**/BuildConfig.*",
         "**/Manifest*.*",
-        "**/*Test*.*",
         "android/**/*.*",
-        "**/data/model/*.*",
+        "androidx/**/*.*",
+        // Hilt / Dagger generated
+        "**/*_Factory*.*",
+        "**/*_MembersInjector*.*",
+        "**/*_HiltModules*.*",
+        "**/*_Provide*Factory*.*",
+        "**/Hilt_*.*",
+        "**/*_GeneratedInjector*.*",
+        "**/*_ComponentTreeDeps*.*",
+        "**/*_Impl*.*",
+        "dagger/**/*.*",
+        "hilt_aggregated_deps/**/*.*",
+        // Kotlin / Compose generated
+        "**/*\$\$serializer*.*",
+        "**/ComposableSingletons*.*",
+        // Wiring and plain data holders
         "**/di/*.*",
+        "**/data/model/*.*",
     )
 
-    val debugTree = fileTree("${layout.buildDirectory.asFile.get()}/tmp/kotlin-classes/debug") {
+    val buildDir = layout.buildDirectory.asFile.get()
+    // AGP 9 compiles Kotlin itself, so classes are no longer under tmp/kotlin-classes/debug.
+    // Use the ASM-transformed output: it holds every Kotlin and Java class in the form the tests
+    // actually ran (Hilt rewrites @AndroidEntryPoint classes), so execution data matches.
+    // Don't add the raw compiler outputs as well: JaCoCo rejects the same class twice.
+    val classDirs = fileTree(buildDir.resolve("intermediates/classes/debug/transformDebugClassesWithAsm/dirs")) {
         exclude(fileFilter)
     }
 
-    val mainSrc = "${project.projectDir}/src/main/java"
-
-    sourceDirectories.setFrom(files(mainSrc))
-    classDirectories.setFrom(files(debugTree))
+    sourceDirectories.setFrom(files("${project.projectDir}/src/main/java", "${project.projectDir}/src/main/kotlin"))
+    classDirectories.setFrom(files(classDirs))
     executionData.setFrom(
-        fileTree(layout.buildDirectory.asFile.get()) {
+        fileTree(buildDir) {
             include("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec")
-            include("outputs/code_coverage/debugAndroidTest/connected/*/coverage.ec")
+            include("outputs/code_coverage/debugAndroidTest/connected/**/*.ec")
         },
     )
 }
