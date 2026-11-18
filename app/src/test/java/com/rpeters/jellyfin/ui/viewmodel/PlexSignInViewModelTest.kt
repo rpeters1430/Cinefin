@@ -249,7 +249,9 @@ class PlexSignInViewModelTest {
         connectionSelector,
         profileSwitcher,
         remoteConfig,
-        backgroundScope,
+        // Stands in for the app-wide scope. Not backgroundScope: advanceUntilIdle() stops once only
+        // background work is left, so the profile switch launched there would never run.
+        this,
     )
 
     private fun resource(

@@ -41,7 +41,8 @@ jobs:
         shell: bash
         run: |
           yes | sdkmanager --licenses >/dev/null || true
-          sdkmanager --install "platforms;android-36" "build-tools;35.0.0" "platform-tools"
+          # compileSdk is 37 (gradle/libs.versions.toml); keep this in step with it
+          sdkmanager --install "platforms;android-37.0" "build-tools;35.0.0" "platform-tools"
 
       - name: Generate local.properties
         run: echo "sdk.dir=$ANDROID_HOME" > local.properties
@@ -81,8 +82,24 @@ jobs:
       - name: Build debug APK
         run: ./gradlew --no-daemon --stacktrace :app:assembleDebug
 
-      - name: Run unit tests
-        run: ./gradlew --no-daemon --stacktrace :app:testDebugUnitTest
+      - name: Run unit tests with coverage
+        # jacocoTestReport runs testDebugUnitTest with coverage turned on, then writes the report
+        run: ./gradlew --no-daemon --stacktrace :app:jacocoTestReport
+
+      - name: Coverage summary
+        if: always()
+        shell: bash
+        run: |
+          REPORT="app/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml"
+          if [ ! -f "$REPORT" ]; then
+            echo "No coverage report produced" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          python3 .github/scripts/coverage_summary.py "$REPORT" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Compile instrumented tests
+        # No emulator in this job; this at least keeps androidTest sources from rotting
+        run: ./gradlew --no-daemon --stacktrace :app:compileDebugAndroidTestKotlin
 
       - name: Run lint
         run: ./gradlew --no-daemon --stacktrace :app:lintDebug
@@ -134,6 +151,15 @@ jobs:
             app/build/test-results/testDebugUnitTest/**
           if-no-files-found: warn
           retention-days: 3
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: coverage-report
+          path: app/build/reports/jacoco/jacocoTestReport/**
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Upload lint reports
         if: always()
