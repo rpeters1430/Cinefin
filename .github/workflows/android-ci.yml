@@ -97,6 +97,18 @@ jobs:
           fi
           python3 .github/scripts/coverage_summary.py "$REPORT" >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Upload coverage to Codecov
+        # Feeds Codecov's PR comment and per-PR coverage change. Needs the CODECOV_TOKEN repo
+        # secret (or tokenless uploads enabled in Codecov's org settings); never fails the build.
+        if: always()
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v6.0.2
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: app/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml
+          disable_search: true
+          flags: unit
+          fail_ci_if_error: false
+
       - name: Compile instrumented tests
         # No emulator in this job; this at least keeps androidTest sources from rotting
         run: ./gradlew --no-daemon --stacktrace :app:compileDebugAndroidTestKotlin
