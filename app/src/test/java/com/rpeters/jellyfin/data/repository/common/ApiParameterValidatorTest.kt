@@ -7,6 +7,21 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Test
 
+private const val MOVIE = "Movie"
+private const val SERIES = "Series"
+private const val VIDEO = "Video"
+private const val PHOTO = "Photo"
+private const val PLAYLIST = "Playlist"
+private const val MUSIC_TYPES = "MusicAlbum,MusicArtist,Audio"
+private const val MOVIES = "movies"
+private const val TV_SHOWS = "tvshows"
+private const val MUSIC = "music"
+private const val HOME_VIDEOS = "homevideos"
+private const val PHOTOS = "photos"
+private const val BOOKS = "books"
+private const val PLAYLISTS = "playlists"
+private const val BOOK_TYPES = "Book,AudioBook"
+
 class ApiParameterValidatorTest {
 
     private val libraryId = "0f8fad5b-d9cb-469f-a165-70867728950e"
@@ -23,11 +38,11 @@ class ApiParameterValidatorTest {
 
     @Test
     fun validateLibraryParams_clampsPagination() {
-        val low = ApiParameterValidator.validateLibraryParams(itemTypes = "Movie", startIndex = -5, limit = 0)!!
+        val low = ApiParameterValidator.validateLibraryParams(itemTypes = MOVIE, startIndex = -5, limit = 0)!!
         assertEquals(0, low.startIndex)
         assertEquals(1, low.limit)
 
-        val high = ApiParameterValidator.validateLibraryParams(itemTypes = "Movie", startIndex = 1_000_000, limit = 5_000)!!
+        val high = ApiParameterValidator.validateLibraryParams(itemTypes = MOVIE, startIndex = 1_000_000, limit = 5_000)!!
         assertEquals(100_000, high.startIndex)
         assertEquals(200, high.limit)
     }
@@ -35,16 +50,16 @@ class ApiParameterValidatorTest {
     @Test
     fun validateLibraryParams_placeholderParentIdsAreDropped() {
         listOf("null", "undefined", "0", "-1", "  ", "NULL").forEach { placeholder ->
-            val params = ApiParameterValidator.validateLibraryParams(parentId = placeholder, itemTypes = "Movie")!!
+            val params = ApiParameterValidator.validateLibraryParams(parentId = placeholder, itemTypes = MOVIE)!!
             assertNull("'$placeholder' should be dropped", params.parentId)
         }
     }
 
     @Test
     fun validateLibraryParams_validParentIdIsKept() {
-        val params = ApiParameterValidator.validateLibraryParams(parentId = libraryId, collectionType = "movies")!!
+        val params = ApiParameterValidator.validateLibraryParams(parentId = libraryId, collectionType = MOVIES)!!
         assertEquals(libraryId, params.parentId)
-        assertEquals("Movie", params.itemTypes)
+        assertEquals(MOVIE, params.itemTypes)
     }
 
     @Test
@@ -58,7 +73,7 @@ class ApiParameterValidatorTest {
 
     @Test
     fun validateLibraryParams_collectionTypeIsNormalisedOrDropped() {
-        assertEquals("movies", ApiParameterValidator.validateLibraryParams(collectionType = "  MOVIES ")!!.collectionType)
+        assertEquals(MOVIES, ApiParameterValidator.validateLibraryParams(collectionType = "  MOVIES ")!!.collectionType)
         assertNull(ApiParameterValidator.validateLibraryParams(collectionType = "unknown-type")!!.collectionType)
     }
 
@@ -68,43 +83,43 @@ class ApiParameterValidatorTest {
             ApiParameterValidator.validateLibraryParams(itemTypes = requested, collectionType = collection)!!.itemTypes
 
         // movies
-        assertEquals("Movie", types("movies", null))
-        assertEquals("Movie", types("movies", "Movie,Series"))
-        assertEquals("Movie", types("movies", "Series"))
+        assertEquals(MOVIE, types(MOVIES, null))
+        assertEquals(MOVIE, types(MOVIES, "Movie,Series"))
+        assertEquals(MOVIE, types(MOVIES, SERIES))
         // tvshows
-        assertEquals("Series", types("tvshows", null))
-        assertEquals("Series,Episode", types("tvshows", "Series,Episode"))
-        assertEquals("Series", types("tvshows", "Movie"))
+        assertEquals(SERIES, types(TV_SHOWS, null))
+        assertEquals("Series,Episode", types(TV_SHOWS, "Series,Episode"))
+        assertEquals(SERIES, types(TV_SHOWS, MOVIE))
         // music
-        assertEquals("MusicAlbum,MusicArtist,Audio", types("music", null))
-        assertEquals("Audio", types("music", "Audio"))
-        assertEquals("MusicAlbum,MusicArtist,Audio", types("music", "Movie"))
+        assertEquals(MUSIC_TYPES, types(MUSIC, null))
+        assertEquals("Audio", types(MUSIC, "Audio"))
+        assertEquals(MUSIC_TYPES, types(MUSIC, MOVIE))
         // homevideos lets the server decide unless Video was asked for
-        assertNull(types("homevideos", null))
-        assertEquals("Video", types("homevideos", "Video"))
-        assertNull(types("homevideos", "Movie"))
+        assertNull(types(HOME_VIDEOS, null))
+        assertEquals(VIDEO, types(HOME_VIDEOS, VIDEO))
+        assertNull(types(HOME_VIDEOS, MOVIE))
         // photos
-        assertEquals("Photo", types("photos", null))
-        assertEquals("Photo", types("photos", "Photo"))
-        assertEquals("Photo", types("photos", "Movie"))
+        assertEquals(PHOTO, types(PHOTOS, null))
+        assertEquals(PHOTO, types(PHOTOS, PHOTO))
+        assertEquals(PHOTO, types(PHOTOS, MOVIE))
         // books
-        assertEquals("Book,AudioBook", types("books", null))
-        assertEquals("AudioBook", types("books", "AudioBook"))
-        assertEquals("Book,AudioBook", types("books", "Movie"))
+        assertEquals(BOOK_TYPES, types(BOOKS, null))
+        assertEquals("AudioBook", types(BOOKS, "AudioBook"))
+        assertEquals(BOOK_TYPES, types(BOOKS, MOVIE))
         // playlists
-        assertEquals("Playlist", types("playlists", null))
-        assertEquals("Playlist", types("playlists", "Playlist"))
-        assertEquals("Playlist", types("playlists", "Movie"))
+        assertEquals(PLAYLIST, types(PLAYLISTS, null))
+        assertEquals(PLAYLIST, types(PLAYLISTS, PLAYLIST))
+        assertEquals(PLAYLIST, types(PLAYLISTS, MOVIE))
         // other known collections keep the request as is
-        assertEquals("Video", types("folders", "Video"))
+        assertEquals(VIDEO, types("folders", VIDEO))
         assertNull(types("livetv", null))
     }
 
     @Test
     fun createSafeDefaults_coversEveryCollectionType() {
-        assertEquals("Movie", ApiParameterValidator.createSafeDefaults(CollectionType.MOVIES).itemTypes)
-        assertEquals("Series", ApiParameterValidator.createSafeDefaults(CollectionType.TVSHOWS).itemTypes)
-        assertEquals("MusicAlbum,MusicArtist,Audio", ApiParameterValidator.createSafeDefaults(CollectionType.MUSIC).itemTypes)
+        assertEquals(MOVIE, ApiParameterValidator.createSafeDefaults(CollectionType.MOVIES).itemTypes)
+        assertEquals(SERIES, ApiParameterValidator.createSafeDefaults(CollectionType.TVSHOWS).itemTypes)
+        assertEquals(MUSIC_TYPES, ApiParameterValidator.createSafeDefaults(CollectionType.MUSIC).itemTypes)
         assertNull(ApiParameterValidator.createSafeDefaults(CollectionType.HOMEVIDEOS).itemTypes)
         CollectionType.entries.forEach { type ->
             val defaults = ApiParameterValidator.createSafeDefaults(type)

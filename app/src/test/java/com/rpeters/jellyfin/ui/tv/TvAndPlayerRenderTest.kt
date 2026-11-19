@@ -84,6 +84,10 @@ import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Test
 
+private const val SERVER_URL = "https://jellyfin.example.test"
+private const val USERNAME = "tester"
+private const val PROFILE_ID = "p1"
+
 class TvAndPlayerRenderTest : ComposeScreenTest() {
 
     // region Player state fixtures
@@ -398,11 +402,11 @@ class TvAndPlayerRenderTest : ComposeScreenTest() {
                 onQuickConnect = {},
                 isConnecting = false,
                 errorMessage = "Wrong password",
-                savedServerUrl = "https://jellyfin.example.test",
-                savedUsername = "tester",
+                savedServerUrl = SERVER_URL,
+                savedUsername = USERNAME,
                 discoveredServers = listOf(DiscoveredServer("Living Room", "http://192.168.1.10:8096", "a", "10.11.0")),
                 savedProfiles = listOf(
-                    ServerProfile(id = "p1", serverUrl = "https://jellyfin.example.test", serverName = "Home", username = "tester"),
+                    ServerProfile(id = PROFILE_ID, serverUrl = SERVER_URL, serverName = "Home", username = USERNAME),
                     ServerProfile(id = "p2", serverUrl = "https://emby.example.test", serverName = "Emby", username = "me", serverType = ServerType.EMBY),
                 ),
                 detectedServerType = ServerType.EMBY,
@@ -515,11 +519,11 @@ class TvAndPlayerRenderTest : ComposeScreenTest() {
     @Test
     fun tvSettings() {
         val connection: ServerConnectionViewModel = mockk(relaxed = true) {
-            coEvery { connectionState } returns MutableStateFlow(ConnectionState(savedServerUrl = "https://jellyfin.example.test", savedUsername = "tester", detectedServerType = ServerType.JELLYFIN))
+            coEvery { connectionState } returns MutableStateFlow(ConnectionState(savedServerUrl = SERVER_URL, savedUsername = USERNAME, detectedServerType = ServerType.JELLYFIN))
         }
         val profiles: ProfilesViewModel = mockk(relaxed = true) {
             coEvery { this@mockk.profiles } returns MutableStateFlow(
-                ServerProfiles(listOf(ServerProfile(id = "p1", serverUrl = "https://jellyfin.example.test", serverName = "Home", username = "tester")), activeProfileId = "p1"),
+                ServerProfiles(listOf(ServerProfile(id = PROFILE_ID, serverUrl = SERVER_URL, serverName = "Home", username = USERNAME)), activeProfileId = PROFILE_ID),
             )
             coEvery { uiState } returns MutableStateFlow(ProfilesUiState())
         }

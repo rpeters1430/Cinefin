@@ -25,6 +25,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Before
 import org.junit.Test
 
+private val testImageUrl: (org.jellyfin.sdk.model.api.BaseItemDto) -> String? = { "https://img.test/${it.id}" }
+
 /** Renders the detail screens in their main states: loaded, loading, error and sparse data. */
 class DetailScreensRenderTest : ComposeScreenTest() {
 
@@ -53,7 +55,7 @@ class DetailScreensRenderTest : ComposeScreenTest() {
             episode = episode,
             seriesInfo = TestItems.series(),
             seasonEpisodes = TestItems.episodes(6),
-            getImageUrl = { "https://img.test/${it.id}" },
+            getImageUrl = testImageUrl,
             getChapterImageUrl = { _, _ -> null },
             getBackdropUrl = { null },
             onBackClick = {},
@@ -108,7 +110,7 @@ class DetailScreensRenderTest : ComposeScreenTest() {
             ImmersiveTVShowDetailScreen(
                 seriesId = TestItems.series().id.toString(),
                 onBackClick = {},
-                getImageUrl = { "https://img.test/${it.id}" },
+                getImageUrl = testImageUrl,
                 getBackdropUrl = { null },
                 onSeriesClick = {},
                 onEpisodeClick = {},
@@ -133,7 +135,7 @@ class DetailScreensRenderTest : ComposeScreenTest() {
             ImmersiveTVSeasonScreen(
                 seriesId = TestItems.series().id.toString(),
                 onBackClick = {},
-                getImageUrl = { "https://img.test/${it.id}" },
+                getImageUrl = testImageUrl,
                 getBackdropUrl = { null },
                 onSeriesClick = {},
                 onEpisodeClick = {},
@@ -156,7 +158,7 @@ class DetailScreensRenderTest : ComposeScreenTest() {
         val item = TestItems.homeVideo()
         ImmersiveHomeVideoDetailScreen(
             item = item,
-            getImageUrl = { "https://img.test/${it.id}" },
+            getImageUrl = testImageUrl,
             getBackdropUrl = { null },
             onBackClick = {},
             playbackProgress = if (progress) PlaybackProgress(itemId = item.id.toString(), positionMs = 1_000, durationMs = 100_000, percentageWatched = 0.01f) else null,

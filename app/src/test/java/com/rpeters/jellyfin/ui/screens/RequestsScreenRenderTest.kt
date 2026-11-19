@@ -28,20 +28,23 @@ import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Test
 
+private const val TV = "tv"
+private const val MOVIE = "movie"
+
 class RequestsScreenRenderTest : ComposeScreenTest() {
 
     private fun media(id: Int, type: String, status: Int?) = SeerrMediaItem(
         id = id,
         mediaType = type,
         tmdbId = id,
-        tvdbId = if (type == "tv") id + 1000 else null,
-        title = if (type == "movie") "Movie $id" else null,
-        name = if (type == "tv") "Show $id" else null,
+        tvdbId = if (type == TV) id + 1000 else null,
+        title = if (type == MOVIE) "Movie $id" else null,
+        name = if (type == TV) "Show $id" else null,
         overview = "Overview for $id",
         posterPath = "/p$id.jpg",
         backdropPath = "/b$id.jpg",
-        releaseDate = if (type == "movie") "2026-0${(id % 9) + 1}-01" else null,
-        firstAirDate = if (type == "tv") "2025-01-01" else null,
+        releaseDate = if (type == MOVIE) "2026-0${(id % 9) + 1}-01" else null,
+        firstAirDate = if (type == TV) "2025-01-01" else null,
         mediaInfo = status?.let {
             SeerrMediaInfo(
                 status = it,
@@ -51,8 +54,8 @@ class RequestsScreenRenderTest : ComposeScreenTest() {
         },
     )
 
-    private val movies = (1..5).map { media(it, "movie", listOf(null, 1, 2, 3, 5)[it - 1]) }
-    private val shows = (11..15).map { media(it, "tv", listOf(4, null, 2, 5, 3)[it - 11]) }
+    private val movies = (1..5).map { media(it, MOVIE, listOf(null, 1, 2, 3, 5)[it - 1]) }
+    private val shows = (11..15).map { media(it, TV, listOf(4, null, 2, 5, 3)[it - 11]) }
 
     private val availability = TvAvailability(
         localSeriesTitle = "Show 11",
@@ -75,10 +78,10 @@ class RequestsScreenRenderTest : ComposeScreenTest() {
             request = SeerrRequestItem(
                 id = 100 + status,
                 status = status,
-                type = if (status == 2) "tv" else "movie",
+                type = if (status == 2) TV else MOVIE,
                 is4k = status == 3,
                 createdAt = "2026-11-0${status}T10:00:00Z",
-                media = SeerrRequestMedia(id = status, tmdbId = status, mediaType = if (status == 2) "tv" else "movie", status = status + 2),
+                media = SeerrRequestMedia(id = status, tmdbId = status, mediaType = if (status == 2) TV else MOVIE, status = status + 2),
                 seasons = if (status == 2) listOf(SeerrRequestedSeason(1, 2)) else emptyList(),
             ),
             title = "Requested $status",

@@ -20,6 +20,13 @@ import org.jellyfin.sdk.model.api.UserItemDataDto
 import java.time.LocalDateTime
 import java.util.UUID
 
+private const val SERVER_ID = "server-1"
+private const val GENRE_DRAMA = "Drama"
+private const val PRIMARY_TAG = "prim"
+private const val SERIES_NAME = "The Test Series"
+private const val ARTIST_NAME = "The Testers"
+private const val ALBUM_NAME = "Test Album"
+
 /**
  * Realistic, fully populated Jellyfin items for tests. Screens branch on many optional fields
  * (ratings, genres, people, streams, progress), so fixtures fill them in by default; pass
@@ -167,12 +174,12 @@ object TestItems {
             originalTitle = "$name (Original)",
             type = BaseItemKind.MOVIE,
             mediaType = MediaType.VIDEO,
-            serverId = "server-1",
+            serverId = SERVER_ID,
             overview = "A crew of testers discovers that every screen in the app renders at least once. " +
                 "Long overviews exercise the expand and collapse paths.",
             taglines = listOf("Every branch counts."),
-            genres = listOf("Science Fiction", "Adventure", "Drama"),
-            genreItems = genres("Science Fiction", "Adventure", "Drama"),
+            genres = listOf("Science Fiction", "Adventure", GENRE_DRAMA),
+            genreItems = genres("Science Fiction", "Adventure", GENRE_DRAMA),
             studios = listOf(NameGuidPair(name = "Test Studio", id = id(7000))),
             productionYear = 2025,
             premiereDate = LocalDateTime.of(2025, 6, 13, 0, 0),
@@ -188,7 +195,7 @@ object TestItems {
             chapters = chapters(),
             remoteTrailers = listOf(MediaUrl(url = "https://www.youtube.com/watch?v=test", name = "Trailer")),
             providerIds = mapOf("Imdb" to "tt0000001", "Tmdb" to "1"),
-            imageTags = mapOf(ImageType.PRIMARY to "prim", ImageType.LOGO to "logo", ImageType.THUMB to "thumb"),
+            imageTags = mapOf(ImageType.PRIMARY to PRIMARY_TAG, ImageType.LOGO to "logo", ImageType.THUMB to "thumb"),
             backdropImageTags = listOf("bd1", "bd2"),
             canDelete = true,
             canDownload = true,
@@ -201,15 +208,15 @@ object TestItems {
         )
     }
 
-    fun series(seed: Int = 100, name: String = "The Test Series") = id(seed).let { uuid ->
+    fun series(seed: Int = 100, name: String = SERIES_NAME) = id(seed).let { uuid ->
         BaseItemDto(
             id = uuid,
             name = name,
             type = BaseItemKind.SERIES,
-            serverId = "server-1",
+            serverId = SERVER_ID,
             overview = "A long-running series about writing tests for every screen.",
-            genres = listOf("Drama", "Mystery"),
-            genreItems = genres("Drama", "Mystery"),
+            genres = listOf(GENRE_DRAMA, "Mystery"),
+            genreItems = genres(GENRE_DRAMA, "Mystery"),
             studios = listOf(NameGuidPair(name = "Test Network", id = id(7001))),
             productionYear = 2021,
             premiereDate = LocalDateTime.of(2021, 3, 1, 0, 0),
@@ -223,7 +230,7 @@ object TestItems {
             userData = userData(uuid, progressPercent = 60.0),
             remoteTrailers = listOf(MediaUrl(url = "https://www.youtube.com/watch?v=series", name = "Trailer")),
             providerIds = mapOf("Tvdb" to "123", "Imdb" to "tt0000002"),
-            imageTags = mapOf(ImageType.PRIMARY to "prim", ImageType.LOGO to "logo"),
+            imageTags = mapOf(ImageType.PRIMARY to PRIMARY_TAG, ImageType.LOGO to "logo"),
             backdropImageTags = listOf("bd1"),
             airDays = listOf(org.jellyfin.sdk.model.api.DayOfWeek.FRIDAY),
             airTime = "9:00 PM",
@@ -235,16 +242,16 @@ object TestItems {
             id = uuid,
             name = "Season $index",
             type = BaseItemKind.SEASON,
-            serverId = "server-1",
+            serverId = SERVER_ID,
             indexNumber = index,
             seriesId = id(seriesSeed),
-            seriesName = "The Test Series",
+            seriesName = SERIES_NAME,
             parentId = id(seriesSeed),
             overview = "Season $index overview.",
             productionYear = 2020 + index,
             childCount = 10,
             userData = userData(uuid, progressPercent = 30.0),
-            imageTags = mapOf(ImageType.PRIMARY to "prim"),
+            imageTags = mapOf(ImageType.PRIMARY to PRIMARY_TAG),
         )
     }
 
@@ -254,11 +261,11 @@ object TestItems {
             name = "Episode $index: The Pilot",
             type = BaseItemKind.EPISODE,
             mediaType = MediaType.VIDEO,
-            serverId = "server-1",
+            serverId = SERVER_ID,
             indexNumber = index,
             parentIndexNumber = seasonIndex,
             seriesId = id(100),
-            seriesName = "The Test Series",
+            seriesName = SERIES_NAME,
             seasonId = id(200),
             seasonName = "Season $seasonIndex",
             overview = "In which the tests are written.",
@@ -272,7 +279,7 @@ object TestItems {
             mediaSources = listOf(mediaSource(uuid)),
             mediaStreams = streams(),
             chapters = chapters(),
-            imageTags = mapOf(ImageType.PRIMARY to "prim", ImageType.THUMB to "thumb"),
+            imageTags = mapOf(ImageType.PRIMARY to PRIMARY_TAG, ImageType.THUMB to "thumb"),
             seriesPrimaryImageTag = "sprim",
             parentBackdropItemId = id(100),
             parentBackdropImageTags = listOf("pbd"),
@@ -295,19 +302,19 @@ object TestItems {
     fun album(seed: Int = 500) = id(seed).let { uuid ->
         BaseItemDto(
             id = uuid,
-            name = "Test Album",
+            name = ALBUM_NAME,
             type = BaseItemKind.MUSIC_ALBUM,
-            serverId = "server-1",
-            albumArtist = "The Testers",
-            artists = listOf("The Testers"),
-            albumArtists = listOf(NameGuidPair(name = "The Testers", id = id(5900))),
-            artistItems = listOf(NameGuidPair(name = "The Testers", id = id(5900))),
+            serverId = SERVER_ID,
+            albumArtist = ARTIST_NAME,
+            artists = listOf(ARTIST_NAME),
+            albumArtists = listOf(NameGuidPair(name = ARTIST_NAME, id = id(5900))),
+            artistItems = listOf(NameGuidPair(name = ARTIST_NAME, id = id(5900))),
             productionYear = 2019,
             genres = listOf("Rock"),
             childCount = 4,
             runTimeTicks = 42 * TICKS_PER_MINUTE,
             userData = userData(uuid),
-            imageTags = mapOf(ImageType.PRIMARY to "prim"),
+            imageTags = mapOf(ImageType.PRIMARY to PRIMARY_TAG),
         )
     }
 
@@ -317,15 +324,15 @@ object TestItems {
             name = "Track $index",
             type = BaseItemKind.AUDIO,
             mediaType = MediaType.AUDIO,
-            serverId = "server-1",
+            serverId = SERVER_ID,
             indexNumber = index,
-            album = "Test Album",
+            album = ALBUM_NAME,
             albumId = id(500),
-            albumArtist = "The Testers",
-            artists = listOf("The Testers"),
+            albumArtist = ARTIST_NAME,
+            artists = listOf(ARTIST_NAME),
             runTimeTicks = 4 * TICKS_PER_MINUTE,
             userData = userData(uuid, favorite = index == 2),
-            imageTags = mapOf(ImageType.PRIMARY to "prim"),
+            imageTags = mapOf(ImageType.PRIMARY to PRIMARY_TAG),
         )
     }
 
@@ -336,9 +343,9 @@ object TestItems {
         name = name,
         type = BaseItemKind.COLLECTION_FOLDER,
         collectionType = type,
-        serverId = "server-1",
+        serverId = SERVER_ID,
         childCount = 120,
-        imageTags = mapOf(ImageType.PRIMARY to "prim"),
+        imageTags = mapOf(ImageType.PRIMARY to PRIMARY_TAG),
     )
 
     fun libraries() = listOf(
@@ -357,10 +364,10 @@ object TestItems {
         id = id(seed),
         name = "Ada Lovelace",
         type = BaseItemKind.PERSON,
-        serverId = "server-1",
+        serverId = SERVER_ID,
         overview = "An actor known for test-driven roles.",
         premiereDate = LocalDateTime.of(1980, 12, 10, 0, 0),
         productionLocations = listOf("London, England"),
-        imageTags = mapOf(ImageType.PRIMARY to "prim"),
+        imageTags = mapOf(ImageType.PRIMARY to PRIMARY_TAG),
     )
 }

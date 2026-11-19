@@ -41,12 +41,15 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.junit.Test
 
+private const val TRANSCODE = "Transcode"
+private const val FAILED = "Failed"
+
 class LibraryAndToolScreensRenderTest : ComposeScreenTest() {
 
     private val analysis = PlaybackCapabilityAnalysis(
         canPlay = true,
         preferredMethod = PlaybackMethod.TRANSCODING,
-        methodLabel = "Transcode",
+        methodLabel = TRANSCODE,
         expectedQuality = "1080p",
         details = "HEVC is not supported by this device",
         codecs = "hevc / eac3",
@@ -54,7 +57,7 @@ class LibraryAndToolScreensRenderTest : ComposeScreenTest() {
         estimatedBandwidth = 8_000_000,
         transcodeReasons = listOf("VideoCodecNotSupported", "AudioChannelsNotSupported"),
         breakdown = listOf(
-            PlaybackBreakdownItem("Video", "Transcode", "HEVC not supported"),
+            PlaybackBreakdownItem("Video", TRANSCODE, "HEVC not supported"),
             PlaybackBreakdownItem("Audio", "Direct", "EAC3 supported"),
         ),
     )
@@ -137,7 +140,7 @@ class LibraryAndToolScreensRenderTest : ComposeScreenTest() {
 
     @Test
     fun favorites_emptyError() {
-        render { ImmersiveFavoritesScreen(favorites = emptyList(), isLoading = true, errorMessage = "Failed", onRefresh = {}, getImageUrl = { null }, onBackClick = {}) }
+        render { ImmersiveFavoritesScreen(favorites = emptyList(), isLoading = true, errorMessage = FAILED, onRefresh = {}, getImageUrl = { null }, onBackClick = {}) }
         assertRendered()
     }
 
@@ -157,7 +160,7 @@ class LibraryAndToolScreensRenderTest : ComposeScreenTest() {
     fun playlists_searchLoadingError() {
         render {
             ImmersivePlaylistsScreen(
-                state = PlaylistsState(isLoading = true, searchQuery = "zzz", errorMessage = "Failed"),
+                state = PlaylistsState(isLoading = true, searchQuery = "zzz", errorMessage = FAILED),
                 getImageUrl = { null },
                 getBackdropUrl = { null },
                 onPlaylistClick = {},
@@ -288,7 +291,7 @@ class LibraryAndToolScreensRenderTest : ComposeScreenTest() {
         AiAssistantState(isLoading = true, isDownloadingNano = true, downloadProgress = "40 MB / 1 GB", nanoStatus = "Downloading"),
     ).also { assertRendered() }
 
-    @Test fun assistant_error() = renderAssistant(AiAssistantState(canRetryDownload = true, errorCode = 606, nanoStatus = "Failed")).also { assertRendered() }
+    @Test fun assistant_error() = renderAssistant(AiAssistantState(canRetryDownload = true, errorCode = 606, nanoStatus = FAILED)).also { assertRendered() }
 
     private fun renderDiagnostics(state: AiBackendUiState) {
         val vm: AiDiagnosticsViewModel = mockk(relaxed = true) { coEvery { aiBackendState } returns MutableStateFlow(state) }
@@ -312,7 +315,7 @@ class LibraryAndToolScreensRenderTest : ComposeScreenTest() {
             listOf(true, false, true).mapIndexed { i, needs ->
                 TranscodingDiagnosticsViewModel.VideoAnalysis(
                     id = "v$i", name = "Video $i", videoCodec = if (needs) "hevc" else "h264", audioCodec = "aac", container = "mkv",
-                    resolution = "1920x1080", needsTranscoding = needs, methodLabel = if (needs) "Transcode" else "Direct Play",
+                    resolution = "1920x1080", needsTranscoding = needs, methodLabel = if (needs) TRANSCODE else "Direct Play",
                     transcodingReasons = if (needs) listOf("Codec") else emptyList(), breakdown = analysis.breakdown,
                     item = TestItems.movie(seed = 60 + i), itemType = if (i == 1) "Episode" else "Movie",
                 )
