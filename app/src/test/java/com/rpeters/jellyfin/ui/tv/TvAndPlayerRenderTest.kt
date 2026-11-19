@@ -1,6 +1,7 @@
 package com.rpeters.jellyfin.ui.tv
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.runtime.remember
 import androidx.compose.ui.focus.FocusRequester
 import androidx.media3.common.Format
 import androidx.media3.common.MediaItem
@@ -318,7 +319,7 @@ class TvAndPlayerRenderTest : ComposeScreenTest() {
                     onShowAudio = {},
                     onShowSubtitles = {},
                     onClose = {},
-                    closeButtonFocusRequester = FocusRequester(),
+                    closeButtonFocusRequester = remember { FocusRequester() },
                 )
             }
         }

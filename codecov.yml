@@ -1,0 +1,29 @@
+# Codecov configuration: https://docs.codecov.com/docs/codecov-yaml
+# Coverage comes from the JaCoCo unit-test report uploaded by .github/workflows/android-ci.yml.
+
+coverage:
+  precision: 1
+  round: down
+  range: "40...80"
+  status:
+    # Report-only for now: both checks show the numbers on every PR but never block a merge.
+    # To enforce, drop `informational: true` (and tune `threshold`).
+    project:
+      default:
+        target: auto       # compare against the base branch
+        threshold: 0.5%    # allow small drops from noise
+        informational: true
+    patch:
+      default:
+        target: 50%        # changed lines should be at least half covered
+        informational: true
+
+comment:
+  layout: "condensed_header, diff, flags, files, footer"
+  behavior: default        # one comment per PR, updated on each push
+  require_changes: false
+
+ignore:
+  - "**/di/**"
+  - "**/data/model/**"
+  - "app/src/main/java/androidx/**"
