@@ -118,11 +118,14 @@ private class RegisterHostActivityRule : TestRule {
  *
  * Subclasses call [render] with the composable under test; it is wrapped in the app theme so
  * MaterialTheme and the Cinefin expressive tokens resolve as they do in the app.
+ *
+ * Abstract on purpose although it has no abstract members: it carries @RunWith, so a concrete
+ * class would be run by JUnit as a test class with no tests and fail with "No runnable methods".
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [35], application = TestCinefinApplication::class, qualifiers = "w411dp-h2400dp-xxhdpi")
 @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
-abstract class ComposeScreenTest {
+abstract class ComposeScreenTest { // skipcq
 
     val compose: AndroidComposeTestRule<ActivityScenarioRule<HiltTestHostActivity>, HiltTestHostActivity> =
         createAndroidComposeRule<HiltTestHostActivity>()
