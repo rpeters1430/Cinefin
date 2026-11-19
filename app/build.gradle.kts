@@ -375,6 +375,8 @@ tasks.register<JacocoReport>("jacocoTestReport") {
         "**/Hilt_*.*",
         "**/*_GeneratedInjector*.*",
         "**/*_ComponentTreeDeps*.*",
+        "**/Dagger*Component*.*",
+        "**/*_HiltComponents*.*",
         "**/*_Impl*.*",
         "dagger/**/*.*",
         "hilt_aggregated_deps/**/*.*",
@@ -410,5 +412,12 @@ tasks.withType<Test> {
     // MockK/ByteBuddy self-attach its inline-mocking agent at runtime; JDK 21+ restricts
     // dynamic agent loading (JEP 451). Without this, mocking final Kotlin classes can fail.
     jvmArgs("-XX:+UseG1GC", "-XX:+EnableDynamicAgentLoading", "-Djdk.attach.allowAttachSelf=true")
+    // Robolectric loads app classes through its own sandbox class loader, which gives them no
+    // code-source location. JaCoCo skips such classes by default, so without this every
+    // Robolectric test (Compose UI tests included) records no coverage.
+    extensions.configure<JacocoTaskExtension> {
+        isIncludeNoLocationClasses = true
+        excludes = listOf("jdk.internal.*")
+    }
     forkEvery = 1
 }
