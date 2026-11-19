@@ -18,6 +18,7 @@ import com.rpeters.jellyfin.ui.viewmodel.SeasonEpisodesState
 import com.rpeters.jellyfin.ui.viewmodel.SeasonEpisodesViewModel
 import com.rpeters.jellyfin.ui.viewmodel.TVSeasonState
 import com.rpeters.jellyfin.ui.viewmodel.TVSeasonViewModel
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -82,7 +83,7 @@ class DetailScreensRenderTest : ComposeScreenTest() {
     // region Show and season (both read TVSeasonViewModel)
 
     private fun tvSeasonViewModel(state: TVSeasonState): TVSeasonViewModel = mockk(relaxed = true) {
-        every { this@mockk.state } returns MutableStateFlow(state)
+        coEvery { this@mockk.state } returns MutableStateFlow(state)
     }
 
     private fun loadedShowState(): TVSeasonState {
@@ -172,7 +173,7 @@ class DetailScreensRenderTest : ComposeScreenTest() {
     // region Album and playlist
 
     private fun renderAlbum(state: AlbumDetailState) {
-        val vm: AlbumDetailViewModel = mockk(relaxed = true) { every { this@mockk.state } returns MutableStateFlow(state) }
+        val vm: AlbumDetailViewModel = mockk(relaxed = true) { coEvery { this@mockk.state } returns MutableStateFlow(state) }
         TestViewModels.provide(vm)
         render { ImmersiveAlbumDetailScreen(albumId = TestItems.album().id.toString(), onBackClick = {}) }
     }
@@ -184,7 +185,7 @@ class DetailScreensRenderTest : ComposeScreenTest() {
     @Test fun album_error() = renderAlbum(AlbumDetailState(errorMessage = "Gone")).also { assertRendered() }
 
     private fun renderPlaylist(state: PlaylistDetailState) {
-        val vm: PlaylistDetailViewModel = mockk(relaxed = true) { every { this@mockk.state } returns MutableStateFlow(state) }
+        val vm: PlaylistDetailViewModel = mockk(relaxed = true) { coEvery { this@mockk.state } returns MutableStateFlow(state) }
         TestViewModels.provide(vm)
         render { ImmersivePlaylistDetailScreen(playlistId = "playlist-1", onBackClick = {}, onVideoDetailClick = {}) }
     }
@@ -210,7 +211,7 @@ class DetailScreensRenderTest : ComposeScreenTest() {
     // region Person
 
     private fun renderPerson(state: PersonDetailUiState) {
-        val vm: PersonDetailViewModel = mockk(relaxed = true) { every { uiState } returns MutableStateFlow(state) }
+        val vm: PersonDetailViewModel = mockk(relaxed = true) { coEvery { uiState } returns MutableStateFlow(state) }
         TestViewModels.provide(vm)
         render { PersonDetailScreen(onBackClick = {}, onItemClick = {}, getImageUrl = { null }) }
     }
@@ -239,9 +240,9 @@ class DetailScreensRenderTest : ComposeScreenTest() {
     // region Season episodes list
 
     private fun renderEpisodes(state: SeasonEpisodesState, management: Boolean = true) {
-        val vm: SeasonEpisodesViewModel = mockk(relaxed = true) { every { this@mockk.state } returns MutableStateFlow(state) }
+        val vm: SeasonEpisodesViewModel = mockk(relaxed = true) { coEvery { this@mockk.state } returns MutableStateFlow(state) }
         val prefs: LibraryActionsPreferencesViewModel = mockk(relaxed = true) {
-            every { preferences } returns MutableStateFlow(LibraryActionsPreferences(enableManagementActions = management))
+            coEvery { preferences } returns MutableStateFlow(LibraryActionsPreferences(enableManagementActions = management))
         }
         TestViewModels.provide(vm)
         TestViewModels.provide(prefs)

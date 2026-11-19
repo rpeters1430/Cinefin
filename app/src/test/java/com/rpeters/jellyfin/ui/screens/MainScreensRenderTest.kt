@@ -30,6 +30,7 @@ import com.rpeters.jellyfin.ui.viewmodel.MainAppState
 import com.rpeters.jellyfin.ui.viewmodel.SearchAiState
 import com.rpeters.jellyfin.ui.viewmodel.SearchState
 import com.rpeters.jellyfin.ui.viewmodel.SearchViewModel
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -39,7 +40,7 @@ import org.junit.Test
 class MainScreensRenderTest : ComposeScreenTest() {
 
     private val libraryActions: LibraryActionsPreferencesViewModel = mockk(relaxed = true) {
-        every { preferences } returns MutableStateFlow(LibraryActionsPreferences(enableManagementActions = true))
+        coEvery { preferences } returns MutableStateFlow(LibraryActionsPreferences(enableManagementActions = true))
     }
 
     @Before
@@ -217,8 +218,8 @@ class MainScreensRenderTest : ComposeScreenTest() {
 
     private fun renderSearch(appState: MainAppState, search: SearchState, ai: SearchAiState = SearchAiState()) {
         val vm: SearchViewModel = mockk(relaxed = true) {
-            every { searchState } returns MutableStateFlow(search)
-            every { aiState } returns MutableStateFlow(ai)
+            coEvery { searchState } returns MutableStateFlow(search)
+            coEvery { aiState } returns MutableStateFlow(ai)
         }
         render {
             ImmersiveSearchScreen(appState = appState, onSearch = {}, onClearSearch = {}, getImageUrl = { null }, viewModel = vm)
@@ -296,9 +297,9 @@ class MainScreensRenderTest : ComposeScreenTest() {
     }
 
     private fun offlineManager(online: Boolean, items: List<OfflineLibraryItem>): OfflineManager = mockk(relaxed = true) {
-        every { isOnline } returns MutableStateFlow(online)
-        every { networkType } returns MutableStateFlow(if (online) NetworkType.WIFI else NetworkType.NONE)
-        every { offlineContent } returns MutableStateFlow(items)
+        coEvery { isOnline } returns MutableStateFlow(online)
+        coEvery { networkType } returns MutableStateFlow(if (online) NetworkType.WIFI else NetworkType.NONE)
+        coEvery { offlineContent } returns MutableStateFlow(items)
         every { getOfflineStorageUsage() } returns com.rpeters.jellyfin.ui.utils.OfflineStorageInfo(10_000_000_000, items.size, "9.3 GB")
         every { isCurrentlyOnline() } returns online
     }
@@ -325,7 +326,7 @@ class MainScreensRenderTest : ComposeScreenTest() {
             ).build()
         }
         return mockk(relaxed = true) {
-            every { playbackState } returns MutableStateFlow(
+            coEvery { playbackState } returns MutableStateFlow(
                 AudioPlaybackState(
                     isConnected = true,
                     isPlaying = playing,
@@ -337,9 +338,9 @@ class MainScreensRenderTest : ComposeScreenTest() {
                     duration = 240_000,
                 ),
             )
-            every { this@mockk.queue } returns MutableStateFlow(items)
-            every { currentPosition } returns MutableStateFlow(60_000L)
-            every { duration } returns MutableStateFlow(240_000L)
+            coEvery { this@mockk.queue } returns MutableStateFlow(items)
+            coEvery { currentPosition } returns MutableStateFlow(60_000L)
+            coEvery { duration } returns MutableStateFlow(240_000L)
         }
     }
 

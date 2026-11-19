@@ -78,6 +78,7 @@ import com.rpeters.jellyfin.ui.viewmodel.SubtitleAppearancePreferencesViewModel
 import com.rpeters.jellyfin.ui.viewmodel.TVSeasonState
 import com.rpeters.jellyfin.ui.viewmodel.TVSeasonViewModel
 import com.rpeters.jellyfin.ui.viewmodel.ThemePreferencesViewModel
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -359,10 +360,10 @@ class TvAndPlayerRenderTest : ComposeScreenTest() {
     private fun audioVm(playing: Boolean): AudioPlaybackViewModel {
         val item = MediaItem.Builder().setMediaId("t1").setMediaMetadata(MediaMetadata.Builder().setTitle("Track 1").setArtist("The Testers").build()).build()
         return mockk(relaxed = true) {
-            every { playbackState } returns MutableStateFlow(AudioPlaybackState(isConnected = true, isPlaying = playing, currentMediaItem = if (playing) item else null, duration = 200_000, currentPosition = 50_000))
-            every { queue } returns MutableStateFlow(if (playing) listOf(item, item) else emptyList())
-            every { currentPosition } returns MutableStateFlow(50_000L)
-            every { duration } returns MutableStateFlow(200_000L)
+            coEvery { playbackState } returns MutableStateFlow(AudioPlaybackState(isConnected = true, isPlaying = playing, currentMediaItem = if (playing) item else null, duration = 200_000, currentPosition = 50_000))
+            coEvery { queue } returns MutableStateFlow(if (playing) listOf(item, item) else emptyList())
+            coEvery { currentPosition } returns MutableStateFlow(50_000L)
+            coEvery { duration } returns MutableStateFlow(200_000L)
         }
     }
 
@@ -464,7 +465,7 @@ class TvAndPlayerRenderTest : ComposeScreenTest() {
     private fun renderTvDetail(item: org.jellyfin.sdk.model.api.BaseItemDto, season: TVSeasonState = TVSeasonState()) {
         val state = loadedMainAppState().copy(selectedItem = item, allItems = loadedMainAppState().allItems + item)
         val vm = SharedViewModelMocks.mainAppViewModel(state)
-        val seasonVm: TVSeasonViewModel = mockk(relaxed = true) { every { this@mockk.state } returns MutableStateFlow(season) }
+        val seasonVm: TVSeasonViewModel = mockk(relaxed = true) { coEvery { this@mockk.state } returns MutableStateFlow(season) }
         TestViewModels.provide(vm)
         TestViewModels.provide(seasonVm)
         render { TvItemDetailScreen(itemId = item.id.toString(), viewModel = vm, seasonViewModel = seasonVm, onItemSelect = {}, onPlay = { _, _, _ -> }, onBack = {}, onSearch = {}, onSearchRequests = {}) }
@@ -493,8 +494,8 @@ class TvAndPlayerRenderTest : ComposeScreenTest() {
     @Test
     fun tvSearch_results() {
         val vm: SearchViewModel = mockk(relaxed = true) {
-            every { searchState } returns MutableStateFlow(SearchState(searchQuery = "test", searchResults = TestItems.movies(4) + TestItems.seriesList(2), hasSearched = true))
-            every { aiState } returns MutableStateFlow(SearchAiState(lastEnhancedQuery = "test"))
+            coEvery { searchState } returns MutableStateFlow(SearchState(searchQuery = "test", searchResults = TestItems.movies(4) + TestItems.seriesList(2), hasSearched = true))
+            coEvery { aiState } returns MutableStateFlow(SearchAiState(lastEnhancedQuery = "test"))
         }
         TestViewModels.provide(SharedViewModelMocks.mainAppViewModel(loadedMainAppState()))
         render { TvSearchScreen(onItemSelect = {}, onBack = {}, onSearchRequests = {}, viewModel = vm, mainViewModel = SharedViewModelMocks.mainAppViewModel(loadedMainAppState())) }
@@ -504,8 +505,8 @@ class TvAndPlayerRenderTest : ComposeScreenTest() {
     @Test
     fun tvSearch_empty() {
         val vm: SearchViewModel = mockk(relaxed = true) {
-            every { searchState } returns MutableStateFlow(SearchState(isSearching = true, errorMessage = "Timed out"))
-            every { aiState } returns MutableStateFlow(SearchAiState(isProcessing = true))
+            coEvery { searchState } returns MutableStateFlow(SearchState(isSearching = true, errorMessage = "Timed out"))
+            coEvery { aiState } returns MutableStateFlow(SearchAiState(isProcessing = true))
         }
         render { TvSearchScreen(onItemSelect = {}, viewModel = vm, mainViewModel = SharedViewModelMocks.mainAppViewModel()) }
         assertRendered()
@@ -514,17 +515,17 @@ class TvAndPlayerRenderTest : ComposeScreenTest() {
     @Test
     fun tvSettings() {
         val connection: ServerConnectionViewModel = mockk(relaxed = true) {
-            every { connectionState } returns MutableStateFlow(ConnectionState(savedServerUrl = "https://jellyfin.example.test", savedUsername = "tester", detectedServerType = ServerType.JELLYFIN))
+            coEvery { connectionState } returns MutableStateFlow(ConnectionState(savedServerUrl = "https://jellyfin.example.test", savedUsername = "tester", detectedServerType = ServerType.JELLYFIN))
         }
         val profiles: ProfilesViewModel = mockk(relaxed = true) {
-            every { this@mockk.profiles } returns MutableStateFlow(
+            coEvery { this@mockk.profiles } returns MutableStateFlow(
                 ServerProfiles(listOf(ServerProfile(id = "p1", serverUrl = "https://jellyfin.example.test", serverName = "Home", username = "tester")), activeProfileId = "p1"),
             )
-            every { uiState } returns MutableStateFlow(ProfilesUiState())
+            coEvery { uiState } returns MutableStateFlow(ProfilesUiState())
         }
-        val playback: PlaybackPreferencesViewModel = mockk(relaxed = true) { every { preferences } returns MutableStateFlow(PlaybackPreferences.DEFAULT) }
-        val subtitles: SubtitleAppearancePreferencesViewModel = mockk(relaxed = true) { every { preferences } returns MutableStateFlow(SubtitleAppearancePreferences.DEFAULT) }
-        val theme: ThemePreferencesViewModel = mockk(relaxed = true) { every { themePreferences } returns MutableStateFlow(ThemePreferences.DEFAULT) }
+        val playback: PlaybackPreferencesViewModel = mockk(relaxed = true) { coEvery { preferences } returns MutableStateFlow(PlaybackPreferences.DEFAULT) }
+        val subtitles: SubtitleAppearancePreferencesViewModel = mockk(relaxed = true) { coEvery { preferences } returns MutableStateFlow(SubtitleAppearancePreferences.DEFAULT) }
+        val theme: ThemePreferencesViewModel = mockk(relaxed = true) { coEvery { themePreferences } returns MutableStateFlow(ThemePreferences.DEFAULT) }
         render {
             TvSettingsScreen(
                 onSignOut = {},
@@ -542,8 +543,8 @@ class TvAndPlayerRenderTest : ComposeScreenTest() {
     fun tvRequests() {
         val items = (1..4).map { com.rpeters.jellyfin.data.model.SeerrMediaItem(id = it, mediaType = if (it % 2 == 0) "tv" else "movie", title = "Title $it", name = "Name $it", releaseDate = "2026-01-01") }
         val vm: RequestsViewModel = mockk(relaxed = true) {
-            every { uiState } returns MutableStateFlow(RequestsUiState(isConfigured = true, trending = items, popularMovies = items, popularTv = items, upcomingMovies = items, results = items, query = "q", successMessage = "OK", errorMessage = "Err"))
-            every { seerrPreferences } returns MutableStateFlow(SeerrPreferences(baseUrl = "https://s.test", apiKey = "k", isEnabled = true))
+            coEvery { uiState } returns MutableStateFlow(RequestsUiState(isConfigured = true, trending = items, popularMovies = items, popularTv = items, upcomingMovies = items, results = items, query = "q", successMessage = "OK", errorMessage = "Err"))
+            coEvery { seerrPreferences } returns MutableStateFlow(SeerrPreferences(baseUrl = "https://s.test", apiKey = "k", isEnabled = true))
         }
         render { TvRequestsScreen(onBack = {}, viewModel = vm) }
         assertRendered()

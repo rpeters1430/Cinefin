@@ -26,7 +26,11 @@ class SonarrRepositoryTest {
     private val server = MockWebServer()
     private val prefs = MutableStateFlow(SonarrPreferences.DEFAULT)
     private val routes = mutableMapOf<String, MockResponse>()
-    private lateinit var repository: SonarrRepository
+    private val repository = SonarrRepository(
+        OkHttpClient(),
+        mockk<ArrPreferencesRepository> { every { sonarrPreferencesFlow } returns prefs },
+        Json { ignoreUnknownKeys = true; explicitNulls = false },
+    )
 
     private fun route(method: String, path: String, code: Int = 200, body: String = "[]") {
         routes["$method $path"] = MockResponse().setResponseCode(code).setHeader("Content-Type", "application/json").setBody(body)
@@ -44,8 +48,6 @@ class SonarrRepositoryTest {
         }
         server.start()
         prefs.value = SonarrPreferences(baseUrl = server.url("/").toString(), apiKey = "secret", isEnabled = true)
-        val arrPrefs: ArrPreferencesRepository = mockk { every { sonarrPreferencesFlow } returns prefs }
-        repository = SonarrRepository(OkHttpClient(), arrPrefs, Json { ignoreUnknownKeys = true; explicitNulls = false })
     }
 
     @After

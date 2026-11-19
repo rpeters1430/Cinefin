@@ -32,6 +32,7 @@ import com.rpeters.jellyfin.ui.viewmodel.SettingsServerManagementState
 import com.rpeters.jellyfin.ui.viewmodel.SettingsServerManagementViewModel
 import com.rpeters.jellyfin.ui.viewmodel.SubtitleAppearancePreferencesViewModel
 import com.rpeters.jellyfin.ui.viewmodel.ThemePreferencesViewModel
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -43,14 +44,14 @@ class SettingsScreensRenderTest : ComposeScreenTest() {
 
     private fun renderSettings(admin: Boolean, running: Boolean, management: Boolean) {
         val libraryActions: LibraryActionsPreferencesViewModel = mockk(relaxed = true) {
-            every { preferences } returns MutableStateFlow(LibraryActionsPreferences(enableManagementActions = management))
+            coEvery { preferences } returns MutableStateFlow(LibraryActionsPreferences(enableManagementActions = management))
         }
         val remoteConfig: RemoteConfigViewModel = mockk(relaxed = true) {
             every { getBoolean(any()) } returns true
             every { getString(any()) } returns ""
         }
         val serverManagement: SettingsServerManagementViewModel = mockk(relaxed = true) {
-            every { state } returns MutableStateFlow(
+            coEvery { state } returns MutableStateFlow(
                 SettingsServerManagementState(
                     activeAction = if (running) ServerManagementAction.values().first() else null,
                     successMessage = if (running) null else "Library scan started",
@@ -59,7 +60,7 @@ class SettingsScreensRenderTest : ComposeScreenTest() {
             )
         }
         val ai: AiPreferencesViewModel = mockk(relaxed = true) {
-            every { preferences } returns MutableStateFlow(AiPreferences.DEFAULT)
+            coEvery { preferences } returns MutableStateFlow(AiPreferences.DEFAULT)
         }
         render {
             SettingsScreen(
@@ -86,7 +87,7 @@ class SettingsScreensRenderTest : ComposeScreenTest() {
     @Test
     fun appearance_defaultAndCustom() {
         val vm: ThemePreferencesViewModel = mockk(relaxed = true) {
-            every { themePreferences } returns MutableStateFlow(ThemePreferences.DEFAULT)
+            coEvery { themePreferences } returns MutableStateFlow(ThemePreferences.DEFAULT)
         }
         render { AppearanceSettingsScreen(onNavigateBack = {}, viewModel = vm) }
         assertRendered()
@@ -96,7 +97,7 @@ class SettingsScreensRenderTest : ComposeScreenTest() {
     fun appearance_allOptionsOn() {
         val custom = ThemePreferences.DEFAULT.copy(useDynamicColors = false, respectReduceMotion = true)
         val vm: ThemePreferencesViewModel = mockk(relaxed = true) {
-            every { themePreferences } returns MutableStateFlow(custom)
+            coEvery { themePreferences } returns MutableStateFlow(custom)
         }
         render(theme = custom) { AppearanceSettingsScreen(onNavigateBack = {}, viewModel = vm) }
         assertRendered()
@@ -105,7 +106,7 @@ class SettingsScreensRenderTest : ComposeScreenTest() {
     @Test
     fun playback() {
         val vm: PlaybackPreferencesViewModel = mockk(relaxed = true) {
-            every { preferences } returns MutableStateFlow(PlaybackPreferences.DEFAULT)
+            coEvery { preferences } returns MutableStateFlow(PlaybackPreferences.DEFAULT)
         }
         render { PlaybackSettingsScreen(onBackClick = {}, viewModel = vm) }
         assertRendered()
@@ -114,7 +115,7 @@ class SettingsScreensRenderTest : ComposeScreenTest() {
     @Test
     fun playback_customised() {
         val prefs = PlaybackPreferences.DEFAULT.copy(autoPlayNextEpisode = false, useExternalPlayer = true, preferredAudioLanguage = "jpn")
-        val vm: PlaybackPreferencesViewModel = mockk(relaxed = true) { every { preferences } returns MutableStateFlow(prefs) }
+        val vm: PlaybackPreferencesViewModel = mockk(relaxed = true) { coEvery { preferences } returns MutableStateFlow(prefs) }
         render { PlaybackSettingsScreen(onBackClick = {}, viewModel = vm) }
         assertRendered()
     }
@@ -122,7 +123,7 @@ class SettingsScreensRenderTest : ComposeScreenTest() {
     @Test
     fun subtitles() {
         val vm: SubtitleAppearancePreferencesViewModel = mockk(relaxed = true) {
-            every { preferences } returns MutableStateFlow(SubtitleAppearancePreferences.DEFAULT)
+            coEvery { preferences } returns MutableStateFlow(SubtitleAppearancePreferences.DEFAULT)
         }
         render { SubtitleSettingsScreen(onNavigateBack = {}, viewModel = vm) }
         assertRendered()
@@ -130,22 +131,22 @@ class SettingsScreensRenderTest : ComposeScreenTest() {
 
     private fun mediaRequestVm(admin: Boolean, configured: Boolean, test: ConnectionTestState, import: CredentialImportState) =
         mockk<MediaRequestSettingsViewModel>(relaxed = true) {
-            every { supportsCinefinPlugin } returns MutableStateFlow(configured)
-            every { isCurrentUserAdmin } returns MutableStateFlow(admin)
-            every { credentialImportState } returns MutableStateFlow(import)
-            every { allowNonAdminImports } returns MutableStateFlow(!admin)
-            every { isPluginConfigured } returns MutableStateFlow(configured)
-            every { isPluginConfigurationSupported } returns MutableStateFlow(configured)
-            every { seerrPreferences } returns MutableStateFlow(
+            coEvery { supportsCinefinPlugin } returns MutableStateFlow(configured)
+            coEvery { isCurrentUserAdmin } returns MutableStateFlow(admin)
+            coEvery { credentialImportState } returns MutableStateFlow(import)
+            coEvery { allowNonAdminImports } returns MutableStateFlow(!admin)
+            coEvery { isPluginConfigured } returns MutableStateFlow(configured)
+            coEvery { isPluginConfigurationSupported } returns MutableStateFlow(configured)
+            coEvery { seerrPreferences } returns MutableStateFlow(
                 if (configured) SeerrPreferences(baseUrl = "https://seerr.test", apiKey = "k", isEnabled = true) else SeerrPreferences.DEFAULT,
             )
-            every { seerrTestState } returns MutableStateFlow(test)
-            every { sonarrPreferences } returns MutableStateFlow(
+            coEvery { seerrTestState } returns MutableStateFlow(test)
+            coEvery { sonarrPreferences } returns MutableStateFlow(
                 if (configured) SonarrPreferences(baseUrl = "https://sonarr.test", apiKey = "k", isEnabled = true) else SonarrPreferences.DEFAULT,
             )
-            every { sonarrTestState } returns MutableStateFlow(test)
-            every { radarrPreferences } returns MutableStateFlow(RadarrPreferences.DEFAULT)
-            every { radarrTestState } returns MutableStateFlow(ConnectionTestState.Idle)
+            coEvery { sonarrTestState } returns MutableStateFlow(test)
+            coEvery { radarrPreferences } returns MutableStateFlow(RadarrPreferences.DEFAULT)
+            coEvery { radarrTestState } returns MutableStateFlow(ConnectionTestState.Idle)
         }
 
     @Test
@@ -181,7 +182,7 @@ class SettingsScreensRenderTest : ComposeScreenTest() {
     @Test
     fun privacy_states() {
         val vm: PrivacySettingsViewModel = mockk(relaxed = true) {
-            every { state } returns MutableStateFlow(
+            coEvery { state } returns MutableStateFlow(
                 PrivacySecurityState(biometricEnabled = true, biometricAvailable = true, biometricWeakOnly = true, requireStrongBiometric = true, errorMessage = "Locked"),
             )
         }
@@ -192,7 +193,7 @@ class SettingsScreensRenderTest : ComposeScreenTest() {
     @Test
     fun privacy_unavailable() {
         val vm: PrivacySettingsViewModel = mockk(relaxed = true) {
-            every { state } returns MutableStateFlow(PrivacySecurityState(isUpdatingCredentialSecurity = true))
+            coEvery { state } returns MutableStateFlow(PrivacySecurityState(isUpdatingCredentialSecurity = true))
         }
         render { PrivacySettingsScreen(onNavigateBack = {}, viewModel = vm) }
         assertRendered()
@@ -202,14 +203,14 @@ class SettingsScreensRenderTest : ComposeScreenTest() {
     fun pinning_withPins() {
         val now = 1_763_500_000_000L
         val vm: PinningSettingsViewModel = mockk(relaxed = true) {
-            every { pins } returns MutableStateFlow(
+            coEvery { pins } returns MutableStateFlow(
                 listOf(
                     PinnedHostState("jellyfin.example.test", "sha256/AAAA", 1, now - 86_400_000, now + 86_400_000 * 30, false),
                     PinnedHostState("old.example.test", "sha256/BBBB", 0, now - 86_400_000 * 400, now - 86_400_000, true),
                 ),
             )
-            every { isLoading } returns MutableStateFlow(false)
-            every { errorMessage } returns MutableStateFlow("Could not refresh")
+            coEvery { isLoading } returns MutableStateFlow(false)
+            coEvery { errorMessage } returns MutableStateFlow("Could not refresh")
         }
         render { PinningSettingsScreen(onBackClick = {}, viewModel = vm) }
         assertRendered()
@@ -218,19 +219,19 @@ class SettingsScreensRenderTest : ComposeScreenTest() {
     @Test
     fun pinning_loadingEmpty() {
         val vm: PinningSettingsViewModel = mockk(relaxed = true) {
-            every { pins } returns MutableStateFlow(emptyList())
-            every { isLoading } returns MutableStateFlow(true)
-            every { errorMessage } returns MutableStateFlow(null)
+            coEvery { pins } returns MutableStateFlow(emptyList())
+            coEvery { isLoading } returns MutableStateFlow(true)
+            coEvery { errorMessage } returns MutableStateFlow(null)
         }
         render { PinningSettingsScreen(onBackClick = {}, viewModel = vm) }
         assertRendered()
     }
 
     private fun seerrVm(test: ConnectionTestState, enabled: Boolean) = mockk<SeerrSettingsViewModel>(relaxed = true) {
-        every { supportsCinefinPlugin } returns MutableStateFlow(enabled)
-        every { seerrPreferences } returns MutableStateFlow(SeerrPreferences(baseUrl = "https://seerr.test", apiKey = "abc", isEnabled = enabled))
-        every { isPluginConfigured } returns MutableStateFlow(enabled)
-        every { connectionTestState } returns MutableStateFlow(test)
+        coEvery { supportsCinefinPlugin } returns MutableStateFlow(enabled)
+        coEvery { seerrPreferences } returns MutableStateFlow(SeerrPreferences(baseUrl = "https://seerr.test", apiKey = "abc", isEnabled = enabled))
+        coEvery { isPluginConfigured } returns MutableStateFlow(enabled)
+        coEvery { connectionTestState } returns MutableStateFlow(test)
     }
 
     @Test fun seerr_success() = render { SeerrSettingsScreen(onNavigateBack = {}, viewModel = seerrVm(ConnectionTestState.Success, true)) }.also { assertRendered() }
@@ -242,7 +243,7 @@ class SettingsScreensRenderTest : ComposeScreenTest() {
     @Test
     fun episodeNotifications_followed() {
         val vm: EpisodeNotificationSettingsViewModel = mockk(relaxed = true) {
-            every { preferences } returns MutableStateFlow(
+            coEvery { preferences } returns MutableStateFlow(
                 EpisodeNotificationPreferences(
                     enabled = true,
                     followedSeries = listOf(
@@ -259,7 +260,7 @@ class SettingsScreensRenderTest : ComposeScreenTest() {
     @Test
     fun episodeNotifications_disabled() {
         val vm: EpisodeNotificationSettingsViewModel = mockk(relaxed = true) {
-            every { preferences } returns MutableStateFlow(EpisodeNotificationPreferences(enabled = false))
+            coEvery { preferences } returns MutableStateFlow(EpisodeNotificationPreferences(enabled = false))
         }
         render { EpisodeNotificationSettingsScreen(onNavigateBack = {}, viewModel = vm) }
         assertRendered()

@@ -10,6 +10,7 @@ import com.rpeters.jellyfin.testing.fixtures.TestItems
 import com.rpeters.jellyfin.ui.downloads.DownloadsViewModel
 import com.rpeters.jellyfin.ui.viewmodel.MainAppState
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -55,22 +56,22 @@ object SharedViewModelMocks {
         progress: Map<String, DownloadProgress> = emptyMap(),
         storage: OfflineStorageInfo? = null,
     ): DownloadsViewModel = mockk(relaxed = true) {
-        every { this@mockk.downloads } returns MutableStateFlow(downloads)
-        every { downloadProgress } returns MutableStateFlow(progress)
-        every { downloadPreferences } returns MutableStateFlow(DownloadPreferences.DEFAULT)
-        every { pendingOfflineSyncCount } returns MutableStateFlow(0)
-        every { storageInfo } returns MutableStateFlow(storage)
+        coEvery { this@mockk.downloads } returns MutableStateFlow(downloads)
+        coEvery { downloadProgress } returns MutableStateFlow(progress)
+        coEvery { downloadPreferences } returns MutableStateFlow(DownloadPreferences.DEFAULT)
+        coEvery { pendingOfflineSyncCount } returns MutableStateFlow(0)
+        coEvery { storageInfo } returns MutableStateFlow(storage)
     }
 
     fun mainAppViewModel(state: MainAppState = MainAppState()): MainAppViewModel = mockk(relaxed = true) {
-        every { appState } returns MutableStateFlow(state)
-        every { currentServer } returns MutableStateFlow(testServer)
-        every { isConnected } returns MutableStateFlow(true)
-        every { isAdultVerified } returns MutableStateFlow(true)
-        every { ageSignalsStatus } returns MutableStateFlow(null)
-        every { serverInfo } returns MutableStateFlow(null)
-        every { aiDownloadState } returns MutableStateFlow(com.rpeters.jellyfin.data.ai.AiDownloadState.READY)
-        every { isNanoActive } returns MutableStateFlow(false)
+        coEvery { appState } returns MutableStateFlow(state)
+        coEvery { currentServer } returns MutableStateFlow(testServer)
+        coEvery { isConnected } returns MutableStateFlow(true)
+        coEvery { isAdultVerified } returns MutableStateFlow(true)
+        coEvery { ageSignalsStatus } returns MutableStateFlow(null)
+        coEvery { serverInfo } returns MutableStateFlow(null)
+        coEvery { aiDownloadState } returns MutableStateFlow(com.rpeters.jellyfin.data.ai.AiDownloadState.READY)
+        coEvery { isNanoActive } returns MutableStateFlow(false)
         every { getImageUrl(any()) } returns null
         every { getBackdropUrl(any()) } returns null
         every { getLibraryTypeData(any<com.rpeters.jellyfin.ui.screens.LibraryType>()) } returns state.allItems

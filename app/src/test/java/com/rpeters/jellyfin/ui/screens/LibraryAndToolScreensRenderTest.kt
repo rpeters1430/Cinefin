@@ -34,6 +34,7 @@ import com.rpeters.jellyfin.ui.viewmodel.PlaybackRecommendationViewModel
 import com.rpeters.jellyfin.ui.viewmodel.PlaylistsState
 import com.rpeters.jellyfin.ui.viewmodel.PlaylistsViewModel
 import com.rpeters.jellyfin.ui.viewmodel.TranscodingDiagnosticsViewModel
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -141,7 +142,7 @@ class LibraryAndToolScreensRenderTest : ComposeScreenTest() {
     }
 
     private fun playlistsVm(state: PlaylistsState): PlaylistsViewModel = mockk(relaxed = true) {
-        every { this@mockk.state } returns MutableStateFlow(state)
+        coEvery { this@mockk.state } returns MutableStateFlow(state)
     }
 
     @Test
@@ -251,11 +252,11 @@ class LibraryAndToolScreensRenderTest : ComposeScreenTest() {
             every { playbackProgress } returns mutableStateOf(null)
         }
         val recs: PlaybackRecommendationViewModel = mockk(relaxed = true) {
-            every { recommendations } returns MutableStateFlow(
+            coEvery { recommendations } returns MutableStateFlow(
                 RecommendationType.values().map { PlaybackRecommendation(it, "Message ${it.name}", "Details") },
             )
-            every { isLoading } returns MutableStateFlow(!withItem)
-            every { currentItem } returns MutableStateFlow(if (withItem) TestItems.movie() else null)
+            coEvery { isLoading } returns MutableStateFlow(!withItem)
+            coEvery { currentItem } returns MutableStateFlow(if (withItem) TestItems.movie() else null)
         }
         render { ItemDetailScreen(itemId = "x", onBackClick = {}, viewModel = vm, recommendationViewModel = recs) }
     }
@@ -268,7 +269,7 @@ class LibraryAndToolScreensRenderTest : ComposeScreenTest() {
 
     private fun renderAssistant(state: AiAssistantState) {
         TestViewModels.provide(SharedViewModelMocks.mainAppViewModel())
-        val vm: AiAssistantViewModel = mockk(relaxed = true) { every { uiState } returns MutableStateFlow(state) }
+        val vm: AiAssistantViewModel = mockk(relaxed = true) { coEvery { uiState } returns MutableStateFlow(state) }
         render { AiAssistantScreen(onBackClick = {}, onItemClick = {}, viewModel = vm) }
     }
 
@@ -290,7 +291,7 @@ class LibraryAndToolScreensRenderTest : ComposeScreenTest() {
     @Test fun assistant_error() = renderAssistant(AiAssistantState(canRetryDownload = true, errorCode = 606, nanoStatus = "Failed")).also { assertRendered() }
 
     private fun renderDiagnostics(state: AiBackendUiState) {
-        val vm: AiDiagnosticsViewModel = mockk(relaxed = true) { every { aiBackendState } returns MutableStateFlow(state) }
+        val vm: AiDiagnosticsViewModel = mockk(relaxed = true) { coEvery { aiBackendState } returns MutableStateFlow(state) }
         render { AiDiagnosticsScreen(onBackClick = {}, viewModel = vm) }
     }
 
@@ -301,7 +302,7 @@ class LibraryAndToolScreensRenderTest : ComposeScreenTest() {
     @Test fun aiDiagnostics_error() = renderDiagnostics(AiBackendUiState(canRetryDownload = true, errorCode = 601)).also { assertRendered() }
 
     private fun renderTranscoding(state: TranscodingDiagnosticsViewModel.UiState) {
-        val vm: TranscodingDiagnosticsViewModel = mockk(relaxed = true) { every { uiState } returns MutableStateFlow(state) }
+        val vm: TranscodingDiagnosticsViewModel = mockk(relaxed = true) { coEvery { uiState } returns MutableStateFlow(state) }
         render { TranscodingDiagnosticsScreen(onNavigateBack = {}, viewModel = vm) }
     }
 
@@ -326,7 +327,7 @@ class LibraryAndToolScreensRenderTest : ComposeScreenTest() {
     @Test fun transcoding_empty() = renderTranscoding(TranscodingDiagnosticsViewModel.UiState.Success(emptyList())).also { assertRendered() }
 
     private fun renderArtist(state: ArtistAlbumsState) {
-        val vm: ArtistAlbumsViewModel = mockk(relaxed = true) { every { this@mockk.state } returns MutableStateFlow(state) }
+        val vm: ArtistAlbumsViewModel = mockk(relaxed = true) { coEvery { this@mockk.state } returns MutableStateFlow(state) }
         render { ArtistDetailScreen(artistId = "a", artistName = "The Testers", onBackClick = {}, onAlbumClick = {}, mainViewModel = SharedViewModelMocks.mainAppViewModel(), viewModel = vm) }
     }
 

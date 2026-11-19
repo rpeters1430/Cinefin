@@ -22,6 +22,7 @@ import com.rpeters.jellyfin.ui.viewmodel.RequestsViewModel
 import com.rpeters.jellyfin.ui.viewmodel.TvAvailability
 import com.rpeters.jellyfin.ui.viewmodel.TvEpisodeAvailability
 import com.rpeters.jellyfin.ui.viewmodel.TvSeasonAvailability
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -110,8 +111,8 @@ class RequestsScreenRenderTest : ComposeScreenTest() {
 
     private fun renderRequests(state: RequestsUiState, configured: Boolean = true) {
         val vm: RequestsViewModel = mockk(relaxed = true) {
-            every { uiState } returns MutableStateFlow(state)
-            every { seerrPreferences } returns MutableStateFlow(
+            coEvery { uiState } returns MutableStateFlow(state)
+            coEvery { seerrPreferences } returns MutableStateFlow(
                 if (configured) SeerrPreferences(baseUrl = "https://seerr.test", apiKey = "k", isEnabled = true) else SeerrPreferences.DEFAULT,
             )
         }
